@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
+@theme {
+  --color-dia-green: #00843D;
+  --color-dia-white: #FFFFFF;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --dia-green: #00843D;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-gray-50 min-h-screen;
+}
+
+/* Score display animation */
+@keyframes pulse-score {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.score-pulse {
+  animation: pulse-score 0.3s ease-in-out;
+}
+
+/* Event timeline */
+.timeline-event {
+  @apply relative pl-8 pb-4;
+}
+
+.timeline-event::before {
+  content: '';
+  @apply absolute left-3 top-2 w-2 h-2 rounded-full;
+  background-color: var(--dia-green);
+}
+
+.timeline-event::after {
+  content: '';
+  @apply absolute left-[14px] top-4 w-0.5 h-full bg-gray-200;
+}
+
+.timeline-event:last-child::after {
+  @apply hidden;
+}
+
+/* Player cards */
+.player-card {
+  @apply p-3 bg-white rounded-lg shadow-sm border border-gray-100 transition-all;
+}
+
+.player-card.on-field {
+  @apply border-green-600 bg-green-50;
+}
+
+.player-card.is-keeper {
+  @apply border-yellow-400 bg-yellow-50;
 }

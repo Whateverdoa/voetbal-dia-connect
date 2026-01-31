@@ -4,10 +4,29 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function NewMatchPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <NewMatchContent />
+    </Suspense>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-dia-green border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="mt-4 text-gray-600">Laden...</p>
+      </div>
+    </main>
+  );
+}
+
+function NewMatchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pin = searchParams.get("pin") || "";

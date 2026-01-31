@@ -4,10 +4,18 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function CoachMatchPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <CoachMatchContent />
+    </Suspense>
+  );
+}
+
+function CoachMatchContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const matchId = params.id as Id<"matches">;

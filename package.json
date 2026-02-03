@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "predev": "convex dev --until-success",
-    "postinstall": "convex dev --until-success || true"
+    "postinstall": "npx convex codegen || true"
   },
   "dependencies": {
     "convex": "^1.17.4",

@@ -392,8 +392,8 @@ function GoalModal({
     await addGoal({
       matchId: match._id,
       pin,
-      playerId: scorer as any,
-      assistPlayerId: assist as any,
+      playerId: scorer ? (scorer as any) : undefined,
+      assistPlayerId: assist ? (assist as any) : undefined,
       isOpponentGoal: isOpponent,
     });
     onClose();

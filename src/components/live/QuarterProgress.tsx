@@ -34,9 +34,10 @@ export function QuarterProgress({
         const isCurrent = quarterNumber === currentQuarter && !isFinished;
         const isFuture = quarterNumber > currentQuarter && !isFinished;
 
-        // Check if this is a halftime break position (between Q2 and Q3 for 4 quarters)
+        // Show rest indicator between the previous completed quarter and the next one
+        // currentQuarter has already advanced, so rest is between (currentQuarter - 1) and currentQuarter
         const showHalftimeIndicator =
-          quarterCount === 4 && index === 1 && isHalftime;
+          isHalftime && currentQuarter > 1 && quarterNumber === currentQuarter - 1;
 
         return (
           <div key={label} className="flex items-center gap-2">

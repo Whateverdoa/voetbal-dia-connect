@@ -3,37 +3,7 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc, Id } from "./_generated/dataModel";
-import { MutationCtx } from "./_generated/server";
-
-// Helper: Calculate minutes played and update matchPlayer
-async function recordPlayingTime(
-  ctx: MutationCtx,
-  matchPlayer: Doc<"matchPlayers">,
-  endTime: number
-): Promise<void> {
-  if (!matchPlayer.lastSubbedInAt) return;
-  
-  const minutesThisSession = (endTime - matchPlayer.lastSubbedInAt) / 60000;
-  const totalMinutes = (matchPlayer.minutesPlayed ?? 0) + minutesThisSession;
-  
-  await ctx.db.patch(matchPlayer._id, {
-    minutesPlayed: Math.round(totalMinutes * 10) / 10, // Round to 1 decimal
-    lastSubbedInAt: undefined, // Clear the timestamp
-  });
-}
-
-// Helper: Set player as on field and record start time
-async function startPlayingTime(
-  ctx: MutationCtx,
-  matchPlayerId: Id<"matchPlayers">,
-  startTime: number
-): Promise<void> {
-  await ctx.db.patch(matchPlayerId, {
-    onField: true,
-    lastSubbedInAt: startTime,
-  });
-}
+import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
 
 // Record a goal
 export const addGoal = mutation({
@@ -158,5 +128,92 @@ export const substitute = mutation({
       timestamp: now,
       createdAt: now,
     });
+  },
+});
+
+// Remove the most recent goal for a match (undo)
+export const removeLastGoal = mutation({
+  args: {
+    matchId: v.id("matches"),
+    pin: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match || match.coachPin !== args.pin) {
+      throw new Error("Invalid match or PIN");
+    }
+
+    // Find most recent goal event for this match, ordered by timestamp desc
+    const goalEvents = await ctx.db
+      .query("matchEvents")
+      .withIndex("by_match_type", (q) =>
+        q.eq("matchId", args.matchId).eq("type", "goal")
+      )
+      .collect();
+
+    if (goalEvents.length === 0) {
+      throw new Error("Geen doelpunten om ongedaan te maken");
+    }
+
+    // Get the most recent goal by timestamp
+    const lastGoal = goalEvents.reduce((latest, event) =>
+      event.timestamp > latest.timestamp ? event : latest
+    );
+
+    // Reverse the score change
+    if (lastGoal.isOpponentGoal) {
+      if (match.isHome) {
+        await ctx.db.patch(args.matchId, {
+          awayScore: Math.max(0, match.awayScore - 1),
+        });
+      } else {
+        await ctx.db.patch(args.matchId, {
+          homeScore: Math.max(0, match.homeScore - 1),
+        });
+      }
+    } else {
+      if (match.isHome) {
+        await ctx.db.patch(args.matchId, {
+          homeScore: Math.max(0, match.homeScore - 1),
+        });
+      } else {
+        await ctx.db.patch(args.matchId, {
+          awayScore: Math.max(0, match.awayScore - 1),
+        });
+      }
+    }
+
+    // Delete associated assist event if one exists
+    if (lastGoal.playerId && !lastGoal.isOpponentGoal && !lastGoal.isOwnGoal) {
+      const assistEvents = await ctx.db
+        .query("matchEvents")
+        .withIndex("by_match_type", (q) =>
+          q.eq("matchId", args.matchId).eq("type", "assist")
+        )
+        .collect();
+
+      // Find assist linked to this goal (same relatedPlayerId = goal scorer)
+      const linkedAssist = assistEvents.find(
+        (e) =>
+          e.relatedPlayerId === lastGoal.playerId &&
+          Math.abs(e.timestamp - lastGoal.timestamp) < 1000
+      );
+
+      if (linkedAssist) {
+        await ctx.db.delete(linkedAssist._id);
+      }
+    }
+
+    // Delete the goal event
+    await ctx.db.delete(lastGoal._id);
+
+    return {
+      removedGoal: {
+        isOpponentGoal: lastGoal.isOpponentGoal ?? false,
+        isOwnGoal: lastGoal.isOwnGoal ?? false,
+        playerId: lastGoal.playerId ?? null,
+        quarter: lastGoal.quarter,
+      },
+    };
   },
 });

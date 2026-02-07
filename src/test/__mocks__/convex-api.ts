@@ -38,6 +38,11 @@ export const api = {
     addPlayerToMatch: 'seed:addPlayerToMatch',
   },
   matchActions: {
+    addGoal: 'matchActions:addGoal',
     substitute: 'matchActions:substitute',
+    removeLastGoal: 'matchActions:removeLastGoal',
+    start: 'matchActions:start',
+    nextQuarter: 'matchActions:nextQuarter',
+    resumeFromHalftime: 'matchActions:resumeFromHalftime',
   },
 };

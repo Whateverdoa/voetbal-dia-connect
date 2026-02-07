@@ -11,6 +11,7 @@ export interface MatchData {
   awayScore: number;
   showLineup: boolean;
   startedAt?: number;
+  quarterStartedAt?: number;
   teamName: string;
   teamSlug: string;
   clubName: string;

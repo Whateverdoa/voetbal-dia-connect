@@ -39,6 +39,7 @@ export interface Match {
   awayScore: number;
   showLineup: boolean;
   startedAt?: number;
+  quarterStartedAt?: number;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

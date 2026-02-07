@@ -220,8 +220,6 @@ describe('PlayingTimePanel', () => {
 
     it('calculates and displays spread (max - min)', () => {
       // Use specific mock data with known spread
-      // Note: Component uses Math.min(...arr, 0) which means min is always 0 for positive values
-      // So spread = max - 0 = max
       const spreadTestData = {
         players: [
           { playerId: 'p1' as any, matchPlayerId: 'mp1' as any, name: 'Jan', number: 10, minutesPlayed: 10, onField: true, isKeeper: false },
@@ -233,10 +231,10 @@ describe('PlayingTimePanel', () => {
 
       render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
 
-      // Due to Math.min(...arr, 0), min is 0, so spread = max - 0 = 10
+      // Spread = max(10) - min(5) = 5
       const verschilLabel = screen.getByText('Verschil');
       const verschilSection = verschilLabel.parentElement;
-      expect(verschilSection).toHaveTextContent('10 min');
+      expect(verschilSection).toHaveTextContent('5 min');
     });
   });
 

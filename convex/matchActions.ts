@@ -6,11 +6,10 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc } from "./_generated/dataModel";
-import { MutationCtx } from "./_generated/server";
+import { recordPlayingTime } from "./playingTimeHelpers";
 
 // Re-export from split modules for backwards compatibility
-export { addGoal, substitute } from "./matchEvents";
+export { addGoal, substitute, removeLastGoal } from "./matchEvents";
 export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLineup";
 
 // Generate a random 6-char code
@@ -26,22 +25,6 @@ function generatePublicCode(): string {
 // Maximum retry attempts for generating unique public code
 const MAX_CODE_GENERATION_ATTEMPTS = 20;
 
-// Helper: Calculate minutes played and update matchPlayer
-async function recordPlayingTime(
-  ctx: MutationCtx,
-  matchPlayer: Doc<"matchPlayers">,
-  endTime: number
-): Promise<void> {
-  if (!matchPlayer.lastSubbedInAt) return;
-  
-  const minutesThisSession = (endTime - matchPlayer.lastSubbedInAt) / 60000;
-  const totalMinutes = (matchPlayer.minutesPlayed ?? 0) + minutesThisSession;
-  
-  await ctx.db.patch(matchPlayer._id, {
-    minutesPlayed: Math.round(totalMinutes * 10) / 10,
-    lastSubbedInAt: undefined,
-  });
-}
 
 // Create a new match
 export const create = mutation({
@@ -130,6 +113,7 @@ export const start = mutation({
       status: "live",
       currentQuarter: 1,
       startedAt: now,
+      quarterStartedAt: now,
     });
 
     // Set lastSubbedInAt for all players currently on field
@@ -192,33 +176,17 @@ export const nextQuarter = mutation({
       // Match finished
       await ctx.db.patch(args.matchId, {
         status: "finished",
+        quarterStartedAt: undefined,
         finishedAt: now,
       });
     } else {
-      // Halftime?
-      const isHalftime = match.quarterCount === 4 && nextQ === 3;
-      
+      // All inter-quarter transitions go to rest ("halftime")
+      // Coach must manually start the next quarter
       await ctx.db.patch(args.matchId, {
-        status: isHalftime ? "halftime" : "live",
+        status: "halftime",
         currentQuarter: nextQ,
+        quarterStartedAt: undefined,
       });
-
-      if (!isHalftime) {
-        // Start new quarter - reset lastSubbedInAt for on-field players
-        for (const mp of matchPlayers) {
-          if (mp.onField) {
-            await ctx.db.patch(mp._id, { lastSubbedInAt: now });
-          }
-        }
-
-        await ctx.db.insert("matchEvents", {
-          matchId: args.matchId,
-          type: "quarter_start",
-          quarter: nextQ,
-          timestamp: now,
-          createdAt: now,
-        });
-      }
     }
   },
 });
@@ -234,7 +202,10 @@ export const resumeFromHalftime = mutation({
 
     const now = Date.now();
 
-    await ctx.db.patch(args.matchId, { status: "live" });
+    await ctx.db.patch(args.matchId, {
+      status: "live",
+      quarterStartedAt: now,
+    });
 
     // Restart time tracking for on-field players
     const matchPlayers = await ctx.db

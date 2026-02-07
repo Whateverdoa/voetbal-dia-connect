@@ -81,6 +81,7 @@ export const getByPublicCode = query({
       awayScore: match.awayScore,
       showLineup: match.showLineup,
       startedAt: match.startedAt,
+      quarterStartedAt: match.quarterStartedAt,
       teamName: team?.name ?? "Team",
       teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",

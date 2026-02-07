@@ -107,6 +107,14 @@ Simple PIN-based (no user accounts):
 - **`as Id<"players">` casts in `convex/teams.ts`**: Lines ~58 and ~164 cast string keys from `Object.entries()` to `Id<"players">`. Pragmatic but bypasses type safety. Consider using typed player ID tracking from the start.
 - **`convex/seed.ts` hardcoded PIN "9999"**: The seed script uses the default dev admin PIN. This is fine for development but should never reach production seeding. Consider reading from an env var or Convex environment config.
 
+### Future Features
+
+- **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
+- **Full score editing**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match.
+- **Quarter time warning**: When elapsed time exceeds the expected quarter duration (e.g., 15 min), show a visual/audio warning to the coach. Not a hard stop, just a nudge. Useful when the coach loses track of time pitch-side.
+- **Pause/stop clock during quarter**: Allow the coach (and later the referee/"scheidsrechter" role) to pause the match clock mid-quarter for injuries, stoppages, etc. The clock would freeze and resume when the coach taps again. Requires adding `pausedAt` / `accumulatedPauseTime` fields to the match schema.
+- **Referee role ("scheidsrechter")**: A dedicated referee role (separate from coach) who controls the official match clock and can stop/start time. The coach tracks lineup/subs, the referee tracks time authoritatively.
+
 ## Subagent Workflow
 
 When working with AI subagents on this project, follow this workflow at the end of **every phase**:

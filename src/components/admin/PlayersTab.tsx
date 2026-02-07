@@ -12,6 +12,8 @@ interface Team {
   clubName: string;
 }
 
+const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "9999";
+
 export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(null);
   
@@ -38,6 +40,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         teamId: selectedTeamId,
         name: newName.trim(),
         number: newNumber ? parseInt(newNumber) : undefined,
+        adminPin: ADMIN_PIN,
       });
       setNewName("");
       setNewNumber("");
@@ -53,6 +56,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         playerId,
         name: editName.trim() || undefined,
         number: editNumber ? parseInt(editNumber) : undefined,
+        adminPin: ADMIN_PIN,
       });
       setEditingId(null);
       setStatus("✅ Speler bijgewerkt");
@@ -63,7 +67,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleToggleActive = async (playerId: Id<"players">, currentActive: boolean) => {
     try {
-      await updatePlayer({ playerId, active: !currentActive });
+      await updatePlayer({ playerId, active: !currentActive, adminPin: ADMIN_PIN });
       setStatus(currentActive ? "⚪ Speler inactief" : "🟢 Speler actief");
     } catch (e: any) {
       setStatus(`❌ ${e.message}`);
@@ -72,7 +76,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleDelete = async (playerId: Id<"players">) => {
     try {
-      await deletePlayer({ playerId });
+      await deletePlayer({ playerId, adminPin: ADMIN_PIN });
       setDeleteConfirm(null);
       setStatus("✅ Speler verwijderd");
     } catch (e: any) {

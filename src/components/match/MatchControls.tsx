@@ -32,7 +32,7 @@ export function MatchControls({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleMutation = async (action: () => Promise<void>, actionName: string) => {
+  const handleMutation = async (action: () => Promise<unknown>, actionName: string) => {
     setIsLoading(true);
     setError(null);
     try {

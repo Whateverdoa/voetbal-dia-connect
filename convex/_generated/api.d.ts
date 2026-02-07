@@ -9,8 +9,20 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as adminAuth from "../adminAuth.js";
+import type * as adminClubs from "../adminClubs.js";
+import type * as adminCoaches from "../adminCoaches.js";
+import type * as adminPlayers from "../adminPlayers.js";
+import type * as adminSeed from "../adminSeed.js";
+import type * as adminTeams from "../adminTeams.js";
 import type * as matchActions from "../matchActions.js";
+import type * as matchEvents from "../matchEvents.js";
+import type * as matchLineup from "../matchLineup.js";
+import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
+import type * as seed from "../seed.js";
+import type * as stats from "../stats.js";
+import type * as teams from "../teams.js";
 
 import type {
   ApiFromModules,
@@ -20,8 +32,20 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  adminAuth: typeof adminAuth;
+  adminClubs: typeof adminClubs;
+  adminCoaches: typeof adminCoaches;
+  adminPlayers: typeof adminPlayers;
+  adminSeed: typeof adminSeed;
+  adminTeams: typeof adminTeams;
   matchActions: typeof matchActions;
+  matchEvents: typeof matchEvents;
+  matchLineup: typeof matchLineup;
+  matchQueries: typeof matchQueries;
   matches: typeof matches;
+  seed: typeof seed;
+  stats: typeof stats;
+  teams: typeof teams;
 }>;
 
 /**

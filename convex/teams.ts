@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 // Get team by slug (public query)
@@ -55,7 +56,7 @@ export const getMatchHistory = query({
         const playerIds = [...new Set(ourGoals.map((e) => e.playerId).filter(Boolean))];
 
         const players = await Promise.all(
-          playerIds.map((id) => ctx.db.get(id as string))
+          playerIds.map((id) => ctx.db.get(id as Id<"players">))
         );
         const playerMap = Object.fromEntries(
           players.filter(Boolean).map((p) => [p!._id, p!.name])
@@ -160,7 +161,7 @@ export const getSeasonStats = query({
       .map(([id]) => id);
 
     const topScorerPlayers = await Promise.all(
-      topScorerIds.map((id) => ctx.db.get(id as string))
+      topScorerIds.map((id) => ctx.db.get(id as Id<"players">))
     );
 
     const topScorers = topScorerIds

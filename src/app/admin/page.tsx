@@ -227,7 +227,7 @@ function SetupTab() {
 
   const handleSeed = async () => {
     try {
-      const result = await seedDIA();
+      const result = await seedDIA({ adminPin: ADMIN_PIN });
       setMessage(
         `✅ ${result.message}. Default PIN: ${result.defaultPin || "1234"}`
       );
@@ -238,7 +238,7 @@ function SetupTab() {
 
   const handleSeedMatches = async () => {
     try {
-      const result = await seedMatches();
+      const result = await seedMatches({ adminPin: ADMIN_PIN });
       setMessage(
         `✅ ${result.message}\n${result.matches
           .map(

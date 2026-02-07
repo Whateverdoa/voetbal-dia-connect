@@ -1,5 +1,5 @@
 import { action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 // Dutch first names for realistic player data
@@ -73,9 +73,11 @@ export const init = action({
     }
 
     // ============ CREATE CLUB ============
+    const seedAdminPin = "9999"; // Default dev admin PIN
     const clubId = await ctx.runMutation(api.admin.createClub, {
       name: "DIA",
       slug: "dia",
+      adminPin: seedAdminPin,
     });
 
     // ============ CREATE TEAMS ============
@@ -94,6 +96,7 @@ export const init = action({
         clubId,
         name: config.name,
         slug: config.slug,
+        adminPin: seedAdminPin,
       });
 
       teamMap[config.slug] = teamId;
@@ -103,6 +106,7 @@ export const init = action({
       await ctx.runMutation(api.admin.createPlayers, {
         teamId,
         players,
+        adminPin: seedAdminPin,
       });
 
       teams.push({ id: teamId, name: config.name, playerCount: players.length });
@@ -114,6 +118,7 @@ export const init = action({
       name: "Coach Mike",
       pin: "1234",
       teamIds: [teamMap["jo12-1"]],
+      adminPin: seedAdminPin,
     });
 
     // Coach Lisa: PIN 5678, manages JO11-1 and JO13-2
@@ -121,6 +126,7 @@ export const init = action({
       name: "Coach Lisa",
       pin: "5678",
       teamIds: [teamMap["jo11-1"], teamMap["jo13-2"]],
+      adminPin: seedAdminPin,
     });
 
     const coaches = [
@@ -134,7 +140,7 @@ export const init = action({
     const publicCode = generatePublicCode();
 
     // Use internal mutation for match creation (not exposed in admin.ts)
-    const matchId = await ctx.runMutation(api.seed.createSeedMatch, {
+    const matchId = await ctx.runMutation(internal.seed.createSeedMatch, {
       teamId: jo12TeamId,
       publicCode,
       coachPin: "1234",
@@ -148,7 +154,7 @@ export const init = action({
     });
 
     for (const player of jo12Players) {
-      await ctx.runMutation(api.seed.addPlayerToMatch, {
+      await ctx.runMutation(internal.seed.addPlayerToMatch, {
         matchId,
         playerId: player._id,
       });

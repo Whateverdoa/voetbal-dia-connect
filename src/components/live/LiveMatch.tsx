@@ -14,7 +14,7 @@ import {
 import { LineupSection } from "./LineupSection";
 import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
-import type { MatchData, MatchEvent } from "./types";
+import type { MatchData, MatchEvent, LineupPlayer } from "./types";
 
 interface LiveMatchProps {
   match: MatchData;
@@ -166,7 +166,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
 
         {/* Lineup section */}
         {match.showLineup && match.lineup && (
-          <LineupSection lineup={match.lineup} teamName={match.teamName} />
+          <LineupSection lineup={match.lineup.filter((p): p is LineupPlayer => p !== null)} teamName={match.teamName} />
         )}
 
         {/* Goals section */}

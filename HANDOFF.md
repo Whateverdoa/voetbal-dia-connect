@@ -145,6 +145,41 @@ npm run build        # Production build
 npx convex dev       # Convex dashboard + sync
 ```
 
+## Pre-Push Verification
+
+**Always verify locally before pushing to GitHub.** Vercel deploys automatically on push, so a broken push means a broken deploy.
+
+1. **Run the build locally first:**
+   ```bash
+   npm run build
+   ```
+   This runs the exact same TypeScript type-checking and compilation that Vercel does. Fix any errors before proceeding.
+
+2. **Test the app locally** (if build passes):
+   ```bash
+   npm run dev
+   ```
+   Spot-check key flows: coach login, match creation, live view.
+
+3. **Wait for human approval before pushing.**
+   Agents (subagents, AI assistants) must **never** push to GitHub on their own. Only the human operator decides when to push. This prevents conflicting pushes, broken deploys, and race conditions when multiple agents are working in parallel.
+
+4. **Only push when the human says go:**
+   ```bash
+   git add .
+   git commit -m "description of changes"
+   git push
+   ```
+
+### Git Rules for Agents
+
+- **Commits are fine** — agents may freely commit to the local branch.
+- **Pushes require human approval** — never run `git push` unless the human explicitly asks for it.
+- **No force pushes** — never use `git push --force` or `git push --force-with-lease` unless the human explicitly requests it.
+- **Coordinate via commits** — when multiple agents work in parallel, each should commit their changes locally. The human merges and resolves any conflicts before pushing.
+
+This avoids wasted Vercel build minutes, broken deployments, and conflicting pushes between agents.
+
 ## Environment
 
 Requires `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` — set up via `npx convex init` or `npx convex deploy`.

@@ -1,5 +1,14 @@
+/**
+ * Match queries - public and coach views
+ * 
+ * Playing time queries are in matchQueries.ts
+ */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc, Id } from "./_generated/dataModel";
+
+// Re-export from split module for backwards compatibility
+export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
 
 // Get match by public code (for spectators)
 export const getByPublicCode = query({
@@ -12,17 +21,14 @@ export const getByPublicCode = query({
     
     if (!match) return null;
 
-    // Get team info
     const team = await ctx.db.get(match.teamId);
     const club = team ? await ctx.db.get(team.clubId) : null;
 
-    // Get events for timeline
     const events = await ctx.db
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
       .collect();
 
-    // Get player names for events
     const playerIds = new Set<string>();
     events.forEach((e) => {
       if (e.playerId) playerIds.add(e.playerId);
@@ -30,20 +36,18 @@ export const getByPublicCode = query({
     });
 
     const players = await Promise.all(
-      Array.from(playerIds).map((id) => ctx.db.get(id as any))
+      Array.from(playerIds).map((id) => ctx.db.get(id as Id<"players">))
     );
     const playerMap = Object.fromEntries(
-      players.filter(Boolean).map((p: any) => [p._id, p.name])
+      players.filter((p): p is Doc<"players"> => p !== null).map((p) => [p._id, p.name])
     );
 
-    // Enrich events with player names
     const enrichedEvents = events.map((e) => ({
       ...e,
       playerName: e.playerId ? playerMap[e.playerId] : undefined,
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
     }));
 
-    // If showLineup, get lineup info
     let lineup = null;
     if (match.showLineup) {
       const matchPlayers = await ctx.db
@@ -63,7 +67,6 @@ export const getByPublicCode = query({
           } : null;
         })
       );
-
       lineup = lineupPlayers.filter(Boolean);
     }
 
@@ -79,6 +82,7 @@ export const getByPublicCode = query({
       showLineup: match.showLineup,
       startedAt: match.startedAt,
       teamName: team?.name ?? "Team",
+      teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",
       events: enrichedEvents,
       lineup,
@@ -93,9 +97,9 @@ export const getForCoach = query({
     const match = await ctx.db.get(args.matchId);
     if (!match || match.coachPin !== args.pin) return null;
 
+    const now = Date.now();
     const team = await ctx.db.get(match.teamId);
     
-    // Get all match players
     const matchPlayers = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
@@ -104,34 +108,40 @@ export const getForCoach = query({
     const players = await Promise.all(
       matchPlayers.map(async (mp) => {
         const player = await ctx.db.get(mp.playerId);
-        return player ? {
+        if (!player) return null;
+
+        let totalMinutes = mp.minutesPlayed ?? 0;
+        if (mp.onField && mp.lastSubbedInAt && match.status === "live") {
+          totalMinutes += (now - mp.lastSubbedInAt) / 60000;
+        }
+
+        return {
           matchPlayerId: mp._id,
           playerId: mp.playerId,
           name: player.name,
           number: player.number,
           onField: mp.onField,
           isKeeper: mp.isKeeper,
-        } : null;
+          minutesPlayed: Math.round(totalMinutes * 10) / 10,
+        };
       })
     );
 
-    // Get events
     const events = await ctx.db
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
       .collect();
 
-    // Player map for events
     const allPlayerIds = new Set<string>();
     events.forEach((e) => {
       if (e.playerId) allPlayerIds.add(e.playerId);
       if (e.relatedPlayerId) allPlayerIds.add(e.relatedPlayerId);
     });
     const allPlayers = await Promise.all(
-      Array.from(allPlayerIds).map((id) => ctx.db.get(id as any))
+      Array.from(allPlayerIds).map((id) => ctx.db.get(id as Id<"players">))
     );
     const playerMap = Object.fromEntries(
-      allPlayers.filter(Boolean).map((p: any) => [p._id, p.name])
+      allPlayers.filter((p): p is Doc<"players"> => p !== null).map((p) => [p._id, p.name])
     );
 
     const enrichedEvents = events.map((e) => ({
@@ -172,12 +182,7 @@ export const verifyCoachPin = query({
 
     if (!coach) return null;
 
-    // Get teams
-    const teams = await Promise.all(
-      coach.teamIds.map((id) => ctx.db.get(id))
-    );
-
-    // Get recent matches for these teams
+    const teams = await Promise.all(coach.teamIds.map((id) => ctx.db.get(id)));
     const matches = await Promise.all(
       coach.teamIds.map(async (teamId) => {
         return await ctx.db

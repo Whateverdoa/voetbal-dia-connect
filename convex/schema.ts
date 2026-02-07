@@ -17,7 +17,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_club", ["clubId"])
-    .index("by_slug", ["clubId", "slug"]),
+    .index("by_slug", ["clubId", "slug"])
+    .index("by_slug_only", ["slug"]), // For getBySlug query
 
   // Coaches can manage one or more teams
   coaches: defineTable({
@@ -80,10 +81,14 @@ export default defineSchema({
     playerId: v.id("players"),
     isKeeper: v.boolean(),
     onField: v.boolean(), // Currently on field?
+    // Playing time tracking
+    minutesPlayed: v.optional(v.number()), // Total minutes played this match
+    lastSubbedInAt: v.optional(v.number()), // Timestamp when player went on field
     createdAt: v.number(),
   })
     .index("by_match", ["matchId"])
-    .index("by_match_player", ["matchId", "playerId"]),
+    .index("by_match_player", ["matchId", "playerId"])
+    .index("by_player", ["playerId"]), // For getPlayerStats query
 
   // Events during match (goals, assists, subs)
   matchEvents: defineTable({

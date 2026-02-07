@@ -1,5 +1,17 @@
+/**
+ * Match lifecycle mutations - create, start, quarters, finish
+ * 
+ * Event mutations are in matchEvents.ts
+ * Lineup mutations are in matchLineup.ts
+ */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc } from "./_generated/dataModel";
+import { MutationCtx } from "./_generated/server";
+
+// Re-export from split modules for backwards compatibility
+export { addGoal, substitute } from "./matchEvents";
+export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLineup";
 
 // Generate a random 6-char code
 function generatePublicCode(): string {
@@ -9,6 +21,26 @@ function generatePublicCode(): string {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;
+}
+
+// Maximum retry attempts for generating unique public code
+const MAX_CODE_GENERATION_ATTEMPTS = 20;
+
+// Helper: Calculate minutes played and update matchPlayer
+async function recordPlayingTime(
+  ctx: MutationCtx,
+  matchPlayer: Doc<"matchPlayers">,
+  endTime: number
+): Promise<void> {
+  if (!matchPlayer.lastSubbedInAt) return;
+  
+  const minutesThisSession = (endTime - matchPlayer.lastSubbedInAt) / 60000;
+  const totalMinutes = (matchPlayer.minutesPlayed ?? 0) + minutesThisSession;
+  
+  await ctx.db.patch(matchPlayer._id, {
+    minutesPlayed: Math.round(totalMinutes * 10) / 10,
+    lastSubbedInAt: undefined,
+  });
 }
 
 // Create a new match
@@ -23,14 +55,29 @@ export const create = mutation({
     playerIds: v.array(v.id("players")),
   },
   handler: async (ctx, args) => {
-    // Generate unique public code
+    // Validate inputs
+    const trimmedOpponent = args.opponent.trim();
+    if (!trimmedOpponent) {
+      throw new Error("Tegenstander is verplicht");
+    }
+    if (args.playerIds.length === 0) {
+      throw new Error("Selecteer minimaal één speler");
+    }
+
+    // Generate unique public code with retry limit
     let publicCode = generatePublicCode();
+    let attempts = 1;
     let existing = await ctx.db
       .query("matches")
       .withIndex("by_code", (q) => q.eq("publicCode", publicCode))
       .first();
+    
     while (existing) {
+      if (attempts >= MAX_CODE_GENERATION_ATTEMPTS) {
+        throw new Error("Kon geen unieke wedstrijdcode genereren. Probeer het later opnieuw.");
+      }
       publicCode = generatePublicCode();
+      attempts++;
       existing = await ctx.db
         .query("matches")
         .withIndex("by_code", (q) => q.eq("publicCode", publicCode))
@@ -41,7 +88,7 @@ export const create = mutation({
       teamId: args.teamId,
       publicCode,
       coachPin: args.coachPin,
-      opponent: args.opponent,
+      opponent: trimmedOpponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
       status: "scheduled",
@@ -77,19 +124,33 @@ export const start = mutation({
       throw new Error("Invalid match or PIN");
     }
 
+    const now = Date.now();
+
     await ctx.db.patch(args.matchId, {
       status: "live",
       currentQuarter: 1,
-      startedAt: Date.now(),
+      startedAt: now,
     });
+
+    // Set lastSubbedInAt for all players currently on field
+    const matchPlayers = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+
+    for (const mp of matchPlayers) {
+      if (mp.onField) {
+        await ctx.db.patch(mp._id, { lastSubbedInAt: now });
+      }
+    }
 
     // Log quarter start event
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
       type: "quarter_start",
       quarter: 1,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
+      timestamp: now,
+      createdAt: now,
     });
   },
 });
@@ -103,22 +164,35 @@ export const nextQuarter = mutation({
       throw new Error("Invalid match or PIN");
     }
 
+    const now = Date.now();
     const nextQ = match.currentQuarter + 1;
+    
+    // Calculate playing time for all on-field players at quarter end
+    const matchPlayers = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+
+    for (const mp of matchPlayers) {
+      if (mp.onField && mp.lastSubbedInAt) {
+        await recordPlayingTime(ctx, mp, now);
+      }
+    }
     
     // Log quarter end
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
       type: "quarter_end",
       quarter: match.currentQuarter,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
+      timestamp: now,
+      createdAt: now,
     });
 
     if (nextQ > match.quarterCount) {
       // Match finished
       await ctx.db.patch(args.matchId, {
         status: "finished",
-        finishedAt: Date.now(),
+        finishedAt: now,
       });
     } else {
       // Halftime?
@@ -130,12 +204,19 @@ export const nextQuarter = mutation({
       });
 
       if (!isHalftime) {
+        // Start new quarter - reset lastSubbedInAt for on-field players
+        for (const mp of matchPlayers) {
+          if (mp.onField) {
+            await ctx.db.patch(mp._id, { lastSubbedInAt: now });
+          }
+        }
+
         await ctx.db.insert("matchEvents", {
           matchId: args.matchId,
           type: "quarter_start",
           quarter: nextQ,
-          timestamp: Date.now(),
-          createdAt: Date.now(),
+          timestamp: now,
+          createdAt: now,
         });
       }
     }
@@ -151,210 +232,29 @@ export const resumeFromHalftime = mutation({
       throw new Error("Invalid match or PIN");
     }
 
+    const now = Date.now();
+
     await ctx.db.patch(args.matchId, { status: "live" });
+
+    // Restart time tracking for on-field players
+    const matchPlayers = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+
+    for (const mp of matchPlayers) {
+      if (mp.onField) {
+        await ctx.db.patch(mp._id, { lastSubbedInAt: now });
+      }
+    }
 
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
       type: "quarter_start",
       quarter: match.currentQuarter,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
+      timestamp: now,
+      createdAt: now,
     });
-  },
-});
-
-// Record a goal
-export const addGoal = mutation({
-  args: {
-    matchId: v.id("matches"),
-    pin: v.string(),
-    playerId: v.optional(v.id("players")),
-    assistPlayerId: v.optional(v.id("players")),
-    isOwnGoal: v.optional(v.boolean()),
-    isOpponentGoal: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
-      throw new Error("Invalid match or PIN");
-    }
-
-    // Update score
-    if (args.isOpponentGoal) {
-      if (match.isHome) {
-        await ctx.db.patch(args.matchId, { awayScore: match.awayScore + 1 });
-      } else {
-        await ctx.db.patch(args.matchId, { homeScore: match.homeScore + 1 });
-      }
-    } else {
-      if (match.isHome) {
-        await ctx.db.patch(args.matchId, { homeScore: match.homeScore + 1 });
-      } else {
-        await ctx.db.patch(args.matchId, { awayScore: match.awayScore + 1 });
-      }
-    }
-
-    // Log goal event
-    await ctx.db.insert("matchEvents", {
-      matchId: args.matchId,
-      type: "goal",
-      playerId: args.playerId,
-      relatedPlayerId: args.assistPlayerId,
-      quarter: match.currentQuarter,
-      isOwnGoal: args.isOwnGoal,
-      isOpponentGoal: args.isOpponentGoal,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
-    });
-
-    // Log assist if provided
-    if (args.assistPlayerId && !args.isOpponentGoal && !args.isOwnGoal) {
-      await ctx.db.insert("matchEvents", {
-        matchId: args.matchId,
-        type: "assist",
-        playerId: args.assistPlayerId,
-        relatedPlayerId: args.playerId,
-        quarter: match.currentQuarter,
-        timestamp: Date.now(),
-        createdAt: Date.now(),
-      });
-    }
-  },
-});
-
-// Substitution
-export const substitute = mutation({
-  args: {
-    matchId: v.id("matches"),
-    pin: v.string(),
-    playerOutId: v.id("players"),
-    playerInId: v.id("players"),
-  },
-  handler: async (ctx, args) => {
-    const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
-      throw new Error("Invalid match or PIN");
-    }
-
-    // Find match players
-    const mpOut = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerOutId)
-      )
-      .first();
-
-    const mpIn = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerInId)
-      )
-      .first();
-
-    if (mpOut) {
-      await ctx.db.patch(mpOut._id, { onField: false });
-    }
-    if (mpIn) {
-      await ctx.db.patch(mpIn._id, { onField: true });
-    }
-
-    // Log events
-    await ctx.db.insert("matchEvents", {
-      matchId: args.matchId,
-      type: "sub_out",
-      playerId: args.playerOutId,
-      relatedPlayerId: args.playerInId,
-      quarter: match.currentQuarter,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
-    });
-
-    await ctx.db.insert("matchEvents", {
-      matchId: args.matchId,
-      type: "sub_in",
-      playerId: args.playerInId,
-      relatedPlayerId: args.playerOutId,
-      quarter: match.currentQuarter,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
-    });
-  },
-});
-
-// Toggle player on/off field
-export const togglePlayerOnField = mutation({
-  args: {
-    matchId: v.id("matches"),
-    pin: v.string(),
-    playerId: v.id("players"),
-  },
-  handler: async (ctx, args) => {
-    const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
-      throw new Error("Invalid match or PIN");
-    }
-
-    const mp = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerId)
-      )
-      .first();
-
-    if (mp) {
-      await ctx.db.patch(mp._id, { onField: !mp.onField });
-    }
-  },
-});
-
-// Toggle keeper status
-export const toggleKeeper = mutation({
-  args: {
-    matchId: v.id("matches"),
-    pin: v.string(),
-    playerId: v.id("players"),
-  },
-  handler: async (ctx, args) => {
-    const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
-      throw new Error("Invalid match or PIN");
-    }
-
-    const mp = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerId)
-      )
-      .first();
-
-    if (mp) {
-      // Remove keeper from others first
-      const allMps = await ctx.db
-        .query("matchPlayers")
-        .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
-        .collect();
-      
-      for (const other of allMps) {
-        if (other.isKeeper && other._id !== mp._id) {
-          await ctx.db.patch(other._id, { isKeeper: false });
-        }
-      }
-
-      await ctx.db.patch(mp._id, { isKeeper: !mp.isKeeper });
-    }
-  },
-});
-
-// Toggle public lineup visibility
-export const toggleShowLineup = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
-  handler: async (ctx, args) => {
-    const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
-      throw new Error("Invalid match or PIN");
-    }
-
-    await ctx.db.patch(args.matchId, { showLineup: !match.showLineup });
   },
 });
 

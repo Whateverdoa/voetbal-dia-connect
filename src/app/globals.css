@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-dia-green: #00843D;
+  /* DIA brand colors - Dutch football club aesthetic */
+  --color-dia-green: #1B5E20;
+  --color-dia-green-light: #2E7D32;
+  --color-dia-green-dark: #0D3D14;
   --color-dia-white: #FFFFFF;
 }
 
 :root {
-  --dia-green: #00843D;
+  /* Legacy CSS variable for backwards compatibility */
+  --dia-green: #1B5E20;
 }
 
 body {
@@ -21,6 +25,17 @@ body {
 
 .score-pulse {
   animation: pulse-score 0.3s ease-in-out;
+}
+
+/* Shake animation for invalid PIN */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
 }
 
 /* Event timeline */

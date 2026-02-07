@@ -1,15 +1,30 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
+import clsx from "clsx";
+import {
+  ScoreDisplay,
+  MatchControls,
+  GoalModal,
+  SubstitutionPanel,
+  PlayerList,
+  EventTimeline,
+  LineupToggle,
+  PlayingTimePanel,
+  SubstitutionSuggestions,
+  MatchLoadingScreen,
+  MatchErrorScreen,
+} from "@/components/match";
+import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
 
 export default function CoachMatchPage() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<MatchLoadingScreen />}>
       <CoachMatchContent />
     </Suspense>
   );
@@ -21,241 +36,215 @@ function CoachMatchContent() {
   const matchId = params.id as Id<"matches">;
   const pin = searchParams.get("pin") || "";
 
+  // Track connection state for visibility change handling
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const lastDataRef = useRef<typeof match>(undefined);
+
   const match = useQuery(api.matches.getForCoach, { matchId, pin });
 
+  // Handle visibility change (mobile tab sleep/wake)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Tab became visible - check if we need to show reconnecting state
+        if (lastDataRef.current !== undefined && match === undefined) {
+          setIsReconnecting(true);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [match]);
+
+  // Update refs and clear reconnecting state when data arrives
+  useEffect(() => {
+    if (match !== undefined) {
+      lastDataRef.current = match;
+      setIsReconnecting(false);
+    }
+  }, [match]);
+
   if (match === undefined) {
-    return <LoadingScreen />;
+    return <MatchLoadingScreen isReconnecting={isReconnecting} />;
   }
 
   if (match === null) {
-    return <ErrorScreen message="Wedstrijd niet gevonden of ongeldige PIN" />;
+    return (
+      <MatchErrorScreen
+        message="Wedstrijd niet gevonden of ongeldige PIN"
+        backHref={`/coach?pin=${pin}`}
+      />
+    );
   }
 
-  return <MatchControl match={match} pin={pin} />;
+  // Type the match data properly
+  const typedMatch: Match = {
+    ...match,
+    players: match.players as MatchPlayer[],
+    events: match.events as MatchEvent[],
+  };
+
+  return <MatchControlPanel match={typedMatch} pin={pin} />;
 }
 
-function LoadingScreen() {
-  return (
-    <main className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-8 h-8 border-4 border-dia-green border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="mt-4 text-gray-600">Laden...</p>
-      </div>
-    </main>
-  );
-}
+type ViewTab = "opstelling" | "speeltijd";
 
-function ErrorScreen({ message }: { message: string }) {
-  return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="text-center">
-        <p className="text-red-500 mb-4">{message}</p>
-        <Link href="/coach" className="text-dia-green hover:underline">
-          ← Terug naar dashboard
-        </Link>
-      </div>
-    </main>
-  );
-}
-
-function MatchControl({ match, pin }: { match: any; pin: string }) {
+function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<ViewTab>("opstelling");
+  const [isConnected, setIsConnected] = useState(true);
+  const lastUpdateRef = useRef(Date.now());
 
-  const startMatch = useMutation(api.matchActions.start);
-  const nextQuarter = useMutation(api.matchActions.nextQuarter);
-  const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
-  const toggleLineup = useMutation(api.matchActions.toggleShowLineup);
-  const toggleOnField = useMutation(api.matchActions.togglePlayerOnField);
-  const toggleKeeper = useMutation(api.matchActions.toggleKeeper);
+  // Track connection state based on data freshness
+  useEffect(() => {
+    lastUpdateRef.current = Date.now();
+    setIsConnected(true);
+  }, [match]);
 
-  const isLive = match.status === "live";
-  const isHalftime = match.status === "halftime";
-  const isFinished = match.status === "finished";
-  const isScheduled = match.status === "scheduled" || match.status === "lineup";
+  // Check for stale data periodically during live matches
+  useEffect(() => {
+    if (match.status !== "live") return;
 
-  const playersOnField = match.players.filter((p: any) => p.onField);
-  const playersOnBench = match.players.filter((p: any) => !p.onField);
+    const checkConnection = () => {
+      const timeSinceUpdate = Date.now() - lastUpdateRef.current;
+      // If no updates for 30 seconds during live match, show warning
+      if (timeSinceUpdate > 30000) {
+        setIsConnected(false);
+      }
+    };
+
+    const interval = setInterval(checkConnection, 10000);
+    return () => clearInterval(interval);
+  }, [match.status]);
+
+  const playersOnField = match.players.filter((p) => p.onField);
+  const playersOnBench = match.players.filter((p) => !p.onField);
+
+  const isLive = match.status === "live" || match.status === "halftime";
 
   return (
-    <main className="min-h-screen pb-24">
-      {/* Header */}
-      <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex justify-between items-center mb-2">
-            <Link href={`/coach?pin=${pin}`} className="text-sm opacity-75 hover:opacity-100">
-              ← Terug
-            </Link>
-            <span className="text-sm font-mono bg-white/20 px-2 py-1 rounded">
-              {match.publicCode}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm opacity-75">{match.teamName}</p>
-              <p className="text-xl font-bold">
-                {match.isHome ? "vs" : "@"} {match.opponent}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-4xl font-bold">
-                {match.homeScore} - {match.awayScore}
-              </p>
-              {isLive && (
-                <p className="text-sm">Kwart {match.currentQuarter}</p>
-              )}
-              {isHalftime && <p className="text-sm">Rust</p>}
-              {isFinished && <p className="text-sm">Afgelopen</p>}
-            </div>
+    <main className="min-h-screen bg-gray-100 pb-8">
+      {/* Back navigation - sticky */}
+      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <Link
+            href={`/coach?pin=${pin}`}
+            className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 min-h-[44px] px-2 -ml-2"
+          >
+            ← Terug
+          </Link>
+          <div className="flex items-center gap-2">
+            {!isConnected && (
+              <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-1 rounded-full">
+                <span className="w-2 h-2 bg-white rounded-full" />
+                Verbinding verbroken
+              </span>
+            )}
+            <span className="text-xs opacity-60">Coach modus</span>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        {/* Match controls */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-semibold mb-3">Wedstrijd besturing</h2>
-          
-          {isScheduled && (
-            <button
-              onClick={() => startMatch({ matchId: match._id, pin })}
-              className="w-full py-3 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700"
-            >
-              Start wedstrijd
-            </button>
-          )}
+      {/* Score display - always visible at top */}
+      <ScoreDisplay
+        homeScore={match.homeScore}
+        awayScore={match.awayScore}
+        teamName={match.teamName}
+        opponent={match.opponent}
+        isHome={match.isHome}
+        status={match.status}
+        currentQuarter={match.currentQuarter}
+        quarterCount={match.quarterCount}
+        publicCode={match.publicCode}
+      />
 
-          {isLive && (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowGoalModal(true)}
-                className="py-3 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700"
-              >
-                ⚽ Goal
-              </button>
-              <button
-                onClick={() => setShowSubModal(true)}
-                className="py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-              >
-                🔄 Wissel
-              </button>
-              <button
-                onClick={() => nextQuarter({ matchId: match._id, pin })}
-                className="col-span-2 py-3 border-2 border-gray-300 font-semibold rounded-lg hover:bg-gray-50"
-              >
-                {match.currentQuarter >= match.quarterCount
-                  ? "Einde wedstrijd"
-                  : `Einde kwart ${match.currentQuarter}`}
-              </button>
-            </div>
-          )}
+      {/* Main content */}
+      <div className="max-w-2xl mx-auto p-4 space-y-4">
+        {/* Match controls - most important, at top */}
+        <MatchControls
+          matchId={match._id}
+          pin={pin}
+          status={match.status}
+          currentQuarter={match.currentQuarter}
+          quarterCount={match.quarterCount}
+          onGoalClick={() => setShowGoalModal(true)}
+          onSubClick={() => setShowSubModal(true)}
+        />
 
-          {isHalftime && (
-            <button
-              onClick={() => resumeHalftime({ matchId: match._id, pin })}
-              className="w-full py-3 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700"
-            >
-              Start 2e helft
-            </button>
-          )}
+        {/* Tab navigation */}
+        <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
+          <TabButton
+            active={activeTab === "opstelling"}
+            onClick={() => setActiveTab("opstelling")}
+            icon="👥"
+            label="Opstelling"
+          />
+          <TabButton
+            active={activeTab === "speeltijd"}
+            onClick={() => setActiveTab("speeltijd")}
+            icon="⏱️"
+            label="Speeltijd"
+            badge={isLive}
+          />
+        </div>
 
-          {isFinished && (
-            <p className="text-center text-gray-500">Wedstrijd is afgelopen</p>
-          )}
-        </section>
+        {/* Tab content */}
+        {activeTab === "opstelling" && (
+          <>
+            {/* Lineup visibility toggle */}
+            <LineupToggle
+              matchId={match._id}
+              pin={pin}
+              showLineup={match.showLineup}
+            />
 
-        {/* Lineup toggle */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold">Opstelling zichtbaar</h2>
-              <p className="text-sm text-gray-500">Voor publiek op live pagina</p>
-            </div>
-            <button
-              onClick={() => toggleLineup({ matchId: match._id, pin })}
-              className={`relative w-14 h-8 rounded-full transition-colors ${
-                match.showLineup ? "bg-dia-green" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  match.showLineup ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </section>
+            {/* Player lists */}
+            <PlayerList
+              matchId={match._id}
+              pin={pin}
+              playersOnField={playersOnField}
+              playersOnBench={playersOnBench}
+            />
 
-        {/* Players on field */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-semibold mb-3">
-            Op het veld ({playersOnField.length})
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
-            {playersOnField.map((player: any) => (
-              <PlayerCard
-                key={player.playerId}
-                player={player}
-                onToggleField={() =>
-                  toggleOnField({ matchId: match._id, pin, playerId: player.playerId })
-                }
-                onToggleKeeper={() =>
-                  toggleKeeper({ matchId: match._id, pin, playerId: player.playerId })
-                }
-              />
-            ))}
-          </div>
-        </section>
+            {/* Event timeline */}
+            <EventTimeline events={match.events} />
+          </>
+        )}
 
-        {/* Bench */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-semibold mb-3">Bank ({playersOnBench.length})</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {playersOnBench.map((player: any) => (
-              <PlayerCard
-                key={player.playerId}
-                player={player}
-                onToggleField={() =>
-                  toggleOnField({ matchId: match._id, pin, playerId: player.playerId })
-                }
-                onToggleKeeper={() =>
-                  toggleKeeper({ matchId: match._id, pin, playerId: player.playerId })
-                }
-                isBench
-              />
-            ))}
-          </div>
-        </section>
+        {activeTab === "speeltijd" && (
+          <>
+            {/* Substitution suggestions - prominent during live match */}
+            {isLive && (
+              <SubstitutionSuggestions matchId={match._id} pin={pin} />
+            )}
 
-        {/* Events timeline */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-semibold mb-3">Events</h2>
-          {match.events.length === 0 ? (
-            <p className="text-gray-500 text-sm">Nog geen events</p>
-          ) : (
-            <div className="space-y-2">
-              {[...match.events].reverse().map((event: any) => (
-                <EventItem key={event._id} event={event} />
-              ))}
-            </div>
-          )}
-        </section>
+            {/* Playing time panel */}
+            <PlayingTimePanel matchId={match._id} pin={pin} />
+
+            {/* Event timeline */}
+            <EventTimeline events={match.events} />
+          </>
+        )}
       </div>
 
-      {/* Goal Modal */}
+      {/* Modals */}
       {showGoalModal && (
         <GoalModal
-          match={match}
+          matchId={match._id}
           pin={pin}
+          playersOnField={playersOnField}
           onClose={() => setShowGoalModal(false)}
         />
       )}
 
-      {/* Sub Modal */}
       {showSubModal && (
-        <SubModal
-          match={match}
+        <SubstitutionPanel
+          matchId={match._id}
           pin={pin}
+          playersOnField={playersOnField}
+          playersOnBench={playersOnBench}
           onClose={() => setShowSubModal(false)}
         />
       )}
@@ -263,340 +252,31 @@ function MatchControl({ match, pin }: { match: any; pin: string }) {
   );
 }
 
-function PlayerCard({
-  player,
-  onToggleField,
-  onToggleKeeper,
-  isBench,
-}: {
-  player: any;
-  onToggleField: () => void;
-  onToggleKeeper: () => void;
-  isBench?: boolean;
-}) {
+interface TabButtonProps {
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
+  badge?: boolean;
+}
+
+function TabButton({ active, onClick, icon, label, badge }: TabButtonProps) {
   return (
-    <div
-      className={`player-card ${player.onField ? "on-field" : ""} ${
-        player.isKeeper ? "is-keeper" : ""
-      }`}
+    <button
+      onClick={onClick}
+      className={clsx(
+        "flex-1 py-3 px-4 rounded-lg font-semibold transition-all",
+        "min-h-[48px] active:scale-[0.98] flex items-center justify-center gap-2",
+        active
+          ? "bg-dia-green text-white shadow-md"
+          : "bg-transparent text-gray-600 hover:bg-gray-100"
+      )}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {player.number && (
-            <span className="w-6 h-6 bg-gray-200 rounded text-xs flex items-center justify-center font-medium">
-              {player.number}
-            </span>
-          )}
-          <span className="font-medium text-sm">{player.name}</span>
-        </div>
-        <div className="flex gap-1">
-          <button
-            onClick={onToggleKeeper}
-            className={`w-7 h-7 rounded text-xs ${
-              player.isKeeper
-                ? "bg-yellow-400 text-white"
-                : "bg-gray-100 text-gray-500"
-            }`}
-            title="Keeper"
-          >
-            🧤
-          </button>
-          <button
-            onClick={onToggleField}
-            className={`w-7 h-7 rounded text-xs ${
-              isBench
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-            title={isBench ? "Naar veld" : "Naar bank"}
-          >
-            {isBench ? "↑" : "↓"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EventItem({ event }: { event: any }) {
-  const time = new Date(event.timestamp).toLocaleTimeString("nl-NL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const icons: Record<string, string> = {
-    goal: "⚽",
-    assist: "👟",
-    sub_in: "🟢",
-    sub_out: "🔴",
-    quarter_start: "▶️",
-    quarter_end: "⏸️",
-    yellow_card: "🟨",
-    red_card: "🟥",
-  };
-
-  let text = "";
-  switch (event.type) {
-    case "goal":
-      text = event.isOpponentGoal
-        ? "Tegendoelpunt"
-        : event.isOwnGoal
-        ? `Eigen goal ${event.playerName || ""}`
-        : `Goal ${event.playerName || ""}`;
-      break;
-    case "assist":
-      text = `Assist ${event.playerName || ""}`;
-      break;
-    case "sub_in":
-      text = `${event.playerName} erin`;
-      break;
-    case "sub_out":
-      text = `${event.playerName} eruit`;
-      break;
-    case "quarter_start":
-      text = `Kwart ${event.quarter} gestart`;
-      break;
-    case "quarter_end":
-      text = `Kwart ${event.quarter} afgelopen`;
-      break;
-    default:
-      text = event.type;
-  }
-
-  return (
-    <div className="flex items-center gap-3 text-sm py-1 border-b border-gray-100 last:border-0">
-      <span className="text-gray-400 w-12">{time}</span>
-      <span>{icons[event.type] || "•"}</span>
-      <span className="flex-1">{text}</span>
-      <span className="text-gray-400">Q{event.quarter}</span>
-    </div>
-  );
-}
-
-function GoalModal({
-  match,
-  pin,
-  onClose,
-}: {
-  match: any;
-  pin: string;
-  onClose: () => void;
-}) {
-  const [scorer, setScorer] = useState<string | null>(null);
-  const [assist, setAssist] = useState<string | null>(null);
-  const [isOpponent, setIsOpponent] = useState(false);
-
-  const addGoal = useMutation(api.matchActions.addGoal);
-
-  const handleSubmit = async () => {
-    await addGoal({
-      matchId: match._id,
-      pin,
-      playerId: scorer ? (scorer as any) : undefined,
-      assistPlayerId: assist ? (assist as any) : undefined,
-      isOpponentGoal: isOpponent,
-    });
-    onClose();
-  };
-
-  const playersOnField = match.players.filter((p: any) => p.onField);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[80vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Goal registreren</h2>
-
-        {/* Opponent goal toggle */}
-        <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg mb-4">
-          <span>Tegendoelpunt</span>
-          <button
-            onClick={() => setIsOpponent(!isOpponent)}
-            className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ${
-              isOpponent ? "bg-red-500" : "bg-gray-300"
-            }`}
-          >
-            <span
-              className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                isOpponent ? "translate-x-6" : "translate-x-0"
-              }`}
-            />
-          </button>
-        </div>
-
-        {!isOpponent && (
-          <>
-            {/* Scorer */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Scorer</label>
-              <div className="grid grid-cols-2 gap-2">
-                {playersOnField.map((p: any) => (
-                  <button
-                    key={p.playerId}
-                    onClick={() => setScorer(p.playerId)}
-                    className={`p-2 rounded border text-sm ${
-                      scorer === p.playerId
-                        ? "border-dia-green bg-green-50"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    {p.number && `#${p.number} `}
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Assist */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Assist (optioneel)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setAssist(null)}
-                  className={`p-2 rounded border text-sm ${
-                    assist === null
-                      ? "border-dia-green bg-green-50"
-                      : "border-gray-200"
-                  }`}
-                >
-                  Geen assist
-                </button>
-                {playersOnField
-                  .filter((p: any) => p.playerId !== scorer)
-                  .map((p: any) => (
-                    <button
-                      key={p.playerId}
-                      onClick={() => setAssist(p.playerId)}
-                      className={`p-2 rounded border text-sm ${
-                        assist === p.playerId
-                          ? "border-dia-green bg-green-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      {p.number && `#${p.number} `}
-                      {p.name}
-                    </button>
-                  ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
-          >
-            Annuleren
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!isOpponent && !scorer}
-            className="flex-1 py-3 bg-dia-green text-white rounded-lg font-medium disabled:bg-gray-300"
-          >
-            Registreren
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SubModal({
-  match,
-  pin,
-  onClose,
-}: {
-  match: any;
-  pin: string;
-  onClose: () => void;
-}) {
-  const [playerOut, setPlayerOut] = useState<string | null>(null);
-  const [playerIn, setPlayerIn] = useState<string | null>(null);
-
-  const substitute = useMutation(api.matchActions.substitute);
-
-  const handleSubmit = async () => {
-    if (playerOut && playerIn) {
-      await substitute({
-        matchId: match._id,
-        pin,
-        playerOutId: playerOut as any,
-        playerInId: playerIn as any,
-      });
-      onClose();
-    }
-  };
-
-  const playersOnField = match.players.filter((p: any) => p.onField);
-  const playersOnBench = match.players.filter((p: any) => !p.onField);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[80vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Wissel</h2>
-
-        {/* Player out */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">Eruit</label>
-          <div className="grid grid-cols-2 gap-2">
-            {playersOnField.map((p: any) => (
-              <button
-                key={p.playerId}
-                onClick={() => setPlayerOut(p.playerId)}
-                className={`p-2 rounded border text-sm ${
-                  playerOut === p.playerId
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-200"
-                }`}
-              >
-                {p.number && `#${p.number} `}
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Player in */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Erin</label>
-          <div className="grid grid-cols-2 gap-2">
-            {playersOnBench.map((p: any) => (
-              <button
-                key={p.playerId}
-                onClick={() => setPlayerIn(p.playerId)}
-                className={`p-2 rounded border text-sm ${
-                  playerIn === p.playerId
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200"
-                }`}
-              >
-                {p.number && `#${p.number} `}
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
-          >
-            Annuleren
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!playerOut || !playerIn}
-            className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium disabled:bg-gray-300"
-          >
-            Wisselen
-          </button>
-        </div>
-      </div>
-    </div>
+      <span className="text-lg">{icon}</span>
+      <span>{label}</span>
+      {badge && (
+        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+      )}
+    </button>
   );
 }

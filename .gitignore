@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 devoorbereiding/
+
+# Hookify local rules
+.claude/*.local.md

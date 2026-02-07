@@ -2,10 +2,12 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
+import { MatchCreatedSuccess } from "@/components/MatchCreatedSuccess";
+import { PlayerSelectionGrid } from "@/components/PlayerSelectionGrid";
 
 export default function NewMatchPage() {
   return (
@@ -28,7 +30,6 @@ function LoadingScreen() {
 
 function NewMatchContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pin = searchParams.get("pin") || "";
   const teamId = searchParams.get("teamId") as Id<"teams"> | null;
 
@@ -37,13 +38,17 @@ function NewMatchContent() {
   const [quarterCount, setQuarterCount] = useState(4);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [createdMatch, setCreatedMatch] = useState<{
+    matchId: string;
+    publicCode: string;
+  } | null>(null);
 
   const players = useQuery(
     api.admin.listPlayersByTeam,
     teamId ? { teamId } : "skip"
   );
   const team = useQuery(api.admin.getTeam, teamId ? { teamId } : "skip");
-
   const createMatch = useMutation(api.matchActions.create);
 
   const handleTogglePlayer = (playerId: string) => {
@@ -63,26 +68,69 @@ function NewMatchContent() {
     }
   };
 
+  const handleDeselectAll = () => {
+    setSelectedPlayers(new Set());
+  };
+
   const handleCreate = async () => {
-    if (!teamId || !opponent || selectedPlayers.size === 0) return;
+    // Client-side validation
+    const trimmedOpponent = opponent.trim();
+    if (!teamId) {
+      setError("Geen team geselecteerd");
+      return;
+    }
+    if (!trimmedOpponent) {
+      setError("Vul de naam van de tegenstander in");
+      return;
+    }
+    if (selectedPlayers.size === 0) {
+      setError("Selecteer minimaal één speler");
+      return;
+    }
 
     setIsCreating(true);
+    setError(null);
     try {
       const result = await createMatch({
         teamId,
-        opponent,
+        opponent: trimmedOpponent,
         isHome,
         coachPin: pin,
         quarterCount,
         playerIds: Array.from(selectedPlayers) as Id<"players">[],
       });
 
-      router.push(`/coach/match/${result.matchId}?pin=${pin}`);
-    } catch (error) {
-      console.error("Failed to create match:", error);
+      setCreatedMatch({
+        matchId: result.matchId,
+        publicCode: result.publicCode,
+      });
+    } catch (err) {
+      console.error("Failed to create match:", err);
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      // Translate common errors to Dutch
+      if (message.includes("unieke wedstrijdcode")) {
+        setError("Kon geen unieke wedstrijdcode genereren. Probeer het opnieuw.");
+      } else if (message.includes("Tegenstander")) {
+        setError(message);
+      } else if (message.includes("speler")) {
+        setError(message);
+      } else {
+        setError(`Fout bij aanmaken: ${message}`);
+      }
       setIsCreating(false);
     }
   };
+
+  if (createdMatch) {
+    return (
+      <MatchCreatedSuccess
+        publicCode={createdMatch.publicCode}
+        matchId={createdMatch.matchId}
+        opponent={opponent}
+        pin={pin}
+      />
+    );
+  }
 
   if (!teamId) {
     return (
@@ -98,157 +146,193 @@ function NewMatchContent() {
   }
 
   return (
-    <main className="min-h-screen pb-24">
+    <main className="min-h-screen pb-32">
       <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto">
           <Link
             href={`/coach?pin=${pin}`}
-            className="text-sm opacity-75 hover:opacity-100"
+            className="text-sm opacity-75 hover:opacity-100 min-h-[44px] inline-flex items-center"
           >
             ← Terug
           </Link>
-          <h1 className="text-xl font-bold mt-2">Nieuwe wedstrijd</h1>
+          <h1 className="text-xl font-bold mt-1">Nieuwe wedstrijd</h1>
           {team && <p className="text-sm opacity-75">{team.name}</p>}
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto p-4 space-y-6">
-        {/* Match details */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <h2 className="font-semibold mb-4">Wedstrijd details</h2>
+        <MatchDetailsForm
+          opponent={opponent}
+          setOpponent={setOpponent}
+          isHome={isHome}
+          setIsHome={setIsHome}
+          quarterCount={quarterCount}
+          setQuarterCount={setQuarterCount}
+        />
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Tegenstander
-              </label>
-              <input
-                type="text"
-                value={opponent}
-                onChange={(e) => setOpponent(e.target.value)}
-                placeholder="bijv. FC Groene Ster"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-dia-green focus:outline-none"
-              />
-            </div>
+        <PlayerSelectionGrid
+          players={players}
+          selectedPlayers={selectedPlayers}
+          onTogglePlayer={handleTogglePlayer}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+        />
+      </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Locatie
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsHome(true)}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    isHome
-                      ? "border-dia-green bg-green-50 text-dia-green"
-                      : "border-gray-200"
-                  }`}
-                >
-                  🏠 Thuis
-                </button>
-                <button
-                  onClick={() => setIsHome(false)}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    !isHome
-                      ? "border-dia-green bg-green-50 text-dia-green"
-                      : "border-gray-200"
-                  }`}
-                >
-                  🚌 Uit
-                </button>
-              </div>
-            </div>
+      <CreateMatchFooter
+        opponent={opponent}
+        selectedCount={selectedPlayers.size}
+        isCreating={isCreating}
+        error={error}
+        onCreate={handleCreate}
+      />
+    </main>
+  );
+}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Speelwijze
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setQuarterCount(4)}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    quarterCount === 4
-                      ? "border-dia-green bg-green-50 text-dia-green"
-                      : "border-gray-200"
-                  }`}
-                >
-                  4 kwarten
-                </button>
-                <button
-                  onClick={() => setQuarterCount(2)}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                    quarterCount === 2
-                      ? "border-dia-green bg-green-50 text-dia-green"
-                      : "border-gray-200"
-                  }`}
-                >
-                  2 helften
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+function MatchDetailsForm({
+  opponent,
+  setOpponent,
+  isHome,
+  setIsHome,
+  quarterCount,
+  setQuarterCount,
+}: {
+  opponent: string;
+  setOpponent: (value: string) => void;
+  isHome: boolean;
+  setIsHome: (value: boolean) => void;
+  quarterCount: number;
+  setQuarterCount: (value: number) => void;
+}) {
+  return (
+    <section className="bg-white rounded-xl shadow p-5">
+      <h2 className="font-semibold text-lg mb-4">Wedstrijd details</h2>
 
-        {/* Player selection */}
-        <section className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">
-              Selectie ({selectedPlayers.size} spelers)
-            </h2>
+      <div className="space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tegenstander
+          </label>
+          <input
+            type="text"
+            value={opponent}
+            onChange={(e) => setOpponent(e.target.value)}
+            placeholder="bijv. FC Groene Ster"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-dia-green focus:outline-none text-lg"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Locatie
+          </label>
+          <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={handleSelectAll}
-              className="text-sm text-dia-green hover:underline"
+              onClick={() => setIsHome(true)}
+              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
+                isHome
+                  ? "border-dia-green bg-green-50 text-dia-green"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
             >
-              Selecteer alle
+              🏠 Thuis
+            </button>
+            <button
+              onClick={() => setIsHome(false)}
+              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
+                !isHome
+                  ? "border-dia-green bg-green-50 text-dia-green"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
+            >
+              🚌 Uit
             </button>
           </div>
+        </div>
 
-          {players === undefined ? (
-            <p className="text-gray-500">Laden...</p>
-          ) : players.length === 0 ? (
-            <p className="text-gray-500">Geen spelers in dit team</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {players
-                .filter((p) => p.active)
-                .sort((a, b) => (a.number || 99) - (b.number || 99))
-                .map((player) => (
-                  <button
-                    key={player._id}
-                    onClick={() => handleTogglePlayer(player._id)}
-                    className={`p-3 rounded-lg border-2 text-left transition-colors ${
-                      selectedPlayers.has(player._id)
-                        ? "border-dia-green bg-green-50"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-6 h-6 rounded flex items-center justify-center text-xs font-medium ${
-                          selectedPlayers.has(player._id)
-                            ? "bg-dia-green text-white"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {player.number || "?"}
-                      </span>
-                      <span className="font-medium text-sm">{player.name}</span>
-                    </div>
-                  </button>
-                ))}
-            </div>
-          )}
-        </section>
-
-        {/* Create button */}
-        <button
-          onClick={handleCreate}
-          disabled={!opponent || selectedPlayers.size === 0 || isCreating}
-          className="w-full py-4 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-        >
-          {isCreating ? "Aanmaken..." : "Wedstrijd aanmaken"}
-        </button>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Speelwijze
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setQuarterCount(4)}
+              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
+                quarterCount === 4
+                  ? "border-dia-green bg-green-50 text-dia-green"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
+            >
+              4 kwarten
+            </button>
+            <button
+              onClick={() => setQuarterCount(2)}
+              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
+                quarterCount === 2
+                  ? "border-dia-green bg-green-50 text-dia-green"
+                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+              }`}
+            >
+              2 helften
+            </button>
+          </div>
+        </div>
       </div>
-    </main>
+    </section>
+  );
+}
+
+function CreateMatchFooter({
+  opponent,
+  selectedCount,
+  isCreating,
+  error,
+  onCreate,
+}: {
+  opponent: string;
+  selectedCount: number;
+  isCreating: boolean;
+  error: string | null;
+  onCreate: () => void;
+}) {
+  const canCreate = opponent.trim() && selectedCount > 0;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-pb">
+      <div className="max-w-2xl mx-auto">
+        {/* Error message */}
+        {error && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium text-center">
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={onCreate}
+          disabled={!canCreate || isCreating}
+          className="w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
+        >
+          {isCreating ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Aanmaken...
+            </span>
+          ) : (
+            "Wedstrijd aanmaken"
+          )}
+        </button>
+
+        {!canCreate && !error && (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {!opponent.trim() && selectedCount === 0
+              ? "Vul tegenstander in en selecteer spelers"
+              : !opponent.trim()
+                ? "Vul de tegenstander in"
+                : "Selecteer minimaal 1 speler"}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

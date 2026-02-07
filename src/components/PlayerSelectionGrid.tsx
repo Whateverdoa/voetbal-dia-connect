@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 interface Player {
   _id: string;
   name: string;
-  number: number | null;
+  number?: number | null;
   active: boolean;
 }
 

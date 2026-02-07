@@ -145,6 +145,31 @@ npm run build        # Production build
 npx convex dev       # Convex dashboard + sync
 ```
 
+## Pre-Push Verification
+
+**Always verify locally before pushing to GitHub.** Vercel deploys automatically on push, so a broken push means a broken deploy.
+
+1. **Run the build locally first:**
+   ```bash
+   npm run build
+   ```
+   This runs the exact same TypeScript type-checking and compilation that Vercel does. Fix any errors before proceeding.
+
+2. **Test the app locally** (if build passes):
+   ```bash
+   npm run dev
+   ```
+   Spot-check key flows: coach login, match creation, live view.
+
+3. **Only push when satisfied it really works:**
+   ```bash
+   git add .
+   git commit -m "description of changes"
+   git push
+   ```
+
+This avoids wasted Vercel build minutes and broken deployments.
+
 ## Environment
 
 Requires `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` — set up via `npx convex init` or `npx convex deploy`.

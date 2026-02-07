@@ -19,5 +19,8 @@ export { FairnessLegend } from "./FairnessLegend";
 export { MatchLoadingScreen } from "./MatchLoadingScreen";
 export { MatchErrorScreen } from "./MatchErrorScreen";
 
+// Voice assistant
+export { VoiceAssistant } from "./VoiceAssistant";
+
 // Types
 export type { Match, MatchPlayer, MatchEvent, MatchStatus } from "./types";

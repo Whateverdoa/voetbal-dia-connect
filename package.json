@@ -6,7 +6,7 @@
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "next dev --turbopack",
     "dev:backend": "convex dev",
-    "build": "next build",
+    "build": "npx convex deploy --cmd 'next build'",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",

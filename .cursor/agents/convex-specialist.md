@@ -98,11 +98,18 @@ const players = await ctx.db
 
 ## Match Status State Machine
 
-Valid transitions only:
+**Universal rest between ALL quarters.** Every quarter end goes to "halftime" (rest). Coach manually starts each next quarter.
+
 ```
-scheduled → lineup → live → halftime → live → finished
-                  ↘ (can skip halftime for 4-quarter format)
+scheduled → lineup → live (Q1) → halftime (rest)
+                                    → live (Q2) → halftime (rest)
+                                                    → live (Q3) → halftime (rest)
+                                                                    → live (Q4) → finished
 ```
+
+Key fields:
+- `quarterStartedAt: v.optional(v.number())` — set when quarter begins, cleared on rest/finish
+- `currentQuarter` — advances when entering rest (already points to the NEXT quarter)
 
 Enforce in mutations:
 ```typescript
@@ -161,15 +168,36 @@ while (await ctx.db.query("matches").withIndex("by_code", q => q.eq("publicCode"
 }
 ```
 
+## CRITICAL: Deployment — Convex + Vercel
+
+**Convex functions are NOT deployed by `next build` alone.** The build script MUST use:
+
+```json
+"build": "npx convex deploy --cmd 'next build'"
+```
+
+This deploys Convex functions (schema, queries, mutations) to production AND builds the Next.js frontend in one step. Without this, pushing to Vercel only updates the frontend while the backend stays on old code — causing silent desync bugs (new UI, old mutations).
+
+**Rules:**
+- NEVER change the build script to just `next build`
+- After ANY schema/mutation/query change, verify the build script includes `convex deploy`
+- For local development, `npx convex dev` handles live sync automatically
+- To manually deploy Convex without a frontend build: `npx convex deploy`
+- The `CONVEX_DEPLOY_KEY` environment variable must be set in Vercel for production deploys
+
 ## File Organization
 
 ```
 convex/
-  schema.ts       — Data model definitions
-  matches.ts      — Query functions (read-only)
-  matchActions.ts — Mutation functions (write)
-  admin.ts        — Admin/seed functions
-  _generated/     — Auto-generated (don't edit)
+  schema.ts              — Data model definitions
+  matches.ts             — Query functions (read-only)
+  matchActions.ts        — Mutation functions (write, match lifecycle)
+  matchEvents.ts         — Event mutations (goals, subs)
+  matchLineup.ts         — Lineup mutations (field/bench, keeper)
+  matchQueries.ts        — Playing time queries
+  playingTimeHelpers.ts  — Shared playing time helpers (DRY)
+  admin.ts               — Admin/seed functions
+  _generated/            — Auto-generated (don't edit)
 ```
 
 ## Generated Types

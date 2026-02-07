@@ -178,8 +178,8 @@ function MatchControl({ match, pin }: { match: any; pin: string }) {
               }`}
             >
               <span
-                className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  match.showLineup ? "translate-x-7" : "translate-x-1"
+                className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                  match.showLineup ? "translate-x-6" : "translate-x-0"
                 }`}
               />
             </button>
@@ -416,8 +416,8 @@ function GoalModal({
             }`}
           >
             <span
-              className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                isOpponent ? "translate-x-7" : "translate-x-1"
+              className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                isOpponent ? "translate-x-6" : "translate-x-0"
               }`}
             />
           </button>

@@ -161,14 +161,24 @@ npx convex dev       # Convex dashboard + sync
    ```
    Spot-check key flows: coach login, match creation, live view.
 
-3. **Only push when satisfied it really works:**
+3. **Wait for human approval before pushing.**
+   Agents (subagents, AI assistants) must **never** push to GitHub on their own. Only the human operator decides when to push. This prevents conflicting pushes, broken deploys, and race conditions when multiple agents are working in parallel.
+
+4. **Only push when the human says go:**
    ```bash
    git add .
    git commit -m "description of changes"
    git push
    ```
 
-This avoids wasted Vercel build minutes and broken deployments.
+### Git Rules for Agents
+
+- **Commits are fine** — agents may freely commit to the local branch.
+- **Pushes require human approval** — never run `git push` unless the human explicitly asks for it.
+- **No force pushes** — never use `git push --force` or `git push --force-with-lease` unless the human explicitly requests it.
+- **Coordinate via commits** — when multiple agents work in parallel, each should commit their changes locally. The human merges and resolves any conflicts before pushing.
+
+This avoids wasted Vercel build minutes, broken deployments, and conflicting pushes between agents.
 
 ## Environment
 

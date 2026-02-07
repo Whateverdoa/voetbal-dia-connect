@@ -161,6 +161,7 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14-1',
           slug: 'jo14-1',
+          adminPin: '9999',
         });
       });
     });
@@ -177,6 +178,7 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14 Team',
           slug: 'jo14-team', // Auto-generated from name
+          adminPin: '9999',
         });
       });
     });
@@ -280,6 +282,7 @@ describe('TeamsTab', () => {
         expect(mockUpdateTeam).toHaveBeenCalledWith({
           teamId: 'team1',
           name: 'JO11-2',
+          adminPin: '9999',
         });
       });
     });
@@ -362,7 +365,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1' });
+        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1', adminPin: '9999' });
       });
     });
 

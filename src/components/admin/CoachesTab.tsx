@@ -20,7 +20,7 @@ interface Coach {
   teams: { id: Id<"teams">; name: string }[];
 }
 
-const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "9999";
+import { ADMIN_PIN } from "@/lib/constants";
 
 export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
   const coaches = useQuery(api.admin.listCoaches) as Coach[] | undefined;
@@ -51,8 +51,9 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
       setNewPin("");
       setNewTeamIds([]);
       setStatus("✅ Coach aangemaakt");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -67,8 +68,9 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
       });
       setEditingId(null);
       setStatus("✅ Coach bijgewerkt");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -77,8 +79,9 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
       await deleteCoach({ coachId, adminPin: ADMIN_PIN });
       setDeleteConfirm(null);
       setStatus("✅ Coach verwijderd");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 

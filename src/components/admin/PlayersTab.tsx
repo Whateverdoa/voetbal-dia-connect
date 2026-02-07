@@ -12,7 +12,7 @@ interface Team {
   clubName: string;
 }
 
-const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "9999";
+import { ADMIN_PIN } from "@/lib/constants";
 
 export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(null);
@@ -45,8 +45,9 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       setNewName("");
       setNewNumber("");
       setStatus("✅ Speler toegevoegd");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -60,8 +61,9 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       });
       setEditingId(null);
       setStatus("✅ Speler bijgewerkt");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -69,8 +71,9 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
     try {
       await updatePlayer({ playerId, active: !currentActive, adminPin: ADMIN_PIN });
       setStatus(currentActive ? "⚪ Speler inactief" : "🟢 Speler actief");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -79,8 +82,9 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       await deletePlayer({ playerId, adminPin: ADMIN_PIN });
       setDeleteConfirm(null);
       setStatus("✅ Speler verwijderd");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 

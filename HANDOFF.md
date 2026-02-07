@@ -96,6 +96,17 @@ Simple PIN-based (no user accounts):
 8. **Error handling** — PIN validation, network failures
 9. **Testing** — Convex function tests, component tests
 
+## Follow-Up Items (from code review)
+
+### Critical — Security
+
+- **Admin PIN exposed in client bundle**: `NEXT_PUBLIC_ADMIN_PIN` is inlined into the browser JS bundle by Next.js. Anyone can find it in DevTools. The real security is server-side (Convex `adminAuth.ts` checks `process.env.ADMIN_PIN`), but the client-side gate is defeated. **Fix**: Replace the client-side PIN comparison in `admin/page.tsx` with a Convex query (`verifyAdminPin`) and remove the `NEXT_PUBLIC_` env var entirely. The admin UI should call the server to verify, not compare locally.
+
+### Warnings — Code Quality
+
+- **`as Id<"players">` casts in `convex/teams.ts`**: Lines ~58 and ~164 cast string keys from `Object.entries()` to `Id<"players">`. Pragmatic but bypasses type safety. Consider using typed player ID tracking from the start.
+- **`convex/seed.ts` hardcoded PIN "9999"**: The seed script uses the default dev admin PIN. This is fine for development but should never reach production seeding. Consider reading from an env var or Convex environment config.
+
 ## Subagent Workflow
 
 When working with AI subagents on this project, follow this workflow at the end of **every phase**:

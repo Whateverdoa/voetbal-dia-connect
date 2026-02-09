@@ -216,6 +216,70 @@ npx convex dev       # Convex dashboard + sync
 
 This avoids wasted Vercel build minutes, broken deployments, and conflicting pushes between agents.
 
-## Environment
+## Environment & Deployment
 
-Requires `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` — set up via `npx convex init` or `npx convex deploy`.
+### Local Development (.env.local)
+
+These are set automatically by `npx convex dev` and stored in `.env.local` (gitignored):
+
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `CONVEX_DEPLOYMENT` | `dev:your-project-123` | Points `convex dev` at your dev backend |
+| `NEXT_PUBLIC_CONVEX_URL` | `https://your-project-123.convex.cloud` | Connects React client to Convex |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | `http://localhost:3000` | Site URL for local dev |
+
+No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
+
+### Vercel Deployment (Environment Variables)
+
+**CRITICAL: `CONVEX_DEPLOY_KEY` must be scoped to Production only.**
+
+| Variable | Vercel Scope | Value Source | Purpose |
+|----------|-------------|--------------|---------|
+| `CONVEX_DEPLOY_KEY` | **Production ONLY** | Convex Dashboard → Settings → Deploy Keys → generate "Production" key (starts with `prod:`) | Authenticates `convex deploy` during production builds |
+| `NEXT_PUBLIC_CONVEX_URL` | **All Environments** | Convex Dashboard → Settings → URL | Connects the React client to Convex in every build |
+
+**Why Production only?** Vercel creates **preview** deployments for every PR/branch push. If `CONVEX_DEPLOY_KEY` is set for "All Environments", Convex CLI detects a production key in a non-production context and **refuses to deploy** with error:
+```
+✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY"
+  for a production Convex deployment. This is probably unintentional.
+```
+
+### How the Build Script Works (`scripts/build.mjs`)
+
+The build script (`npm run build`) is **not** a raw `convex deploy` command. It's a conditional script:
+
+```
+npm run build
+    │
+    ▼
+  scripts/build.mjs checks environment
+    │
+    ├─ CONVEX_DEPLOY_KEY + VERCEL_ENV=production
+    │    → npx convex deploy --cmd "next build"
+    │    → Deploys Convex functions AND builds Next.js
+    │
+    ├─ CONVEX_DEPLOY_KEY + VERCEL_ENV=preview
+    │    → npx next build (only)
+    │    → Builds Next.js using existing NEXT_PUBLIC_CONVEX_URL
+    │    → Does NOT touch Convex backend
+    │
+    └─ No CONVEX_DEPLOY_KEY (local)
+         → npx next build (only)
+```
+
+This means:
+- **Production deploys** (push to `main`) deploy Convex functions + build frontend — full atomic deploy
+- **Preview deploys** (PRs, branches) only build the frontend — safe, no backend changes
+- **Local builds** just build Next.js — use `convex dev` for backend sync
+
+### Current Vercel Setup Issue (Action Required)
+
+As of Feb 2026, `CONVEX_DEPLOY_KEY` is set for **"All Environments"** in Vercel. This needs to be changed:
+
+1. Go to Vercel → Project Settings → Environment Variables
+2. Click the `...` menu on `CONVEX_DEPLOY_KEY`
+3. Edit → change scope from "All Environments" to **"Production"** only
+4. Save
+
+This is a one-time fix. After this, preview deployments will succeed.

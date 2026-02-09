@@ -13,6 +13,7 @@ import { verifyClockPin, verifyCoachPin } from "./pinHelpers";
 export { addGoal, substitute, removeLastGoal } from "./matchEvents";
 export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLineup";
 export { pauseClock, resumeClock } from "./clockActions";
+export { adjustScore } from "./scoreActions";
 
 // Generate a random 6-char code
 function generatePublicCode(): string {

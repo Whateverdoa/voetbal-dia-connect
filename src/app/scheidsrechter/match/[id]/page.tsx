@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { MatchClock } from "@/components/match/MatchClock";
 import { RefereeClockControls } from "@/components/referee/RefereeClockControls";
+import { RefereeScoreControls } from "@/components/referee/RefereeScoreControls";
 import type { MatchStatus } from "@/components/match/types";
 
 export default function RefereeMatchPage() {
@@ -72,7 +73,9 @@ function RefereeMatchContent() {
           >
             ← Terug
           </Link>
-          <span className="text-xs opacity-60">Scheidsrechter modus</span>
+          <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+            Scheidsrechter
+          </span>
         </div>
       </nav>
 
@@ -91,8 +94,16 @@ function RefereeMatchContent() {
         accumulatedPauseTime={match.accumulatedPauseTime}
       />
 
-      {/* Clock controls */}
-      <div className="max-w-lg mx-auto p-4">
+      {/* Score controls + Clock controls */}
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+        <RefereeScoreControls
+          matchId={match.id as Id<"matches">}
+          pin={pin}
+          homeScore={match.homeScore}
+          awayScore={match.awayScore}
+          homeName={match.isHome ? match.teamName : match.opponent}
+          awayName={match.isHome ? match.opponent : match.teamName}
+        />
         <RefereeClockControls
           matchId={match.id as Id<"matches">}
           pin={pin}

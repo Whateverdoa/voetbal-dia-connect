@@ -1,6 +1,7 @@
-import { action } from "./_generated/server";
+import { action, internalMutation } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import { v } from "convex/values";
 
 // Dutch first names for realistic player data
 const DUTCH_NAMES = [
@@ -178,9 +179,6 @@ export const init = action({
 });
 
 // Internal mutation for creating seed match (not PIN-protected since it's seed data)
-import { internalMutation } from "./_generated/server";
-import { v } from "convex/values";
-
 export const createSeedMatch = internalMutation({
   args: {
     teamId: v.id("teams"),

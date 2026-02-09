@@ -6,9 +6,10 @@ import { v } from "convex/values";
 export const getBySlug = query({
   args: { teamSlug: v.string() },
   handler: async (ctx, args) => {
-    // First find the team by iterating (slug alone isn't indexed without clubId)
-    const teams = await ctx.db.query("teams").collect();
-    const team = teams.find((t) => t.slug === args.teamSlug.toLowerCase());
+    const team = await ctx.db
+      .query("teams")
+      .withIndex("by_slug_only", (q) => q.eq("slug", args.teamSlug.toLowerCase()))
+      .first();
 
     if (!team) return null;
 

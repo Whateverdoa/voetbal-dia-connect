@@ -10,7 +10,7 @@ import { PlayersTab } from "@/components/admin/PlayersTab";
 import { CoachesTab } from "@/components/admin/CoachesTab";
 import { Lock, Users, UserCog, Shield } from "lucide-react";
 
-const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "9999";
+import { ADMIN_PIN } from "@/lib/constants";
 
 type Tab = "teams" | "spelers" | "coaches" | "setup";
 
@@ -231,8 +231,9 @@ function SetupTab() {
       setMessage(
         `✅ ${result.message}. Default PIN: ${result.defaultPin || "1234"}`
       );
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setMessage(`❌ Error: ${message}`);
     }
   };
 
@@ -242,15 +243,16 @@ function SetupTab() {
       setMessage(
         `✅ ${result.message}\n${result.matches
           .map(
-            (m: any) =>
+            (m: { date: string; opponent: string; code: string; result: string | null }) =>
               `${m.date.slice(0, 10)} - ${m.opponent} (${m.code})${
                 m.result ? ` → ${m.result}` : ""
               }`
           )
           .join("\n")}`
       );
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setMessage(`❌ Error: ${message}`);
     }
   };
 

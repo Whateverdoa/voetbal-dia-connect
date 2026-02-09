@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusBadge } from "@/components/StatusBadge";
+import { MatchClock } from "./MatchClock";
 import type { MatchStatus } from "./types";
 
 interface ScoreDisplayProps {
@@ -12,6 +13,7 @@ interface ScoreDisplayProps {
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
+  quarterStartedAt?: number;
   publicCode: string;
 }
 
@@ -24,6 +26,7 @@ export function ScoreDisplay({
   status,
   currentQuarter,
   quarterCount,
+  quarterStartedAt,
   publicCode,
 }: ScoreDisplayProps) {
   const isLive = status === "live";
@@ -62,8 +65,11 @@ export function ScoreDisplay({
             {homeScore} - {awayScore}
           </div>
           {quarterLabel && (
-            <div className="mt-2 text-lg font-medium opacity-90">
-              {quarterLabel}
+            <div className="mt-2 text-lg font-medium opacity-90 flex items-center justify-center gap-2">
+              <span>{quarterLabel}</span>
+              {isLive && (
+                <MatchClock quarterStartedAt={quarterStartedAt} status={status} />
+              )}
             </div>
           )}
         </div>

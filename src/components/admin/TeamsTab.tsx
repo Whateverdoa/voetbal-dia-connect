@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check } from "lucide-react";
 
-const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "9999";
+import { ADMIN_PIN } from "@/lib/constants";
 
 export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   const teams = useQuery(
@@ -40,8 +40,9 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
       setNewName("");
       setNewSlug("");
       setStatus("✅ Team aangemaakt");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -51,8 +52,9 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
       await updateTeam({ teamId, name: editName.trim(), adminPin: ADMIN_PIN });
       setEditingId(null);
       setStatus("✅ Team bijgewerkt");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 
@@ -61,8 +63,9 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
       await deleteTeam({ teamId, adminPin: ADMIN_PIN });
       setDeleteConfirm(null);
       setStatus("✅ Team verwijderd");
-    } catch (e: any) {
-      setStatus(`❌ ${e.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      setStatus(`❌ ${message}`);
     }
   };
 

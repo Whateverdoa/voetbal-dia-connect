@@ -62,8 +62,12 @@ export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
   // Calculate stats for fairness indicators
   const totalMinutes = players.reduce((sum, p) => sum + p.minutesPlayed, 0);
   const averageMinutes = players.length > 0 ? totalMinutes / players.length : 0;
-  const maxMinutes = Math.max(...players.map((p) => p.minutesPlayed), 0);
-  const minMinutes = Math.min(...players.map((p) => p.minutesPlayed), 0);
+  const maxMinutes = players.length > 0
+    ? Math.max(...players.map((p) => p.minutesPlayed))
+    : 0;
+  const minMinutes = players.length > 0
+    ? Math.min(...players.map((p) => p.minutesPlayed))
+    : 0;
   const spread = maxMinutes - minMinutes;
 
   // Separate on-field and bench players for display

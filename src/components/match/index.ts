@@ -1,5 +1,6 @@
 // Match control components
 export { ScoreDisplay } from "./ScoreDisplay";
+export { MatchClock, formatElapsed } from "./MatchClock";
 export { MatchControls } from "./MatchControls";
 export { GoalModal } from "./GoalModal";
 export { SubstitutionPanel } from "./SubstitutionPanel";

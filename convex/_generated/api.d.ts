@@ -20,6 +20,7 @@ import type * as matchEvents from "../matchEvents.js";
 import type * as matchLineup from "../matchLineup.js";
 import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
+import type * as playingTimeHelpers from "../playingTimeHelpers.js";
 import type * as seed from "../seed.js";
 import type * as stats from "../stats.js";
 import type * as teams from "../teams.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   matchLineup: typeof matchLineup;
   matchQueries: typeof matchQueries;
   matches: typeof matches;
+  playingTimeHelpers: typeof playingTimeHelpers;
   seed: typeof seed;
   stats: typeof stats;
   teams: typeof teams;

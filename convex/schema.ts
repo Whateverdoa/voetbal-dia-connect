@@ -68,6 +68,7 @@ export default defineSchema({
     
     // Timestamps
     startedAt: v.optional(v.number()),
+    quarterStartedAt: v.optional(v.number()), // When current quarter began (for match clock)
     finishedAt: v.optional(v.number()),
     createdAt: v.number(),
   })

@@ -11,6 +11,7 @@ import {
   SoundToggle,
   useGoalNotification,
 } from "./index";
+import { MatchClock } from "@/components/match/MatchClock";
 import { LineupSection } from "./LineupSection";
 import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
@@ -90,6 +91,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   LIVE
+                  <MatchClock quarterStartedAt={match.quarterStartedAt} status={match.status} />
                 </span>
               )}
               {isHalftime && (

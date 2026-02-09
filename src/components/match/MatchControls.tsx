@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,6 +12,8 @@ interface MatchControlsProps {
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
+  homeScore: number;
+  awayScore: number;
   onGoalClick: () => void;
   onSubClick: () => void;
 }
@@ -22,15 +24,29 @@ export function MatchControls({
   status,
   currentQuarter,
   quarterCount,
+  homeScore,
+  awayScore,
   onGoalClick,
   onSubClick,
 }: MatchControlsProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
   const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
+  const removeLastGoal = useMutation(api.matchActions.removeLastGoal);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [undoConfirm, setUndoConfirm] = useState(false);
+
+  // Auto-cancel undo confirmation after 5s to prevent accidental taps
+  useEffect(() => {
+    if (!undoConfirm) return;
+    const timer = setTimeout(() => setUndoConfirm(false), 5000);
+    return () => clearTimeout(timer);
+  }, [undoConfirm]);
+
+  const totalGoals = homeScore + awayScore;
+
 
   const handleMutation = async (action: () => Promise<unknown>, actionName: string) => {
     setIsLoading(true);
@@ -58,16 +74,20 @@ export function MatchControls({
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
 
+  // Label for the resume button during rest periods
+  const getResumeLabel = () => {
+    if (quarterCount === 2) {
+      return `Start helft ${currentQuarter}`;
+    }
+    return `Start kwart ${currentQuarter}`;
+  };
+
   const getNextQuarterLabel = () => {
     if (currentQuarter >= quarterCount) {
       return "Einde wedstrijd";
     }
     if (quarterCount === 2) {
-      return currentQuarter === 1 ? "Rust" : "Einde wedstrijd";
-    }
-    // 4 quarters
-    if (currentQuarter === 2) {
-      return "Rust";
+      return `Einde helft ${currentQuarter}`;
     }
     return `Einde kwart ${currentQuarter}`;
   };
@@ -133,10 +153,27 @@ export function MatchControls({
           >
             {isLoading ? "Bezig..." : getNextQuarterLabel()}
           </button>
+
+          {/* Undo last goal — visible when goals exist */}
+          {totalGoals > 0 && (
+            <UndoGoalButton
+              isConfirming={undoConfirm}
+              isLoading={isLoading}
+              onFirstTap={() => setUndoConfirm(true)}
+              onConfirm={() => {
+                setUndoConfirm(false);
+                handleMutation(
+                  () => removeLastGoal({ matchId, pin }),
+                  "Doelpunt ongedaan maken"
+                );
+              }}
+              onCancel={() => setUndoConfirm(false)}
+            />
+          )}
         </div>
       )}
 
-      {/* Halftime: Resume button */}
+      {/* Rest period: Resume button (universal — all inter-quarter breaks) */}
       {isHalftime && (
         <button
           onClick={() => handleMutation(() => resumeHalftime({ matchId, pin }), "Hervatten")}
@@ -145,7 +182,7 @@ export function MatchControls({
                      min-h-[56px] active:scale-[0.98] transition-transform
                      hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? "Bezig..." : "Start 2e helft"}
+          {isLoading ? "Bezig..." : getResumeLabel()}
         </button>
       )}
 
@@ -156,5 +193,57 @@ export function MatchControls({
         </div>
       )}
     </section>
+  );
+}
+
+/** Two-step undo button: first tap reveals confirm/cancel, second tap executes. */
+function UndoGoalButton({
+  isConfirming,
+  isLoading,
+  onFirstTap,
+  onConfirm,
+  onCancel,
+}: {
+  isConfirming: boolean;
+  isLoading: boolean;
+  onFirstTap: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (isConfirming) {
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1 py-2 border-2 border-gray-300 text-gray-600 font-semibold 
+                     rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
+                     disabled:opacity-50"
+        >
+          Annuleren
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isLoading}
+          className="flex-1 py-2 bg-red-600 text-white font-semibold 
+                     rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
+                     disabled:opacity-50"
+        >
+          {isLoading ? "Bezig..." : "Ja, verwijder"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onFirstTap}
+      disabled={isLoading}
+      className="w-full py-2 text-red-600 border-2 border-red-200 font-medium 
+                 rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
+                 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 text-sm"
+    >
+      Laatste doelpunt ongedaan maken
+    </button>
   );
 }

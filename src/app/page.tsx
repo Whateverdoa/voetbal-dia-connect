@@ -67,6 +67,14 @@ export default function Home() {
         >
           Coach login
         </Link>
+
+        {/* Referee login */}
+        <Link
+          href="/scheidsrechter"
+          className="block w-full py-3 px-4 text-center border-2 border-gray-400 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Scheidsrechter
+        </Link>
       </div>
 
       {/* Footer */}

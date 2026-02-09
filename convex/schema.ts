@@ -66,6 +66,13 @@ export default defineSchema({
     // Public display options
     showLineup: v.boolean(), // Show lineup to public?
     
+    // Clock pause state
+    pausedAt: v.optional(v.number()), // Timestamp when clock was paused (undefined = running)
+    accumulatedPauseTime: v.optional(v.number()), // Total ms paused this quarter (resets each quarter)
+
+    // Referee (optional — when set, referee can control the clock)
+    refereePin: v.optional(v.string()), // Separate PIN for the referee role
+
     // Timestamps
     startedAt: v.optional(v.number()),
     quarterStartedAt: v.optional(v.number()), // When current quarter began (for match clock)

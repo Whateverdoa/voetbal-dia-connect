@@ -40,11 +40,18 @@ There are two repos:
 └──────────────▲──────────────────────────────┘
                │ Convex mutation (PIN-auth)
 ┌──────────────┴──────────────────────────────┐
-│ COACH (Authenticated via PIN)               │
+│ COACH (Authenticated via coach PIN)         │
 │ /coach → PIN login                          │
 │ /coach/match/[id] → manage live match       │
 │ Create match, manage lineup, score goals,   │
 │ make substitutions, control quarters        │
+└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ REFEREE (Authenticated via referee PIN)     │
+│ /scheidsrechter → code + PIN login          │
+│ /scheidsrechter/match/[id] → clock + score  │
+│ Start/pause/resume clock, edit scores,      │
+│ optional shirt number on goals              │
 └─────────────────────────────────────────────┘
 ```
 
@@ -61,9 +68,11 @@ There are two repos:
 ## Auth Model
 
 Simple PIN-based (no user accounts):
-- Coach enters 4-6 digit PIN → gets access to their teams/matches
-- Public enters 6-char match code → read-only live view
-- PIN stored on coach record, checked on every mutation
+- **Coach** enters 4-6 digit PIN → gets access to their teams/matches (lineup, goals, subs)
+- **Referee** enters match code + separate 4-6 digit referee PIN → controls clock and edits scores
+- **Public** enters 6-char match code → read-only live view
+- Coach PIN stored on coach record; referee PIN stored per match (`refereePin` field)
+- Clock/score mutations accept either coach or referee PIN via `verifyClockPin`
 
 ## Key Patterns
 
@@ -75,26 +84,26 @@ Simple PIN-based (no user accounts):
 ## Current State
 
 - Schema defined ✅
-- Queries (public view, coach view) ✅
-- Mutations (match lifecycle, goals, subs) ✅
-- Public live page ✅
-- Coach pages — need review/completion
-- Admin/setup pages — likely incomplete
-- Seed data — needed for development
+- Queries (public view, coach view, referee view) ✅
+- Mutations (match lifecycle, goals, subs, clock pause/resume, score adjust) ✅
+- Public live page ✅ (with real-time score, lineup, event timeline, pause indicator)
+- Coach dashboard ✅ (PIN login, match list, live match control panel)
+- Coach match management ✅ (lineup, substitutions, goals with player attribution, playing time tracking)
+- Referee role ✅ (separate PIN, clock control, score editing with optional shirt number)
+- Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
+- Seed data ✅ (club DIA, 3 teams, 14 players each, 2 coaches, sample match)
+- Admin pages — basic CRUD for clubs, teams, players, coaches
+- PWA — not yet
 - Tests — none yet
-- Deployment — not configured
+- Deployment — Vercel target, not fully configured
 
 ## What Needs Work
 
-1. **Coach dashboard pages** — match creation, lineup management, live control panel
-2. **Admin pages** — club/team/player/coach CRUD
-3. **Seed script** — populate dev data (club DIA, teams, players, coach PINs)
-4. **Mobile UX** — coach interface must work well on phone (used pitch-side)
-5. **PWA** — offline resilience, installable
-6. **Playing time tracking** — VOETBAL-WISSEL's core feature (fair sub rotation)
-7. **Match history / stats** — post-match summaries
-8. **Error handling** — PIN validation, network failures
-9. **Testing** — Convex function tests, component tests
+1. **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
+2. **PWA** — offline resilience, installable on home screen
+3. **Match history / stats** — post-match summaries, player stat aggregation
+4. **Testing** — Convex function tests, component tests, smoke test automation
+5. **Deployment pipeline** — Vercel CI/CD, environment management
 
 ## Follow-Up Items (from code review)
 
@@ -107,13 +116,21 @@ Simple PIN-based (no user accounts):
 - **`as Id<"players">` casts in `convex/teams.ts`**: Lines ~58 and ~164 cast string keys from `Object.entries()` to `Id<"players">`. Pragmatic but bypasses type safety. Consider using typed player ID tracking from the start.
 - **`convex/seed.ts` hardcoded PIN "9999"**: The seed script uses the default dev admin PIN. This is fine for development but should never reach production seeding. Consider reading from an env var or Convex environment config.
 
+### Completed Features
+
+- ~~**Pause/stop clock during quarter**~~: Coach and referee can pause/resume the match clock mid-quarter. Uses `pausedAt` / `accumulatedPauseTime` fields. Playing time tracking accounts for pauses. Mutations in `convex/clockActions.ts`.
+- ~~**Referee role ("scheidsrechter")**~~: Dedicated referee role with separate PIN (`refereePin` on match). Referee controls clock (start/pause/resume/end quarter) and can edit scores with optional shirt number tracking. Entry at `/scheidsrechter`, match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge. PIN managed by coach via `RefereePinManager`.
+- ~~**Referee score editing**~~: Referee can +/- scores for both teams. On "+", optional shirt number prompt logs a lightweight goal event with `note: "Rugnummer: N"` so the coach can later resolve to a named player. Mutation in `convex/scoreActions.ts`.
+
 ### Future Features
 
+- **Named login (user accounts)**: Replace anonymous PIN-only auth with name + PIN login. Users would be identifiable (e.g., "Coach Mike logged in") instead of just a PIN. Enables: personal dashboards, audit trails ("who made this change?"), multi-device sessions, and per-user preferences. Could start simple (name stored on coach record, displayed after PIN login) and evolve toward full accounts later.
+- **Cumulative clock mode**: Display game time cumulatively across quarters (e.g., 0–60 min) instead of per-quarter (0–15 min). Should be a coach setting per match. Next priority.
+- **Seed data expansion**: Additional coaches for the same team + 4 referee PINs for development testing. Currently only 2 coaches seeded.
+- **Opponent roster support**: Store rosters for both teams (not just ours). Enables sharing match data (goals, events, stats) with both teams afterwards. Shirt numbers stored by the referee in goal events can then be resolved to named players for either team.
 - **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
-- **Full score editing**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match.
+- **Full score editing (coach)**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match. (Referee score editing already implemented.)
 - **Quarter time warning**: When elapsed time exceeds the expected quarter duration (e.g., 15 min), show a visual/audio warning to the coach. Not a hard stop, just a nudge. Useful when the coach loses track of time pitch-side.
-- **Pause/stop clock during quarter**: Allow the coach (and later the referee/"scheidsrechter" role) to pause the match clock mid-quarter for injuries, stoppages, etc. The clock would freeze and resume when the coach taps again. Requires adding `pausedAt` / `accumulatedPauseTime` fields to the match schema.
-- **Referee role ("scheidsrechter")**: A dedicated referee role (separate from coach) who controls the official match clock and can stop/start time. The coach tracks lineup/subs, the referee tracks time authoritatively.
 
 ## Subagent Workflow
 

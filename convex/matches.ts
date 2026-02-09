@@ -82,6 +82,8 @@ export const getByPublicCode = query({
       showLineup: match.showLineup,
       startedAt: match.startedAt,
       quarterStartedAt: match.quarterStartedAt,
+      pausedAt: match.pausedAt,
+      accumulatedPauseTime: match.accumulatedPauseTime,
       teamName: team?.name ?? "Team",
       teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",
@@ -156,6 +158,40 @@ export const getForCoach = query({
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: enrichedEvents,
+    };
+  },
+});
+
+// Get match for referee (verify referee PIN, clock data only)
+export const getForReferee = query({
+  args: { code: v.string(), pin: v.string() },
+  handler: async (ctx, args) => {
+    const match = await ctx.db
+      .query("matches")
+      .withIndex("by_code", (q) => q.eq("publicCode", args.code.toUpperCase()))
+      .first();
+
+    if (!match) return null;
+
+    // Referee PIN must match
+    if (!match.refereePin || match.refereePin !== args.pin) return null;
+
+    const team = await ctx.db.get(match.teamId);
+
+    return {
+      id: match._id,
+      opponent: match.opponent,
+      isHome: match.isHome,
+      status: match.status,
+      currentQuarter: match.currentQuarter,
+      quarterCount: match.quarterCount,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      startedAt: match.startedAt,
+      quarterStartedAt: match.quarterStartedAt,
+      pausedAt: match.pausedAt,
+      accumulatedPauseTime: match.accumulatedPauseTime,
+      teamName: team?.name ?? "Team",
     };
   },
 });

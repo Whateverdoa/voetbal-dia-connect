@@ -16,6 +16,9 @@ export { PlayingTimeSummary } from "./PlayingTimeSummary";
 export { PlayerTimeRow, type PlayerPlayingTime, type FairnessStatus } from "./PlayerTimeRow";
 export { FairnessLegend } from "./FairnessLegend";
 
+// Referee management
+export { RefereePinManager } from "./RefereePinManager";
+
 // Loading/Error screens
 export { MatchLoadingScreen } from "./MatchLoadingScreen";
 export { MatchErrorScreen } from "./MatchErrorScreen";

@@ -7,10 +7,12 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
+import { verifyClockPin, verifyCoachPin } from "./pinHelpers";
 
 // Re-export from split modules for backwards compatibility
 export { addGoal, substitute, removeLastGoal } from "./matchEvents";
 export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLineup";
+export { pauseClock, resumeClock } from "./clockActions";
 
 // Generate a random 6-char code
 function generatePublicCode(): string {
@@ -103,7 +105,7 @@ export const start = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match || !verifyClockPin(match, args.pin)) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -114,6 +116,8 @@ export const start = mutation({
       currentQuarter: 1,
       startedAt: now,
       quarterStartedAt: now,
+      pausedAt: undefined,
+      accumulatedPauseTime: 0,
     });
 
     // Set lastSubbedInAt for all players currently on field
@@ -144,12 +148,15 @@ export const nextQuarter = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match || !verifyClockPin(match, args.pin)) {
       throw new Error("Invalid match or PIN");
     }
 
     const now = Date.now();
     const nextQ = match.currentQuarter + 1;
+
+    // If clock was paused, use pause timestamp as effective end time
+    const effectiveEndTime = match.pausedAt ?? now;
     
     // Calculate playing time for all on-field players at quarter end
     const matchPlayers = await ctx.db
@@ -159,7 +166,7 @@ export const nextQuarter = mutation({
 
     for (const mp of matchPlayers) {
       if (mp.onField && mp.lastSubbedInAt) {
-        await recordPlayingTime(ctx, mp, now);
+        await recordPlayingTime(ctx, mp, effectiveEndTime);
       }
     }
     
@@ -177,6 +184,8 @@ export const nextQuarter = mutation({
       await ctx.db.patch(args.matchId, {
         status: "finished",
         quarterStartedAt: undefined,
+        pausedAt: undefined,
+        accumulatedPauseTime: undefined,
         finishedAt: now,
       });
     } else {
@@ -186,6 +195,8 @@ export const nextQuarter = mutation({
         status: "halftime",
         currentQuarter: nextQ,
         quarterStartedAt: undefined,
+        pausedAt: undefined,
+        accumulatedPauseTime: undefined,
       });
     }
   },
@@ -196,7 +207,7 @@ export const resumeFromHalftime = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match || !verifyClockPin(match, args.pin)) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -205,6 +216,8 @@ export const resumeFromHalftime = mutation({
     await ctx.db.patch(args.matchId, {
       status: "live",
       quarterStartedAt: now,
+      pausedAt: undefined,
+      accumulatedPauseTime: 0,
     });
 
     // Restart time tracking for on-field players
@@ -226,6 +239,35 @@ export const resumeFromHalftime = mutation({
       timestamp: now,
       createdAt: now,
     });
+  },
+});
+
+// Set or clear the referee PIN (coach-only)
+export const setRefereePin = mutation({
+  args: {
+    matchId: v.id("matches"),
+    pin: v.string(), // Coach PIN for auth
+    refereePin: v.optional(v.string()), // New referee PIN, or undefined to clear
+  },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match || !verifyCoachPin(match, args.pin)) {
+      throw new Error("Invalid match or PIN");
+    }
+
+    // Validate referee PIN format if provided
+    if (args.refereePin != null) {
+      const trimmed = args.refereePin.trim();
+      if (trimmed.length < 4 || trimmed.length > 6) {
+        throw new Error("Scheidsrechter PIN moet 4-6 tekens zijn");
+      }
+      if (trimmed === match.coachPin) {
+        throw new Error("Scheidsrechter PIN mag niet gelijk zijn aan de coach PIN");
+      }
+      await ctx.db.patch(args.matchId, { refereePin: trimmed });
+    } else {
+      await ctx.db.patch(args.matchId, { refereePin: undefined });
+    }
   },
 });
 

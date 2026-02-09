@@ -5,6 +5,8 @@ import type { MatchStatus } from "./types";
 
 interface MatchClockProps {
   quarterStartedAt?: number;
+  pausedAt?: number;
+  accumulatedPauseTime?: number;
   status: MatchStatus;
 }
 
@@ -21,39 +23,69 @@ export function formatElapsed(ms: number): string {
 
 /**
  * Real-time match clock showing elapsed time in the current quarter.
- * Only ticks when the match is live and quarterStartedAt is set.
- * Displays "--:--" when not live (rest, finished, etc.).
+ * Accounts for pauses via pausedAt + accumulatedPauseTime.
+ * - Running:  elapsed = now - quarterStartedAt - accumulatedPauseTime
+ * - Paused:   elapsed = pausedAt - quarterStartedAt - accumulatedPauseTime
+ * - Stopped:  displays "--:--"
  */
-export function MatchClock({ quarterStartedAt, status }: MatchClockProps) {
+export function MatchClock({
+  quarterStartedAt,
+  pausedAt,
+  accumulatedPauseTime = 0,
+  status,
+}: MatchClockProps) {
   const isLive = status === "live";
-  const shouldTick = isLive && quarterStartedAt != null;
+  const isPaused = isLive && pausedAt != null;
+  const shouldTick = isLive && quarterStartedAt != null && !isPaused;
+
+  const calcElapsed = (refTime: number) =>
+    quarterStartedAt != null
+      ? refTime - quarterStartedAt - accumulatedPauseTime
+      : 0;
 
   const [elapsed, setElapsed] = useState(() =>
-    shouldTick ? Date.now() - quarterStartedAt : 0
+    isPaused && pausedAt != null
+      ? calcElapsed(pausedAt)
+      : shouldTick
+        ? calcElapsed(Date.now())
+        : 0
   );
 
   useEffect(() => {
+    // Paused: show frozen time, no interval
+    if (isPaused && pausedAt != null) {
+      setElapsed(calcElapsed(pausedAt));
+      return;
+    }
+
     if (!shouldTick) {
       setElapsed(0);
       return;
     }
 
-    // Sync immediately
-    setElapsed(Date.now() - quarterStartedAt);
+    // Running: sync immediately, then tick every second
+    setElapsed(calcElapsed(Date.now()));
 
     const interval = setInterval(() => {
-      setElapsed(Date.now() - quarterStartedAt);
+      setElapsed(calcElapsed(Date.now()));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [shouldTick, quarterStartedAt]);
+  }, [shouldTick, isPaused, quarterStartedAt, pausedAt, accumulatedPauseTime]);
 
-  const display = shouldTick ? formatElapsed(elapsed) : "--:--";
+  const isActive = shouldTick || isPaused;
+  const display = isActive ? formatElapsed(elapsed) : "--:--";
 
   return (
     <span
-      className="font-mono tabular-nums text-white/80"
-      aria-label={shouldTick ? `Speeltijd: ${display}` : "Klok gestopt"}
+      className={`font-mono tabular-nums ${isPaused ? "text-yellow-300 animate-pulse" : "text-white/80"}`}
+      aria-label={
+        isPaused
+          ? `Klok gepauzeerd: ${display}`
+          : isActive
+            ? `Speeltijd: ${display}`
+            : "Klok gestopt"
+      }
     >
       {display}
     </span>

@@ -25,6 +25,7 @@ interface LiveMatchProps {
 
 export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
   const isLive = match.status === "live";
+  const isPaused = isLive && match.pausedAt != null;
   const isHalftime = match.status === "halftime";
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled" || match.status === "lineup";
@@ -87,11 +88,28 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
           {/* Status and quarter progress */}
           <div className="flex flex-col items-center gap-3 mb-4">
             <div className="flex items-center gap-2">
-              {isLive && (
+              {isLive && !isPaused && (
                 <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   LIVE
-                  <MatchClock quarterStartedAt={match.quarterStartedAt} status={match.status} />
+                  <MatchClock
+                    quarterStartedAt={match.quarterStartedAt}
+                    pausedAt={match.pausedAt}
+                    accumulatedPauseTime={match.accumulatedPauseTime}
+                    status={match.status}
+                  />
+                </span>
+              )}
+              {isPaused && (
+                <span className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
+                  GEPAUZEERD
+                  <MatchClock
+                    quarterStartedAt={match.quarterStartedAt}
+                    pausedAt={match.pausedAt}
+                    accumulatedPauseTime={match.accumulatedPauseTime}
+                    status={match.status}
+                  />
                 </span>
               )}
               {isHalftime && (

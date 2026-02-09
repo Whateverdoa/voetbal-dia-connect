@@ -12,6 +12,8 @@ export interface MatchData {
   showLineup: boolean;
   startedAt?: number;
   quarterStartedAt?: number;
+  pausedAt?: number;
+  accumulatedPauseTime?: number;
   teamName: string;
   teamSlug: string;
   clubName: string;

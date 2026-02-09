@@ -158,6 +158,8 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
         currentQuarter={match.currentQuarter}
         quarterCount={match.quarterCount}
         quarterStartedAt={match.quarterStartedAt}
+        pausedAt={match.pausedAt}
+        accumulatedPauseTime={match.accumulatedPauseTime}
         publicCode={match.publicCode}
       />
 
@@ -172,6 +174,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           quarterCount={match.quarterCount}
           homeScore={match.homeScore}
           awayScore={match.awayScore}
+          pausedAt={match.pausedAt}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
         />

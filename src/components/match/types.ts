@@ -40,6 +40,9 @@ export interface Match {
   showLineup: boolean;
   startedAt?: number;
   quarterStartedAt?: number;
+  pausedAt?: number;
+  accumulatedPauseTime?: number;
+  refereePin?: string;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

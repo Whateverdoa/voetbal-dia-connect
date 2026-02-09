@@ -14,6 +14,7 @@ interface MatchControlsProps {
   quarterCount: number;
   homeScore: number;
   awayScore: number;
+  pausedAt?: number;
   onGoalClick: () => void;
   onSubClick: () => void;
 }
@@ -26,6 +27,7 @@ export function MatchControls({
   quarterCount,
   homeScore,
   awayScore,
+  pausedAt,
   onGoalClick,
   onSubClick,
 }: MatchControlsProps) {
@@ -33,6 +35,8 @@ export function MatchControls({
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
   const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
   const removeLastGoal = useMutation(api.matchActions.removeLastGoal);
+  const pauseClockMut = useMutation(api.matchActions.pauseClock);
+  const resumeClockMut = useMutation(api.matchActions.resumeClock);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function MatchControls({
   };
 
   const isLive = status === "live";
+  const isPaused = isLive && pausedAt != null;
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
@@ -141,6 +146,33 @@ export function MatchControls({
               <span>Wissel</span>
             </button>
           </div>
+
+          {/* Clock pause/resume */}
+          {isPaused ? (
+            <button
+              onClick={() => handleMutation(() => resumeClockMut({ matchId, pin }), "Hervat klok")}
+              disabled={isLoading}
+              className="w-full py-3 bg-dia-green text-white font-semibold 
+                         rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
+                         hover:bg-dia-green-light shadow-md disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2"
+            >
+              <span className="text-lg">▶</span>
+              {isLoading ? "Bezig..." : "Hervat klok"}
+            </button>
+          ) : (
+            <button
+              onClick={() => handleMutation(() => pauseClockMut({ matchId, pin }), "Pauzeer klok")}
+              disabled={isLoading}
+              className="w-full py-3 bg-orange-500 text-white font-semibold 
+                         rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
+                         hover:bg-orange-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2"
+            >
+              <span className="text-lg">⏸</span>
+              {isLoading ? "Bezig..." : "Pauzeer klok"}
+            </button>
+          )}
 
           {/* Secondary: Quarter control */}
           <button

@@ -34,9 +34,9 @@ There are two repos:
 │             matchEvents                     │
 │ matches.ts → queries (getByPublicCode,      │
 │              getForCoach, verifyCoachPin)    │
+│             referees                        │
 │ matchActions.ts → mutations (create, start, │
-│                   nextQuarter, addGoal,     │
-│                   substitute, etc.)         │
+│   assignReferee, nextQuarter, addGoal, etc.)│
 └──────────────▲──────────────────────────────┘
                │ Convex mutation (PIN-auth)
 ┌──────────────┴──────────────────────────────┐
@@ -48,10 +48,10 @@ There are two repos:
 └─────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────┐
 │ REFEREE (Authenticated via referee PIN)     │
-│ /scheidsrechter → code + PIN login          │
+│ /scheidsrechter → PIN login → match list    │
 │ /scheidsrechter/match/[id] → clock + score  │
-│ Start/pause/resume clock, edit scores,      │
-│ optional shirt number on goals              │
+│ Tap assigned match, start/pause/resume      │
+│ clock, edit scores, optional shirt number   │
 └─────────────────────────────────────────────┘
 ```
 
@@ -60,8 +60,9 @@ There are two repos:
 - **clubs** — top-level org (DIA)
 - **teams** — JO12-1, JO13-2, etc. (belongs to club)
 - **coaches** — PIN-authenticated, linked to 1+ teams
+- **referees** — global referee records with PIN, active flag (assigned to matches by admin/coach)
 - **players** — per team, shirt number, active flag
-- **matches** — 6-char publicCode, coachPin, status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
+- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
 - **matchPlayers** — junction: which players in this match, onField/isKeeper state
 - **matchEvents** — goal, assist, sub_in, sub_out, quarter_start/end, yellow/red cards
 
@@ -69,10 +70,11 @@ There are two repos:
 
 Simple PIN-based (no user accounts):
 - **Coach** enters 4-6 digit PIN → gets access to their teams/matches (lineup, goals, subs)
-- **Referee** enters match code + separate 4-6 digit referee PIN → controls clock and edits scores
+- **Referee** enters their global 4-6 digit PIN → sees list of assigned matches → taps one to enter clock/score controls (must be assigned to the match by admin/coach)
 - **Public** enters 6-char match code → read-only live view
-- Coach PIN stored on coach record; referee PIN stored per match (`refereePin` field)
-- Clock/score mutations accept either coach or referee PIN via `verifyClockPin`
+- Coach PIN stored on `coaches` table; referee PIN stored on `referees` table (global, not per-match)
+- Match links to referee via `matches.refereeId` → coach assigns a referee from the dropdown in the match view
+- Clock/score mutations accept either coach or referee PIN via `verifyClockPin(match, pin, referee?)`
 
 ## Key Patterns
 
@@ -91,8 +93,8 @@ Simple PIN-based (no user accounts):
 - Coach match management ✅ (lineup, substitutions, goals with player attribution, playing time tracking)
 - Referee role ✅ (separate PIN, clock control, score editing with optional shirt number)
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
-- Seed data ✅ (club DIA, 3 teams, 14 players each, 2 coaches, sample match)
-- Admin pages — basic CRUD for clubs, teams, players, coaches
+- Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
+- Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
 - PWA — not yet
 - Tests — none yet
 - Deployment — Vercel target, not fully configured
@@ -119,16 +121,17 @@ Simple PIN-based (no user accounts):
 ### Completed Features
 
 - ~~**Pause/stop clock during quarter**~~: Coach and referee can pause/resume the match clock mid-quarter. Uses `pausedAt` / `accumulatedPauseTime` fields. Playing time tracking accounts for pauses. Mutations in `convex/clockActions.ts`.
-- ~~**Referee role ("scheidsrechter")**~~: Dedicated referee role with separate PIN (`refereePin` on match). Referee controls clock (start/pause/resume/end quarter) and can edit scores with optional shirt number tracking. Entry at `/scheidsrechter`, match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge. PIN managed by coach via `RefereePinManager`.
+- ~~**Referee role ("scheidsrechter")**~~: Global referee records in `referees` table. Admin creates referees (Admin Panel → Scheidsrechters tab). Coach assigns a referee to a match via `RefereeAssignment` dropdown. Referee uses their global PIN + match code to access `/scheidsrechter`. Controls clock (start/pause/resume/end quarter) and edits scores with optional shirt number tracking. Match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge.
 - ~~**Referee score editing**~~: Referee can +/- scores for both teams. On "+", optional shirt number prompt logs a lightweight goal event with `note: "Rugnummer: N"` so the coach can later resolve to a named player. Mutation in `convex/scoreActions.ts`.
 
 ### Future Features
 
 - **Named login (user accounts)**: Replace anonymous PIN-only auth with name + PIN login. Users would be identifiable (e.g., "Coach Mike logged in") instead of just a PIN. Enables: personal dashboards, audit trails ("who made this change?"), multi-device sessions, and per-user preferences. Could start simple (name stored on coach record, displayed after PIN login) and evolve toward full accounts later.
 - **Cumulative clock mode**: Display game time cumulatively across quarters (e.g., 0–60 min) instead of per-quarter (0–15 min). Should be a coach setting per match. Next priority.
-- **Seed data expansion**: Additional coaches for the same team + 4 referee PINs for development testing. Currently only 2 coaches seeded.
+- ~~**Seed data expansion**~~: Now seeds 4 coaches, 4 referees, 3 teams with 14 players each, 3 matches with referee assignments. Modular seed system in `convex/seed/`. Run `npx convex run seed:init`.
 - **Opponent roster support**: Store rosters for both teams (not just ours). Enables sharing match data (goals, events, stats) with both teams afterwards. Shirt numbers stored by the referee in goal events can then be resolved to named players for either team.
 - **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
+- **Goal ownership split (coach vs referee)**: When a referee is actively assigned and controlling a match, the **coach should no longer be able to add new goals** — only the referee enters scores/goals. However, the coach **should still be able to edit goal details** (e.g., add or correct the player name on a goal that the referee registered with only a shirt number). This keeps the referee as the single source of truth for scoring, while the coach enriches the data afterwards with player names. Requires: (1) a check on coach goal mutations: if `match.refereeId` is set, reject new goals from coach; (2) a new "edit goal event" mutation for the coach to update `playerId`/`playerName` on existing goal events; (3) UI changes in the coach GoalModal to show "referee-controlled" state.
 - **Full score editing (coach)**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match. (Referee score editing already implemented.)
 - **Quarter time warning**: When elapsed time exceeds the expected quarter duration (e.g., 15 min), show a visual/audio warning to the coach. Not a hard stop, just a nudge. Useful when the coach loses track of time pitch-side.
 
@@ -216,6 +219,70 @@ npx convex dev       # Convex dashboard + sync
 
 This avoids wasted Vercel build minutes, broken deployments, and conflicting pushes between agents.
 
-## Environment
+## Environment & Deployment
 
-Requires `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` — set up via `npx convex init` or `npx convex deploy`.
+### Local Development (.env.local)
+
+These are set automatically by `npx convex dev` and stored in `.env.local` (gitignored):
+
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `CONVEX_DEPLOYMENT` | `dev:your-project-123` | Points `convex dev` at your dev backend |
+| `NEXT_PUBLIC_CONVEX_URL` | `https://your-project-123.convex.cloud` | Connects React client to Convex |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | `http://localhost:3000` | Site URL for local dev |
+
+No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
+
+### Vercel Deployment (Environment Variables)
+
+**CRITICAL: `CONVEX_DEPLOY_KEY` must be scoped to Production only.**
+
+| Variable | Vercel Scope | Value Source | Purpose |
+|----------|-------------|--------------|---------|
+| `CONVEX_DEPLOY_KEY` | **Production ONLY** | Convex Dashboard → Settings → Deploy Keys → generate "Production" key (starts with `prod:`) | Authenticates `convex deploy` during production builds |
+| `NEXT_PUBLIC_CONVEX_URL` | **All Environments** | Convex Dashboard → Settings → URL | Connects the React client to Convex in every build |
+
+**Why Production only?** Vercel creates **preview** deployments for every PR/branch push. If `CONVEX_DEPLOY_KEY` is set for "All Environments", Convex CLI detects a production key in a non-production context and **refuses to deploy** with error:
+```
+✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY"
+  for a production Convex deployment. This is probably unintentional.
+```
+
+### How the Build Script Works (`scripts/build.mjs`)
+
+The build script (`npm run build`) is **not** a raw `convex deploy` command. It's a conditional script:
+
+```
+npm run build
+    │
+    ▼
+  scripts/build.mjs checks environment
+    │
+    ├─ CONVEX_DEPLOY_KEY + VERCEL_ENV=production
+    │    → npx convex deploy --cmd "next build"
+    │    → Deploys Convex functions AND builds Next.js
+    │
+    ├─ CONVEX_DEPLOY_KEY + VERCEL_ENV=preview
+    │    → npx next build (only)
+    │    → Builds Next.js using existing NEXT_PUBLIC_CONVEX_URL
+    │    → Does NOT touch Convex backend
+    │
+    └─ No CONVEX_DEPLOY_KEY (local)
+         → npx next build (only)
+```
+
+This means:
+- **Production deploys** (push to `main`) deploy Convex functions + build frontend — full atomic deploy
+- **Preview deploys** (PRs, branches) only build the frontend — safe, no backend changes
+- **Local builds** just build Next.js — use `convex dev` for backend sync
+
+### Current Vercel Setup Issue (Action Required)
+
+As of Feb 2026, `CONVEX_DEPLOY_KEY` is set for **"All Environments"** in Vercel. This needs to be changed:
+
+1. Go to Vercel → Project Settings → Environment Variables
+2. Click the `...` menu on `CONVEX_DEPLOY_KEY`
+3. Edit → change scope from "All Environments" to **"Production"** only
+4. Save
+
+This is a one-time fix. After this, preview deployments will succeed.

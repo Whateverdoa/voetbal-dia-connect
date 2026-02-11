@@ -24,7 +24,7 @@ describe('MatchControls', () => {
       'matchActions:resumeFromHalftime': mockResumeHalftime,
       'matchActions:removeLastGoal': mockRemoveLastGoal,
     };
-    mockUseMutation.mockImplementation((ref: any) => {
+    (mockUseMutation as any).mockImplementation((ref: any) => {
       return mutationMap[ref as string] ?? vi.fn();
     });
     mockRemoveLastGoal.mockResolvedValue({ removedGoal: {} });

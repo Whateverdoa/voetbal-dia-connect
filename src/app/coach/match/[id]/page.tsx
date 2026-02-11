@@ -19,6 +19,7 @@ import {
   SubstitutionSuggestions,
   MatchLoadingScreen,
   MatchErrorScreen,
+  RefereeAssignment,
 } from "@/components/match";
 import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
 
@@ -177,6 +178,14 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           pausedAt={match.pausedAt}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
+        />
+
+        {/* Referee assignment */}
+        <RefereeAssignment
+          matchId={match._id}
+          pin={pin}
+          currentRefereeId={match.refereeId}
+          currentRefereeName={match.refereeName}
         />
 
         {/* Tab navigation */}

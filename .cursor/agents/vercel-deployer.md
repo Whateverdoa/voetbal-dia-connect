@@ -11,57 +11,114 @@ Ensure every deployment to Vercel correctly deploys **both** the Convex backend 
 
 ## The Golden Rule
 
-**Convex functions are NOT deployed by `next build` alone.** The build script in `package.json` MUST be:
+**Convex functions are NOT deployed by `next build` alone.** The build in `package.json` points to a **conditional build script**:
 
 ```json
-"build": "npx convex deploy --cmd 'next build'"
+"build": "node scripts/build.mjs"
 ```
 
-This runs `npx convex deploy` (deploys schema + functions to Convex production) and then executes `next build` (compiles the frontend). Without this, pushing to Vercel only updates the UI while the backend stays on old code — causing **silent desync bugs**.
+The `scripts/build.mjs` file decides what to run based on the environment:
 
-**NEVER change the build script to just `"next build"`** unless temporarily unblocking a deploy while fixing env var issues (and immediately revert after).
+| Condition | What runs | Effect |
+|-----------|-----------|--------|
+| `CONVEX_DEPLOY_KEY` + `VERCEL_ENV=production` | `npx convex deploy --cmd "next build"` | Deploys Convex functions + builds frontend (full atomic deploy) |
+| `CONVEX_DEPLOY_KEY` + `VERCEL_ENV=preview` | `npx next build` only | Builds frontend only, does NOT touch Convex backend |
+| No `CONVEX_DEPLOY_KEY` (local) | `npx next build` only | Local build, use `convex dev` for backend sync |
+
+**NEVER replace `"node scripts/build.mjs"` with a raw `next build` or `convex deploy` command.** The conditional logic prevents production deploy keys from failing in preview environments.
+
+**NEVER set `CONVEX_DEPLOY_KEY` for "All Environments" in Vercel.** It must be **Production only**. Setting it for Preview causes Convex CLI to refuse with:
+```
+✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY"
+  for a production Convex deployment. This is probably unintentional.
+```
 
 ## Deployment Flow
+
+### Production (push to `main`)
 
 ```
 git push origin main
        │
        ▼
-  Vercel detects push
+  Vercel detects push (VERCEL_ENV=production)
        │
        ▼
   npm install (dependencies)
        │
        ▼
-  npm run build
+  npm run build → node scripts/build.mjs
        │
-       ├─► npx convex deploy
+       │  Detects: CONVEX_DEPLOY_KEY ✅ + VERCEL_ENV=production ✅
+       │
+       ├─► npx convex deploy --cmd "next build"
        │     │
        │     ├─ Reads CONVEX_DEPLOY_KEY from env
        │     ├─ Pushes schema.ts to Convex cloud
        │     ├─ Deploys all query/mutation functions
-       │     └─ Validates backwards compatibility
+       │     ├─ Validates backwards compatibility
+       │     └─ Then runs: next build
+       │           │
+       │           ├─ Compiles React/Next.js pages
+       │           ├─ Reads NEXT_PUBLIC_CONVEX_URL for client
+       │           └─ Outputs static + server bundles
        │
-       └─► next build (after Convex succeeds)
+       ▼
+  Vercel serves new production deployment
+```
+
+### Preview (pull request / feature branch)
+
+```
+git push origin feature/xyz (or open PR)
+       │
+       ▼
+  Vercel detects push (VERCEL_ENV=preview)
+       │
+       ▼
+  npm install (dependencies)
+       │
+       ▼
+  npm run build → node scripts/build.mjs
+       │
+       │  Detects: VERCEL_ENV=preview (NOT production)
+       │  ⚠️  Skips Convex deploy to avoid production key conflict
+       │
+       └─► npx next build (only)
              │
              ├─ Compiles React/Next.js pages
              ├─ Reads NEXT_PUBLIC_CONVEX_URL for client
              └─ Outputs static + server bundles
        │
        ▼
-  Vercel serves new deployment
+  Vercel serves preview deployment (frontend only,
+  points at existing Convex production backend)
 ```
+
+**Key difference:** Preview deploys do NOT modify the Convex backend. They build the Next.js frontend only, using whatever `NEXT_PUBLIC_CONVEX_URL` points to. This is safe — the preview site reads from the same Convex database but cannot deploy new schema or functions.
 
 ## Environment Variables
 
 ### Required in Vercel Dashboard
 
-| Variable | Scope | Where to Get It | Purpose |
-|----------|-------|-----------------|---------|
-| `CONVEX_DEPLOY_KEY` | Production, Preview | Convex Dashboard → Settings → Deploy Keys → "Production" | Authenticates `npx convex deploy` during Vercel build |
-| `NEXT_PUBLIC_CONVEX_URL` | All environments | Convex Dashboard → Settings → URL | Connects the frontend React client to Convex |
+| Variable | Vercel Scope | Where to Get It | Purpose |
+|----------|-------------|-----------------|---------|
+| `CONVEX_DEPLOY_KEY` | **Production ONLY** | Convex Dashboard → Settings → Deploy Keys → generate "Production" key (starts with `prod:`) | Authenticates `npx convex deploy` during production builds only |
+| `NEXT_PUBLIC_CONVEX_URL` | **All Environments** | Convex Dashboard → Settings → URL | Connects the React client to Convex in every build |
 
-### How to Get `CONVEX_DEPLOY_KEY`
+### ⚠️ CONVEX_DEPLOY_KEY Scope is CRITICAL
+
+**`CONVEX_DEPLOY_KEY` MUST be set to "Production" scope only — NOT "All Environments".**
+
+If set to "All Environments", preview deployments (triggered by PRs and branch pushes) will fail with:
+```
+✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY"
+  for a production Convex deployment. This is probably unintentional.
+```
+
+The `scripts/build.mjs` handles this gracefully by skipping `convex deploy` in preview environments, but the safest practice is to also restrict the env var scope in Vercel itself.
+
+### How to Set Up `CONVEX_DEPLOY_KEY` Correctly
 
 1. Go to [dashboard.convex.dev](https://dashboard.convex.dev)
 2. Select the **DIA Live** project
@@ -70,8 +127,17 @@ git push origin main
 5. Copy the key (starts with `prod:`)
 6. In Vercel: **Settings** → **Environment Variables**
 7. Add `CONVEX_DEPLOY_KEY` with the key value
-8. Scope: **Production** and **Preview**
+8. Scope: **Production ONLY** (uncheck Preview and Development)
 9. **Redeploy** for the variable to take effect
+
+### How to Fix If Scoped to "All Environments"
+
+If `CONVEX_DEPLOY_KEY` is currently set for "All Environments" (causing preview build failures):
+1. Go to Vercel → Project Settings → Environment Variables
+2. Click the `...` (three dots) menu next to `CONVEX_DEPLOY_KEY`
+3. Click **Edit**
+4. Change scope from "All Environments" to **"Production"** only
+5. Save — next preview deploy will succeed
 
 ### Key Rotation
 
@@ -90,9 +156,10 @@ Local dev does **not** need `CONVEX_DEPLOY_KEY`. Instead:
 Run this checklist before every push to `main`:
 
 ```markdown
-- [ ] `package.json` build script is `"npx convex deploy --cmd 'next build'"`
-- [ ] `CONVEX_DEPLOY_KEY` is set in Vercel (Production + Preview scope)
-- [ ] `NEXT_PUBLIC_CONVEX_URL` is set in Vercel (all scopes)
+- [ ] `package.json` build script is `"node scripts/build.mjs"` (NOT raw convex deploy)
+- [ ] `scripts/build.mjs` exists and contains the conditional build logic
+- [ ] `CONVEX_DEPLOY_KEY` is set in Vercel (**Production scope ONLY** — not All Environments)
+- [ ] `NEXT_PUBLIC_CONVEX_URL` is set in Vercel (All Environments scope)
 - [ ] Schema changes are backwards-compatible (additive only, optional fields)
 - [ ] Local `npx convex dev` ran successfully (types generated, no errors)
 - [ ] Local `npm run build` completes without errors
@@ -102,19 +169,36 @@ Run this checklist before every push to `main`:
 
 ## Common Failure Modes
 
-### 1. "No Convex deployment configuration found"
+### 1. "Detected a non-production build environment and CONVEX_DEPLOY_KEY"
 
-**Symptoms**: Vercel build fails with Convex authentication error
+**Symptoms**: Vercel **preview** build fails with:
+```
+✖ Detected a non-production build environment and "CONVEX_DEPLOY_KEY"
+  for a production Convex deployment. This is probably unintentional.
+```
 
-**Cause**: `CONVEX_DEPLOY_KEY` is missing or not scoped to the current environment
+**Cause**: `CONVEX_DEPLOY_KEY` is set for "All Environments" in Vercel instead of "Production" only. The Convex CLI detects a production deploy key in a preview environment and refuses.
+
+**Fix**:
+1. Go to Vercel → Settings → Environment Variables
+2. Click `...` on `CONVEX_DEPLOY_KEY` → Edit
+3. Change scope to **Production only** (uncheck Preview and Development)
+4. Save and re-trigger the preview deployment
+5. Also verify `scripts/build.mjs` exists — it handles this gracefully even if the key leaks
+
+### 2. "No Convex deployment configuration found"
+
+**Symptoms**: Vercel **production** build fails with Convex authentication error
+
+**Cause**: `CONVEX_DEPLOY_KEY` is missing or not scoped to Production
 
 **Fix**:
 1. Check Vercel → Settings → Environment Variables
-2. Ensure `CONVEX_DEPLOY_KEY` exists with scope Production (and Preview if needed)
+2. Ensure `CONVEX_DEPLOY_KEY` exists with scope **Production**
 3. Value must start with `prod:` for production deploys
 4. Trigger a new deployment after adding the variable
 
-### 2. "Build failed" but frontend code looks correct
+### 3. "Build failed" but frontend code looks correct
 
 **Symptoms**: TypeScript errors in `convex/_generated/` during Vercel build
 
@@ -126,18 +210,19 @@ Run this checklist before every push to `main`:
 3. Commit the updated `convex/_generated/` files
 4. Push again
 
-### 3. New feature works locally but not on Vercel
+### 4. New feature works locally but not on Vercel
 
 **Symptoms**: Feature using new mutations/queries works in dev, fails or shows old behavior in production
 
-**Cause**: The build script is `"next build"` instead of `"npx convex deploy --cmd 'next build'"` — Convex backend wasn't deployed
+**Cause**: The build script was changed to just `"next build"` (bypassing `scripts/build.mjs`) — Convex backend wasn't deployed
 
 **Fix**:
-1. Check `package.json` → `scripts.build`
-2. Must be: `"npx convex deploy --cmd 'next build'"`
-3. Commit, push, and verify the Vercel build log shows "Convex functions deployed"
+1. Check `package.json` → `scripts.build` — must be `"node scripts/build.mjs"`
+2. Check `scripts/build.mjs` exists and contains the conditional deploy logic
+3. Ensure `CONVEX_DEPLOY_KEY` is set for Production scope in Vercel
+4. Commit, push, and verify the Vercel build log shows "Convex functions deployed"
 
-### 4. Real-time features not working after deploy
+### 5. Real-time features not working after deploy
 
 **Symptoms**: Clock shows `--:--`, live updates don't appear, new fields are undefined
 
@@ -149,7 +234,7 @@ Run this checklist before every push to `main`:
 - For existing data: either manually patch via Convex dashboard, or wait for new data to be created
 - Prevention: use `v.optional()` for new fields and handle `undefined` gracefully in the UI
 
-### 5. Build times out
+### 6. Build times out
 
 **Symptoms**: Vercel build exceeds the time limit
 
@@ -164,11 +249,13 @@ Run this checklist before every push to `main`:
 
 ### Production vs Preview vs Development
 
-| Environment | Trigger | Convex Instance | URL |
-|-------------|---------|----------------|-----|
-| Production | Push to `main` | Production (prod deploy key) | `voetbal-dia-connect.vercel.app` |
-| Preview | Pull request / feature branch | Production (same key) | `*-username.vercel.app` |
-| Development | `npm run dev` locally | Development (local convex dev) | `localhost:3000` |
+| Environment | Trigger | Convex Backend | `CONVEX_DEPLOY_KEY` | Build Behavior |
+|-------------|---------|---------------|---------------------|----------------|
+| **Production** | Push to `main` | Deployed (schema + functions updated) | ✅ Present (Production scope) | `convex deploy --cmd "next build"` |
+| **Preview** | PR / feature branch push | **NOT deployed** (uses existing backend) | ❌ Not present (Production scope only) | `next build` only |
+| **Development** | `npm run dev` locally | Live sync via `convex dev` | ❌ Not needed | `next build` only |
+
+**Preview deployments share the same Convex production database** but cannot modify it. This is safe for testing UI changes but means new Convex schema fields or functions won't be available in preview until merged to `main`.
 
 ### Checking Build Logs
 
@@ -190,7 +277,7 @@ Run this checklist before every push to `main`:
 
 Follow this workflow every time you're called:
 
-1. **Read `package.json`** — verify the `build` script includes `convex deploy`
+1. **Read `package.json`** — verify the `build` script is `"node scripts/build.mjs"` (NOT a raw convex deploy command)
 2. **Check for schema changes** — run `git diff convex/schema.ts` to see if any fields changed
 3. **Verify env vars are documented** — remind the user about required variables
 4. **Review backwards compatibility** — new schema fields must be `v.optional()`

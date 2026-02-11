@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LogOut, Plus, Users } from "lucide-react";
 import { StatusBadge, MatchStatus } from "./StatusBadge";
@@ -97,8 +98,13 @@ function TeamSection({
   matches: DashboardMatch[];
   pin: string;
 }) {
+  const [showAllFinished, setShowAllFinished] = useState(false);
   const scheduledMatches = matches.filter((m) => m.status === "scheduled");
   const finishedMatches = matches.filter((m) => m.status === "finished");
+  const visibleFinished = showAllFinished
+    ? finishedMatches
+    : finishedMatches.slice(0, 3);
+  const hiddenCount = finishedMatches.length - 3;
 
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -142,13 +148,19 @@ function TeamSection({
               Afgelopen
             </h3>
             <div className="space-y-2">
-              {finishedMatches.slice(0, 3).map((match) => (
+              {visibleFinished.map((match) => (
                 <DashboardMatchCard key={match._id} match={match} pin={pin} compact />
               ))}
-              {finishedMatches.length > 3 && (
-                <p className="text-sm text-gray-400 text-center py-2">
-                  +{finishedMatches.length - 3} meer
-                </p>
+              {hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAllFinished(!showAllFinished)}
+                  className="w-full text-sm text-dia-green font-medium text-center py-2
+                             hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
+                >
+                  {showAllFinished
+                    ? "Minder tonen ▲"
+                    : `+${hiddenCount} meer tonen ▼`}
+                </button>
               )}
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -8,11 +8,12 @@ import { Id } from "@/convex/_generated/dataModel";
 import { TeamsTab } from "@/components/admin/TeamsTab";
 import { PlayersTab } from "@/components/admin/PlayersTab";
 import { CoachesTab } from "@/components/admin/CoachesTab";
-import { Lock, Users, UserCog, Shield } from "lucide-react";
+import { RefereesTab } from "@/components/admin/RefereesTab";
+import { Lock, Users, UserCog, Shield, Flag } from "lucide-react";
 
 import { ADMIN_PIN } from "@/lib/constants";
 
-type Tab = "teams" | "spelers" | "coaches" | "setup";
+type Tab = "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -131,6 +132,12 @@ export default function AdminPage() {
             label="Coaches"
           />
           <TabButton
+            active={activeTab === "scheidsrechters"}
+            onClick={() => setActiveTab("scheidsrechters")}
+            icon={<Flag size={18} />}
+            label="Scheids."
+          />
+          <TabButton
             active={activeTab === "setup"}
             onClick={() => setActiveTab("setup")}
             icon={<Lock size={18} />}
@@ -145,6 +152,7 @@ export default function AdminPage() {
           {activeTab === "teams" && <TeamsTabWrapper />}
           {activeTab === "spelers" && <PlayersTabWrapper />}
           {activeTab === "coaches" && <CoachesTabWrapper />}
+          {activeTab === "scheidsrechters" && <RefereesTabWrapper />}
           {activeTab === "setup" && <SetupTab />}
         </div>
       </div>
@@ -220,67 +228,39 @@ function CoachesTabWrapper() {
   );
 }
 
+function RefereesTabWrapper() {
+  return (
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Scheidsrechters beheren</h2>
+      <RefereesTab />
+    </div>
+  );
+}
+
 function SetupTab() {
-  const [message, setMessage] = useState("");
-  const seedDIA = useMutation(api.admin.seedDIA);
-  const seedMatches = useMutation(api.admin.seedMatches);
-
-  const handleSeed = async () => {
-    try {
-      const result = await seedDIA({ adminPin: ADMIN_PIN });
-      setMessage(
-        `✅ ${result.message}. Default PIN: ${result.defaultPin || "1234"}`
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setMessage(`❌ Error: ${message}`);
-    }
-  };
-
-  const handleSeedMatches = async () => {
-    try {
-      const result = await seedMatches({ adminPin: ADMIN_PIN });
-      setMessage(
-        `✅ ${result.message}\n${result.matches
-          .map(
-            (m: { date: string; opponent: string; code: string; result: string | null }) =>
-              `${m.date.slice(0, 10)} - ${m.opponent} (${m.code})${
-                m.result ? ` → ${m.result}` : ""
-              }`
-          )
-          .join("\n")}`
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setMessage(`❌ Error: ${message}`);
-    }
-  };
-
   return (
     <div>
       <h2 className="text-lg font-semibold mb-4">Setup & Seed Data</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Seed DIA club met JO12-1 team en sample spelers voor development.
+        Seed DIA club met teams, spelers, coaches, scheidsrechters en wedstrijden.
+        Idempotent: kan veilig meerdere keren worden uitgevoerd.
       </p>
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={handleSeed}
-          className="px-4 py-2 bg-dia-green text-white rounded-lg hover:bg-green-700"
-        >
-          1. Seed DIA Data
-        </button>
-        <button
-          onClick={handleSeedMatches}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          2. Seed Wedstrijden
-        </button>
+      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+        <h3 className="font-medium text-gray-700">Seed via terminal</h3>
+        <code className="block bg-gray-200 px-3 py-2 rounded text-sm font-mono">
+          npx convex run seed:init
+        </code>
+        <div className="text-sm text-gray-600 space-y-1">
+          <p><strong>Dit maakt aan:</strong></p>
+          <ul className="list-disc list-inside space-y-0.5 ml-2">
+            <li>DIA club met 3 teams (JO11-1, JO12-1, JO13-2)</li>
+            <li>14 spelers per team</li>
+            <li>4 coaches (PIN: 1234, 5678, 2468, 1357)</li>
+            <li>4 scheidsrechters (PIN: 7777, 8888, 6666, 5555)</li>
+            <li>3 wedstrijden voor JO12-1 met scheidsrechter toewijzingen</li>
+          </ul>
+        </div>
       </div>
-      {message && (
-        <pre className="mt-4 text-sm p-3 bg-gray-100 rounded whitespace-pre-wrap">
-          {message}
-        </pre>
-      )}
     </div>
   );
 }

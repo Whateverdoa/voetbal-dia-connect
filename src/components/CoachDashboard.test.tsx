@@ -87,8 +87,8 @@ describe('CoachDashboard', () => {
       const dataWithMatches = {
         ...mockCoachData,
         matches: [
-          { _id: 'm1', teamId: 'team456', status: 'scheduled', opponent: 'Test' },
-          { _id: 'm2', teamId: 'team456', status: 'finished', opponent: 'Test2' },
+          { _id: 'm1', teamId: 'team456', status: 'scheduled' as const, opponent: 'Test', isHome: true, currentQuarter: 1, homeScore: 0, awayScore: 0, publicCode: 'ABC123' },
+          { _id: 'm2', teamId: 'team456', status: 'finished' as const, opponent: 'Test2', isHome: true, currentQuarter: 4, homeScore: 2, awayScore: 1, publicCode: 'DEF456' },
         ],
       };
       render(
@@ -101,7 +101,7 @@ describe('CoachDashboard', () => {
       const dataWithOneMatch = {
         ...mockCoachData,
         matches: [
-          { _id: 'm1', teamId: 'team456', status: 'scheduled', opponent: 'Test' },
+          { _id: 'm1', teamId: 'team456', status: 'scheduled' as const, opponent: 'Test', isHome: true, currentQuarter: 1, homeScore: 0, awayScore: 0, publicCode: 'ABC123' },
         ],
       };
       render(
@@ -142,7 +142,7 @@ describe('CoachDashboard', () => {
           teamId: 'team456',
           opponent: 'VV Oranje',
           isHome: true,
-          status: 'scheduled',
+          status: 'scheduled' as const,
           publicCode: 'ABC123',
           homeScore: 0,
           awayScore: 0,
@@ -201,7 +201,7 @@ describe('CoachDashboard', () => {
           teamId: 'team456',
           opponent: 'VV Oranje',
           isHome: true,
-          status: 'live',
+          status: 'live' as const,
           publicCode: 'ABC123',
           homeScore: 2,
           awayScore: 1,
@@ -242,7 +242,7 @@ describe('CoachDashboard', () => {
     it('includes halftime matches in active section', () => {
       const halftimeData = {
         ...mockCoachData,
-        matches: [{ ...dataWithLive.matches[0], status: 'halftime' }],
+        matches: [{ ...dataWithLive.matches[0], status: 'halftime' as const }],
       };
       render(
         <CoachDashboard data={halftimeData} pin={defaultPin} onLogout={mockOnLogout} />
@@ -254,7 +254,7 @@ describe('CoachDashboard', () => {
     it('includes lineup matches in active section', () => {
       const lineupData = {
         ...mockCoachData,
-        matches: [{ ...dataWithLive.matches[0], status: 'lineup' }],
+        matches: [{ ...dataWithLive.matches[0], status: 'lineup' as const }],
       };
       render(
         <CoachDashboard data={lineupData} pin={defaultPin} onLogout={mockOnLogout} />
@@ -273,7 +273,7 @@ describe('CoachDashboard', () => {
           teamId: 'team456',
           opponent: 'VV Oranje',
           isHome: true,
-          status: 'finished',
+          status: 'finished' as const,
           publicCode: 'ABC123',
           homeScore: 3,
           awayScore: 2,
@@ -305,7 +305,7 @@ describe('CoachDashboard', () => {
           teamId: 'team456',
           opponent: `Team ${i}`,
           isHome: true,
-          status: 'finished',
+          status: 'finished' as const,
           publicCode: `CODE${i}`,
           homeScore: i,
           awayScore: 0,
@@ -330,7 +330,7 @@ describe('CoachDashboard', () => {
           teamId: 'team456',
           opponent: 'VV Oranje',
           isHome: true,
-          status: 'scheduled',
+          status: 'scheduled' as const,
           publicCode: 'ABC123',
           homeScore: 0,
           awayScore: 0,

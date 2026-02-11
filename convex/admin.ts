@@ -39,6 +39,8 @@ export {
 } from "./adminPlayers";
 
 export {
-  seedDIA,
-  seedMatches,
-} from "./adminSeed";
+  createReferee,
+  listReferees,
+  updateReferee,
+  deleteReferee,
+} from "./adminReferees";

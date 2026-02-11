@@ -153,28 +153,41 @@ export const getForCoach = query({
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
     }));
 
+    // Resolve referee name if assigned
+    const referee = match.refereeId
+      ? await ctx.db.get(match.refereeId)
+      : null;
+
     return {
       ...match,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: enrichedEvents,
+      refereeName: referee?.name ?? null,
     };
   },
 });
 
-// Get match for referee (verify referee PIN, clock data only)
+// Get match for referee (verify referee PIN via referees table + assignment)
 export const getForReferee = query({
   args: { code: v.string(), pin: v.string() },
   handler: async (ctx, args) => {
+    // 1. Look up the referee globally by PIN
+    const referee = await ctx.db
+      .query("referees")
+      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .first();
+    if (!referee || !referee.active) return null;
+
+    // 2. Look up the match by public code
     const match = await ctx.db
       .query("matches")
       .withIndex("by_code", (q) => q.eq("publicCode", args.code.toUpperCase()))
       .first();
-
     if (!match) return null;
 
-    // Referee PIN must match
-    if (!match.refereePin || match.refereePin !== args.pin) return null;
+    // 3. Verify this referee is assigned to this match
+    if (!match.refereeId || match.refereeId !== referee._id) return null;
 
     const team = await ctx.db.get(match.teamId);
 
@@ -192,7 +205,76 @@ export const getForReferee = query({
       pausedAt: match.pausedAt,
       accumulatedPauseTime: match.accumulatedPauseTime,
       teamName: team?.name ?? "Team",
+      refereeName: referee.name,
     };
+  },
+});
+
+// Get all matches assigned to a referee (referee enters PIN → sees match list)
+export const getMatchesForReferee = query({
+  args: { pin: v.string() },
+  handler: async (ctx, args) => {
+    // 1. Look up the referee by PIN
+    const referee = await ctx.db
+      .query("referees")
+      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .first();
+    if (!referee || !referee.active) return null;
+
+    // 2. Find all matches assigned to this referee
+    const matches = await ctx.db
+      .query("matches")
+      .withIndex("by_refereeId", (q) => q.eq("refereeId", referee._id))
+      .collect();
+
+    // 3. Enrich each match with team name
+    const enriched = await Promise.all(
+      matches.map(async (m) => {
+        const team = await ctx.db.get(m.teamId);
+        return {
+          id: m._id,
+          publicCode: m.publicCode,
+          opponent: m.opponent,
+          isHome: m.isHome,
+          status: m.status,
+          currentQuarter: m.currentQuarter,
+          quarterCount: m.quarterCount,
+          homeScore: m.homeScore,
+          awayScore: m.awayScore,
+          scheduledAt: m.scheduledAt,
+          startedAt: m.startedAt,
+          finishedAt: m.finishedAt,
+          teamName: team?.name ?? "Team",
+        };
+      })
+    );
+
+    // Sort: live first, then scheduled, then finished
+    const statusOrder: Record<string, number> = {
+      live: 0,
+      halftime: 1,
+      lineup: 2,
+      scheduled: 3,
+      finished: 4,
+    };
+    enriched.sort(
+      (a, b) => (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5)
+    );
+
+    return {
+      referee: { id: referee._id, name: referee.name },
+      matches: enriched,
+    };
+  },
+});
+
+// List active referees (for coach assignment dropdown)
+export const listActiveReferees = query({
+  handler: async (ctx) => {
+    const all = await ctx.db.query("referees").collect();
+    return all
+      .filter((r) => r.active)
+      .map((r) => ({ id: r._id, name: r.name }));
   },
 });
 

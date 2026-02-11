@@ -62,7 +62,7 @@ describe('SubstitutionSuggestions', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue(mockSubstitute);
+    (mockUseMutation as any).mockReturnValue(mockSubstitute);
     mockSubstitute.mockResolvedValue(undefined);
   });
 

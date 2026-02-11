@@ -28,6 +28,14 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_pin", ["pin"]),
 
+  // Referees — global records with their own PIN (assigned to matches by admin/coach)
+  referees: defineTable({
+    name: v.string(),
+    pin: v.string(), // 4-6 digit PIN
+    active: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_pin", ["pin"]),
+
   // Players per team
   players: defineTable({
     teamId: v.id("teams"),
@@ -70,8 +78,8 @@ export default defineSchema({
     pausedAt: v.optional(v.number()), // Timestamp when clock was paused (undefined = running)
     accumulatedPauseTime: v.optional(v.number()), // Total ms paused this quarter (resets each quarter)
 
-    // Referee (optional — when set, referee can control the clock)
-    refereePin: v.optional(v.string()), // Separate PIN for the referee role
+    // Referee assignment (optional — when set, referee can control the clock)
+    refereeId: v.optional(v.id("referees")),
 
     // Timestamps
     startedAt: v.optional(v.number()),
@@ -81,7 +89,8 @@ export default defineSchema({
   })
     .index("by_team", ["teamId"])
     .index("by_code", ["publicCode"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_refereeId", ["refereeId"]),
 
   // Match lineup - which players are in this match
   matchPlayers: defineTable({

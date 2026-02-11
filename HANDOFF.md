@@ -95,17 +95,68 @@ Simple PIN-based (no user accounts):
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
 - Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
+- **Admin match management** ❌ — NOT YET IMPLEMENTED (see below)
 - PWA — not yet
 - Tests — none yet
-- Deployment — Vercel target, not fully configured
+- Deployment — Vercel target, Vercel + Convex configured ✅
 
 ## What Needs Work
 
-1. **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
-2. **PWA** — offline resilience, installable on home screen
-3. **Match history / stats** — post-match summaries, player stat aggregation
-4. **Testing** — Convex function tests, component tests, smoke test automation
-5. **Deployment pipeline** — Vercel CI/CD, environment management
+### 1. Admin Match Management (HIGH PRIORITY)
+
+**Currently missing:** Admin cannot create, edit, or delete matches. Only coaches can create matches via `/coach/new`.
+
+**Required:**
+- Add **Matches Tab** to Admin panel (`/admin`)
+- View all matches across all teams (with filters by team, status, date)
+- Create matches for any team (without needing a coach PIN)
+- Edit matches (opponent, date, status, scores, referee assignment)
+- Delete matches (with confirmation — cascades to `matchPlayers` and `matchEvents`)
+- Optional: Bulk import from CSV/JSON for season scheduling
+
+**Why it matters:**
+- Admins/schedulers create the match calendar, not coaches
+- Mistakes happen — someone needs to delete/correct matches
+- Coaches should focus on managing their team during matches, not data entry
+
+**Implementation:**
+- New `convex/adminMatches.ts` with mutations: `createMatch`, `updateMatch`, `deleteMatch`
+- New `src/components/admin/MatchesTab.tsx` component
+- Add tab to `/admin` page
+
+### 2. Other Items
+
+- **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
+- **PWA** — offline resilience, installable on home screen
+- **Match history / stats** — post-match summaries, player stat aggregation
+- **Testing** — Convex function tests, component tests, smoke test automation
+
+## TODO — Priority Task List
+
+### 🔴 HIGH PRIORITY
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **Admin Match Management** | Add Matches tab to Admin panel: create, edit, delete matches. Admins need to manage the match calendar without being a coach. | ❌ Not started |
+| **Bulk Match Import** | Allow admin to import matches from CSV/JSON for season scheduling | ❌ Not started |
+
+### 🟡 MEDIUM PRIORITY
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
+| **Match Edit (Admin)** | Edit match details: opponent, date, time, referee assignment | ❌ Not started |
+| **Cascade Delete** | When deleting a match, also delete related `matchPlayers` and `matchEvents` | ❌ Not started |
+
+### 🟢 LOW PRIORITY / FUTURE
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **PWA Support** | Offline resilience, installable on home screen | ❌ Not started |
+| **Match History Stats** | Post-match summaries, player stat aggregation | ❌ Not started |
+| **Mobile UX Audit** | Professional review of pitch-side usability | ❌ Not started |
+| **Named Login** | Replace PIN-only with name + PIN for audit trails | ❌ Not started |
+| **Cumulative Clock** | Display game time 0-60 min instead of per-quarter | ❌ Not started |
 
 ## Follow-Up Items (from code review)
 

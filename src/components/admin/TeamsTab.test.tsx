@@ -23,7 +23,7 @@ describe('TeamsTab', () => {
     vi.clearAllMocks();
     // Mock useMutation to return different functions based on call order
     // The component calls useMutation 3 times: createTeam, updateTeam, deleteTeam
-    mockUseMutation.mockImplementation(() => {
+    (mockUseMutation as any).mockImplementation(() => {
       const callCount = mockUseMutation.mock.calls.length;
       if (callCount % 3 === 1) return mockCreateTeam;
       if (callCount % 3 === 2) return mockUpdateTeam;

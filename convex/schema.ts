@@ -89,7 +89,8 @@ export default defineSchema({
   })
     .index("by_team", ["teamId"])
     .index("by_code", ["publicCode"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_refereeId", ["refereeId"]),
 
   // Match lineup - which players are in this match
   matchPlayers: defineTable({

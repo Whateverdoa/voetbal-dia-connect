@@ -22,7 +22,7 @@ describe('GoalModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue(mockAddGoal);
+    (mockUseMutation as any).mockReturnValue(mockAddGoal);
     mockAddGoal.mockResolvedValue(undefined);
   });
 

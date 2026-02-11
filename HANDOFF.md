@@ -48,10 +48,10 @@ There are two repos:
 └─────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────┐
 │ REFEREE (Authenticated via referee PIN)     │
-│ /scheidsrechter → code + PIN login          │
+│ /scheidsrechter → PIN login → match list    │
 │ /scheidsrechter/match/[id] → clock + score  │
-│ Start/pause/resume clock, edit scores,      │
-│ optional shirt number on goals              │
+│ Tap assigned match, start/pause/resume      │
+│ clock, edit scores, optional shirt number   │
 └─────────────────────────────────────────────┘
 ```
 
@@ -70,7 +70,7 @@ There are two repos:
 
 Simple PIN-based (no user accounts):
 - **Coach** enters 4-6 digit PIN → gets access to their teams/matches (lineup, goals, subs)
-- **Referee** enters match code + their global 4-6 digit PIN → controls clock and edits scores (must be assigned to the match by admin/coach)
+- **Referee** enters their global 4-6 digit PIN → sees list of assigned matches → taps one to enter clock/score controls (must be assigned to the match by admin/coach)
 - **Public** enters 6-char match code → read-only live view
 - Coach PIN stored on `coaches` table; referee PIN stored on `referees` table (global, not per-match)
 - Match links to referee via `matches.refereeId` → coach assigns a referee from the dropdown in the match view
@@ -131,6 +131,7 @@ Simple PIN-based (no user accounts):
 - ~~**Seed data expansion**~~: Now seeds 4 coaches, 4 referees, 3 teams with 14 players each, 3 matches with referee assignments. Modular seed system in `convex/seed/`. Run `npx convex run seed:init`.
 - **Opponent roster support**: Store rosters for both teams (not just ours). Enables sharing match data (goals, events, stats) with both teams afterwards. Shirt numbers stored by the referee in goal events can then be resolved to named players for either team.
 - **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
+- **Goal ownership split (coach vs referee)**: When a referee is actively assigned and controlling a match, the **coach should no longer be able to add new goals** — only the referee enters scores/goals. However, the coach **should still be able to edit goal details** (e.g., add or correct the player name on a goal that the referee registered with only a shirt number). This keeps the referee as the single source of truth for scoring, while the coach enriches the data afterwards with player names. Requires: (1) a check on coach goal mutations: if `match.refereeId` is set, reject new goals from coach; (2) a new "edit goal event" mutation for the coach to update `playerId`/`playerName` on existing goal events; (3) UI changes in the coach GoalModal to show "referee-controlled" state.
 - **Full score editing (coach)**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match. (Referee score editing already implemented.)
 - **Quarter time warning**: When elapsed time exceeds the expected quarter duration (e.g., 15 min), show a visual/audio warning to the coach. Not a hard stop, just a nudge. Useful when the coach loses track of time pitch-side.
 

@@ -42,7 +42,7 @@ export interface Match {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
-  refereeId?: string;
+  refereeId?: Id<"referees">;
   refereeName?: string | null;
   finishedAt?: number;
   teamName: string;

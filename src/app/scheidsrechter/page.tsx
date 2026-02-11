@@ -2,61 +2,55 @@
 
 import { useState } from "react";
 import { useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
+import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
 
 export default function ScheidsrechterPage() {
-  const [code, setCode] = useState("");
   const [pin, setPin] = useState("");
+  const [submittedPin, setSubmittedPin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
 
-  const router = useRouter();
-
-  // Only query when both code and pin are filled
-  const shouldQuery = code.length >= 4 && pin.length >= 4;
-  const match = useQuery(
-    api.matches.getForReferee,
-    shouldQuery ? { code: code.toUpperCase(), pin } : "skip"
+  // Only query after the referee submits their PIN
+  const data = useQuery(
+    api.matches.getMatchesForReferee,
+    submittedPin ? { pin: submittedPin } : "skip"
   );
 
+  // Handle PIN form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (code.length < 4) {
-      setError("Voer een geldige wedstrijd code in");
-      return;
-    }
     if (pin.length < 4) {
-      setError("Voer een geldige scheidsrechter PIN in");
+      setError("Voer een geldige PIN in (minimaal 4 cijfers)");
       return;
     }
 
-    setIsChecking(true);
-
-    // The query is reactive — if match is null, credentials are wrong
-    if (match === null) {
-      setError("Ongeldige wedstrijd code of scheidsrechter PIN");
-      setIsChecking(false);
-      return;
-    }
-
-    if (match === undefined) {
-      // Still loading — wait a moment and retry
-      setTimeout(() => {
-        setIsChecking(false);
-        setError("Even geduld, gegevens worden geladen...");
-      }, 2000);
-      return;
-    }
-
-    // Match found — navigate to referee match view
-    router.push(
-      `/scheidsrechter/match/${match.id}?pin=${encodeURIComponent(pin)}&code=${code.toUpperCase()}`
-    );
+    setSubmittedPin(pin);
   };
+
+  // If PIN was submitted but query returned null → invalid
+  const isInvalidPin = submittedPin !== null && data === null;
+
+  // Reset to PIN entry
+  const handleLogout = () => {
+    setSubmittedPin(null);
+    setPin("");
+    setError(null);
+  };
+
+  // Show match list after successful login
+  if (submittedPin && data) {
+    return (
+      <RefereeMatchList
+        refereeName={data.referee.name}
+        matches={data.matches}
+        pin={submittedPin}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -64,35 +58,18 @@ export default function ScheidsrechterPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-dia-green">Scheidsrechter</h1>
-          <p className="mt-2 text-gray-600">Klokbediening voor de wedstrijd</p>
+          <p className="mt-2 text-gray-600">
+            Voer je PIN in om je wedstrijden te zien
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Match code */}
+          {/* PIN input */}
           <div>
-            <label htmlFor="ref-code" className="block text-sm font-medium text-gray-700 mb-1">
-              Wedstrijd code
-            </label>
-            <input
-              id="ref-code"
-              type="text"
-              value={code}
-              onChange={(e) => {
-                setCode(e.target.value.toUpperCase());
-                setError(null);
-              }}
-              placeholder="Bijv. AB12CD"
-              className="w-full px-4 py-3 text-center text-xl tracking-widest uppercase
-                         border-2 border-gray-300 rounded-lg
-                         focus:border-dia-green focus:outline-none"
-              maxLength={6}
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Referee PIN */}
-          <div>
-            <label htmlFor="ref-pin" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="ref-pin"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Scheidsrechter PIN
             </label>
             <input
@@ -103,6 +80,8 @@ export default function ScheidsrechterPage() {
               onChange={(e) => {
                 setPin(e.target.value);
                 setError(null);
+                // Clear previous submission if typing again
+                if (submittedPin) setSubmittedPin(null);
               }}
               placeholder="4-6 cijfers"
               className="w-full px-4 py-3 text-center text-xl tracking-widest
@@ -110,23 +89,33 @@ export default function ScheidsrechterPage() {
                          focus:border-dia-green focus:outline-none"
               maxLength={6}
               autoComplete="off"
+              autoFocus
             />
           </div>
 
-          {/* Error */}
-          {error && (
-            <p className="text-red-600 text-sm text-center font-medium">{error}</p>
+          {/* Error messages */}
+          {(error || isInvalidPin) && (
+            <p className="text-red-600 text-sm text-center font-medium">
+              {error ?? "Ongeldige PIN of account niet actief"}
+            </p>
+          )}
+
+          {/* Loading state */}
+          {submittedPin && data === undefined && (
+            <p className="text-gray-500 text-sm text-center">
+              Gegevens laden...
+            </p>
           )}
 
           {/* Submit */}
           <button
             type="submit"
-            disabled={code.length < 4 || pin.length < 4 || isChecking}
+            disabled={pin.length < 4 || (submittedPin !== null && data === undefined)}
             className="w-full py-3 px-4 bg-dia-green text-white font-semibold rounded-lg
                        hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                        transition-colors min-h-[48px]"
           >
-            {isChecking ? "Controleren..." : "Open klokbediening"}
+            Inloggen
           </button>
         </form>
 

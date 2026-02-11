@@ -42,7 +42,8 @@ export interface Match {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
-  refereePin?: string;
+  refereeId?: string;
+  refereeName?: string | null;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

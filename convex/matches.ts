@@ -153,28 +153,41 @@ export const getForCoach = query({
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
     }));
 
+    // Resolve referee name if assigned
+    const referee = match.refereeId
+      ? await ctx.db.get(match.refereeId)
+      : null;
+
     return {
       ...match,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: enrichedEvents,
+      refereeName: referee?.name ?? null,
     };
   },
 });
 
-// Get match for referee (verify referee PIN, clock data only)
+// Get match for referee (verify referee PIN via referees table + assignment)
 export const getForReferee = query({
   args: { code: v.string(), pin: v.string() },
   handler: async (ctx, args) => {
+    // 1. Look up the referee globally by PIN
+    const referee = await ctx.db
+      .query("referees")
+      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .first();
+    if (!referee || !referee.active) return null;
+
+    // 2. Look up the match by public code
     const match = await ctx.db
       .query("matches")
       .withIndex("by_code", (q) => q.eq("publicCode", args.code.toUpperCase()))
       .first();
-
     if (!match) return null;
 
-    // Referee PIN must match
-    if (!match.refereePin || match.refereePin !== args.pin) return null;
+    // 3. Verify this referee is assigned to this match
+    if (!match.refereeId || match.refereeId !== referee._id) return null;
 
     const team = await ctx.db.get(match.teamId);
 
@@ -192,7 +205,18 @@ export const getForReferee = query({
       pausedAt: match.pausedAt,
       accumulatedPauseTime: match.accumulatedPauseTime,
       teamName: team?.name ?? "Team",
+      refereeName: referee.name,
     };
+  },
+});
+
+// List active referees (for coach assignment dropdown)
+export const listActiveReferees = query({
+  handler: async (ctx) => {
+    const all = await ctx.db.query("referees").collect();
+    return all
+      .filter((r) => r.active)
+      .map((r) => ({ id: r._id, name: r.name }));
   },
 });
 

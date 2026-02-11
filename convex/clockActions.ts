@@ -8,6 +8,7 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
 import { verifyClockPin } from "./pinHelpers";
+import { fetchRefereeForMatch } from "./refereeHelpers";
 
 /**
  * Pause the match clock mid-quarter.
@@ -21,7 +22,8 @@ export const pauseClock = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!verifyClockPin(match, args.pin)) {
+    const referee = await fetchRefereeForMatch(ctx, match);
+    if (!verifyClockPin(match, args.pin, referee)) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -62,7 +64,8 @@ export const resumeClock = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!verifyClockPin(match, args.pin)) {
+    const referee = await fetchRefereeForMatch(ctx, match);
+    if (!verifyClockPin(match, args.pin, referee)) {
       throw new Error("Invalid match or PIN");
     }
 

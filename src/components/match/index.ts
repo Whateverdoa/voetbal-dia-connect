@@ -17,7 +17,7 @@ export { PlayerTimeRow, type PlayerPlayingTime, type FairnessStatus } from "./Pl
 export { FairnessLegend } from "./FairnessLegend";
 
 // Referee management
-export { RefereePinManager } from "./RefereePinManager";
+export { RefereeAssignment } from "./RefereeAssignment";
 
 // Loading/Error screens
 export { MatchLoadingScreen } from "./MatchLoadingScreen";

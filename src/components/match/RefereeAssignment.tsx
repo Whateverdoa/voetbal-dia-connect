@@ -1,46 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
-interface RefereePinManagerProps {
+interface RefereeAssignmentProps {
   matchId: Id<"matches">;
   pin: string; // Coach PIN
-  currentRefereePin?: string;
+  currentRefereeId?: Id<"referees">;
+  currentRefereeName?: string | null;
 }
 
 /**
- * Allows the coach to assign or remove a referee PIN for the match.
- * The referee can then use this PIN + the match public code to access
- * the clock controls on /scheidsrechter.
+ * Allows the coach to assign or remove a referee from the match.
+ * Shows a dropdown of active referees from the database.
  */
-export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePinManagerProps) {
-  const setRefereePinMut = useMutation(api.matchActions.setRefereePin);
+export function RefereeAssignment({
+  matchId,
+  pin,
+  currentRefereeId,
+  currentRefereeName,
+}: RefereeAssignmentProps) {
+  const referees = useQuery(api.matches.listActiveReferees);
+  const assignReferee = useMutation(api.matchActions.assignReferee);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [newPin, setNewPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const hasReferee = currentRefereePin != null;
+  const hasReferee = currentRefereeId != null;
 
-  const handleAssign = async () => {
-    if (newPin.length < 4) {
-      setError("PIN moet minimaal 4 tekens zijn");
-      return;
-    }
-
+  const handleAssign = async (refereeId: Id<"referees">) => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      await setRefereePinMut({ matchId, pin, refereePin: newPin });
-      setSuccess("Scheidsrechter PIN ingesteld");
-      setNewPin("");
+      await assignReferee({ matchId, pin, refereeId });
+      setSuccess("Scheidsrechter toegewezen");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Onbekende fout";
@@ -57,7 +56,7 @@ export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePi
     setSuccess(null);
 
     try {
-      await setRefereePinMut({ matchId, pin, refereePin: undefined });
+      await assignReferee({ matchId, pin, refereeId: undefined });
       setSuccess("Scheidsrechter verwijderd");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -82,7 +81,7 @@ export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePi
           <span className="font-semibold text-gray-700">Scheidsrechter</span>
           {hasReferee && (
             <span className="text-xs bg-dia-green/10 text-dia-green px-2 py-0.5 rounded-full font-medium">
-              Actief
+              {currentRefereeName ?? "Toegewezen"}
             </span>
           )}
         </div>
@@ -93,7 +92,7 @@ export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePi
       {isOpen && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
           <p className="text-sm text-gray-500">
-            Stel een PIN in zodat de scheidsrechter de wedstrijdklok kan bedienen
+            Wijs een scheidsrechter toe zodat die de klok en score kan bedienen
             via <span className="font-mono text-xs">/scheidsrechter</span>.
           </p>
 
@@ -108,8 +107,8 @@ export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePi
           {hasReferee ? (
             <div className="space-y-2">
               <p className="text-sm text-gray-700">
-                Scheidsrechter PIN is ingesteld:{" "}
-                <span className="font-mono font-bold">{"•".repeat(currentRefereePin.length)}</span>
+                Toegewezen:{" "}
+                <span className="font-semibold">{currentRefereeName ?? "Onbekend"}</span>
               </p>
               <button
                 onClick={handleRemove}
@@ -123,25 +122,29 @@ export function RefereePinManager({ matchId, pin, currentRefereePin }: RefereePi
             </div>
           ) : (
             <div className="space-y-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value)}
-                placeholder="PIN voor scheidsrechter (4-6 tekens)"
-                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-center
-                           tracking-widest focus:border-dia-green focus:outline-none"
-                maxLength={6}
-              />
-              <button
-                onClick={handleAssign}
-                disabled={isLoading || newPin.length < 4}
-                className="w-full py-2 bg-dia-green text-white font-medium
-                           rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                           hover:bg-dia-green-light disabled:opacity-50 text-sm"
-              >
-                {isLoading ? "Bezig..." : "PIN instellen"}
-              </button>
+              {referees === undefined ? (
+                <p className="text-sm text-gray-500">Laden...</p>
+              ) : referees.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Geen scheidsrechters beschikbaar. Voeg ze toe via het admin panel.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {referees.map((ref) => (
+                    <button
+                      key={ref.id}
+                      onClick={() => handleAssign(ref.id)}
+                      disabled={isLoading}
+                      className="w-full py-2 px-3 text-left bg-gray-50 hover:bg-dia-green/10
+                                 rounded-lg transition-colors min-h-[44px] disabled:opacity-50
+                                 flex items-center justify-between"
+                    >
+                      <span className="font-medium text-gray-700">{ref.name}</span>
+                      <span className="text-xs text-dia-green font-medium">Toewijzen</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

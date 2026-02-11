@@ -7,6 +7,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyClockPin } from "./pinHelpers";
+import { fetchRefereeForMatch } from "./refereeHelpers";
 
 /**
  * Adjust the match score by +1 or -1 for a given team.
@@ -31,7 +32,8 @@ export const adjustScore = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!verifyClockPin(match, args.pin)) {
+    const referee = await fetchRefereeForMatch(ctx, match);
+    if (!verifyClockPin(match, args.pin, referee)) {
       throw new Error("Invalid match or PIN");
     }
 

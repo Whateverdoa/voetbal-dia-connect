@@ -16,6 +16,7 @@
     "postinstall": "npx convex codegen || true"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.73.0",
     "clsx": "^2.1.1",
     "convex": "^1.17.4",
     "lucide-react": "^0.468.0",

@@ -19,6 +19,7 @@ import {
   SubstitutionSuggestions,
   MatchLoadingScreen,
   MatchErrorScreen,
+  VoiceAssistant,
 } from "@/components/match";
 import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
 
@@ -178,6 +179,11 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
         />
+
+        {/* Voice assistant - available during live matches */}
+        {isLive && (
+          <VoiceAssistant matchId={match._id} pin={pin} />
+        )}
 
         {/* Tab navigation */}
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">

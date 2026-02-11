@@ -51,6 +51,7 @@ export function MatchControls({
 
   const totalGoals = homeScore + awayScore;
 
+
   const handleMutation = async (action: () => Promise<unknown>, actionName: string) => {
     setIsLoading(true);
     setError(null);

@@ -95,39 +95,15 @@ Simple PIN-based (no user accounts):
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
 - Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
-- Public match browser ✅ (homepage shows all matches grouped by status, clickable to live view)
-- Standen page ✅ (/standen — minimal scoreboard for kantine/tablet, supports ?team= and ?vandaag=true filters)
+- Public match browser ✅ (homepage hero element — code input removed, match browser primary, coach/referee login secondary)
+- Standen page ✅ (/standen — defaults to today's matches, ?alle=true for all, minimal scoreboard for kantine/tablet)
 - Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only)
-- **Admin match management** ❌ — NOT YET IMPLEMENTED (see below)
+- Admin match management ✅ (Wedstrijden tab in admin: list/create/edit/delete matches, referee assignment, cascade delete)
 - PWA — not yet
 - Tests — none yet
 - Deployment — Vercel target, Vercel + Convex configured ✅
 
 ## What Needs Work
-
-### 1. Admin Match Management (HIGH PRIORITY)
-
-**Currently missing:** Admin cannot create, edit, or delete matches. Only coaches can create matches via `/coach/new`.
-
-**Required:**
-- Add **Matches Tab** to Admin panel (`/admin`)
-- View all matches across all teams (with filters by team, status, date)
-- Create matches for any team (without needing a coach PIN)
-- Edit matches (opponent, date, status, scores, referee assignment)
-- Delete matches (with confirmation — cascades to `matchPlayers` and `matchEvents`)
-- Optional: Bulk import from CSV/JSON for season scheduling
-
-**Why it matters:**
-- Admins/schedulers create the match calendar, not coaches
-- Mistakes happen — someone needs to delete/correct matches
-- Coaches should focus on managing their team during matches, not data entry
-
-**Implementation:**
-- New `convex/adminMatches.ts` with mutations: `createMatch`, `updateMatch`, `deleteMatch`
-- New `src/components/admin/MatchesTab.tsx` component
-- Add tab to `/admin` page
-
-### 2. Other Items
 
 - **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
 - **PWA** — offline resilience, installable on home screen
@@ -140,16 +116,8 @@ Simple PIN-based (no user accounts):
 
 | Task | Description | Status |
 |------|-------------|--------|
-| **Admin Match Management** | Add Matches tab to Admin panel: create, edit, delete matches. Admins need to manage the match calendar without being a coach. | ❌ Not started |
 | **Bulk Match Import** | Allow admin to import matches from CSV/JSON for season scheduling | ❌ Not started |
-
-### 🟡 MEDIUM PRIORITY
-
-| Task | Description | Status |
-|------|-------------|--------|
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
-| **Match Edit (Admin)** | Edit match details: opponent, date, time, referee assignment | ❌ Not started |
-| **Cascade Delete** | When deleting a match, also delete related `matchPlayers` and `matchEvents` | ❌ Not started |
 
 ### 🟢 LOW PRIORITY / FUTURE
 
@@ -178,8 +146,10 @@ Simple PIN-based (no user accounts):
 - ~~**Referee role ("scheidsrechter")**~~: Global referee records in `referees` table. Admin creates referees (Admin Panel → Scheidsrechters tab). Coach assigns a referee to a match via `RefereeAssignment` dropdown. Referee uses their global PIN + match code to access `/scheidsrechter`. Controls clock (start/pause/resume/end quarter) and edits scores with optional shirt number tracking. Match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge.
 - ~~**Referee score editing**~~: Referee can +/- scores for both teams. On "+", optional shirt number prompt logs a lightweight goal event with `note: "Rugnummer: N"` so the coach can later resolve to a named player. Mutation in `convex/scoreActions.ts`.
 - ~~**Wedstrijd Browser (homepage)**~~: Public match list on homepage, grouped by status (LIVE/GEPLAND/AFGELOPEN). Real-time via `listPublicMatches` query in `convex/publicQueries.ts`. Component: `src/components/MatchBrowser.tsx`. Clickable cards link to `/live/[code]`.
-- ~~**Standen page**~~: Minimal scoreboard view at `/standen` for kantine/tablet display. Reuses `listPublicMatches` query. Supports `?team=` and `?vandaag=true` URL filters. Real-time score updates.
+- ~~**Homepage simplification**~~: Code input removed as primary UI. MatchBrowser is now the hero element. Coach/referee login as secondary links below. Collapsible "Heb je een code?" for edge cases. "Vandaag live" link to standen page.
+- ~~**Standen page (defaults to today)**~~: Minimal scoreboard at `/standen`. Defaults to **today's matches only** (live + finished today + scheduled today). `?alle=true` shows all matches. Toggle link between views. Supports `?team=` filter. Real-time score updates.
 - ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
+- ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
 
 ### Future Features
 

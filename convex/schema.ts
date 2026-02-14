@@ -42,6 +42,9 @@ export default defineSchema({
     name: v.string(),
     number: v.optional(v.number()), // Shirt number
     active: v.boolean(),
+    // Position codes: K (keeper), V (verdediger), M (midden), A (aanval)
+    positionPrimary: v.optional(v.string()),
+    positionSecondary: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_team", ["teamId"]),
 
@@ -84,6 +87,10 @@ export default defineSchema({
     // Match lead (wedstrijdleider) — coach who claimed lead role for this match
     leadCoachId: v.optional(v.id("coaches")),
 
+    // Field view: formation key (e.g. "8v8_3-3-1") and pitch type
+    formationId: v.optional(v.string()),
+    pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
+
     // Timestamps
     startedAt: v.optional(v.number()),
     quarterStartedAt: v.optional(v.number()), // When current quarter began (for match clock)
@@ -101,6 +108,8 @@ export default defineSchema({
     playerId: v.id("players"),
     isKeeper: v.boolean(),
     onField: v.boolean(), // Currently on field?
+    // Slot on pitch (0 = keeper, 1..N = outfield per formation); undefined = list-only
+    fieldSlotIndex: v.optional(v.number()),
     // Playing time tracking
     minutesPlayed: v.optional(v.number()), // Total minutes played this match
     lastSubbedInAt: v.optional(v.number()), // Timestamp when player went on field

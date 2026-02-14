@@ -36,6 +36,8 @@ export const getPlayingTime = query({
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           onField: mp.onField,
           isKeeper: mp.isKeeper,
+          positionPrimary: player.positionPrimary,
+          positionSecondary: player.positionSecondary,
         };
       })
     );
@@ -82,6 +84,8 @@ export const getSuggestedSubstitutions = query({
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           onField: mp.onField,
           isKeeper: mp.isKeeper,
+          positionPrimary: player.positionPrimary,
+          positionSecondary: player.positionSecondary,
         };
       })
     );
@@ -94,27 +98,47 @@ export const getSuggestedSubstitutions = query({
       .filter((p) => !p.onField)
       .sort((a, b) => a.minutesPlayed - b.minutesPlayed);
 
+    function positionMatch(
+      a: { positionPrimary?: string; positionSecondary?: string },
+      b: { positionPrimary?: string; positionSecondary?: string }
+    ): boolean {
+      if (!a.positionPrimary && !a.positionSecondary) return false;
+      const aCodes = [a.positionPrimary, a.positionSecondary].filter(Boolean) as string[];
+      const bCodes = [b.positionPrimary, b.positionSecondary].filter(Boolean) as string[];
+      return aCodes.some((ac) => bCodes.includes(ac));
+    }
+
     const suggestions: Array<{
       playerOut: typeof validPlayers[number];
       playerIn: typeof validPlayers[number];
       timeDifference: number;
       reason: string;
     }> = [];
+    const usedBenchIds = new Set<string>();
 
     const maxSuggestions = Math.min(onField.length, onBench.length, 3);
     for (let i = 0; i < maxSuggestions; i++) {
       const playerOut = onField[i];
-      const playerIn = onBench[i];
-      if (!playerOut || !playerIn) break;
+      if (!playerOut) break;
 
-      const timeDiff = playerOut.minutesPlayed - playerIn.minutesPlayed;
+      const benchAvailable = onBench.filter((p) => !usedBenchIds.has(p.playerId));
+      const positionMatches = benchAvailable.filter((p) => positionMatch(playerOut, p));
+      const sortedByTime = (list: typeof benchAvailable) =>
+        [...list].sort((a, b) => a.minutesPlayed - b.minutesPlayed);
+      const candidateIn = positionMatches.length > 0
+        ? sortedByTime(positionMatches)[0]
+        : sortedByTime(benchAvailable)[0];
+      if (!candidateIn) break;
+
+      const timeDiff = playerOut.minutesPlayed - candidateIn.minutesPlayed;
       if (timeDiff > 2) {
         suggestions.push({
           playerOut,
-          playerIn,
+          playerIn: candidateIn,
           timeDifference: Math.round(timeDiff * 10) / 10,
-          reason: `${playerIn.name} heeft ${Math.round(timeDiff)} min minder gespeeld`,
+          reason: `${candidateIn.name} heeft ${Math.round(timeDiff)} min minder gespeeld`,
         });
+        usedBenchIds.add(candidateIn.playerId);
       }
     }
 

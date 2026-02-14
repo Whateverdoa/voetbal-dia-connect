@@ -128,6 +128,9 @@ export const getForCoach = query({
           onField: mp.onField,
           isKeeper: mp.isKeeper,
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
+          positionPrimary: player.positionPrimary,
+          positionSecondary: player.positionSecondary,
+          fieldSlotIndex: mp.fieldSlotIndex,
         };
       })
     );

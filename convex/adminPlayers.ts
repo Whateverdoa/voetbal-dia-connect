@@ -12,15 +12,19 @@ export const createPlayer = mutation({
     teamId: v.id("teams"),
     name: v.string(),
     number: v.optional(v.number()),
+    positionPrimary: v.optional(v.string()),
+    positionSecondary: v.optional(v.string()),
     adminPin: v.string(),
   },
   handler: async (ctx, args) => {
     verifyAdminPin(args.adminPin);
-    
+
     return await ctx.db.insert("players", {
       teamId: args.teamId,
       name: args.name,
       number: args.number,
+      positionPrimary: args.positionPrimary,
+      positionSecondary: args.positionSecondary,
       active: true,
       createdAt: Date.now(),
     });
@@ -33,18 +37,22 @@ export const createPlayers = mutation({
     players: v.array(v.object({
       name: v.string(),
       number: v.optional(v.number()),
+      positionPrimary: v.optional(v.string()),
+      positionSecondary: v.optional(v.string()),
     })),
     adminPin: v.string(),
   },
   handler: async (ctx, args) => {
     verifyAdminPin(args.adminPin);
-    
+
     const ids = [];
     for (const p of args.players) {
       const id = await ctx.db.insert("players", {
         teamId: args.teamId,
         name: p.name,
         number: p.number,
+        positionPrimary: p.positionPrimary,
+        positionSecondary: p.positionSecondary,
         active: true,
         createdAt: Date.now(),
       });
@@ -70,6 +78,8 @@ export const updatePlayer = mutation({
     name: v.optional(v.string()),
     number: v.optional(v.number()),
     active: v.optional(v.boolean()),
+    positionPrimary: v.optional(v.string()),
+    positionSecondary: v.optional(v.string()),
     adminPin: v.string(),
   },
   handler: async (ctx, args) => {

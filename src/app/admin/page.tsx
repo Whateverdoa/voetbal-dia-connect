@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { useConvex } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -9,34 +10,41 @@ import { TeamsTab } from "@/components/admin/TeamsTab";
 import { PlayersTab } from "@/components/admin/PlayersTab";
 import { CoachesTab } from "@/components/admin/CoachesTab";
 import { RefereesTab } from "@/components/admin/RefereesTab";
-import { Lock, Users, UserCog, Shield, Flag } from "lucide-react";
+import { MatchesTab } from "@/components/admin/MatchesTab";
+import { Lock, Users, UserCog, Shield, Flag, Calendar } from "lucide-react";
+import { setAdminPin, getAdminPin, clearAdminSession, isAdminAuthenticated } from "@/lib/adminSession";
 
-import { ADMIN_PIN } from "@/lib/constants";
-
-type Tab = "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
+type Tab = "wedstrijden" | "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("teams");
+  const [verifying, setVerifying] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("wedstrijden");
+  const convex = useConvex();
 
   // Check session storage on mount
   useEffect(() => {
-    const stored = sessionStorage.getItem("admin_auth");
-    if (stored === "true") {
+    if (isAdminAuthenticated()) {
       setIsAuthenticated(true);
     }
   }, []);
 
-  const handlePinSubmit = () => {
-    if (pinInput === ADMIN_PIN) {
+  const handlePinSubmit = async () => {
+    if (!pinInput || verifying) return;
+    setVerifying(true);
+    setPinError(false);
+    try {
+      // Server-side PIN verification — PIN never hardcoded in client bundle
+      await convex.query(api.admin.verifyAdminPinQuery, { pin: pinInput });
+      setAdminPin(pinInput);
       setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-      setPinError(false);
-    } else {
+    } catch {
       setPinError(true);
       setPinInput("");
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -70,10 +78,10 @@ export default function AdminPage() {
             )}
             <button
               onClick={handlePinSubmit}
-              disabled={!pinInput}
+              disabled={!pinInput || verifying}
               className="w-full py-3 bg-dia-green text-white rounded-lg font-semibold disabled:bg-gray-300"
             >
-              Inloggen
+              {verifying ? "Controleren..." : "Inloggen"}
             </button>
           </div>
           <Link
@@ -100,7 +108,7 @@ export default function AdminPage() {
           </div>
           <button
             onClick={() => {
-              sessionStorage.removeItem("admin_auth");
+              clearAdminSession();
               setIsAuthenticated(false);
             }}
             className="text-sm text-white/80 hover:text-white"
@@ -113,6 +121,12 @@ export default function AdminPage() {
       {/* Tabs */}
       <div className="bg-white border-b sticky top-[72px] z-30">
         <div className="max-w-4xl mx-auto flex">
+          <TabButton
+            active={activeTab === "wedstrijden"}
+            onClick={() => setActiveTab("wedstrijden")}
+            icon={<Calendar size={18} />}
+            label="Wedstr."
+          />
           <TabButton
             active={activeTab === "teams"}
             onClick={() => setActiveTab("teams")}
@@ -149,6 +163,7 @@ export default function AdminPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow p-4">
+          {activeTab === "wedstrijden" && <MatchesTabWrapper />}
           {activeTab === "teams" && <TeamsTabWrapper />}
           {activeTab === "spelers" && <PlayersTabWrapper />}
           {activeTab === "coaches" && <CoachesTabWrapper />}
@@ -183,6 +198,17 @@ function TabButton({
       {icon}
       {label}
     </button>
+  );
+}
+
+function MatchesTabWrapper() {
+  const teams = useQuery(api.admin.listAllTeams);
+  
+  return (
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Wedstrijden beheren</h2>
+      <MatchesTab teams={teams} />
+    </div>
   );
 }
 

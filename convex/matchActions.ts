@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
 import { verifyClockPin, verifyCoachPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
+import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 
 // Re-export from split modules for backwards compatibility
 export { addGoal, substitute, removeLastGoal } from "./matchEvents";
@@ -16,19 +17,7 @@ export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLine
 export { pauseClock, resumeClock } from "./clockActions";
 export { adjustScore } from "./scoreActions";
 export { assignReferee } from "./refereeActions";
-
-// Generate a random 6-char code
-function generatePublicCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No O, 0, I, 1
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
-
-// Maximum retry attempts for generating unique public code
-const MAX_CODE_GENERATION_ATTEMPTS = 20;
+export { claimMatchLead, releaseMatchLead } from "./matchLeadActions";
 
 
 // Create a new match

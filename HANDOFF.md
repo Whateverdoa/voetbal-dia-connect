@@ -62,7 +62,7 @@ There are two repos:
 - **coaches** — PIN-authenticated, linked to 1+ teams
 - **referees** — global referee records with PIN, active flag (assigned to matches by admin/coach)
 - **players** — per team, shirt number, active flag
-- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
+- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), optional `leadCoachId` (links to coaches table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
 - **matchPlayers** — junction: which players in this match, onField/isKeeper state
 - **matchEvents** — goal, assist, sub_in, sub_out, quarter_start/end, yellow/red cards
 
@@ -95,23 +95,45 @@ Simple PIN-based (no user accounts):
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
 - Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
+- Public match browser ✅ (homepage hero element — code input removed, match browser primary, coach/referee login secondary)
+- Standen page ✅ (/standen — defaults to today's matches, ?alle=true for all, minimal scoreboard for kantine/tablet)
+- Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only)
+- Admin match management ✅ (Wedstrijden tab in admin: list/create/edit/delete matches, referee assignment, cascade delete)
 - PWA — not yet
 - Tests — none yet
-- Deployment — Vercel target, not fully configured
+- Deployment — Vercel target, Vercel + Convex configured ✅
 
 ## What Needs Work
 
-1. **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
-2. **PWA** — offline resilience, installable on home screen
-3. **Match history / stats** — post-match summaries, player stat aggregation
-4. **Testing** — Convex function tests, component tests, smoke test automation
-5. **Deployment pipeline** — Vercel CI/CD, environment management
+- **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
+- **PWA** — offline resilience, installable on home screen
+- **Match history / stats** — post-match summaries, player stat aggregation
+- **Testing** — Convex function tests, component tests, smoke test automation
+
+## TODO — Priority Task List
+
+### 🔴 HIGH PRIORITY
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
+| **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
+
+### 🟢 LOW PRIORITY / FUTURE
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **PWA Support** | Offline resilience, installable on home screen | ❌ Not started |
+| **Match History Stats** | Post-match summaries, player stat aggregation | ❌ Not started |
+| **Mobile UX Audit** | Professional review of pitch-side usability | ❌ Not started |
+| **Named Login** | Replace PIN-only with name + PIN for audit trails | ❌ Not started |
+| **Cumulative Clock** | Display game time 0-60 min instead of per-quarter | ❌ Not started |
 
 ## Follow-Up Items (from code review)
 
-### Critical — Security
+### ~~Critical — Security~~ (RESOLVED)
 
-- **Admin PIN exposed in client bundle**: `NEXT_PUBLIC_ADMIN_PIN` is inlined into the browser JS bundle by Next.js. Anyone can find it in DevTools. The real security is server-side (Convex `adminAuth.ts` checks `process.env.ADMIN_PIN`), but the client-side gate is defeated. **Fix**: Replace the client-side PIN comparison in `admin/page.tsx` with a Convex query (`verifyAdminPin`) and remove the `NEXT_PUBLIC_` env var entirely. The admin UI should call the server to verify, not compare locally.
+- ~~**Admin PIN exposed in client bundle**~~: **FIXED.** `NEXT_PUBLIC_ADMIN_PIN` removed entirely. Admin login now verifies PIN server-side via `convex/adminAuth.ts` → `verifyAdminPinQuery`. PIN is stored in `sessionStorage` after successful server verification (cleared on tab close). All admin components read PIN from `src/lib/adminSession.ts` → `getAdminPin()`. The PIN never appears in the client JS bundle.
 
 ### Warnings — Code Quality
 
@@ -123,6 +145,11 @@ Simple PIN-based (no user accounts):
 - ~~**Pause/stop clock during quarter**~~: Coach and referee can pause/resume the match clock mid-quarter. Uses `pausedAt` / `accumulatedPauseTime` fields. Playing time tracking accounts for pauses. Mutations in `convex/clockActions.ts`.
 - ~~**Referee role ("scheidsrechter")**~~: Global referee records in `referees` table. Admin creates referees (Admin Panel → Scheidsrechters tab). Coach assigns a referee to a match via `RefereeAssignment` dropdown. Referee uses their global PIN + match code to access `/scheidsrechter`. Controls clock (start/pause/resume/end quarter) and edits scores with optional shirt number tracking. Match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge.
 - ~~**Referee score editing**~~: Referee can +/- scores for both teams. On "+", optional shirt number prompt logs a lightweight goal event with `note: "Rugnummer: N"` so the coach can later resolve to a named player. Mutation in `convex/scoreActions.ts`.
+- ~~**Wedstrijd Browser (homepage)**~~: Public match list on homepage, grouped by status (LIVE/GEPLAND/AFGELOPEN). Real-time via `listPublicMatches` query in `convex/publicQueries.ts`. Component: `src/components/MatchBrowser.tsx`. Clickable cards link to `/live/[code]`.
+- ~~**Homepage simplification**~~: Code input removed as primary UI. MatchBrowser is now the hero element. Coach/referee login as secondary links below. Collapsible "Heb je een code?" for edge cases. "Vandaag live" link to standen page.
+- ~~**Standen page (defaults to today)**~~: Minimal scoreboard at `/standen`. Defaults to **today's matches only** (live + finished today + scheduled today). `?alle=true` shows all matches. Toggle link between views. Supports `?team=` filter. Real-time score updates.
+- ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
+- ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
 
 ### Future Features
 

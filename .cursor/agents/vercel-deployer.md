@@ -295,6 +295,57 @@ This project runs on **Windows with PowerShell**. Key differences from Unix shel
 - Standard Unix commands like `head`, `tail`, `wc`, `cat` are not available. Use PowerShell equivalents (`Get-Content`, `Measure-Object`, etc.) or the built-in tools provided by Cursor.
 - File paths use backslashes (`\`) but forward slashes (`/`) also work in most contexts.
 
+## GitHub CLI (gh)
+
+The GitHub CLI is installed at `C:\Program Files\GitHub CLI\gh.exe` and added to the user PATH.
+
+### Creating Pull Requests
+
+Use `gh pr create` to create PRs from the command line:
+
+```powershell
+# Create a PR (PowerShell-compatible syntax)
+$title = "feat: Your feature title"
+$body = @"
+## Summary
+
+- Change one
+- Change two
+
+## Post-deploy
+
+Any post-deploy steps here.
+"@
+gh pr create --base main --head feature/your-branch --title $title --body $body
+```
+
+**Note:** PowerShell does NOT support heredoc (`<<'EOF'`). Use the `@"..."@` here-string syntax instead.
+
+### Other Useful gh Commands
+
+```powershell
+# Check authentication status
+gh auth status
+
+# List open PRs
+gh pr list
+
+# View PR details
+gh pr view 3
+
+# Merge a PR
+gh pr merge 3 --merge
+
+# Check PR status (CI checks)
+gh pr checks 3
+```
+
+### If gh is Not Found
+
+If `gh` is not recognized, the PATH may not have refreshed. Either:
+1. Restart your terminal/IDE
+2. Use the full path: `& "C:\Program Files\GitHub CLI\gh.exe" pr create ...`
+
 ## Quick Reference Commands
 
 ```bash
@@ -315,4 +366,10 @@ npx tsc --noEmit
 
 # Run tests
 npm run test:run
+
+# Create a PR (see GitHub CLI section above for full syntax)
+gh pr create --base main --head feature/branch --title "title" --body "body"
+
+# Merge a PR
+gh pr merge <number> --merge
 ```

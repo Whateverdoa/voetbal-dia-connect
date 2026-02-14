@@ -6,7 +6,6 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
-import clsx from "clsx";
 import {
   ScoreDisplay,
   MatchControls,
@@ -20,8 +19,10 @@ import {
   MatchLoadingScreen,
   MatchErrorScreen,
   RefereeAssignment,
+  MatchLeadBadge,
 } from "@/components/match";
 import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
+import { TabButton } from "@/components/match/TabButton";
 
 export default function CoachMatchPage() {
   return (
@@ -188,6 +189,14 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           currentRefereeName={match.refereeName}
         />
 
+        {/* Wedstrijdleider (match lead) */}
+        <MatchLeadBadge
+          matchId={match._id}
+          pin={pin}
+          hasLead={match.hasLead ?? false}
+          leadCoachName={match.leadCoachName ?? null}
+        />
+
         {/* Tab navigation */}
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
           <TabButton
@@ -267,31 +276,3 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
   );
 }
 
-interface TabButtonProps {
-  active: boolean;
-  onClick: () => void;
-  icon: string;
-  label: string;
-  badge?: boolean;
-}
-
-function TabButton({ active, onClick, icon, label, badge }: TabButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={clsx(
-        "flex-1 py-3 px-4 rounded-lg font-semibold transition-all",
-        "min-h-[48px] active:scale-[0.98] flex items-center justify-center gap-2",
-        active
-          ? "bg-dia-green text-white shadow-md"
-          : "bg-transparent text-gray-600 hover:bg-gray-100"
-      )}
-    >
-      <span className="text-lg">{icon}</span>
-      <span>{label}</span>
-      {badge && (
-        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-      )}
-    </button>
-  );
-}

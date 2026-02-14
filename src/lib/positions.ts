@@ -1,8 +1,13 @@
 /**
  * Position codes and labels for players (field view + substitution suggestions).
- * Codes: K (keeper), V (verdediger), M (midden), A (aanval).
+ *
+ * In Convex en in de Admin-panel gebruik je exact deze codes (hoofdletter):
+ *   K = Keeper
+ *   V = Verdediger
+ *   M = Midden
+ *   A = Aanval
+ * Anders werken positie-gebaseerde wisselsuggesties niet.
  */
-
 export const POSITION_CODES = ["K", "V", "M", "A"] as const;
 export type PositionCode = (typeof POSITION_CODES)[number];
 

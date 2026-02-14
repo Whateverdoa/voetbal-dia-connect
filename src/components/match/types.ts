@@ -10,6 +10,9 @@ export interface MatchPlayer {
   onField: boolean;
   isKeeper: boolean;
   minutesPlayed?: number;
+  positionPrimary?: string;
+  positionSecondary?: string;
+  fieldSlotIndex?: number;
 }
 
 export interface MatchEvent {
@@ -51,4 +54,6 @@ export interface Match {
   teamName: string;
   players: MatchPlayer[];
   events: MatchEvent[];
+  formationId?: string;
+  pitchType?: "full" | "half";
 }

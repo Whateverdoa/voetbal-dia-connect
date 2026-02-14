@@ -6,6 +6,7 @@ export { GoalModal } from "./GoalModal";
 export { SubstitutionPanel } from "./SubstitutionPanel";
 export { PlayerCard } from "./PlayerCard";
 export { PlayerList } from "./PlayerList";
+export { PitchView } from "./PitchView";
 export { EventTimeline } from "./EventTimeline";
 export { LineupToggle } from "./LineupToggle";
 export { PlayingTimePanel } from "./PlayingTimePanel";

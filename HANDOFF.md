@@ -62,7 +62,7 @@ There are two repos:
 - **coaches** — PIN-authenticated, linked to 1+ teams
 - **referees** — global referee records with PIN, active flag (assigned to matches by admin/coach)
 - **players** — per team, shirt number, active flag
-- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
+- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), optional `leadCoachId` (links to coaches table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
 - **matchPlayers** — junction: which players in this match, onField/isKeeper state
 - **matchEvents** — goal, assist, sub_in, sub_out, quarter_start/end, yellow/red cards
 
@@ -95,6 +95,9 @@ Simple PIN-based (no user accounts):
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
 - Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
+- Public match browser ✅ (homepage shows all matches grouped by status, clickable to live view)
+- Standen page ✅ (/standen — minimal scoreboard for kantine/tablet, supports ?team= and ?vandaag=true filters)
+- Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only)
 - **Admin match management** ❌ — NOT YET IMPLEMENTED (see below)
 - PWA — not yet
 - Tests — none yet
@@ -174,6 +177,9 @@ Simple PIN-based (no user accounts):
 - ~~**Pause/stop clock during quarter**~~: Coach and referee can pause/resume the match clock mid-quarter. Uses `pausedAt` / `accumulatedPauseTime` fields. Playing time tracking accounts for pauses. Mutations in `convex/clockActions.ts`.
 - ~~**Referee role ("scheidsrechter")**~~: Global referee records in `referees` table. Admin creates referees (Admin Panel → Scheidsrechters tab). Coach assigns a referee to a match via `RefereeAssignment` dropdown. Referee uses their global PIN + match code to access `/scheidsrechter`. Controls clock (start/pause/resume/end quarter) and edits scores with optional shirt number tracking. Match view at `/scheidsrechter/match/[id]`. Distinct dark-gray nav with amber "SCHEIDSRECHTER" badge.
 - ~~**Referee score editing**~~: Referee can +/- scores for both teams. On "+", optional shirt number prompt logs a lightweight goal event with `note: "Rugnummer: N"` so the coach can later resolve to a named player. Mutation in `convex/scoreActions.ts`.
+- ~~**Wedstrijd Browser (homepage)**~~: Public match list on homepage, grouped by status (LIVE/GEPLAND/AFGELOPEN). Real-time via `listPublicMatches` query in `convex/publicQueries.ts`. Component: `src/components/MatchBrowser.tsx`. Clickable cards link to `/live/[code]`.
+- ~~**Standen page**~~: Minimal scoreboard view at `/standen` for kantine/tablet display. Reuses `listPublicMatches` query. Supports `?team=` and `?vandaag=true` URL filters. Real-time score updates.
+- ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
 
 ### Future Features
 

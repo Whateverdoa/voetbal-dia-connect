@@ -9,17 +9,18 @@ import { TeamsTab } from "@/components/admin/TeamsTab";
 import { PlayersTab } from "@/components/admin/PlayersTab";
 import { CoachesTab } from "@/components/admin/CoachesTab";
 import { RefereesTab } from "@/components/admin/RefereesTab";
-import { Lock, Users, UserCog, Shield, Flag } from "lucide-react";
+import { MatchesTab } from "@/components/admin/MatchesTab";
+import { Lock, Users, UserCog, Shield, Flag, Calendar } from "lucide-react";
 
 import { ADMIN_PIN } from "@/lib/constants";
 
-type Tab = "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
+type Tab = "wedstrijden" | "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("teams");
+  const [activeTab, setActiveTab] = useState<Tab>("wedstrijden");
 
   // Check session storage on mount
   useEffect(() => {
@@ -114,6 +115,12 @@ export default function AdminPage() {
       <div className="bg-white border-b sticky top-[72px] z-30">
         <div className="max-w-4xl mx-auto flex">
           <TabButton
+            active={activeTab === "wedstrijden"}
+            onClick={() => setActiveTab("wedstrijden")}
+            icon={<Calendar size={18} />}
+            label="Wedstr."
+          />
+          <TabButton
             active={activeTab === "teams"}
             onClick={() => setActiveTab("teams")}
             icon={<Shield size={18} />}
@@ -149,6 +156,7 @@ export default function AdminPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow p-4">
+          {activeTab === "wedstrijden" && <MatchesTabWrapper />}
           {activeTab === "teams" && <TeamsTabWrapper />}
           {activeTab === "spelers" && <PlayersTabWrapper />}
           {activeTab === "coaches" && <CoachesTabWrapper />}
@@ -183,6 +191,17 @@ function TabButton({
       {icon}
       {label}
     </button>
+  );
+}
+
+function MatchesTabWrapper() {
+  const teams = useQuery(api.admin.listAllTeams);
+  
+  return (
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Wedstrijden beheren</h2>
+      <MatchesTab teams={teams} />
+    </div>
   );
 }
 

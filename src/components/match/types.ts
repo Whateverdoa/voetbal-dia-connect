@@ -44,6 +44,9 @@ export interface Match {
   accumulatedPauseTime?: number;
   refereeId?: Id<"referees">;
   refereeName?: string | null;
+  leadCoachId?: Id<"coaches"> | null;
+  leadCoachName?: string | null;
+  hasLead?: boolean;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

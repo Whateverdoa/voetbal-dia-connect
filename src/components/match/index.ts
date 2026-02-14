@@ -19,6 +19,9 @@ export { FairnessLegend } from "./FairnessLegend";
 // Referee management
 export { RefereeAssignment } from "./RefereeAssignment";
 
+// Match lead (wedstrijdleider)
+export { MatchLeadBadge } from "./MatchLeadBadge";
+
 // Loading/Error screens
 export { MatchLoadingScreen } from "./MatchLoadingScreen";
 export { MatchErrorScreen } from "./MatchErrorScreen";

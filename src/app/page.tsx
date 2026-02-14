@@ -3,78 +3,98 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MatchBrowser } from "@/components/MatchBrowser";
 
 export default function Home() {
+  const [showCodeInput, setShowCodeInput] = useState(false);
   const [code, setCode] = useState("");
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length >= 4) {
+    if (code.length === 6) {
       router.push(`/live/${code.toUpperCase()}`);
     }
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
+    <main className="min-h-screen flex flex-col items-center p-4 pt-12">
+      <div className="max-w-md w-full space-y-6">
         {/* Logo/Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-dia-green">DIA Live</h1>
           <p className="mt-2 text-gray-600">Volg de wedstrijd live</p>
         </div>
 
-        {/* Public: Enter match code */}
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <div>
-            <label htmlFor="code" className="sr-only">
-              Wedstrijd code
-            </label>
-            <input
-              id="code"
-              type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="Voer wedstrijd code in"
-              className="w-full px-4 py-3 text-center text-2xl tracking-widest uppercase border-2 border-gray-300 rounded-lg focus:border-dia-green focus:outline-none"
-              maxLength={6}
-              autoComplete="off"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={code.length < 4}
-            className="w-full py-3 px-4 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Bekijk wedstrijd
-          </button>
-        </form>
+        {/* Match browser — primary element */}
+        <MatchBrowser />
 
-        {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">of</span>
-          </div>
+        {/* Vandaag live link */}
+        <div className="text-center">
+          <Link
+            href="/standen"
+            className="text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+          >
+            Vandaag live
+          </Link>
         </div>
 
-        {/* Coach login */}
-        <Link
-          href="/coach"
-          className="block w-full py-3 px-4 text-center border-2 border-dia-green text-dia-green font-semibold rounded-lg hover:bg-green-50 transition-colors"
-        >
-          Coach login
-        </Link>
+        {/* Secondary navigation */}
+        <div className="flex gap-3">
+          <Link
+            href="/coach"
+            className="flex-1 py-2.5 px-4 text-center border-2 border-dia-green text-dia-green text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
+          >
+            Coach login
+          </Link>
+          <Link
+            href="/scheidsrechter"
+            className="flex-1 py-2.5 px-4 text-center border-2 border-gray-400 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Scheidsrechter
+          </Link>
+        </div>
 
-        {/* Referee login */}
-        <Link
-          href="/scheidsrechter"
-          className="block w-full py-3 px-4 text-center border-2 border-gray-400 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Scheidsrechter
-        </Link>
+        {/* Collapsible code input for edge cases */}
+        <div className="text-center">
+          {!showCodeInput ? (
+            <button
+              onClick={() => setShowCodeInput(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Heb je een code?
+            </button>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  placeholder="Wedstrijd code"
+                  className="flex-1 px-3 py-2 text-center text-lg tracking-widest uppercase border-2 border-gray-300 rounded-lg focus:border-dia-green focus:outline-none"
+                  maxLength={6}
+                  autoComplete="off"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={code.length !== 6}
+                  className="px-4 py-2 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Ga
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowCodeInput(false); setCode(""); }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Sluiten
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* Footer */}

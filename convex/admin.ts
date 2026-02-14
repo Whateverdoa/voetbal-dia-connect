@@ -44,3 +44,10 @@ export {
   updateReferee,
   deleteReferee,
 } from "./adminReferees";
+
+export {
+  listAllMatches,
+  createMatch,
+  updateMatch,
+  deleteMatch,
+} from "./adminMatches";

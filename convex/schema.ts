@@ -81,6 +81,9 @@ export default defineSchema({
     // Referee assignment (optional — when set, referee can control the clock)
     refereeId: v.optional(v.id("referees")),
 
+    // Match lead (wedstrijdleider) — coach who claimed lead role for this match
+    leadCoachId: v.optional(v.id("coaches")),
+
     // Timestamps
     startedAt: v.optional(v.number()),
     quarterStartedAt: v.optional(v.number()), // When current quarter began (for match clock)

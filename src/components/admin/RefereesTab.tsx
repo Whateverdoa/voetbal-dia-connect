@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check } from "lucide-react";
-import { ADMIN_PIN } from "@/lib/constants";
+import { getAdminPin } from "@/lib/adminSession";
 
 interface Referee {
   _id: Id<"referees">;
@@ -35,7 +35,7 @@ export function RefereesTab() {
       await createReferee({
         name: newName.trim(),
         pin: newPin.trim(),
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewPin("");
@@ -53,7 +53,7 @@ export function RefereesTab() {
         name: editName.trim() || undefined,
         pin: editPin.trim() || undefined,
         active: editActive,
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setEditingId(null);
       setStatus("Scheidsrechter bijgewerkt");
@@ -65,7 +65,7 @@ export function RefereesTab() {
 
   const handleDelete = async (refereeId: Id<"referees">) => {
     try {
-      await deleteReferee({ refereeId, adminPin: ADMIN_PIN });
+      await deleteReferee({ refereeId, adminPin: getAdminPin() });
       setDeleteConfirm(null);
       setStatus("Scheidsrechter verwijderd");
     } catch (err) {

@@ -20,7 +20,7 @@ interface Coach {
   teams: { id: Id<"teams">; name: string }[];
 }
 
-import { ADMIN_PIN } from "@/lib/constants";
+import { getAdminPin } from "@/lib/adminSession";
 
 export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
   const coaches = useQuery(api.admin.listCoaches) as Coach[] | undefined;
@@ -45,7 +45,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         name: newName.trim(),
         pin: newPin.trim(),
         teamIds: newTeamIds,
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewPin("");
@@ -64,7 +64,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         name: editName.trim() || undefined,
         pin: editPin.trim() || undefined,
         teamIds: editTeamIds,
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setEditingId(null);
       setStatus("✅ Coach bijgewerkt");
@@ -76,7 +76,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleDelete = async (coachId: Id<"coaches">) => {
     try {
-      await deleteCoach({ coachId, adminPin: ADMIN_PIN });
+      await deleteCoach({ coachId, adminPin: getAdminPin() });
       setDeleteConfirm(null);
       setStatus("✅ Coach verwijderd");
     } catch (err) {

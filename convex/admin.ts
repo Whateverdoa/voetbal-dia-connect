@@ -1,9 +1,12 @@
 /**
  * Admin operations - Re-exports from split modules
  * 
- * All admin mutations now require adminPin verification.
- * Use ADMIN_PIN environment variable or default "9999" for development.
+ * All admin mutations require adminPin verification (server-side).
+ * PIN never leaves the server — set via: npx convex env set ADMIN_PIN your-pin
  */
+
+// Admin login verification (server-side only)
+export { verifyAdminPinQuery } from "./adminAuth";
 
 // Re-export all admin operations
 export {

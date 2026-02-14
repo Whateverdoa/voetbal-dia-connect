@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { useConvex } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -11,8 +12,7 @@ import { CoachesTab } from "@/components/admin/CoachesTab";
 import { RefereesTab } from "@/components/admin/RefereesTab";
 import { MatchesTab } from "@/components/admin/MatchesTab";
 import { Lock, Users, UserCog, Shield, Flag, Calendar } from "lucide-react";
-
-import { ADMIN_PIN } from "@/lib/constants";
+import { setAdminPin, getAdminPin, clearAdminSession, isAdminAuthenticated } from "@/lib/adminSession";
 
 type Tab = "wedstrijden" | "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 
@@ -20,24 +20,31 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("wedstrijden");
+  const convex = useConvex();
 
   // Check session storage on mount
   useEffect(() => {
-    const stored = sessionStorage.getItem("admin_auth");
-    if (stored === "true") {
+    if (isAdminAuthenticated()) {
       setIsAuthenticated(true);
     }
   }, []);
 
-  const handlePinSubmit = () => {
-    if (pinInput === ADMIN_PIN) {
+  const handlePinSubmit = async () => {
+    if (!pinInput || verifying) return;
+    setVerifying(true);
+    setPinError(false);
+    try {
+      // Server-side PIN verification — PIN never hardcoded in client bundle
+      await convex.query(api.admin.verifyAdminPinQuery, { pin: pinInput });
+      setAdminPin(pinInput);
       setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-      setPinError(false);
-    } else {
+    } catch {
       setPinError(true);
       setPinInput("");
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -71,10 +78,10 @@ export default function AdminPage() {
             )}
             <button
               onClick={handlePinSubmit}
-              disabled={!pinInput}
+              disabled={!pinInput || verifying}
               className="w-full py-3 bg-dia-green text-white rounded-lg font-semibold disabled:bg-gray-300"
             >
-              Inloggen
+              {verifying ? "Controleren..." : "Inloggen"}
             </button>
           </div>
           <Link
@@ -101,7 +108,7 @@ export default function AdminPage() {
           </div>
           <button
             onClick={() => {
-              sessionStorage.removeItem("admin_auth");
+              clearAdminSession();
               setIsAuthenticated(false);
             }}
             className="text-sm text-white/80 hover:text-white"

@@ -131,9 +131,9 @@ Simple PIN-based (no user accounts):
 
 ## Follow-Up Items (from code review)
 
-### Critical — Security
+### ~~Critical — Security~~ (RESOLVED)
 
-- **Admin PIN exposed in client bundle**: `NEXT_PUBLIC_ADMIN_PIN` is inlined into the browser JS bundle by Next.js. Anyone can find it in DevTools. The real security is server-side (Convex `adminAuth.ts` checks `process.env.ADMIN_PIN`), but the client-side gate is defeated. **Fix**: Replace the client-side PIN comparison in `admin/page.tsx` with a Convex query (`verifyAdminPin`) and remove the `NEXT_PUBLIC_` env var entirely. The admin UI should call the server to verify, not compare locally.
+- ~~**Admin PIN exposed in client bundle**~~: **FIXED.** `NEXT_PUBLIC_ADMIN_PIN` removed entirely. Admin login now verifies PIN server-side via `convex/adminAuth.ts` → `verifyAdminPinQuery`. PIN is stored in `sessionStorage` after successful server verification (cleared on tab close). All admin components read PIN from `src/lib/adminSession.ts` → `getAdminPin()`. The PIN never appears in the client JS bundle.
 
 ### Warnings — Code Quality
 

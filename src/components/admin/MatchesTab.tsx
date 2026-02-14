@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { ADMIN_PIN } from "@/lib/constants";
+import { getAdminPin } from "@/lib/adminSession";
 import { MatchRow, type AdminMatch } from "./MatchRow";
 import { MatchForm } from "./MatchForm";
 
@@ -15,7 +15,8 @@ interface MatchesTabProps {
 }
 
 export function MatchesTab({ teams }: MatchesTabProps) {
-  const matches = useQuery(api.admin.listAllMatches, { adminPin: ADMIN_PIN });
+  const adminPin = getAdminPin();
+  const matches = useQuery(api.admin.listAllMatches, { adminPin });
   const coaches = useQuery(api.admin.listCoaches);
   const referees = useQuery(api.matches.listActiveReferees);
   const updateMatch = useMutation(api.admin.updateMatch);
@@ -52,7 +53,7 @@ export function MatchesTab({ teams }: MatchesTabProps) {
     try {
       await updateMatch({
         matchId,
-        adminPin: ADMIN_PIN,
+        adminPin,
         refereeId: editRefereeId
           ? (editRefereeId as Id<"referees">)
           : null,

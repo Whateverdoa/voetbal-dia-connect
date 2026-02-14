@@ -12,7 +12,7 @@ interface Team {
   clubName: string;
 }
 
-import { ADMIN_PIN } from "@/lib/constants";
+import { getAdminPin } from "@/lib/adminSession";
 
 export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(null);
@@ -40,7 +40,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         teamId: selectedTeamId,
         name: newName.trim(),
         number: newNumber ? parseInt(newNumber) : undefined,
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewNumber("");
@@ -57,7 +57,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         playerId,
         name: editName.trim() || undefined,
         number: editNumber ? parseInt(editNumber) : undefined,
-        adminPin: ADMIN_PIN,
+        adminPin: getAdminPin(),
       });
       setEditingId(null);
       setStatus("✅ Speler bijgewerkt");
@@ -69,7 +69,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleToggleActive = async (playerId: Id<"players">, currentActive: boolean) => {
     try {
-      await updatePlayer({ playerId, active: !currentActive, adminPin: ADMIN_PIN });
+      await updatePlayer({ playerId, active: !currentActive, adminPin: getAdminPin() });
       setStatus(currentActive ? "⚪ Speler inactief" : "🟢 Speler actief");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Onbekende fout";
@@ -79,7 +79,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleDelete = async (playerId: Id<"players">) => {
     try {
-      await deletePlayer({ playerId, adminPin: ADMIN_PIN });
+      await deletePlayer({ playerId, adminPin: getAdminPin() });
       setDeleteConfirm(null);
       setStatus("✅ Speler verwijderd");
     } catch (err) {

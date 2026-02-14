@@ -116,7 +116,7 @@ Simple PIN-based (no user accounts):
 
 | Task | Description | Status |
 |------|-------------|--------|
-| **Bulk Match Import** | Allow admin to import matches from CSV/JSON for season scheduling | ❌ Not started |
+| **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
 
 ### 🟢 LOW PRIORITY / FUTURE

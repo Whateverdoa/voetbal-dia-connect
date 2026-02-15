@@ -18,6 +18,7 @@ export {
   toggleKeeper,
   toggleShowLineup,
   assignPlayerToSlot,
+  swapFieldPositions,
   setMatchFormation,
 } from "./matchLineup";
 export { pauseClock, resumeClock } from "./clockActions";

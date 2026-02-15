@@ -134,6 +134,43 @@ export const assignPlayerToSlot = mutation({
   },
 });
 
+// Swap field positions of two on-field players (exchange their fieldSlotIndex)
+export const swapFieldPositions = mutation({
+  args: {
+    matchId: v.id("matches"),
+    pin: v.string(),
+    playerAId: v.id("players"),
+    playerBId: v.id("players"),
+  },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match || match.coachPin !== args.pin) {
+      throw new Error("Invalid match or PIN");
+    }
+
+    const mpA = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match_player", (q) =>
+        q.eq("matchId", args.matchId).eq("playerId", args.playerAId)
+      )
+      .first();
+    const mpB = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match_player", (q) =>
+        q.eq("matchId", args.matchId).eq("playerId", args.playerBId)
+      )
+      .first();
+
+    if (!mpA || !mpB) throw new Error("Player not in this match");
+    if (!mpA.onField || !mpB.onField) throw new Error("Both players must be on field");
+
+    const slotA = mpA.fieldSlotIndex;
+    const slotB = mpB.fieldSlotIndex;
+    await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB });
+    await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA });
+  },
+});
+
 // Set match formation and/or pitch type (field view)
 export const setMatchFormation = mutation({
   args: {

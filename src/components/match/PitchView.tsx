@@ -5,9 +5,10 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { getFormation } from "@/lib/formations";
+import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
+import { FieldLines } from "./FieldLines";
+import { PitchBench } from "./PitchBench";
 import type { MatchPlayer } from "./types";
-
-const VIEWBOX = "0 0 100 150";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
@@ -17,13 +18,19 @@ interface PitchViewProps {
 }
 
 export function PitchView({ matchId, pin, players, formationId }: PitchViewProps) {
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);
+  const swapPositions = useMutation(api.matchActions.swapFieldPositions);
+
   const formation = formationId ? getFormation(formationId) : undefined;
+  const fieldMode = fieldModeFromFormation(formationId);
+  const cfg = FIELDS[fieldMode];
+  const is11 = fieldMode === "11tal";
+  const playerSize = is11 ? 57 : 63;
+
   const onField = players.filter((p) => p.onField);
   const onBench = players.filter((p) => !p.onField);
-  // Spelers die op het veld staan maar nog geen positie hebben (uit de lijst gezet)
   const onFieldUnassigned = onField.filter(
     (p) => p.fieldSlotIndex === undefined || p.fieldSlotIndex === null
   );
@@ -31,31 +38,108 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
   const playerInSlot = (slotId: number): MatchPlayer | undefined =>
     onField.find((p) => Number(p.fieldSlotIndex) === Number(slotId));
 
-  /** Tekst in de cirkel: alleen rugnummer (of eerste letter van naam). */
-  const circleLabel = (p: MatchPlayer): string => {
+  const findPlayer = (id: Id<"players">): MatchPlayer | undefined =>
+    players.find((p) => p.playerId === id);
+
+  const isPlayerOnField = (id: Id<"players">): boolean =>
+    onField.some((p) => p.playerId === id);
+
+  const slotOfPlayer = (id: Id<"players">): number | undefined =>
+    onField.find((mp) => mp.playerId === id)?.fieldSlotIndex ?? undefined;
+
+  const tileLabel = (p: MatchPlayer): string => {
     if (p.number != null) return String(p.number);
     return (p.name.trim()[0] || "?").toUpperCase();
   };
 
-  /** Naam in het rechthoekje onder de cirkel: altijd voornaam (geen nummer). */
   const nameLabel = (p: MatchPlayer): string => {
     const firstName = p.name.trim().split(/\s+/)[0] || p.name;
     return firstName.slice(0, 12);
   };
 
-  const handleSlotClick = (slotId: number) => {
-    const current = playerInSlot(slotId);
-    if (current) {
-      toggleOffField({ matchId, pin, playerId: current.playerId });
+  // --- Click: field player tile ---
+  const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
+    if (!selectedPlayerId) {
+      setSelectedPlayerId(player.playerId);
       return;
     }
-    setSelectedSlot(slotId);
+    if (selectedPlayerId === player.playerId) {
+      setSelectedPlayerId(null);
+      return;
+    }
+    if (isPlayerOnField(selectedPlayerId)) {
+      swapPositions({ matchId, pin, playerAId: selectedPlayerId, playerBId: player.playerId });
+    } else {
+      assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+      toggleOffField({ matchId, pin, playerId: player.playerId });
+    }
+    setSelectedPlayerId(null);
   };
 
+  // --- Click: empty slot ---
+  const handleEmptySlotClick = (slotId: number) => {
+    if (!selectedPlayerId) return;
+    assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+    setSelectedPlayerId(null);
+  };
+
+  // --- Click: bench / unassigned player ---
   const handleBenchPlayerClick = (playerId: Id<"players">) => {
-    if (selectedSlot === null) return;
-    assignToSlot({ matchId, pin, playerId, fieldSlotIndex: selectedSlot });
-    setSelectedSlot(null);
+    if (!selectedPlayerId) {
+      setSelectedPlayerId(playerId);
+      return;
+    }
+    if (selectedPlayerId === playerId) {
+      setSelectedPlayerId(null);
+      return;
+    }
+    if (!isPlayerOnField(selectedPlayerId) && !isPlayerOnField(playerId)) {
+      setSelectedPlayerId(playerId);
+      return;
+    }
+    if (isPlayerOnField(selectedPlayerId)) {
+      const slot = slotOfPlayer(selectedPlayerId);
+      if (slot !== undefined) {
+        assignToSlot({ matchId, pin, playerId, fieldSlotIndex: slot });
+        toggleOffField({ matchId, pin, playerId: selectedPlayerId });
+      }
+    }
+    setSelectedPlayerId(null);
+  };
+
+  // --- Selection tile style ---
+  const tileStyle = (playerId: Id<"players"> | null, isEmpty: boolean): React.CSSProperties => {
+    const isSelected = playerId !== null && selectedPlayerId === playerId;
+    const isDimmed = selectedPlayerId !== null && !isSelected;
+    if (isSelected) {
+      return {
+        background: "rgba(30,41,59,0.7)",
+        borderColor: "#facc15",
+        boxShadow: "0 0 20px rgba(250,204,21,0.5), 0 0 0 2px #facc15",
+        transform: "translate(-50%, -50%) scale(1.15)",
+        zIndex: 50,
+      };
+    }
+    return {
+      background: isEmpty ? "rgba(255,255,255,0.08)" : "rgba(30,41,59,0.7)",
+      borderColor: isEmpty ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.1)",
+      boxShadow: isEmpty ? "none" : "0 6px 24px rgba(0,0,0,0.35)",
+      transform: "translate(-50%, -50%)",
+      opacity: isDimmed ? 0.5 : 1,
+      filter: isDimmed ? "grayscale(0.4)" : "none",
+      zIndex: 10,
+    };
+  };
+
+  // --- Status text ---
+  const statusText = (): string => {
+    if (!selectedPlayerId) return "Tik op een speler om te wisselen";
+    const sel = findPlayer(selectedPlayerId);
+    if (!sel) return "Tik op een speler om te wisselen";
+    const n = nameLabel(sel);
+    return isPlayerOnField(selectedPlayerId)
+      ? `${n} geselecteerd — tik wisselspeler of andere positie`
+      : `${n} geselecteerd — tik op een positie op het veld`;
   };
 
   if (!formation) {
@@ -68,171 +152,85 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
 
   return (
     <div className="space-y-3">
-      {/* Veld even breed als formatieblok, schaalbaar; opbouw van onder (ons doel) naar boven */}
-      <div className="w-full min-h-0" style={{ aspectRatio: "100/150" }}>
-        <svg
-          viewBox={VIEWBOX}
-          className="w-full h-full block"
-          preserveAspectRatio="xMidYMax meet"
+      {/* Selection indicator */}
+      <div className="h-6 flex items-center justify-center">
+        <span
+          className={`text-xs font-bold uppercase tracking-widest ${selectedPlayerId ? "text-yellow-400 animate-pulse" : "text-slate-400"}`}
         >
-          {/* Gras — rechte hoeken, strak */}
-          <rect x="5" y="5" width="90" height="140" rx="0" fill="var(--color-dia-green, #22c55e)" className="opacity-90" />
-          <rect x="8" y="8" width="84" height="134" rx="0" fill="none" stroke="white" strokeWidth="0.5" />
-          {/* Slots: plaatsing van onder (ons doel) naar boven; offset zodat formatie onderaan begint */}
-          {formation.slots.map((slot) => {
-            const player = playerInSlot(slot.id);
-            const isEmpty = !player;
-            const isSelected = selectedSlot === slot.id;
-            const scale = 0.5;
-            const r = 8 * scale;
-            const labelW = 24 * scale;
-            const labelH = 8 * scale;
-            const slotY = slot.y + 36;
-            const labelY = slotY + labelH / 2;
-            return (
-              <g
-                key={slot.id}
-                onClick={() => handleSlotClick(slot.id)}
-                style={{ cursor: "pointer" }}
-              >
-                <circle
-                  cx={slot.x}
-                  cy={slotY}
-                  r={r}
-                  fill={isEmpty ? "rgba(255,255,255,0.25)" : "white"}
-                  stroke={isSelected ? "#0f766e" : "rgba(0,0,0,0.2)"}
-                  strokeWidth={isSelected ? 1 : 0.5}
-                />
-                {player ? (
-                  <>
-                    <text
-                      x={slot.x}
-                      y={slotY}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={5 * scale}
-                      fill="#111"
-                      fontWeight="700"
-                    >
-                      {circleLabel(player)}
-                    </text>
-                    <rect
-                      x={slot.x - labelW / 2}
-                      y={labelY}
-                      width={labelW}
-                      height={labelH}
-                      rx={1}
-                      fill="white"
-                      stroke="#334155"
-                      strokeWidth={0.6 * scale}
-                    />
-                    <text
-                      x={slot.x}
-                      y={labelY + labelH / 2}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={5.5 * scale}
-                      fill="#0f172a"
-                      fontWeight="600"
-                    >
-                      {nameLabel(player)}
-                    </text>
-                  </>
-                ) : (
-                  <text x={slot.x} y={slotY} textAnchor="middle" dominantBaseline="middle" fontSize={4 * scale} fill="rgba(0,0,0,0.4)">
-                    +
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+          {statusText()}
+        </span>
       </div>
 
-      {/* Op veld maar nog geen positie: altijd zichtbaar, dan klopt het totaal met de lijst */}
-      {onFieldUnassigned.length > 0 && (
-        <div className="bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
-          <p className="text-xs font-medium text-amber-800 mb-1.5">
-            Op veld, nog geen positie ({onFieldUnassigned.length})
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {onFieldUnassigned.map((p) => (
-              <span
-                key={p.playerId}
-                className="inline-flex items-center px-2 py-1 bg-white rounded text-sm text-gray-800 border border-amber-200"
-              >
-                {p.number != null && <span className="font-bold text-gray-500 mr-1">#{p.number}</span>}
-                {p.name}
-              </span>
-            ))}
-          </div>
-          <p className="text-xs text-amber-700 mt-1">Tik op een cirkel en kies een speler om te plaatsen.</p>
-        </div>
-      )}
+      {/* Field container */}
+      <div
+        className="relative w-full border rounded-sm"
+        style={{
+          background: "#2d7a3a",
+          borderColor: "#1e5c28",
+          aspectRatio: `${cfg.w} / ${cfg.h}`,
+          boxShadow: "0 0 50px -12px rgba(34,197,94,0.25)",
+        }}
+      >
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
+          }}
+        />
+        <FieldLines cfg={cfg} />
 
-      {/* Bank: altijd zichtbaar onder het veld */}
-      {onBench.length > 0 && (
-        <div className="bg-gray-100 rounded-lg px-3 py-2 border border-gray-200">
-          <p className="text-xs font-medium text-gray-600 mb-1.5">Bank ({onBench.length})</p>
-          <div className="flex flex-wrap gap-1.5">
-            {onBench.map((p) => (
-              <span
-                key={p.playerId}
-                className="inline-flex items-center px-2 py-1 bg-white rounded text-sm text-gray-800 border border-gray-200"
-              >
-                {p.number != null && <span className="font-bold text-gray-500 mr-1">#{p.number}</span>}
-                {p.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Player tiles at formation slot positions */}
+        {formation.slots.map((slot) => {
+          const player = playerInSlot(slot.id);
+          const isEmpty = !player;
+          const style = tileStyle(player?.playerId ?? null, isEmpty);
 
-      {/* Tap-to-Move: kies speler voor deze positie (op veld zonder positie + bank) */}
-      {selectedSlot !== null && (
-        <div className="bg-white rounded-lg border border-dia-green p-3 shadow">
-          <p className="text-sm font-medium text-gray-700 mb-2">Kies speler voor positie</p>
-          {onFieldUnassigned.length > 0 && (
-            <p className="text-xs text-gray-500 mb-1">Op veld, nog geen positie</p>
-          )}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {onFieldUnassigned.map((p) => (
-              <button
-                key={p.playerId}
-                type="button"
-                onClick={() => handleBenchPlayerClick(p.playerId)}
-                className="px-3 py-2 bg-dia-green/30 hover:bg-dia-green/50 rounded-lg text-sm font-medium"
-              >
-                {p.number ? `#${p.number}` : ""} {p.name}
-              </button>
-            ))}
-          </div>
-          {onBench.length > 0 && <p className="text-xs text-gray-500 mb-1">Bank</p>}
-          <div className="flex flex-wrap gap-2">
-            {onBench.map((p) => (
-              <button
-                key={p.playerId}
-                type="button"
-                onClick={() => handleBenchPlayerClick(p.playerId)}
-                className="px-3 py-2 bg-dia-green/20 hover:bg-dia-green/40 rounded-lg text-sm font-medium"
-              >
-                {p.number ? `#${p.number}` : ""} {p.name}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setSelectedSlot(null)}
-              className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm"
+          return (
+            <div
+              key={slot.id}
+              onClick={() =>
+                player
+                  ? handleFieldPlayerClick(player, slot.id)
+                  : handleEmptySlotClick(slot.id)
+              }
+              className="absolute flex flex-col items-center justify-center cursor-pointer rounded-xl border text-white"
+              style={{
+                left: `${slot.x}%`,
+                top: `${slot.y}%`,
+                width: playerSize,
+                height: playerSize,
+                backdropFilter: isEmpty ? "none" : "blur(12px)",
+                transition: "all 0.3s ease",
+                ...style,
+              }}
             >
-              Annuleren
-            </button>
-          </div>
-        </div>
-      )}
+              {player ? (
+                <>
+                  <span className="font-bold text-sm">{tileLabel(player)}</span>
+                  <span
+                    className="absolute text-[10px] font-semibold whitespace-nowrap opacity-75"
+                    style={{ bottom: -16 }}
+                  >
+                    {nameLabel(player)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-white/40 text-lg font-light">+</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-      <p className="text-xs text-gray-500 text-center">
-        Tik op een lege cirkel om een speler te plaatsen, tik op een gevulde cirkel om naar de bank te zetten.
-      </p>
+      <PitchBench
+        onBench={onBench}
+        onFieldUnassigned={onFieldUnassigned}
+        selectedPlayerId={selectedPlayerId}
+        onPlayerClick={handleBenchPlayerClick}
+        onDeselect={() => setSelectedPlayerId(null)}
+        nameLabel={nameLabel}
+      />
     </div>
   );
 }

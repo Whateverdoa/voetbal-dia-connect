@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import clsx from "clsx";
+import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
 
@@ -93,13 +94,39 @@ function MatchRow({ match }: { match: PublicMatch }) {
 
 export function MatchBrowser() {
   const matches = useQuery(api.matches.listPublicMatches);
+  const connection = useConvexConnectionState();
+  const [showConnectionIssue, setShowConnectionIssue] = useState(false);
+
+  // If we stay in "loading" (undefined) and the client never connected or keeps retrying, show connection message
+  useEffect(() => {
+    if (matches !== undefined) {
+      setShowConnectionIssue(false);
+      return;
+    }
+    const notConnected =
+      !connection.isWebSocketConnected || !connection.hasEverConnected;
+    const struggling =
+      connection.connectionRetries > 2;
+    const t = setTimeout(
+      () => setShowConnectionIssue(notConnected || struggling),
+      4000
+    );
+    return () => clearTimeout(t);
+  }, [matches, connection.isWebSocketConnected, connection.hasEverConnected, connection.connectionRetries]);
 
   // Loading state
   if (matches === undefined) {
     return (
       <div className="mt-8">
         <Divider />
-        <p className="text-center text-gray-400 py-8 text-sm">Laden...</p>
+        {showConnectionIssue ? (
+          <p className="text-center text-amber-600 py-8 text-sm">
+            Geen verbinding met de server. Controleer je internet of probeer
+            later opnieuw.
+          </p>
+        ) : (
+          <p className="text-center text-gray-400 py-8 text-sm">Laden...</p>
+        )}
       </div>
     );
   }

@@ -4,77 +4,113 @@
 
 **DIA Live** is a real-time youth football (soccer) match tracking app for club DIA. Coaches manage matches from their phone, parents/spectators follow live via a public code.
 
-There are two repos:
-- **voetbal-dia-connect** (this one) — lightweight version, Next.js + Convex
-- **VOETBAL-WISSEL** — fuller version (private repo, same domain)
+This is the **voetbal-dia-connect** repo — Next.js + Convex.
 
 ## Tech Stack
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Frontend | Next.js 16 (App Router, Turbopack), React 19, TypeScript (strict) |
 | Backend | Convex (real-time serverless DB + functions) |
-| Styling | Tailwind + custom `dia-green` color token |
-| Package manager | npm (with npm-run-all for parallel dev) |
-| Deployment target | Vercel |
+| Styling | Tailwind CSS 4 via `@theme` in `globals.css` (no config file), tokens: `dia-green`, `dia-green-light`, `dia-green-dark` |
+| Icons | lucide-react (SVG icon library) |
+| Utilities | clsx (conditional CSS classes) |
+| Field view | SVG pitch with FC-style player cards, formation lines, perspective tilt. Components: `PitchView`, `FieldPlayerCard`, `FieldLines`, `FormationLines`, `PitchBench`. Config: `src/lib/formations.ts`, `src/lib/fieldConfig.ts`, `src/lib/roleColors.ts` |
+| Testing | Vitest 4, React Testing Library, @testing-library/jest-dom |
+| Image opt. | sharp |
+| Package mgr | npm (with npm-run-all for parallel dev) |
+| Deployment | Vercel (frontend) + Convex Cloud (backend) |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│ PUBLIC (Spectators)                         │
-│ Enter 6-char code → /live/[code]            │
-│ Real-time score, goals, lineup, timeline    │
-└──────────────┬──────────────────────────────┘
-               │ Convex query (reactive)
-┌──────────────▼──────────────────────────────┐
-│ CONVEX (Real-time Backend)                  │
-│ schema.ts → clubs, teams, coaches, players, │
-│             matches, matchPlayers,          │
-│             matchEvents                     │
-│ matches.ts → queries (getByPublicCode,      │
-│              getForCoach, verifyCoachPin)    │
-│             referees                        │
-│ matchActions.ts → mutations (create, start, │
-│   assignReferee, nextQuarter, addGoal, etc.)│
-└──────────────▲──────────────────────────────┘
-               │ Convex mutation (PIN-auth)
-┌──────────────┴──────────────────────────────┐
-│ COACH (Authenticated via coach PIN)         │
-│ /coach → PIN login                          │
-│ /coach/match/[id] → manage live match       │
-│ Create match, manage lineup, score goals,   │
-│ make substitutions, control quarters        │
-└─────────────────────────────────────────────┘
-┌─────────────────────────────────────────────┐
-│ REFEREE (Authenticated via referee PIN)     │
-│ /scheidsrechter → PIN login → match list    │
-│ /scheidsrechter/match/[id] → clock + score  │
-│ Tap assigned match, start/pause/resume      │
-│ clock, edit scores, optional shirt number   │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                  NEXT.JS FRONTEND (App Router)                │
+│                                                              │
+│  PUBLIC (no auth)                                            │
+│  ├─ /                     MatchBrowser (homepage)            │
+│  ├─ /live/[code]          Live match view (real-time)        │
+│  └─ /standen              Scoreboard (today's matches)       │
+│                                                              │
+│  COACH (PIN on coaches table)                                │
+│  ├─ /coach                PIN login → team dashboard         │
+│  ├─ /coach/new            Create new match                   │
+│  └─ /coach/match/[id]     Match control panel                │
+│                                                              │
+│  REFEREE (PIN on referees table)                             │
+│  ├─ /scheidsrechter              PIN login → match list      │
+│  └─ /scheidsrechter/match/[id]   Clock + score controls      │
+│                                                              │
+│  ADMIN (server-side PIN via Convex env var)                  │
+│  └─ /admin                CRUD dashboard (all entities)      │
+│                                                              │
+│  TEAM                                                        │
+│  └─ /team/[slug]/history  Match history + season stats       │
+└────────────────────────────┬─────────────────────────────────┘
+                             │ useQuery() / useMutation()
+┌────────────────────────────▼─────────────────────────────────┐
+│                  CONVEX (Real-time Backend)                   │
+│                                                              │
+│  Tables: clubs, teams, coaches, referees, players,           │
+│          matches, matchPlayers, matchEvents                   │
+│                                                              │
+│  Queries (barrel: matches.ts)                                │
+│  ├─ publicQueries.ts     Public match list (no auth)         │
+│  ├─ coachQueries.ts      Coach PIN verify, team lists        │
+│  └─ matchQueries.ts      Playing time, substitution data     │
+│                                                              │
+│  Mutations (barrel: matchActions.ts)                         │
+│  ├─ matchEvents.ts       Goals, cards, subs                  │
+│  ├─ matchLineup.ts       Lineup management                   │
+│  ├─ clockActions.ts      Clock pause/resume                  │
+│  ├─ scoreActions.ts      Score adjustments                   │
+│  ├─ refereeActions.ts    Referee assignment                   │
+│  └─ matchLeadActions.ts  Wedstrijdleider claim/release       │
+│                                                              │
+│  Admin (barrel: admin.ts)                                    │
+│  ├─ adminAuth.ts         Server-side PIN verify              │
+│  ├─ adminClubs.ts        Club CRUD                           │
+│  ├─ adminTeams.ts        Team CRUD                           │
+│  ├─ adminCoaches.ts      Coach CRUD                          │
+│  ├─ adminPlayers.ts      Player CRUD                         │
+│  ├─ adminReferees.ts     Referee CRUD                        │
+│  └─ adminMatches.ts      Match CRUD + cascade delete         │
+│                                                              │
+│  Helpers: pinHelpers, refereeHelpers,                        │
+│           playingTimeHelpers, helpers                         │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ## Data Model (Convex schema.ts)
 
-- **clubs** — top-level org (DIA)
-- **teams** — JO12-1, JO13-2, etc. (belongs to club)
-- **coaches** — PIN-authenticated, linked to 1+ teams
-- **referees** — global referee records with PIN, active flag (assigned to matches by admin/coach)
-- **players** — per team, shirt number, active flag
-- **matches** — 6-char publicCode, coachPin, optional `refereeId` (links to referees table), optional `leadCoachId` (links to coaches table), status machine (scheduled→lineup→live→halftime→finished), home/away score, quarter tracking
-- **matchPlayers** — junction: which players in this match, onField/isKeeper state
-- **matchEvents** — goal, assist, sub_in, sub_out, quarter_start/end, yellow/red cards
+8 tables, all indexed for efficient queries.
+
+- **clubs** — top-level org (DIA). Fields: `name`, `slug`, `createdAt`. Index: `by_slug`
+- **teams** — JO12-1, JO13-2, etc. Fields: `clubId` (→clubs), `name`, `slug`, `createdAt`. Indexes: `by_club`, `by_slug` (clubId+slug), `by_slug_only`
+- **coaches** — PIN-authenticated, linked to 1+ teams. Fields: `name`, `pin`, `teamIds[]` (→teams), `createdAt`. Index: `by_pin`
+- **referees** — global referee records. Fields: `name`, `pin`, `active`, `createdAt`. Index: `by_pin`
+- **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (K/V/M/A), `positionSecondary`, `createdAt`. Index: `by_team`
+- **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
+- **matchPlayers** — junction: players in a match. Fields: `matchId` (→matches), `playerId` (→players), `isKeeper`, `onField`, `fieldSlotIndex` (pitch position slot), `minutesPlayed`, `lastSubbedInAt`, `createdAt`. Indexes: `by_match`, `by_match_player`, `by_player`
+- **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/assist/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card), `playerId`, `relatedPlayerId`, `quarter`, `isOwnGoal`, `isOpponentGoal`, `note`, `timestamp`, `createdAt`. Indexes: `by_match`, `by_match_type`
 
 ## Auth Model
 
-Simple PIN-based (no user accounts):
-- **Coach** enters 4-6 digit PIN → gets access to their teams/matches (lineup, goals, subs)
-- **Referee** enters their global 4-6 digit PIN → sees list of assigned matches → taps one to enter clock/score controls (must be assigned to the match by admin/coach)
-- **Public** enters 6-char match code → read-only live view
-- Coach PIN stored on `coaches` table; referee PIN stored on `referees` table (global, not per-match)
-- Match links to referee via `matches.refereeId` → coach assigns a referee from the dropdown in the match view
-- Clock/score mutations accept either coach or referee PIN via `verifyClockPin(match, pin, referee?)`
+Four roles, all PIN-based (no user accounts):
+
+| Role | Auth method | PIN storage | Verification function |
+|------|-------------|-------------|-----------------------|
+| **Coach** | 4-6 digit PIN | `coaches.pin` | `verifyCoachPin()` — checks `match.coachPin === pin` |
+| **Referee** | 4-6 digit PIN | `referees.pin` | `verifyClockPin()` — accepts coach OR assigned referee PIN |
+| **Admin** | PIN (env var) | Convex `process.env.ADMIN_PIN` | `verifyAdminPin()` — server-side only, never in client bundle |
+| **Public** | 6-char code | `matches.publicCode` | No auth — read-only queries strip sensitive fields |
+
+**Key flows:**
+- **Coach login:** PIN → `verifyCoachPin` query → returns coach + teams + matches → session stored client-side
+- **Referee login:** PIN → `getMatchesForReferee` query → returns referee + assigned matches → tap match to enter controls
+- **Admin login:** PIN → `verifyAdminPinQuery` query (server-side check against Convex env var) → PIN stored in `sessionStorage` via `src/lib/adminSession.ts` → all admin mutations verify PIN server-side
+- **Public access:** 6-char code in URL → `getByPublicCode` query → match data (coachPin, refereeId stripped)
+- **Clock/score:** `verifyClockPin(match, pin, referee?)` accepts either coach PIN or assigned referee PIN — enables both roles to control the match
 
 ## Key Patterns
 
@@ -99,16 +135,20 @@ Simple PIN-based (no user accounts):
 - Standen page ✅ (/standen — defaults to today's matches, ?alle=true for all, minimal scoreboard for kantine/tablet)
 - Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only)
 - Admin match management ✅ (Wedstrijden tab in admin: list/create/edit/delete matches, referee assignment, cascade delete)
+- Team match history ✅ (`/team/[slug]/history` — season stats, match list, result badges)
+- Position/formation data model ✅ (schema fields + `src/lib/formations.ts` + `src/lib/positions.ts`)
+- PitchView field component ✅ (EA FC-style player cards with role colors K=amber/V=blue/M=green/A=red, avatar silhouettes, formation connecting lines, SVG field markings, 3D perspective tilt, tap-to-swap player positions, field-bench substitution, 90px uniform card size, full-field player spread)
+- Component tests ✅ (Vitest + RTL — coach login, match controls, live view components, playing time, substitutions, admin tabs)
 - PWA — not yet
-- Tests — none yet
-- Deployment — Vercel target, Vercel + Convex configured ✅
+- Deployment — Vercel + Convex configured ✅
 
 ## What Needs Work
 
+- **Smart substitution suggestions** — current sub suggestions sort by playing time only; next step is position-aware filtering (prefer bench player whose positionPrimary matches the outgoing player's slot role, fallback to playing time)
 - **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
 - **PWA** — offline resilience, installable on home screen
-- **Match history / stats** — post-match summaries, player stat aggregation
-- **Testing** — Convex function tests, component tests, smoke test automation
+- **Match history stats** — history page exists, but post-match stat aggregation and player-level summaries not yet implemented
+- **Test coverage** — component tests exist (Vitest + RTL), but Convex function tests and smoke test automation still needed
 
 ## TODO — Priority Task List
 
@@ -117,6 +157,8 @@ Simple PIN-based (no user accounts):
 | Task | Description | Status |
 |------|-------------|--------|
 | **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
+| **Playing Time View Filter** | When coach taps "Speeltijd", the player list should switch to show only on-field + bench players for that match (not all team players). Currently shows the full player list. | ❌ Not started |
+| **Add Players to Active Match** | Coach should be able to add additional players to a match after creation (e.g. late arrivals, extra subs). Currently players are only set at match creation time. | ❌ Not started |
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
 
 ### 🟢 LOW PRIORITY / FUTURE
@@ -151,11 +193,54 @@ Simple PIN-based (no user accounts):
 - ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
 - ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
 
+- ~~**PitchView field component**~~: Visual football field for the coach match page. SVG-based field lines (FIFA/KNVB accurate for 8-tal and 11-tal). EA FC-style player cards with role-based colors (K=amber, V=blue, M=green, A=red), avatar silhouettes, name bars, number badges. Formation connecting lines (dashed SVG). CSS perspective tilt (12deg). Tap-to-swap: tap two field players to exchange positions, tap field + bench to substitute. Uniform 90px card size (field and bench). Players spread across full field (y: 16-90%). Backend: `swapFieldPositions` mutation for atomic field swaps. Files: `FieldPlayerCard.tsx`, `FormationLines.tsx`, `FieldLines.tsx`, `PitchBench.tsx`, `PitchView.tsx`, `roleColors.ts`, `fieldConfig.ts`. Formations: 8v8 (3-3-1, 1-4-2-1, 1-3-2-2) and 11v11 (4-3-3) with formation line links.
+
+## Current Work: Formations
+
+**Branch:** `feature/clock-pause-and-referee`
+**Focus:** Expanding the formation system — adding more formations, improving formation management UI, and position-aware features.
+
+## Next Sprint — Tech Debt (from agent review 2026-02-14)
+
+Findings from code-reviewer, test-agent, mobile-ux-auditor, and convex-specialist:
+
+### Must Fix (before next feature work)
+
+| Item | Source | Description |
+|------|--------|-------------|
+| Atomic bench-to-field swap | code-reviewer | Current PitchView fires 2 separate mutations for bench↔field sub (race condition risk). Create single `swapBenchField` mutation. |
+| Mutation error handling | code-reviewer | All mutation calls in PitchView are fire-and-forget with no `.catch()`. Add error feedback (toast/status). |
+| `fieldSlotIndex` validation | code-reviewer | No range/integer check on `assignPlayerToSlot`. Add `fieldSlotIndex >= 0 && Number.isInteger()` guard. |
+| PitchView test coverage | test-agent | Zero tests for 8 new PitchView files. Priority: P0 pure function tests (`formations.ts`, `fieldConfig.ts`, `roleColors.ts`), P1 interaction tests. |
+| Pre-existing test failures | test-agent | 31 pre-existing test failures (coach/page, CoachDashboard, TeamsTab) — unrelated to PitchView but need fixing. |
+
+### Should Fix (UX polish)
+
+| Item | Source | Description |
+|------|--------|-------------|
+| `backdropFilter: blur()` | mobile-ux-auditor | 8-11 blur layers on field cards drain battery over 60-90 min match. Replace with solid `rgba(15,23,42,0.95)`. |
+| Role color contrast | mobile-ux-auditor | V(blue)/M(green)/A(red) name bars fail WCAG AA for white text in sunlight. Darken colors. |
+| Font sizes | mobile-ux-auditor | Player name 11px, role label 10px, bench header 10px — below 14px minimum for pitch-side use. |
+| Card overlap in 4-player formations | mobile-ux-auditor | Cards overlap 7-11px in `1-4-2-1` and `4-3-3` on 375px phones. Consider responsive card sizing. |
+| Dropdown/toggle touch targets | mobile-ux-auditor | Formation `<select>` and Veld/Lijst buttons ~36px tall (below 44px minimum). Add `min-h-[44px]`. |
+| Status text contrast | mobile-ux-auditor | `text-yellow-400` on `bg-gray-100` is ~1.2:1 contrast — invisible in sunlight. |
+| No swap undo | mobile-ux-auditor | Accidental tap permanently commits swap. Consider 3-second undo toast. |
+
+### Nice to Have
+
+| Item | Source | Description |
+|------|--------|-------------|
+| DRY name truncation | code-reviewer | Duplicated in `PitchView` (12 chars) and `FieldPlayerCard` (10 chars). Unify. |
+| DRY `PlayerIcon` SVG | code-reviewer | Duplicated in `FieldPlayerCard` and `PitchBench`. Extract shared component. |
+| `React.memo` on cards | code-reviewer | Wrap `FieldPlayerCard` and `MiniCard` to prevent unnecessary re-renders. |
+| Bench role labels | mobile-ux-auditor | Bench MiniCards lack role text label (KEP/VER/MID/AAN). Only color distinguishes role. |
+| Haptic feedback on swap | mobile-ux-auditor | `navigator.vibrate(50)` after successful swap for tactile confirmation. |
+
 ### Future Features
 
 - **Named login (user accounts)**: Replace anonymous PIN-only auth with name + PIN login. Users would be identifiable (e.g., "Coach Mike logged in") instead of just a PIN. Enables: personal dashboards, audit trails ("who made this change?"), multi-device sessions, and per-user preferences. Could start simple (name stored on coach record, displayed after PIN login) and evolve toward full accounts later.
 - **Cumulative clock mode**: Display game time cumulatively across quarters (e.g., 0–60 min) instead of per-quarter (0–15 min). Should be a coach setting per match. Next priority.
-- ~~**Seed data expansion**~~: Now seeds 4 coaches, 4 referees, 3 teams with 14 players each, 3 matches with referee assignments. Modular seed system in `convex/seed/`. Run `npx convex run seed:init`.
+- **Seed data expansion**: Currently seeds 4 coaches, 4 referees, 3 teams with 14 players each, 3 matches with referee assignments. Modular seed system in `convex/seed/`. Run `npx convex run seed:init`. Needs further expansion (more realistic season data, CSV import integration).
 - **Opponent roster support**: Store rosters for both teams (not just ours). Enables sharing match data (goals, events, stats) with both teams afterwards. Shirt numbers stored by the referee in goal events can then be resolved to named players for either team.
 - **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
 - **Goal ownership split (coach vs referee)**: When a referee is actively assigned and controlling a match, the **coach should no longer be able to add new goals** — only the referee enters scores/goals. However, the coach **should still be able to edit goal details** (e.g., add or correct the player name on a goal that the referee registered with only a shirt number). This keeps the referee as the single source of truth for scoring, while the coach enriches the data afterwards with player names. Requires: (1) a check on coach goal mutations: if `match.refereeId` is set, reject new goals from coach; (2) a new "edit goal event" mutation for the coach to update `playerId`/`playerName` on existing goal events; (3) UI changes in the coach GoalModal to show "referee-controlled" state.
@@ -303,13 +388,6 @@ This means:
 - **Preview deploys** (PRs, branches) only build the frontend — safe, no backend changes
 - **Local builds** just build Next.js — use `convex dev` for backend sync
 
-### Current Vercel Setup Issue (Action Required)
+### Vercel Setup
 
-As of Feb 2026, `CONVEX_DEPLOY_KEY` is set for **"All Environments"** in Vercel. This needs to be changed:
-
-1. Go to Vercel → Project Settings → Environment Variables
-2. Click the `...` menu on `CONVEX_DEPLOY_KEY`
-3. Edit → change scope from "All Environments" to **"Production"** only
-4. Save
-
-This is a one-time fix. After this, preview deployments will succeed.
+`CONVEX_DEPLOY_KEY` is scoped to **Production only** in Vercel. Preview deployments build the frontend only (no backend changes). This is the correct configuration.

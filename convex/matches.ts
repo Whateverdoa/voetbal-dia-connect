@@ -168,15 +168,18 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
+    // Strip coachPin from response — coach already knows it, no need to send over wire
+    const { coachPin: _pin, ...safeMatch } = match;
+
     return {
-      ...match,
+      ...safeMatch,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: enrichedEvents,
       refereeName: referee?.name ?? null,
-      leadCoachId: match.leadCoachId ?? null,
+      leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
-      hasLead: !!match.leadCoachId,
+      hasLead: !!safeMatch.leadCoachId,
     };
   },
 });

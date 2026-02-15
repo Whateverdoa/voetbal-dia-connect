@@ -32,7 +32,6 @@ export interface Match {
   _id: Id<"matches">;
   teamId: Id<"teams">;
   publicCode: string;
-  coachPin: string;
   opponent: string;
   isHome: boolean;
   status: MatchStatus;

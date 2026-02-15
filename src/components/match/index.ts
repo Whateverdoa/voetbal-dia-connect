@@ -8,6 +8,7 @@ export { PlayerCard } from "./PlayerCard";
 export { FieldPlayerCard } from "./FieldPlayerCard";
 export { PlayerList } from "./PlayerList";
 export { PitchView } from "./PitchView";
+export { FormationSelector } from "./FormationSelector";
 export { EventTimeline } from "./EventTimeline";
 export { LineupToggle } from "./LineupToggle";
 export { PlayingTimePanel } from "./PlayingTimePanel";

@@ -68,13 +68,15 @@ There are two repos:
 
 ## Auth Model
 
-Simple PIN-based (no user accounts):
-- **Coach** enters 4-6 digit PIN → gets access to their teams/matches (lineup, goals, subs)
+Simple PIN-based (no user accounts), **team-membership authorization**:
+- **Coach** enters 4-6 digit PIN → `verifyCoachTeamMembership()` checks that the coach's `teamIds` includes the match's `teamId` → gets access to all matches for their teams
 - **Referee** enters their global 4-6 digit PIN → sees list of assigned matches → taps one to enter clock/score controls (must be assigned to the match by admin/coach)
 - **Public** enters 6-char match code → read-only live view
-- Coach PIN stored on `coaches` table; referee PIN stored on `referees` table (global, not per-match)
+- Coach PIN stored on `coaches` table (`coaches.teamIds` is the authorization vector); referee PIN stored on `referees` table (global, not per-match)
 - Match links to referee via `matches.refereeId` → coach assigns a referee from the dropdown in the match view
-- Clock/score mutations accept either coach or referee PIN via `verifyClockPin(match, pin, referee?)`
+- Clock/score mutations accept either coach or referee PIN via `verifyClockPin(match, pin, referee?)` (async, checks team membership first, then falls back to referee PIN)
+- `match.coachPin` field exists for backwards compatibility but is no longer used for authorization — all coach auth goes through team membership
+- `getForCoach` query strips `coachPin` from response (never sent to client)
 
 ## Key Patterns
 
@@ -97,7 +99,8 @@ Simple PIN-based (no user accounts):
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
 - Public match browser ✅ (homepage hero element — code input removed, match browser primary, coach/referee login secondary)
 - Standen page ✅ (/standen — defaults to today's matches, ?alle=true for all, minimal scoreboard for kantine/tablet)
-- Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only)
+- Team-membership coach auth ✅ (any coach on the team can manage any match for that team; replaces single-owner `coachPin` model)
+- Wedstrijdleider ✅ Phase 1 (coaches can claim/release match lead role, informational only — see Phase 2 plan below)
 - Admin match management ✅ (Wedstrijden tab in admin: list/create/edit/delete matches, referee assignment, cascade delete)
 - PWA — not yet
 - Tests — none yet
@@ -118,6 +121,66 @@ Simple PIN-based (no user accounts):
 |------|-------------|--------|
 | **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
+| **Wedstrijdleider Phase 2** | Enforce match lead permissions — only the wedstrijdleider can enter goals/subs/lineup changes. See detailed plan below. | ❌ Not started |
+
+### 🟡 Wedstrijdleider Phase 2 — Detailed Plan
+
+**Goal:** When a wedstrijdleider is assigned, only that coach can make match-altering actions. Other coaches on the team see the match but cannot modify it. Any coach can still claim/release the lead.
+
+**Backend changes (`convex/`):**
+
+1. **Add `isMatchLead` helper** to `convex/pinHelpers.ts`:
+   - `isMatchLead(match, coachId)` → returns `true` if `match.leadCoachId === coachId` or if no lead is assigned (no lead = open access)
+   - This keeps the current behavior when nobody has claimed the lead
+
+2. **Add lead-only enforcement to mutations** — when `match.leadCoachId` is set, only that coach can call:
+   - `addGoal`, `removeLastGoal` (goal recording)
+   - `substitute` (substitutions)
+   - `togglePlayerOnField`, `toggleKeeper`, `toggleShowLineup` (lineup changes)
+   - `start`, `nextQuarter`, `resumeFromHalftime` (match lifecycle)
+   - `pauseClock`, `resumeClock` (clock control — coach side only; referee always allowed)
+   - `adjustScore` (score adjustment — coach side only; referee always allowed)
+   - `assignReferee` (referee assignment)
+   - Error message: `"Alleen de wedstrijdleider kan dit doen"` (Only the match leader can do this)
+
+3. **Keep open for all coaches** (no lead restriction):
+   - `claimMatchLead` (anyone can claim if no lead is set)
+   - `releaseMatchLead` (only current lead can release — already enforced)
+
+4. **Return `isLead` flag from `getForCoach` query** — the query already knows the coach (from PIN lookup); compare `coach._id === match.leadCoachId` and include `isLead: boolean` in the response. This lets the frontend know whether to show or disable controls.
+
+**Frontend changes (`src/`):**
+
+5. **Add `isLead` to `Match` type** in `src/components/match/types.ts`
+
+6. **Pass `isLead` through the coach match page** (`src/app/coach/match/[id]/page.tsx`):
+   - When `match.hasLead && !match.isLead` → show controls as disabled/read-only
+   - Show a banner: `"[CoachName] is wedstrijdleider — je kunt meekijken maar niet wijzigen"`
+
+7. **Disable action buttons when not lead:**
+   - `MatchControls`: disable Goal, Wissel, clock, quarter buttons
+   - `PlayerList`: disable togglePlayerOnField, toggleKeeper
+   - `GoalModal` / `SubstitutionPanel`: don't render or show disabled state
+   - `RefereeAssignment`: disable assignment dropdown
+   - Keep `MatchLeadBadge` fully interactive (claim/release always available)
+
+8. **MatchLeadBadge UX update:**
+   - When another coach is lead: show "Neem de leiding over" button (claims lead, replacing current lead)
+   - Or: require current lead to release first (simpler, avoids conflicts)
+   - Decision: require release first (less confusing for volunteer coaches)
+
+**Migration / backwards compatibility:**
+- No schema changes needed (`leadCoachId` already exists)
+- When `leadCoachId` is null/undefined → all coaches have full access (same as today)
+- Phase 2 is purely additive — existing matches work unchanged until someone claims the lead
+
+**Testing checklist:**
+- [ ] Coach A claims lead → Coach A can do all actions
+- [ ] Coach B (same team) sees match read-only, controls disabled
+- [ ] Coach A releases lead → all coaches regain full access
+- [ ] Referee can always control clock/score regardless of lead status
+- [ ] No lead assigned → all coaches have full access (Phase 1 behavior)
+- [ ] Coach B can claim lead after A releases
 
 ### 🟢 LOW PRIORITY / FUTURE
 
@@ -148,7 +211,8 @@ Simple PIN-based (no user accounts):
 - ~~**Wedstrijd Browser (homepage)**~~: Public match list on homepage, grouped by status (LIVE/GEPLAND/AFGELOPEN). Real-time via `listPublicMatches` query in `convex/publicQueries.ts`. Component: `src/components/MatchBrowser.tsx`. Clickable cards link to `/live/[code]`.
 - ~~**Homepage simplification**~~: Code input removed as primary UI. MatchBrowser is now the hero element. Coach/referee login as secondary links below. Collapsible "Heb je een code?" for edge cases. "Vandaag live" link to standen page.
 - ~~**Standen page (defaults to today)**~~: Minimal scoreboard at `/standen`. Defaults to **today's matches only** (live + finished today + scheduled today). `?alle=true` shows all matches. Toggle link between views. Supports `?team=` filter. Real-time score updates.
-- ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
+- ~~**Team-membership coach auth**~~: Replaced single-owner `match.coachPin` model with team-membership authorization. Any coach assigned to the match's team can now manage that match. Core helper: `verifyCoachTeamMembership(ctx, match, pin)` in `convex/pinHelpers.ts`. All mutations updated: `matchActions.ts`, `matchEvents.ts`, `matchLineup.ts`, `clockActions.ts`, `scoreActions.ts`, `refereeActions.ts`, `matchLeadActions.ts`. `getForCoach` query strips `coachPin` from response. `coachPin` field kept for backwards compatibility but no longer used for authorization. `Match` TypeScript type updated to make `coachPin` optional.
+- ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet. Phase 2 plan documented below.
 - ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
 
 ### Future Features

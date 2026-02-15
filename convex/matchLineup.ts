@@ -4,7 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import { verifyCoachTeamMembership, isMatchLead } from "./pinHelpers";
 
 // Toggle player on/off field
 export const togglePlayerOnField = mutation({
@@ -16,10 +16,14 @@ export const togglePlayerOnField = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (!coach) {
+      throw new Error("Ongeldige PIN of geen toegang");
+    }
+    if (!isMatchLead(match, coach._id)) {
+      throw new Error("Alleen de wedstrijdleider kan dit doen");
     }
 
     const now = Date.now();
@@ -60,10 +64,14 @@ export const toggleKeeper = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (!coach) {
+      throw new Error("Ongeldige PIN of geen toegang");
+    }
+    if (!isMatchLead(match, coach._id)) {
+      throw new Error("Alleen de wedstrijdleider kan dit doen");
     }
 
     const mp = await ctx.db
@@ -97,10 +105,14 @@ export const toggleShowLineup = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (!coach) {
+      throw new Error("Ongeldige PIN of geen toegang");
+    }
+    if (!isMatchLead(match, coach._id)) {
+      throw new Error("Alleen de wedstrijdleider kan dit doen");
     }
 
     await ctx.db.patch(args.matchId, { showLineup: !match.showLineup });

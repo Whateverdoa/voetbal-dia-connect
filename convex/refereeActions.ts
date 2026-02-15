@@ -6,7 +6,7 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import { verifyCoachTeamMembership, isMatchLead } from "./pinHelpers";
 
 /** Assign or unassign a referee to a match (coach-only) */
 export const assignReferee = mutation({
@@ -18,10 +18,14 @@ export const assignReferee = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (!coach) {
+      throw new Error("Ongeldige PIN of geen toegang");
+    }
+    if (!isMatchLead(match, coach._id)) {
+      throw new Error("Alleen de wedstrijdleider kan dit doen");
     }
 
     if (args.refereeId) {

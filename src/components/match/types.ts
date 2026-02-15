@@ -47,6 +47,7 @@ export interface Match {
   leadCoachId?: Id<"coaches"> | null;
   leadCoachName?: string | null;
   hasLead?: boolean;
+  isLead?: boolean;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

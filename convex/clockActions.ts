@@ -7,7 +7,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { verifyClockPin } from "./pinHelpers";
+import { verifyCoachTeamMembership, isMatchLead } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 
 /**
@@ -22,9 +22,19 @@ export const pauseClock = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    // Try coach first
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (coach) {
+      if (!isMatchLead(match, coach._id)) {
+        throw new Error("Alleen de wedstrijdleider kan dit doen");
+      }
+    } else {
+      // Not a coach — check referee
+      const referee = await fetchRefereeForMatch(ctx, match);
+      if (!referee || referee.pin !== args.pin) {
+        throw new Error("Ongeldige PIN of geen toegang");
+      }
+      // Referee is always allowed — no lead check needed
     }
 
     if (match.status !== "live") {
@@ -64,9 +74,19 @@ export const resumeClock = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    // Try coach first
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (coach) {
+      if (!isMatchLead(match, coach._id)) {
+        throw new Error("Alleen de wedstrijdleider kan dit doen");
+      }
+    } else {
+      // Not a coach — check referee
+      const referee = await fetchRefereeForMatch(ctx, match);
+      if (!referee || referee.pin !== args.pin) {
+        throw new Error("Ongeldige PIN of geen toegang");
+      }
+      // Referee is always allowed — no lead check needed
     }
 
     if (match.status !== "live") {

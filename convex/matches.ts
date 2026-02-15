@@ -184,6 +184,7 @@ export const getForCoach = query({
       leadCoachId: match.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
       hasLead: !!match.leadCoachId,
+      isLead: !match.leadCoachId || match.leadCoachId === coach._id,
     };
   },
 });

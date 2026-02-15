@@ -11,6 +11,7 @@ interface PlayerListProps {
   pin: string;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
+  disabled?: boolean;
 }
 
 export function PlayerList({
@@ -18,6 +19,7 @@ export function PlayerList({
   pin,
   playersOnField,
   playersOnBench,
+  disabled = false,
 }: PlayerListProps) {
   const toggleOnField = useMutation(api.matchActions.togglePlayerOnField);
   const toggleKeeper = useMutation(api.matchActions.toggleKeeper);
@@ -49,6 +51,7 @@ export function PlayerList({
                 onToggleKeeper={() =>
                   toggleKeeper({ matchId, pin, playerId: player.playerId })
                 }
+                disabled={disabled}
               />
             ))}
           </div>
@@ -80,6 +83,7 @@ export function PlayerList({
                 onToggleKeeper={() =>
                   toggleKeeper({ matchId, pin, playerId: player.playerId })
                 }
+                disabled={disabled}
               />
             ))}
           </div>

@@ -9,18 +9,21 @@ interface MatchLeadBadgeProps {
   matchId: Id<"matches">;
   pin: string;
   hasLead: boolean;
+  isLead: boolean;
   leadCoachName: string | null;
 }
 
 /**
  * Compact collapsible card showing the match lead (wedstrijdleider) status.
  * Any coach can claim the lead; only the current lead can release it.
- * Phase 1: informational only — all match actions remain available regardless.
+ * Phase 2: when a lead is assigned, only the lead can make changes.
+ * Other coaches see the match but controls are disabled.
  */
 export function MatchLeadBadge({
   matchId,
   pin,
   hasLead,
+  isLead,
   leadCoachName,
 }: MatchLeadBadgeProps) {
   const claimLead = useMutation(api.matchActions.claimMatchLead);
@@ -91,8 +94,8 @@ export function MatchLeadBadge({
       {isOpen && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
           <p className="text-sm text-gray-500">
-            De wedstrijdleider coördineert de wedstrijd. Fase 1: alle acties
-            blijven beschikbaar voor iedere coach.
+            De wedstrijdleider coördineert de wedstrijd. Alleen de wedstrijdleider
+            kan wijzigingen maken — andere coaches kunnen meekijken.
           </p>
 
           {/* Status messages */}
@@ -109,15 +112,17 @@ export function MatchLeadBadge({
                 Huidige leider:{" "}
                 <span className="font-semibold">{leadCoachName ?? "Onbekend"}</span>
               </p>
-              <button
-                onClick={handleRelease}
-                disabled={isLoading}
-                className="w-full py-2 border-2 border-red-200 text-red-600 font-medium
-                           rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                           hover:bg-red-50 disabled:opacity-50 text-sm"
-              >
-                {isLoading ? "Bezig..." : "Leiding vrijgeven"}
-              </button>
+              {isLead && (
+                <button
+                  onClick={handleRelease}
+                  disabled={isLoading}
+                  className="w-full py-2 border-2 border-red-200 text-red-600 font-medium
+                             rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
+                             hover:bg-red-50 disabled:opacity-50 text-sm"
+                >
+                  {isLoading ? "Bezig..." : "Leiding vrijgeven"}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">

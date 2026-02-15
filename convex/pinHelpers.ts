@@ -5,7 +5,7 @@
  * `teamIds` includes the match's `teamId` is authorised.  The old
  * single-owner `match.coachPin === pin` check is replaced everywhere.
  */
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { GenericDatabaseReader } from "convex/server";
 import { DataModel } from "./_generated/dataModel";
 
@@ -31,27 +31,17 @@ export async function verifyCoachTeamMembership(
   return coach;
 }
 
-/**
- * Verify that the given PIN is valid for clock/score control.
- * Accepts any coach assigned to the match's team, **or** the
- * assigned referee's PIN.
- *
- * The referee doc must be pre-fetched by the caller (via match.refereeId)
- * to avoid redundant DB reads across multiple helpers.
- */
-export async function verifyClockPin(
-  ctx: { db: DbReader },
-  match: Doc<"matches">,
-  pin: string,
-  referee?: Doc<"referees"> | null,
-): Promise<boolean> {
-  // Check coach team membership first
-  const coach = await verifyCoachTeamMembership(ctx, match, pin);
-  if (coach) return true;
 
-  // Fall back to referee PIN
-  if (referee && match.refereeId && referee._id === match.refereeId) {
-    return referee.pin === pin;
-  }
-  return false;
+/**
+ * Check if a coach is allowed to perform lead-only actions.
+ * Returns true if:
+ * - No lead is assigned (open access for all coaches)
+ * - The coach IS the current lead
+ */
+export function isMatchLead(
+  match: Doc<"matches">,
+  coachId: Id<"coaches">,
+): boolean {
+  if (!match.leadCoachId) return true; // no lead = open access
+  return match.leadCoachId === coachId;
 }

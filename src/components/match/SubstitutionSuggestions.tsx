@@ -9,6 +9,7 @@ import clsx from "clsx";
 interface SubstitutionSuggestionsProps {
   matchId: Id<"matches">;
   pin: string;
+  disabled?: boolean;
 }
 
 interface PlayerSuggestion {
@@ -27,7 +28,7 @@ interface Suggestion {
   reason: string;
 }
 
-export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestionsProps) {
+export function SubstitutionSuggestions({ matchId, pin, disabled = false }: SubstitutionSuggestionsProps) {
   const suggestionsData = useQuery(api.matches.getSuggestedSubstitutions, { matchId, pin });
   const substitute = useMutation(api.matchActions.substitute);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
@@ -125,6 +126,7 @@ export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestion
             onExecute={() => handleExecuteSuggestion(suggestion, index)}
             isExecuting={executingIndex === index}
             priority={index + 1}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -141,9 +143,10 @@ interface SuggestionCardProps {
   onExecute: () => void;
   isExecuting: boolean;
   priority: number;
+  disabled?: boolean;
 }
 
-function SuggestionCard({ suggestion, onExecute, isExecuting, priority }: SuggestionCardProps) {
+function SuggestionCard({ suggestion, onExecute, isExecuting, priority, disabled = false }: SuggestionCardProps) {
   const { playerOut, playerIn, timeDifference, reason } = suggestion;
 
   // Determine urgency based on time difference
@@ -235,12 +238,13 @@ function SuggestionCard({ suggestion, onExecute, isExecuting, priority }: Sugges
       {/* Execute button */}
       <button
         onClick={onExecute}
-        disabled={isExecuting}
+        disabled={isExecuting || disabled}
         className={clsx(
           "w-full py-3 rounded-xl font-semibold text-white transition-all",
           "min-h-[48px] active:scale-[0.98]",
           "bg-blue-600 hover:bg-blue-700",
-          "disabled:bg-gray-300 disabled:cursor-not-allowed disabled:scale-100"
+          "disabled:bg-gray-300 disabled:cursor-not-allowed disabled:scale-100",
+          disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         {isExecuting ? (

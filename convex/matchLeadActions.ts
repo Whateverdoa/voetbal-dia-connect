@@ -7,11 +7,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// PHASE 2: Uncomment to enforce lead-only permissions
-// import { Doc, Id } from "./_generated/dataModel";
-// function isMatchLead(match: Doc<"matches">, coachId: Id<"coaches">): boolean {
-//   return match.leadCoachId === coachId;
-// }
 
 /** Claim the match lead role for a match */
 export const claimMatchLead = mutation({

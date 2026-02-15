@@ -10,6 +10,7 @@ interface RefereeAssignmentProps {
   pin: string; // Coach PIN
   currentRefereeId?: Id<"referees">;
   currentRefereeName?: string | null;
+  disabled?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ export function RefereeAssignment({
   pin,
   currentRefereeId,
   currentRefereeName,
+  disabled = false,
 }: RefereeAssignmentProps) {
   const referees = useQuery(api.matches.listActiveReferees);
   const assignReferee = useMutation(api.matchActions.assignReferee);
@@ -112,16 +114,17 @@ export function RefereeAssignment({
               </p>
               <button
                 onClick={handleRemove}
-                disabled={isLoading}
-                className="w-full py-2 border-2 border-red-200 text-red-600 font-medium
+                disabled={isLoading || disabled}
+                className={`w-full py-2 border-2 border-red-200 text-red-600 font-medium
                            rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                           hover:bg-red-50 disabled:opacity-50 text-sm"
+                           hover:bg-red-50 disabled:opacity-50 text-sm
+                           ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {isLoading ? "Bezig..." : "Scheidsrechter verwijderen"}
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className={`space-y-2 ${disabled ? "opacity-50" : ""}`}>
               {referees === undefined ? (
                 <p className="text-sm text-gray-500">Laden...</p>
               ) : referees.length === 0 ? (
@@ -134,10 +137,11 @@ export function RefereeAssignment({
                     <button
                       key={ref.id}
                       onClick={() => handleAssign(ref.id)}
-                      disabled={isLoading}
-                      className="w-full py-2 px-3 text-left bg-gray-50 hover:bg-dia-green/10
+                      disabled={isLoading || disabled}
+                      className={`w-full py-2 px-3 text-left bg-gray-50 hover:bg-dia-green/10
                                  rounded-lg transition-colors min-h-[44px] disabled:opacity-50
-                                 flex items-center justify-between"
+                                 flex items-center justify-between
+                                 ${disabled ? "cursor-not-allowed" : ""}`}
                     >
                       <span className="font-medium text-gray-700">{ref.name}</span>
                       <span className="text-xs text-dia-green font-medium">Toewijzen</span>

@@ -6,13 +6,13 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyClockPin } from "./pinHelpers";
+import { verifyCoachTeamMembership, isMatchLead } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 
 /**
  * Adjust the match score by +1 or -1 for a given team.
  *
- * - Both coach and referee PINs are accepted (verifyClockPin).
+ * - Both coach and referee PINs are accepted.
  * - When delta is +1 and a scorerNumber (shirt number) is provided,
  *   a lightweight "goal" event is logged with the shirt number in the note.
  *   The coach can later resolve this to a named player.
@@ -32,9 +32,19 @@ export const adjustScore = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    // Try coach first
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (coach) {
+      if (!isMatchLead(match, coach._id)) {
+        throw new Error("Alleen de wedstrijdleider kan dit doen");
+      }
+    } else {
+      // Not a coach — check referee
+      const referee = await fetchRefereeForMatch(ctx, match);
+      if (!referee || referee.pin !== args.pin) {
+        throw new Error("Ongeldige PIN of geen toegang");
+      }
+      // Referee is always allowed — no lead check needed
     }
 
     // Calculate new score, clamped to 0

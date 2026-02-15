@@ -8,9 +8,10 @@ interface LineupToggleProps {
   matchId: Id<"matches">;
   pin: string;
   showLineup: boolean;
+  disabled?: boolean;
 }
 
-export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
+export function LineupToggle({ matchId, pin, showLineup, disabled = false }: LineupToggleProps) {
   const toggleLineup = useMutation(api.matchActions.toggleShowLineup);
 
   return (
@@ -22,9 +23,10 @@ export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
         </div>
         <button
           onClick={() => toggleLineup({ matchId, pin })}
+          disabled={disabled}
           className={`relative w-14 h-8 rounded-full transition-colors min-w-[56px] ${
             showLineup ? "bg-dia-green" : "bg-gray-300"
-          }`}
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           role="switch"
           aria-checked={showLineup}
           aria-label="Opstelling zichtbaar voor publiek"

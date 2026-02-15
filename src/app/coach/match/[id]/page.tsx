@@ -99,6 +99,9 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
   const [isConnected, setIsConnected] = useState(true);
   const lastUpdateRef = useRef(Date.now());
 
+  // Wedstrijdleider access control: can edit if no lead is assigned, OR if you ARE the lead
+  const canEdit = !match.hasLead || match.isLead !== false;
+
   // Track connection state based on data freshness
   useEffect(() => {
     lastUpdateRef.current = Date.now();
@@ -167,6 +170,13 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
 
       {/* Main content */}
       <div className="max-w-2xl mx-auto p-4 space-y-4">
+        {/* Read-only banner when another coach is wedstrijdleider */}
+        {!canEdit && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">{match.leadCoachName}</span> is wedstrijdleider — je kunt meekijken maar niet wijzigen.
+          </div>
+        )}
+
         {/* Match controls - most important, at top */}
         <MatchControls
           matchId={match._id}
@@ -179,6 +189,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           pausedAt={match.pausedAt}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
+          disabled={!canEdit}
         />
 
         {/* Referee assignment */}
@@ -187,6 +198,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           pin={pin}
           currentRefereeId={match.refereeId}
           currentRefereeName={match.refereeName}
+          disabled={!canEdit}
         />
 
         {/* Wedstrijdleider (match lead) */}
@@ -194,6 +206,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           matchId={match._id}
           pin={pin}
           hasLead={match.hasLead ?? false}
+          isLead={match.isLead !== false}
           leadCoachName={match.leadCoachName ?? null}
         />
 
@@ -222,6 +235,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
               matchId={match._id}
               pin={pin}
               showLineup={match.showLineup}
+              disabled={!canEdit}
             />
 
             {/* Player lists */}
@@ -230,6 +244,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
               pin={pin}
               playersOnField={playersOnField}
               playersOnBench={playersOnBench}
+              disabled={!canEdit}
             />
 
             {/* Event timeline */}
@@ -241,7 +256,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
           <>
             {/* Substitution suggestions - prominent during live match */}
             {isLive && (
-              <SubstitutionSuggestions matchId={match._id} pin={pin} />
+              <SubstitutionSuggestions matchId={match._id} pin={pin} disabled={!canEdit} />
             )}
 
             {/* Playing time panel */}
@@ -253,8 +268,8 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
         )}
       </div>
 
-      {/* Modals */}
-      {showGoalModal && (
+      {/* Modals — only render when canEdit as a safety measure */}
+      {showGoalModal && canEdit && (
         <GoalModal
           matchId={match._id}
           pin={pin}
@@ -263,7 +278,7 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
         />
       )}
 
-      {showSubModal && (
+      {showSubModal && canEdit && (
         <SubstitutionPanel
           matchId={match._id}
           pin={pin}

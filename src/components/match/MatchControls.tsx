@@ -17,6 +17,7 @@ interface MatchControlsProps {
   pausedAt?: number;
   onGoalClick: () => void;
   onSubClick: () => void;
+  disabled?: boolean;
 }
 
 export function MatchControls({
@@ -30,6 +31,7 @@ export function MatchControls({
   pausedAt,
   onGoalClick,
   onSubClick,
+  disabled = false,
 }: MatchControlsProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
@@ -109,10 +111,11 @@ export function MatchControls({
       {isScheduled && (
         <button
           onClick={() => handleMutation(() => startMatch({ matchId, pin }), "Start wedstrijd")}
-          disabled={isLoading}
-          className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
+          disabled={isLoading || disabled}
+          className={`w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl
                      min-h-[56px] active:scale-[0.98] transition-transform
-                     hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                     hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed
+                     ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
@@ -125,22 +128,24 @@ export function MatchControls({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={onGoalClick}
-              disabled={isLoading}
-              className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl 
+              disabled={isLoading || disabled}
+              className={`py-5 bg-dia-green text-white text-xl font-bold rounded-xl
                          min-h-[64px] active:scale-[0.98] transition-transform
                          hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <span className="text-2xl">⚽</span>
               <span>GOAL!</span>
             </button>
             <button
               onClick={onSubClick}
-              disabled={isLoading}
-              className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl 
+              disabled={isLoading || disabled}
+              className={`py-5 bg-blue-600 text-white text-xl font-bold rounded-xl
                          min-h-[64px] active:scale-[0.98] transition-transform
                          hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <span className="text-2xl">🔄</span>
               <span>Wissel</span>
@@ -151,11 +156,12 @@ export function MatchControls({
           {isPaused ? (
             <button
               onClick={() => handleMutation(() => resumeClockMut({ matchId, pin }), "Hervat klok")}
-              disabled={isLoading}
-              className="w-full py-3 bg-dia-green text-white font-semibold 
+              disabled={isLoading || disabled}
+              className={`w-full py-3 bg-dia-green text-white font-semibold
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
                          hover:bg-dia-green-light shadow-md disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center justify-center gap-2"
+                         flex items-center justify-center gap-2
+                         ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <span className="text-lg">▶</span>
               {isLoading ? "Bezig..." : "Hervat klok"}
@@ -163,11 +169,12 @@ export function MatchControls({
           ) : (
             <button
               onClick={() => handleMutation(() => pauseClockMut({ matchId, pin }), "Pauzeer klok")}
-              disabled={isLoading}
-              className="w-full py-3 bg-orange-500 text-white font-semibold 
+              disabled={isLoading || disabled}
+              className={`w-full py-3 bg-orange-500 text-white font-semibold
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
                          hover:bg-orange-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center justify-center gap-2"
+                         flex items-center justify-center gap-2
+                         ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <span className="text-lg">⏸</span>
               {isLoading ? "Bezig..." : "Pauzeer klok"}
@@ -177,10 +184,11 @@ export function MatchControls({
           {/* Secondary: Quarter control */}
           <button
             onClick={() => handleMutation(() => nextQuarter({ matchId, pin }), "Volgende kwart")}
-            disabled={isLoading}
-            className="w-full py-3 border-2 border-gray-300 text-gray-700 font-semibold 
+            disabled={isLoading || disabled}
+            className={`w-full py-3 border-2 border-gray-300 text-gray-700 font-semibold
                        rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
-                       hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                       hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed
+                       ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {isLoading ? "Bezig..." : getNextQuarterLabel()}
           </button>
@@ -190,6 +198,7 @@ export function MatchControls({
             <UndoGoalButton
               isConfirming={undoConfirm}
               isLoading={isLoading}
+              disabled={disabled}
               onFirstTap={() => setUndoConfirm(true)}
               onConfirm={() => {
                 setUndoConfirm(false);
@@ -208,10 +217,11 @@ export function MatchControls({
       {isHalftime && (
         <button
           onClick={() => handleMutation(() => resumeHalftime({ matchId, pin }), "Hervatten")}
-          disabled={isLoading}
-          className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
+          disabled={isLoading || disabled}
+          className={`w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl
                      min-h-[56px] active:scale-[0.98] transition-transform
-                     hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                     hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed
+                     ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {isLoading ? "Bezig..." : getResumeLabel()}
         </button>
@@ -231,23 +241,25 @@ export function MatchControls({
 function UndoGoalButton({
   isConfirming,
   isLoading,
+  disabled = false,
   onFirstTap,
   onConfirm,
   onCancel,
 }: {
   isConfirming: boolean;
   isLoading: boolean;
+  disabled?: boolean;
   onFirstTap: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  if (isConfirming) {
+  if (isConfirming && !disabled) {
     return (
       <div className="flex gap-2">
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="flex-1 py-2 border-2 border-gray-300 text-gray-600 font-semibold 
+          className="flex-1 py-2 border-2 border-gray-300 text-gray-600 font-semibold
                      rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
                      disabled:opacity-50"
         >
@@ -256,7 +268,7 @@ function UndoGoalButton({
         <button
           onClick={onConfirm}
           disabled={isLoading}
-          className="flex-1 py-2 bg-red-600 text-white font-semibold 
+          className="flex-1 py-2 bg-red-600 text-white font-semibold
                      rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
                      disabled:opacity-50"
         >
@@ -269,10 +281,11 @@ function UndoGoalButton({
   return (
     <button
       onClick={onFirstTap}
-      disabled={isLoading}
-      className="w-full py-2 text-red-600 border-2 border-red-200 font-medium 
+      disabled={isLoading || disabled}
+      className={`w-full py-2 text-red-600 border-2 border-red-200 font-medium
                  rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 text-sm"
+                 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 text-sm
+                 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       Laatste doelpunt ongedaan maken
     </button>

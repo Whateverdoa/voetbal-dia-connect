@@ -12,6 +12,7 @@ import {
   GoalModal,
   SubstitutionPanel,
   PlayerList,
+  PitchView,
   EventTimeline,
   LineupToggle,
   PlayingTimePanel,
@@ -23,6 +24,7 @@ import {
 } from "@/components/match";
 import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
 import { TabButton } from "@/components/match/TabButton";
+import { FormationSelector } from "@/components/match/FormationSelector";
 
 export default function CoachMatchPage() {
   return (
@@ -92,10 +94,13 @@ function CoachMatchContent() {
 
 type ViewTab = "opstelling" | "speeltijd";
 
+type LineupView = "veld" | "lijst";
+
 function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("opstelling");
+  const [lineupView, setLineupView] = useState<LineupView>("lijst");
   const [isConnected, setIsConnected] = useState(true);
   const lastUpdateRef = useRef(Date.now());
 
@@ -217,22 +222,36 @@ function MatchControlPanel({ match, pin }: { match: Match; pin: string }) {
         {/* Tab content */}
         {activeTab === "opstelling" && (
           <>
-            {/* Lineup visibility toggle */}
             <LineupToggle
               matchId={match._id}
               pin={pin}
               showLineup={match.showLineup}
             />
 
-            {/* Player lists */}
-            <PlayerList
+            <FormationSelector
               matchId={match._id}
               pin={pin}
-              playersOnField={playersOnField}
-              playersOnBench={playersOnBench}
+              formationId={match.formationId}
+              lineupView={lineupView}
+              onLineupViewChange={setLineupView}
             />
 
-            {/* Event timeline */}
+            {lineupView === "veld" ? (
+              <PitchView
+                matchId={match._id}
+                pin={pin}
+                players={match.players}
+                formationId={match.formationId}
+              />
+            ) : (
+              <PlayerList
+                matchId={match._id}
+                pin={pin}
+                playersOnField={playersOnField}
+                playersOnBench={playersOnBench}
+              />
+            )}
+
             <EventTimeline events={match.events} />
           </>
         )}

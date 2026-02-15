@@ -13,7 +13,14 @@ import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 
 // Re-export from split modules for backwards compatibility
 export { addGoal, substitute, removeLastGoal } from "./matchEvents";
-export { togglePlayerOnField, toggleKeeper, toggleShowLineup } from "./matchLineup";
+export {
+  togglePlayerOnField,
+  toggleKeeper,
+  toggleShowLineup,
+  assignPlayerToSlot,
+  swapFieldPositions,
+  setMatchFormation,
+} from "./matchLineup";
 export { pauseClock, resumeClock } from "./clockActions";
 export { adjustScore } from "./scoreActions";
 export { assignReferee } from "./refereeActions";

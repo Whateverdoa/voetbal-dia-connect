@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -12,6 +12,8 @@ import {
   ResumeSessionPrompt,
   type CoachSession,
 } from "@/components/ResumeSessionPrompt";
+
+const PIN_LOAD_TIMEOUT_MS = 6000;
 
 const MAX_PIN_LENGTH = 6;
 const MIN_PIN_LENGTH = 4;
@@ -47,9 +49,11 @@ export default function CoachLoginPage() {
   const [pin, setPin] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [connectionTimeout, setConnectionTimeout] = useState(false);
   const [existingSession, setExistingSession] = useState<CoachSession | null>(
     null
   );
+  const connection = useConvexConnectionState();
 
   useEffect(() => {
     const session = getCoachSession();
@@ -62,6 +66,21 @@ export default function CoachLoginPage() {
     api.matches.verifyCoachPin,
     submitted && pin.length >= MIN_PIN_LENGTH ? { pin } : "skip"
   );
+
+  // If we're waiting for PIN verification and the query never returns (no connection), show "try again" after a timeout
+  useEffect(() => {
+    if (!submitted || coachData !== undefined) {
+      setConnectionTimeout(false);
+      return;
+    }
+    const notConnected =
+      !connection.isWebSocketConnected || !connection.hasEverConnected;
+    const t = setTimeout(
+      () => setConnectionTimeout(true),
+      PIN_LOAD_TIMEOUT_MS
+    );
+    return () => clearTimeout(t);
+  }, [submitted, coachData, connection.isWebSocketConnected, connection.hasEverConnected]);
 
   useEffect(() => {
     if (submitted && coachData) {
@@ -128,6 +147,12 @@ export default function CoachLoginPage() {
     setExistingSession(null);
     setPin("");
     setSubmitted(false);
+    setConnectionTimeout(false);
+  };
+
+  const handleRetryConnection = () => {
+    setConnectionTimeout(false);
+    setSubmitted(false);
   };
 
   if (submitted && coachData) {
@@ -180,13 +205,28 @@ export default function CoachLoginPage() {
             showError={showError}
           />
 
-          <div className="h-6 flex items-center justify-center">
+          <div className="h-6 flex items-center justify-center min-h-[24px]">
             {showError && (
               <p className="text-red-500 text-sm font-medium animate-pulse">
                 Ongeldige PIN
               </p>
             )}
+            {connectionTimeout && (
+              <p className="text-amber-600 text-sm font-medium text-center">
+                Geen verbinding. Controleer je internet en probeer opnieuw.
+              </p>
+            )}
           </div>
+
+          {connectionTimeout && (
+            <button
+              type="button"
+              onClick={handleRetryConnection}
+              className="w-full py-3 rounded-xl border-2 border-amber-500 text-amber-700 font-medium hover:bg-amber-50 transition-colors"
+            >
+              Opnieuw proberen
+            </button>
+          )}
 
           <NumericKeypad
             onKeyPress={handleKeyPress}
@@ -194,7 +234,7 @@ export default function CoachLoginPage() {
             onClear={handleClear}
             onSubmit={handleSubmit}
             canSubmit={pin.length >= MIN_PIN_LENGTH}
-            disabled={submitted}
+            disabled={submitted && !connectionTimeout}
           />
         </div>
       </div>

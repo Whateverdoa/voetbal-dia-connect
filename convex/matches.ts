@@ -135,6 +135,9 @@ export const getForCoach = query({
           onField: mp.onField,
           isKeeper: mp.isKeeper,
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
+          positionPrimary: player.positionPrimary,
+          positionSecondary: player.positionSecondary,
+          fieldSlotIndex: mp.fieldSlotIndex,
         };
       })
     );
@@ -172,7 +175,7 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
-    // Strip coachPin from the response to avoid leaking it
+    // Strip coachPin from response — coach already knows it, no need to send over wire
     const { coachPin: _pin, ...safeMatch } = match;
 
     return {
@@ -181,9 +184,9 @@ export const getForCoach = query({
       players: players.filter(Boolean),
       events: enrichedEvents,
       refereeName: referee?.name ?? null,
-      leadCoachId: match.leadCoachId ?? null,
+      leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
-      hasLead: !!match.leadCoachId,
+      hasLead: !!safeMatch.leadCoachId,
     };
   },
 });

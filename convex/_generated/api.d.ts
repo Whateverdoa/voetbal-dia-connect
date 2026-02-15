@@ -15,6 +15,7 @@ import type * as adminCoaches from "../adminCoaches.js";
 import type * as adminMatches from "../adminMatches.js";
 import type * as adminPlayers from "../adminPlayers.js";
 import type * as adminReferees from "../adminReferees.js";
+import type * as adminSeed from "../adminSeed.js";
 import type * as adminTeams from "../adminTeams.js";
 import type * as clockActions from "../clockActions.js";
 import type * as coachQueries from "../coachQueries.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   adminMatches: typeof adminMatches;
   adminPlayers: typeof adminPlayers;
   adminReferees: typeof adminReferees;
+  adminSeed: typeof adminSeed;
   adminTeams: typeof adminTeams;
   clockActions: typeof clockActions;
   coachQueries: typeof coachQueries;

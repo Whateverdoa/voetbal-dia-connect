@@ -1,21 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
 
+const PIN_LOAD_TIMEOUT_MS = 6000;
+
 export default function ScheidsrechterPage() {
   const [pin, setPin] = useState("");
   const [submittedPin, setSubmittedPin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connectionTimeout, setConnectionTimeout] = useState(false);
 
   // Only query after the referee submits their PIN
   const data = useQuery(
     api.matches.getMatchesForReferee,
     submittedPin ? { pin: submittedPin } : "skip"
   );
+
+  useEffect(() => {
+    if (!submittedPin || data !== undefined) {
+      setConnectionTimeout(false);
+      return;
+    }
+    const t = setTimeout(() => setConnectionTimeout(true), PIN_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [submittedPin, data]);
 
   // Handle PIN form submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,6 +50,12 @@ export default function ScheidsrechterPage() {
     setSubmittedPin(null);
     setPin("");
     setError(null);
+    setConnectionTimeout(false);
+  };
+
+  const handleRetryConnection = () => {
+    setConnectionTimeout(false);
+    setSubmittedPin(null);
   };
 
   // Show match list after successful login
@@ -101,16 +119,35 @@ export default function ScheidsrechterPage() {
           )}
 
           {/* Loading state */}
-          {submittedPin && data === undefined && (
+          {submittedPin && data === undefined && !connectionTimeout && (
             <p className="text-gray-500 text-sm text-center">
               Gegevens laden...
             </p>
           )}
 
+          {/* Connection timeout */}
+          {connectionTimeout && (
+            <>
+              <p className="text-amber-600 text-sm font-medium text-center">
+                Geen verbinding. Controleer je internet en probeer opnieuw.
+              </p>
+              <button
+                type="button"
+                onClick={handleRetryConnection}
+                className="w-full py-3 rounded-xl border-2 border-amber-500 text-amber-700 font-medium hover:bg-amber-50 transition-colors"
+              >
+                Opnieuw proberen
+              </button>
+            </>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
-            disabled={pin.length < 4 || (submittedPin !== null && data === undefined)}
+            disabled={
+              pin.length < 4 ||
+              (submittedPin !== null && data === undefined && !connectionTimeout)
+            }
             className="w-full py-3 px-4 bg-dia-green text-white font-semibold rounded-lg
                        hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                        transition-colors min-h-[48px]"

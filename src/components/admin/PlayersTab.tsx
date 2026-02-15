@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check, ToggleLeft, ToggleRight } from "lucide-react";
+import { POSITION_CODES, POSITION_LABELS, getPositionLabel } from "@/lib/positions";
 
 interface Team {
   _id: Id<"teams">;
@@ -27,9 +28,13 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
 
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
+  const [newPositionPrimary, setNewPositionPrimary] = useState("");
+  const [newPositionSecondary, setNewPositionSecondary] = useState("");
   const [editingId, setEditingId] = useState<Id<"players"> | null>(null);
   const [editName, setEditName] = useState("");
   const [editNumber, setEditNumber] = useState("");
+  const [editPositionPrimary, setEditPositionPrimary] = useState<string>("");
+  const [editPositionSecondary, setEditPositionSecondary] = useState<string>("");
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"players"> | null>(null);
   const [status, setStatus] = useState("");
 
@@ -40,10 +45,14 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         teamId: selectedTeamId,
         name: newName.trim(),
         number: newNumber ? parseInt(newNumber) : undefined,
+        positionPrimary: newPositionPrimary || undefined,
+        positionSecondary: newPositionSecondary || undefined,
         adminPin: getAdminPin(),
       });
       setNewName("");
       setNewNumber("");
+      setNewPositionPrimary("");
+      setNewPositionSecondary("");
       setStatus("✅ Speler toegevoegd");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Onbekende fout";
@@ -57,6 +66,8 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         playerId,
         name: editName.trim() || undefined,
         number: editNumber ? parseInt(editNumber) : undefined,
+        positionPrimary: editPositionPrimary || undefined,
+        positionSecondary: editPositionSecondary || undefined,
         adminPin: getAdminPin(),
       });
       setEditingId(null);
@@ -135,9 +146,35 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 px-2 py-1 border rounded"
+                      className="flex-1 min-w-0 px-2 py-1 border rounded"
                       autoFocus
                     />
+                    <select
+                      value={editPositionPrimary}
+                      onChange={(e) => setEditPositionPrimary(e.target.value)}
+                      className="w-28 px-2 py-1 border rounded text-sm"
+                      title="Positie 1"
+                    >
+                      <option value="">—</option>
+                      {POSITION_CODES.map((code) => (
+                        <option key={code} value={code}>
+                          {POSITION_LABELS[code]}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={editPositionSecondary}
+                      onChange={(e) => setEditPositionSecondary(e.target.value)}
+                      className="w-28 px-2 py-1 border rounded text-sm"
+                      title="Positie 2"
+                    >
+                      <option value="">—</option>
+                      {POSITION_CODES.map((code) => (
+                        <option key={code} value={code}>
+                          {POSITION_LABELS[code]}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       onClick={() => handleUpdate(player._id)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded"
@@ -172,7 +209,15 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                     <span className="w-10 text-center font-bold text-gray-500">
                       {player.number ? `#${player.number}` : "-"}
                     </span>
-                    <span className="flex-1">{player.name}</span>
+                    <span className="flex-1 min-w-0">{player.name}</span>
+                    <span className="text-xs text-gray-500 shrink-0">
+                      {(player as { positionPrimary?: string }).positionPrimary
+                        ? getPositionLabel((player as { positionPrimary?: string }).positionPrimary!)
+                        : ""}
+                      {(player as { positionSecondary?: string }).positionSecondary
+                        ? ` / ${getPositionLabel((player as { positionSecondary?: string }).positionSecondary!)}`
+                        : ""}
+                    </span>
                     <button
                       onClick={() => handleToggleActive(player._id, player.active)}
                       className={`p-2 rounded ${
@@ -189,6 +234,12 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                         setEditingId(player._id);
                         setEditName(player.name);
                         setEditNumber(player.number?.toString() || "");
+                        setEditPositionPrimary(
+                          (player as { positionPrimary?: string }).positionPrimary ?? ""
+                        );
+                        setEditPositionSecondary(
+                          (player as { positionSecondary?: string }).positionSecondary ?? ""
+                        );
                       }}
                       className="p-2 text-gray-500 hover:bg-gray-100 rounded"
                     >
@@ -214,7 +265,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
           <h3 className="font-medium mb-2 flex items-center gap-2">
             <Plus size={18} /> Nieuwe speler
           </h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <input
               type="number"
               value={newNumber}
@@ -227,8 +278,34 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Naam"
-              className="flex-1 px-3 py-2 border rounded-lg"
+              className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
+            <select
+              value={newPositionPrimary}
+              onChange={(e) => setNewPositionPrimary(e.target.value)}
+              className="px-3 py-2 border rounded-lg text-sm"
+              title="Positie 1"
+            >
+              <option value="">Positie 1</option>
+              {POSITION_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {POSITION_LABELS[code]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={newPositionSecondary}
+              onChange={(e) => setNewPositionSecondary(e.target.value)}
+              className="px-3 py-2 border rounded-lg text-sm"
+              title="Positie 2"
+            >
+              <option value="">Positie 2</option>
+              {POSITION_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {POSITION_LABELS[code]}
+                </option>
+              ))}
+            </select>
             <button
               onClick={handleCreate}
               disabled={!newName.trim()}

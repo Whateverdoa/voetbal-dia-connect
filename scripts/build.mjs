@@ -19,7 +19,12 @@ const isProduction = vercelEnv === "production";
 
 if (deployKey && isProduction) {
   console.log("🚀 Production build: deploying Convex functions + Next.js build");
-  execSync("npx convex deploy --cmd \"next build\"", { stdio: "inherit" });
+  // CONVEX_VERBOSE=1 surfaces detailed logs if deploy hangs (e.g. "Analyzing source code...")
+  const env = { ...process.env, CONVEX_VERBOSE: "1" };
+  execSync("npx convex deploy --cmd \"next build\"", {
+    stdio: "inherit",
+    env,
+  });
 } else if (deployKey && !isProduction) {
   console.log(
     `⚠️  Skipping Convex deploy for ${vercelEnv ?? "local"} environment.`,

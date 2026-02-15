@@ -23,7 +23,7 @@ export const pauseClock = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!verifyClockPin(match, args.pin, referee)) {
+    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -65,7 +65,7 @@ export const resumeClock = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!verifyClockPin(match, args.pin, referee)) {
+    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
     }
 

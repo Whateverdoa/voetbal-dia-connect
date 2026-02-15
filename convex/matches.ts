@@ -100,7 +100,14 @@ export const getForCoach = query({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) return null;
+    if (!match) return null;
+
+    // Verify coach belongs to the match's team
+    const coach = await ctx.db
+      .query("coaches")
+      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .first();
+    if (!coach || !coach.teamIds.includes(match.teamId)) return null;
 
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);

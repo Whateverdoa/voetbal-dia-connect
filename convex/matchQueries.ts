@@ -4,13 +4,15 @@
  */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Get playing time for all players in a match
 export const getPlayingTime = query({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) return null;
+    if (!match) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db
@@ -59,7 +61,8 @@ export const getSuggestedSubstitutions = query({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) return null;
+    if (!match) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db

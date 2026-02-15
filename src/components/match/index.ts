@@ -5,6 +5,7 @@ export { MatchControls } from "./MatchControls";
 export { GoalModal } from "./GoalModal";
 export { SubstitutionPanel } from "./SubstitutionPanel";
 export { PlayerCard } from "./PlayerCard";
+export { FieldPlayerCard } from "./FieldPlayerCard";
 export { PlayerList } from "./PlayerList";
 export { PitchView } from "./PitchView";
 export { EventTimeline } from "./EventTimeline";

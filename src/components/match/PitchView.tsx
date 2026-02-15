@@ -7,6 +7,8 @@ import { Id } from "@/convex/_generated/dataModel";
 import { getFormation } from "@/lib/formations";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { FieldLines } from "./FieldLines";
+import { FormationLines } from "./FormationLines";
+import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
 import type { MatchPlayer } from "./types";
 
@@ -26,8 +28,6 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
   const formation = formationId ? getFormation(formationId) : undefined;
   const fieldMode = fieldModeFromFormation(formationId);
   const cfg = FIELDS[fieldMode];
-  const is11 = fieldMode === "11tal";
-  const playerSize = is11 ? 57 : 63;
 
   const onField = players.filter((p) => p.onField);
   const onBench = players.filter((p) => !p.onField);
@@ -46,11 +46,6 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
 
   const slotOfPlayer = (id: Id<"players">): number | undefined =>
     onField.find((mp) => mp.playerId === id)?.fieldSlotIndex ?? undefined;
-
-  const tileLabel = (p: MatchPlayer): string => {
-    if (p.number != null) return String(p.number);
-    return (p.name.trim()[0] || "?").toUpperCase();
-  };
 
   const nameLabel = (p: MatchPlayer): string => {
     const firstName = p.name.trim().split(/\s+/)[0] || p.name;
@@ -107,30 +102,6 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
     setSelectedPlayerId(null);
   };
 
-  // --- Selection tile style ---
-  const tileStyle = (playerId: Id<"players"> | null, isEmpty: boolean): React.CSSProperties => {
-    const isSelected = playerId !== null && selectedPlayerId === playerId;
-    const isDimmed = selectedPlayerId !== null && !isSelected;
-    if (isSelected) {
-      return {
-        background: "rgba(30,41,59,0.7)",
-        borderColor: "#facc15",
-        boxShadow: "0 0 20px rgba(250,204,21,0.5), 0 0 0 2px #facc15",
-        transform: "translate(-50%, -50%) scale(1.15)",
-        zIndex: 50,
-      };
-    }
-    return {
-      background: isEmpty ? "rgba(255,255,255,0.08)" : "rgba(30,41,59,0.7)",
-      borderColor: isEmpty ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.1)",
-      boxShadow: isEmpty ? "none" : "0 6px 24px rgba(0,0,0,0.35)",
-      transform: "translate(-50%, -50%)",
-      opacity: isDimmed ? 0.5 : 1,
-      filter: isDimmed ? "grayscale(0.4)" : "none",
-      zIndex: 10,
-    };
-  };
-
   // --- Status text ---
   const statusText = (): string => {
     if (!selectedPlayerId) return "Tik op een speler om te wisselen";
@@ -151,9 +122,9 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       {/* Selection indicator */}
-      <div className="h-6 flex items-center justify-center">
+      <div className="h-5 flex items-center justify-center">
         <span
           className={`text-xs font-bold uppercase tracking-widest ${selectedPlayerId ? "text-yellow-400 animate-pulse" : "text-slate-400"}`}
         >
@@ -161,66 +132,79 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
         </span>
       </div>
 
-      {/* Field container */}
-      <div
-        className="relative w-full border rounded-sm"
-        style={{
-          background: "#2d7a3a",
-          borderColor: "#1e5c28",
-          aspectRatio: `${cfg.w} / ${cfg.h}`,
-          boxShadow: "0 0 50px -12px rgba(34,197,94,0.25)",
-        }}
-      >
+      {/* Perspective wrapper — negative margin compensates for rotateX visual gap */}
+      <div className="w-full flex justify-center" style={{ perspective: "800px", marginTop: -80 }}>
+        {/* Field container — tilted */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="relative w-full overflow-hidden border rounded-sm"
           style={{
+            background: "#2d7a3a",
+            borderColor: "#1e5c28",
+            aspectRatio: `${cfg.w} / ${cfg.h}`,
+            transform: "rotateX(12deg)",
+            transformOrigin: "center bottom",
+            boxShadow:
+              "0 -20px 60px -15px rgba(34,197,94,0.12), 0 30px 60px -20px rgba(0,0,0,0.6)",
+          }}
+        >
+          {/* Gradient overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
+            }}
+          />
+          {/* Subtle pitch stripes */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.03]"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.5) 20px, rgba(255,255,255,0.5) 21px)",
+            }}
+          />
+
+          <FieldLines cfg={cfg} />
+          <FormationLines slots={formation.slots} links={formation.links} />
+
+          {/* Player cards at formation slot positions */}
+          {formation.slots.map((slot) => {
+            const player = playerInSlot(slot.id);
+            const isEmpty = !player;
+
+            return (
+              <FieldPlayerCard
+                key={slot.id}
+                name={player?.name ?? ""}
+                number={player?.number}
+                slotRole={slot.role}
+                x={slot.x}
+                y={slot.y}
+                isSelected={player ? selectedPlayerId === player.playerId : false}
+                isDimmed={selectedPlayerId !== null && (!player || selectedPlayerId !== player.playerId)}
+                isEmpty={isEmpty}
+                onClick={() =>
+                  player
+                    ? handleFieldPlayerClick(player, slot.id)
+                    : handleEmptySlotClick(slot.id)
+                }
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Glow line under field */}
+      <div className="w-full flex justify-center" style={{ marginTop: -4 }}>
+        <div
+          style={{
+            width: "80%",
+            height: 3,
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
+              "linear-gradient(90deg, transparent 5%, rgba(34,197,94,0.25) 50%, transparent 95%)",
+            borderRadius: 2,
           }}
         />
-        <FieldLines cfg={cfg} />
-
-        {/* Player tiles at formation slot positions */}
-        {formation.slots.map((slot) => {
-          const player = playerInSlot(slot.id);
-          const isEmpty = !player;
-          const style = tileStyle(player?.playerId ?? null, isEmpty);
-
-          return (
-            <div
-              key={slot.id}
-              onClick={() =>
-                player
-                  ? handleFieldPlayerClick(player, slot.id)
-                  : handleEmptySlotClick(slot.id)
-              }
-              className="absolute flex flex-col items-center justify-center cursor-pointer rounded-xl border text-white"
-              style={{
-                left: `${slot.x}%`,
-                top: `${slot.y}%`,
-                width: playerSize,
-                height: playerSize,
-                backdropFilter: isEmpty ? "none" : "blur(12px)",
-                transition: "all 0.3s ease",
-                ...style,
-              }}
-            >
-              {player ? (
-                <>
-                  <span className="font-bold text-sm">{tileLabel(player)}</span>
-                  <span
-                    className="absolute text-[10px] font-semibold whitespace-nowrap opacity-75"
-                    style={{ bottom: -16 }}
-                  >
-                    {nameLabel(player)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-white/40 text-lg font-light">+</span>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       <PitchBench

@@ -7,7 +7,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { verifyClockPin, verifyCoachPin } from "./pinHelpers";
+import { verifyClockPin, verifyCoachTeamMembership } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 
@@ -32,6 +32,18 @@ export const create = mutation({
     playerIds: v.array(v.id("players")),
   },
   handler: async (ctx, args) => {
+    // Verify that the coach PIN belongs to a coach assigned to this team
+    const coach = await ctx.db
+      .query("coaches")
+      .withIndex("by_pin", (q) => q.eq("pin", args.coachPin))
+      .first();
+    if (!coach) {
+      throw new Error("Ongeldige PIN");
+    }
+    if (!coach.teamIds.includes(args.teamId)) {
+      throw new Error("Coach is niet gekoppeld aan dit team");
+    }
+
     // Validate inputs
     const trimmedOpponent = args.opponent.trim();
     if (!trimmedOpponent) {
@@ -99,7 +111,7 @@ export const start = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!verifyClockPin(match, args.pin, referee)) {
+    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -144,7 +156,7 @@ export const nextQuarter = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!verifyClockPin(match, args.pin, referee)) {
+    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -205,7 +217,7 @@ export const resumeFromHalftime = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!verifyClockPin(match, args.pin, referee)) {
+    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -255,7 +267,11 @@ export const updateStatus = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    if (!coach) {
       throw new Error("Invalid match or PIN");
     }
 

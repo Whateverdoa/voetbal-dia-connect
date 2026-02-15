@@ -29,10 +29,13 @@ export const claimMatchLead = mutation({
       throw new Error("Ongeldige PIN");
     }
 
-    // 2. Verify match exists
+    // 2. Verify match exists and coach belongs to the match's team
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
+    }
+    if (!coach.teamIds.includes(match.teamId)) {
+      throw new Error("Coach is niet gekoppeld aan dit team");
     }
 
     // 3. Check if another coach already claimed lead
@@ -66,10 +69,13 @@ export const releaseMatchLead = mutation({
       throw new Error("Ongeldige PIN");
     }
 
-    // 2. Verify match exists
+    // 2. Verify match exists and coach belongs to the match's team
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
+    }
+    if (!coach.teamIds.includes(match.teamId)) {
+      throw new Error("Coach is niet gekoppeld aan dit team");
     }
 
     // 3. Check that this coach is the current lead

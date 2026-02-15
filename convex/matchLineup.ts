@@ -4,6 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Toggle player on/off field
 export const togglePlayerOnField = mutation({
@@ -14,7 +15,10 @@ export const togglePlayerOnField = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -55,7 +59,10 @@ export const toggleKeeper = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -89,7 +96,10 @@ export const toggleShowLineup = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 

@@ -4,6 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Record a goal
 export const addGoal = mutation({
@@ -17,7 +18,10 @@ export const addGoal = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -74,7 +78,10 @@ export const substitute = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 
@@ -139,7 +146,10 @@ export const removeLastGoal = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || match.coachPin !== args.pin) {
+    if (!match) {
+      throw new Error("Invalid match or PIN");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
       throw new Error("Invalid match or PIN");
     }
 

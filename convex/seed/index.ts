@@ -3,8 +3,8 @@
  *
  * Run with: npx convex run seed:init
  */
-import { action, internalMutation } from "../_generated/server";
-import { api } from "../_generated/api";
+import { action, internalMutation, mutation } from "../_generated/server";
+import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import {
@@ -156,5 +156,31 @@ export const addPlayerToMatch = internalMutation({
       onField: false,
       createdAt: Date.now(),
     });
+  },
+});
+
+/** Wipe all data from all tables. Dev-only — run before re-seeding. */
+export const clearAll = mutation({
+  handler: async (ctx) => {
+    const tableNames = [
+      "matchEvents",
+      "matchPlayers",
+      "matches",
+      "players",
+      "coaches",
+      "referees",
+      "teams",
+      "clubs",
+    ] as const;
+
+    let total = 0;
+    for (const table of tableNames) {
+      const docs = await ctx.db.query(table).collect();
+      for (const doc of docs) {
+        await ctx.db.delete(doc._id);
+      }
+      total += docs.length;
+    }
+    return { message: `Cleared ${total} records across ${tableNames.length} tables.`, total };
   },
 });

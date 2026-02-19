@@ -20,6 +20,7 @@ import type * as adminTeams from "../adminTeams.js";
 import type * as clockActions from "../clockActions.js";
 import type * as coachQueries from "../coachQueries.js";
 import type * as helpers from "../helpers.js";
+import type * as lib_positionZones from "../lib/positionZones.js";
 import type * as matchActions from "../matchActions.js";
 import type * as matchEvents from "../matchEvents.js";
 import type * as matchLeadActions from "../matchLeadActions.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   clockActions: typeof clockActions;
   coachQueries: typeof coachQueries;
   helpers: typeof helpers;
+  "lib/positionZones": typeof lib_positionZones;
   matchActions: typeof matchActions;
   matchEvents: typeof matchEvents;
   matchLeadActions: typeof matchLeadActions;

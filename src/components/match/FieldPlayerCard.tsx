@@ -1,13 +1,15 @@
 /**
  * FieldPlayerCard — EA FC-style card for the field view.
- * Renders avatar silhouette, role-colored name bar, number, and role label.
+ * Renders avatar silhouette, position-colored name bar, number, and position label.
+ * Responsive: 70px on phone, 90px on tablet/desktop.
  */
 import { getRoleColor, getRoleLabel } from "@/lib/roleColors";
+import { useCardSize } from "@/hooks/useCardSize";
 
 interface FieldPlayerCardProps {
   name: string;
   number: number | null | undefined;
-  slotRole: string;
+  position: string;
   x: number;
   y: number;
   isSelected: boolean;
@@ -15,8 +17,6 @@ interface FieldPlayerCardProps {
   isEmpty: boolean;
   onClick: () => void;
 }
-
-const CARD_WIDTH = 90;
 
 function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
   return (
@@ -30,7 +30,7 @@ function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: stri
 export function FieldPlayerCard({
   name,
   number,
-  slotRole,
+  position,
   x,
   y,
   isSelected,
@@ -38,8 +38,9 @@ export function FieldPlayerCard({
   isEmpty,
   onClick,
 }: FieldPlayerCardProps) {
-  const rc = getRoleColor(slotRole);
-  const roleLabel = getRoleLabel(slotRole);
+  const sz = useCardSize();
+  const rc = getRoleColor(position);
+  const posLabel = getRoleLabel(position);
   const scale = isSelected ? 1.08 : 1;
 
   if (isEmpty) {
@@ -50,8 +51,8 @@ export function FieldPlayerCard({
         style={{
           left: `${x}%`,
           top: `${y}%`,
-          width: CARD_WIDTH,
-          height: CARD_WIDTH,
+          width: sz.card,
+          height: sz.card,
           transform: "translate(-50%, -50%)",
           background: "rgba(255,255,255,0.06)",
           borderColor: "rgba(255,255,255,0.12)",
@@ -86,7 +87,7 @@ export function FieldPlayerCard({
       <div
         className="relative flex flex-col items-center rounded-xl overflow-hidden"
         style={{
-          width: CARD_WIDTH,
+          width: sz.card,
           background: isSelected
             ? "linear-gradient(135deg, rgba(250,204,21,0.3), rgba(250,204,21,0.1))"
             : "linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))",
@@ -99,16 +100,19 @@ export function FieldPlayerCard({
           backdropFilter: "blur(16px)",
         }}
       >
-        {/* Role label (top-left) */}
+        {/* Position label (top-left) */}
         <div className="absolute top-1 left-1" style={{ lineHeight: 1 }}>
-          <span className="font-bold uppercase" style={{ color: rc.bg, fontSize: 10, letterSpacing: "0.05em" }}>
-            {roleLabel}
+          <span
+            className="font-bold uppercase"
+            style={{ color: rc.bg, fontSize: sz.posFont, letterSpacing: "0.05em" }}
+          >
+            {posLabel}
           </span>
         </div>
 
         {/* Number badge (top-right) */}
         <div className="absolute top-1 right-1">
-          <span className="font-mono font-bold text-white/30" style={{ fontSize: 14 }}>
+          <span className="font-mono font-bold text-white/30" style={{ fontSize: sz.numFont }}>
             {displayNumber}
           </span>
         </div>
@@ -118,13 +122,13 @@ export function FieldPlayerCard({
           <div
             className="rounded-full flex items-center justify-center"
             style={{
-              width: 45,
-              height: 45,
+              width: sz.avatar,
+              height: sz.avatar,
               background: `linear-gradient(135deg, ${rc.bg}40, ${rc.bg}15)`,
               border: `1.5px solid ${rc.bg}50`,
             }}
           >
-            <PlayerIcon size={28} color={rc.bg} />
+            <PlayerIcon size={sz.icon} color={rc.bg} />
           </div>
         </div>
 
@@ -132,7 +136,7 @@ export function FieldPlayerCard({
         <div className="w-full py-1 text-center" style={{ background: rc.bg }}>
           <span
             className="font-bold uppercase tracking-wide"
-            style={{ color: rc.text, fontSize: 11, letterSpacing: "0.08em" }}
+            style={{ color: rc.text, fontSize: sz.nameFont, letterSpacing: "0.08em" }}
           >
             {displayName}
           </span>

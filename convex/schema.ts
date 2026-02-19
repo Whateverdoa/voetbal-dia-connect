@@ -42,7 +42,7 @@ export default defineSchema({
     name: v.string(),
     number: v.optional(v.number()), // Shirt number
     active: v.boolean(),
-    // Position codes: K (keeper), V (verdediger), M (midden), A (aanval)
+    // EN position codes: GK, RB, CB, LB, RWB, LWB, CDM, CM, RM, LM, CAM, RW, LW, CF, ST
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
     createdAt: v.number(),
@@ -87,7 +87,7 @@ export default defineSchema({
     // Match lead (wedstrijdleider) — coach who claimed lead role for this match
     leadCoachId: v.optional(v.id("coaches")),
 
-    // Field view: formation key (e.g. "8v8_3-3-1") and pitch type
+    // Field view: formation key (e.g. "8v8_1-3-3-1") and pitch type
     formationId: v.optional(v.string()),
     pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
 

@@ -1,34 +1,34 @@
 /**
  * Role color mapping for field visualization.
- * Maps our K/V/M/A slot roles to EA FC-style color pairs.
+ * Colors are keyed by zone (keeper/defense/midfield/attack).
+ * Input is an EN position code — zone is derived via positionToZone().
  */
+
+import { positionToZone, type Zone } from "./positions";
 
 export interface RoleColor {
   bg: string;
   text: string;
 }
 
-export const ROLE_COLORS: Record<string, RoleColor> = {
-  K: { bg: "#f59e0b", text: "#000" }, // Amber — keeper
-  V: { bg: "#3b82f6", text: "#fff" }, // Blue — verdediger
-  M: { bg: "#10b981", text: "#fff" }, // Green — middenvelder
-  A: { bg: "#ef4444", text: "#fff" }, // Red — aanvaller
+/** Zone → EA FC-style color pair. */
+export const ZONE_COLORS: Record<Zone, RoleColor> = {
+  keeper: { bg: "#f59e0b", text: "#000" },   // Amber
+  defense: { bg: "#3b82f6", text: "#fff" },   // Blue
+  midfield: { bg: "#10b981", text: "#fff" },  // Green
+  attack: { bg: "#ef4444", text: "#fff" },    // Red
 };
 
 const DEFAULT_COLOR: RoleColor = { bg: "#475569", text: "#fff" }; // Slate
 
-export function getRoleColor(role: string | undefined): RoleColor {
-  return (role && ROLE_COLORS[role]) || DEFAULT_COLOR;
+/** Get color for an EN position code (e.g. "CB" → defense → blue). */
+export function getRoleColor(position: string | undefined): RoleColor {
+  if (!position) return DEFAULT_COLOR;
+  const zone = positionToZone(position);
+  return ZONE_COLORS[zone] ?? DEFAULT_COLOR;
 }
 
-/** Dutch display labels for K/V/M/A roles. */
-export const ROLE_LABELS: Record<string, string> = {
-  K: "KEP",
-  V: "VER",
-  M: "MID",
-  A: "AAN",
-};
-
-export function getRoleLabel(role: string | undefined): string {
-  return (role && ROLE_LABELS[role]) || "---";
+/** Get display label for a position (returns the EN abbreviation itself). */
+export function getRoleLabel(position: string | undefined): string {
+  return position ?? "---";
 }

@@ -70,7 +70,7 @@ export function penaltyArcPath(cfg: FieldConfig, isBottom: boolean): string {
   return `M ${x1} ${paEdge} A ${arc_r} ${arc_r} 0 0 ${sweep} ${x2} ${paEdge}`;
 }
 
-/** Derive field mode from formationId prefix (e.g. "8v8_3-3-1" → "8tal"). */
+/** Derive field mode from formationId prefix (e.g. "8v8_1-3-3-1" → "8tal"). */
 export function fieldModeFromFormation(formationId: string | undefined): FieldMode {
   if (formationId?.startsWith("11v11")) return "11tal";
   return "8tal";

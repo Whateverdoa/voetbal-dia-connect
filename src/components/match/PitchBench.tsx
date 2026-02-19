@@ -1,9 +1,11 @@
 /**
  * PitchBench — bench + unassigned players strip for PitchView.
  * Mini EA FC-style cards for bench players, matching the field card design.
+ * Responsive: 70px on phone, 90px on tablet/desktop.
  */
 import { Id } from "@/convex/_generated/dataModel";
 import { getRoleColor } from "@/lib/roleColors";
+import { useCardSize } from "@/hooks/useCardSize";
 import type { MatchPlayer } from "./types";
 
 interface PitchBenchProps {
@@ -28,6 +30,7 @@ function MiniCard({
   onClick: () => void;
   nameLabel: (p: MatchPlayer) => string;
 }) {
+  const sz = useCardSize();
   const rc = getRoleColor(player.positionPrimary);
   return (
     <div
@@ -43,7 +46,7 @@ function MiniCard({
       <div
         className="rounded-xl flex flex-col items-center overflow-hidden"
         style={{
-          width: 90,
+          width: sz.card,
           background: isSelected
             ? "linear-gradient(135deg, rgba(250,204,21,0.25), rgba(250,204,21,0.08))"
             : "linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))",
@@ -56,19 +59,19 @@ function MiniCard({
         }}
       >
         <div className="py-1.5 flex flex-col items-center">
-          <span className="font-mono font-bold text-white/40" style={{ fontSize: 14 }}>
+          <span className="font-mono font-bold text-white/40" style={{ fontSize: sz.numFont }}>
             {player.number ?? "?"}
           </span>
           <div
             className="rounded-full flex items-center justify-center my-0.5"
             style={{
-              width: 45,
-              height: 45,
+              width: sz.avatar,
+              height: sz.avatar,
               background: `${rc.bg}20`,
               border: `1px solid ${rc.bg}40`,
             }}
           >
-            <svg width={28} height={28} viewBox="0 0 24 24" fill={rc.bg} opacity={0.9}>
+            <svg width={sz.icon} height={sz.icon} viewBox="0 0 24 24" fill={rc.bg} opacity={0.9}>
               <circle cx="12" cy="7" r="4" />
               <path d="M12 13c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z" />
             </svg>
@@ -77,7 +80,7 @@ function MiniCard({
         <div className="w-full py-0.5 text-center" style={{ background: rc.bg }}>
           <span
             className="font-bold uppercase"
-            style={{ color: rc.text, fontSize: 11, letterSpacing: "0.06em" }}
+            style={{ color: rc.text, fontSize: sz.nameFont, letterSpacing: "0.06em" }}
           >
             {nameLabel(player).toUpperCase()}
           </span>

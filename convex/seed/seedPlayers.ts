@@ -7,16 +7,16 @@ import { Id } from "../_generated/dataModel";
 import { pickUniqueNames } from "./helpers";
 import { PLAYERS_PER_TEAM, SEED_ADMIN_PIN } from "./seedData";
 
-/** Sample positions for first 8 players (K, V, V, V, M, M, M, A) so seed has variety. */
+/** Sample positions for first 8 players using EN abbreviations. */
 const SAMPLE_POSITIONS: Array<{ positionPrimary: string; positionSecondary?: string }> = [
-  { positionPrimary: "K" },
-  { positionPrimary: "V" },
-  { positionPrimary: "V" },
-  { positionPrimary: "V" },
-  { positionPrimary: "M" },
-  { positionPrimary: "M" },
-  { positionPrimary: "M", positionSecondary: "A" },
-  { positionPrimary: "A" },
+  { positionPrimary: "GK" },
+  { positionPrimary: "CB" },
+  { positionPrimary: "RB" },
+  { positionPrimary: "LB" },
+  { positionPrimary: "CM" },
+  { positionPrimary: "RM" },
+  { positionPrimary: "CM", positionSecondary: "CAM" },
+  { positionPrimary: "ST" },
 ];
 
 /**

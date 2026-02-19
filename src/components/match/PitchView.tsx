@@ -177,7 +177,7 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
                 key={slot.id}
                 name={player?.name ?? ""}
                 number={player?.number}
-                slotRole={slot.role}
+                position={slot.position}
                 x={slot.x}
                 y={slot.y}
                 isSelected={player ? selectedPlayerId === player.playerId : false}

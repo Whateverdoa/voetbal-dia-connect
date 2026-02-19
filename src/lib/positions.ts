@@ -1,36 +1,95 @@
 /**
- * Position codes and labels for players (field view + substitution suggestions).
+ * Position codes and zone mapping for players and formation slots.
  *
- * In Convex en in de Admin-panel gebruik je exact deze codes (hoofdletter):
- *   K = Keeper
- *   V = Verdediger
- *   M = Midden
- *   A = Aanval
- * Anders werken positie-gebaseerde wisselsuggesties niet.
+ * Single source of truth: 15 EN position abbreviations (FIFA/EA FC standard).
+ * Zones (keeper/defense/midfield/attack) are derived at runtime — never stored.
+ *
+ * Used by: admin player creation, formation slots, field cards, substitution matching.
  */
-export const POSITION_CODES = ["K", "V", "M", "A"] as const;
-export type PositionCode = (typeof POSITION_CODES)[number];
 
-export const POSITION_LABELS: Record<PositionCode, string> = {
-  K: "Keeper",
-  V: "Verdediger",
-  M: "Midden",
-  A: "Aanval",
-};
+export type Zone = "keeper" | "defense" | "midfield" | "attack";
 
-/** Role group for position-aware substitution suggestions (same group = preferred swap). */
-export const POSITION_GROUP: Record<PositionCode, "keeper" | "back" | "mid" | "forward"> = {
-  K: "keeper",
-  V: "back",
-  M: "mid",
-  A: "forward",
-};
+export interface Position {
+  code: string;
+  name: string;
+  nameDutch: string;
+  zone: Zone;
+}
 
+/** All 15 positions in display order. */
+export const POSITIONS: Position[] = [
+  // Keeper
+  { code: "GK", name: "Goalkeeper", nameDutch: "Keeper", zone: "keeper" },
+  // Defense
+  { code: "RB", name: "Right Back", nameDutch: "Rechter verdediger", zone: "defense" },
+  { code: "CB", name: "Centre Back", nameDutch: "Centrale verdediger", zone: "defense" },
+  { code: "LB", name: "Left Back", nameDutch: "Linker verdediger", zone: "defense" },
+  { code: "RWB", name: "Right Wing Back", nameDutch: "Rechter vleugelverdediger", zone: "defense" },
+  { code: "LWB", name: "Left Wing Back", nameDutch: "Linker vleugelverdediger", zone: "defense" },
+  // Midfield
+  { code: "CDM", name: "Central Defensive Midfielder", nameDutch: "Verdedigende middenvelder", zone: "midfield" },
+  { code: "CM", name: "Central Midfielder", nameDutch: "Centrale middenvelder", zone: "midfield" },
+  { code: "RM", name: "Right Midfielder", nameDutch: "Rechtshalf", zone: "midfield" },
+  { code: "LM", name: "Left Midfielder", nameDutch: "Linkshalf", zone: "midfield" },
+  { code: "CAM", name: "Central Attacking Midfielder", nameDutch: "Aanvallende middenvelder", zone: "midfield" },
+  // Attack
+  { code: "RW", name: "Right Winger", nameDutch: "Rechtsbuiten", zone: "attack" },
+  { code: "LW", name: "Left Winger", nameDutch: "Linksbuiten", zone: "attack" },
+  { code: "CF", name: "Centre Forward", nameDutch: "Hangende spits", zone: "attack" },
+  { code: "ST", name: "Striker", nameDutch: "Spits", zone: "attack" },
+];
+
+/** All valid position codes for validation. */
+export const POSITION_CODES: string[] = POSITIONS.map((p) => p.code);
+
+/** Fast lookup: position code → zone. */
+const POSITION_TO_ZONE: Record<string, Zone> = Object.fromEntries(
+  POSITIONS.map((p) => [p.code, p.zone]),
+) as Record<string, Zone>;
+
+/** Derive zone from EN position code. Returns "defense" as fallback for unknown codes. */
+export function positionToZone(code: string | undefined): Zone {
+  if (!code) return "defense";
+  return POSITION_TO_ZONE[code] ?? "defense";
+}
+
+/** Check if a string is a valid position code. */
+export function isValidPosition(code: string): boolean {
+  return code in POSITION_TO_ZONE;
+}
+
+/** Get position label (returns the EN abbreviation itself, e.g. "CB"). */
 export function getPositionLabel(code: string): string {
-  return POSITION_LABELS[code as PositionCode] ?? code;
+  return isValidPosition(code) ? code : code;
 }
 
-export function isPositionMatch(a: string | undefined, b: string | undefined): boolean {
-  if (!a || !b) return false;
-  return a === b || POSITION_GROUP[a as PositionCode] === POSITION_GROUP[b as PositionCode];
+/** Get Dutch name for a position code. */
+export function getPositionNameDutch(code: string): string {
+  const pos = POSITIONS.find((p) => p.code === code);
+  return pos?.nameDutch ?? code;
 }
+
+/** Check if two players' positions match (same zone = compatible for substitution). */
+export function isPositionMatch(
+  a: string | undefined,
+  b: string | undefined,
+): boolean {
+  if (!a || !b) return false;
+  return positionToZone(a) === positionToZone(b);
+}
+
+/** Zone display names in Dutch (for optgroup labels). */
+export const ZONE_LABELS_DUTCH: Record<Zone, string> = {
+  keeper: "Doel",
+  defense: "Verdediging",
+  midfield: "Middenveld",
+  attack: "Aanval",
+};
+
+/** Positions grouped by zone — for <optgroup> dropdowns. */
+export const POSITION_OPTIONS: Array<{ zone: Zone; label: string; positions: Position[] }> = [
+  { zone: "keeper", label: "Doel", positions: POSITIONS.filter((p) => p.zone === "keeper") },
+  { zone: "defense", label: "Verdediging", positions: POSITIONS.filter((p) => p.zone === "defense") },
+  { zone: "midfield", label: "Middenveld", positions: POSITIONS.filter((p) => p.zone === "midfield") },
+  { zone: "attack", label: "Aanval", positions: POSITIONS.filter((p) => p.zone === "attack") },
+];

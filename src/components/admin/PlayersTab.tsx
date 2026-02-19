@@ -5,7 +5,8 @@ import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check, ToggleLeft, ToggleRight } from "lucide-react";
-import { POSITION_CODES, POSITION_LABELS, getPositionLabel } from "@/lib/positions";
+import { getPositionLabel } from "@/lib/positions";
+import { PositionSelect } from "./PositionSelect";
 
 interface Team {
   _id: Id<"teams">;
@@ -149,32 +150,8 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                       className="flex-1 min-w-0 px-2 py-1 border rounded"
                       autoFocus
                     />
-                    <select
-                      value={editPositionPrimary}
-                      onChange={(e) => setEditPositionPrimary(e.target.value)}
-                      className="w-28 px-2 py-1 border rounded text-sm"
-                      title="Positie 1"
-                    >
-                      <option value="">—</option>
-                      {POSITION_CODES.map((code) => (
-                        <option key={code} value={code}>
-                          {POSITION_LABELS[code]}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={editPositionSecondary}
-                      onChange={(e) => setEditPositionSecondary(e.target.value)}
-                      className="w-28 px-2 py-1 border rounded text-sm"
-                      title="Positie 2"
-                    >
-                      <option value="">—</option>
-                      {POSITION_CODES.map((code) => (
-                        <option key={code} value={code}>
-                          {POSITION_LABELS[code]}
-                        </option>
-                      ))}
-                    </select>
+                    <PositionSelect value={editPositionPrimary} onChange={setEditPositionPrimary} placeholder="—" title="Positie 1" className="w-32 px-2 py-1 border rounded text-sm" />
+                    <PositionSelect value={editPositionSecondary} onChange={setEditPositionSecondary} placeholder="—" title="Positie 2" className="w-32 px-2 py-1 border rounded text-sm" />
                     <button
                       onClick={() => handleUpdate(player._id)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded"
@@ -280,32 +257,8 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
               placeholder="Naam"
               className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
-            <select
-              value={newPositionPrimary}
-              onChange={(e) => setNewPositionPrimary(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm"
-              title="Positie 1"
-            >
-              <option value="">Positie 1</option>
-              {POSITION_CODES.map((code) => (
-                <option key={code} value={code}>
-                  {POSITION_LABELS[code]}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newPositionSecondary}
-              onChange={(e) => setNewPositionSecondary(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm"
-              title="Positie 2"
-            >
-              <option value="">Positie 2</option>
-              {POSITION_CODES.map((code) => (
-                <option key={code} value={code}>
-                  {POSITION_LABELS[code]}
-                </option>
-              ))}
-            </select>
+            <PositionSelect value={newPositionPrimary} onChange={setNewPositionPrimary} placeholder="Positie 1" title="Positie 1" className="px-3 py-2 border rounded-lg text-sm" />
+            <PositionSelect value={newPositionSecondary} onChange={setNewPositionSecondary} placeholder="Positie 2" title="Positie 2" className="px-3 py-2 border rounded-lg text-sm" />
             <button
               onClick={handleCreate}
               disabled={!newName.trim()}

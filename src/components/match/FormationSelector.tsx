@@ -3,7 +3,7 @@
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getFormation, getFormationIds } from "@/lib/formations";
+import { FORMATION_GROUPS } from "@/lib/formations";
 
 type LineupView = "veld" | "lijst";
 
@@ -41,10 +41,14 @@ export function FormationSelector({
         className="px-3 py-2 border rounded-lg text-sm flex-1 min-w-[140px]"
       >
         <option value="">Geen (lijst)</option>
-        {getFormationIds().map((id) => (
-          <option key={id} value={id}>
-            {getFormation(id)?.name ?? id}
-          </option>
+        {FORMATION_GROUPS.map((group) => (
+          <optgroup key={group.label} label={group.label}>
+            {group.formations.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       <div className="flex rounded-lg overflow-hidden border border-gray-300">

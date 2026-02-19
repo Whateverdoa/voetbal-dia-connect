@@ -4,6 +4,7 @@
  */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { positionToZone } from "./lib/positionZones";
 import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Get playing time for all players in a match
@@ -106,9 +107,13 @@ export const getSuggestedSubstitutions = query({
       b: { positionPrimary?: string; positionSecondary?: string }
     ): boolean {
       if (!a.positionPrimary && !a.positionSecondary) return false;
-      const aCodes = [a.positionPrimary, a.positionSecondary].filter(Boolean) as string[];
-      const bCodes = [b.positionPrimary, b.positionSecondary].filter(Boolean) as string[];
-      return aCodes.some((ac) => bCodes.includes(ac));
+      const aZones = [a.positionPrimary, a.positionSecondary]
+        .filter(Boolean)
+        .map((c) => positionToZone(c as string));
+      const bZones = [b.positionPrimary, b.positionSecondary]
+        .filter(Boolean)
+        .map((c) => positionToZone(c as string));
+      return aZones.some((az) => bZones.includes(az));
     }
 
     const suggestions: Array<{

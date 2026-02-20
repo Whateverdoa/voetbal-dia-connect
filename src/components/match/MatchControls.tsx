@@ -15,6 +15,8 @@ interface MatchControlsProps {
   homeScore: number;
   awayScore: number;
   pausedAt?: number;
+  canControlClock?: boolean;
+  canDoSubstitutions?: boolean;
   onGoalClick: () => void;
   onSubClick: () => void;
 }
@@ -28,6 +30,8 @@ export function MatchControls({
   homeScore,
   awayScore,
   pausedAt,
+  canControlClock = true,
+  canDoSubstitutions = true,
   onGoalClick,
   onSubClick,
 }: MatchControlsProps) {
@@ -106,7 +110,7 @@ export function MatchControls({
       )}
 
       {/* Pre-match: Start button */}
-      {isScheduled && (
+      {isScheduled && canControlClock && (
         <button
           onClick={() => handleMutation(() => startMatch({ matchId, pin }), "Start wedstrijd")}
           disabled={isLoading}
@@ -122,7 +126,7 @@ export function MatchControls({
       {isLive && (
         <div className="space-y-3">
           {/* Primary actions: Goal buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"}`}>
             <button
               onClick={onGoalClick}
               disabled={isLoading}
@@ -134,21 +138,23 @@ export function MatchControls({
               <span className="text-2xl">⚽</span>
               <span>GOAL!</span>
             </button>
-            <button
-              onClick={onSubClick}
-              disabled={isLoading}
-              className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl 
-                         min-h-[64px] active:scale-[0.98] transition-transform
-                         hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2
-                         disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-2xl">🔄</span>
-              <span>Wissel</span>
-            </button>
+            {canDoSubstitutions && (
+              <button
+                onClick={onSubClick}
+                disabled={isLoading}
+                className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl 
+                           min-h-[64px] active:scale-[0.98] transition-transform
+                           hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-2xl">🔄</span>
+                <span>Wissel</span>
+              </button>
+            )}
           </div>
 
-          {/* Clock pause/resume */}
-          {isPaused ? (
+          {/* Clock pause/resume — only when coach can control clock */}
+          {canControlClock && (isPaused ? (
             <button
               onClick={() => handleMutation(() => resumeClockMut({ matchId, pin }), "Hervat klok")}
               disabled={isLoading}
@@ -172,9 +178,10 @@ export function MatchControls({
               <span className="text-lg">⏸</span>
               {isLoading ? "Bezig..." : "Pauzeer klok"}
             </button>
-          )}
+          ))}
 
           {/* Secondary: Quarter control */}
+          {canControlClock && (
           <button
             onClick={() => handleMutation(() => nextQuarter({ matchId, pin }), "Volgende kwart")}
             disabled={isLoading}
@@ -184,6 +191,7 @@ export function MatchControls({
           >
             {isLoading ? "Bezig..." : getNextQuarterLabel()}
           </button>
+          )}
 
           {/* Undo last goal — visible when goals exist */}
           {totalGoals > 0 && (
@@ -205,7 +213,7 @@ export function MatchControls({
       )}
 
       {/* Rest period: Resume button (universal — all inter-quarter breaks) */}
-      {isHalftime && (
+      {isHalftime && canControlClock && (
         <button
           onClick={() => handleMutation(() => resumeHalftime({ matchId, pin }), "Hervatten")}
           disabled={isLoading}

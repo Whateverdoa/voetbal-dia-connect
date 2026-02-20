@@ -25,6 +25,9 @@ export { RefereeAssignment } from "./RefereeAssignment";
 // Match lead (wedstrijdleider)
 export { MatchLeadBadge } from "./MatchLeadBadge";
 
+// Pregame settings edit
+export { MatchSettingsEdit } from "./MatchSettingsEdit";
+
 // Loading/Error screens
 export { MatchLoadingScreen } from "./MatchLoadingScreen";
 export { MatchErrorScreen } from "./MatchErrorScreen";

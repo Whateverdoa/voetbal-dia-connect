@@ -1,13 +1,13 @@
 /**
- * Seed players for a team.
+ * Seed players for a team — real rosters preferred, random fallback.
  */
 import { ActionCtx } from "../_generated/server";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { pickUniqueNames } from "./helpers";
 import { PLAYERS_PER_TEAM, SEED_ADMIN_PIN } from "./seedData";
+import { REAL_PLAYER_ROSTERS } from "./realData";
 
-/** Sample positions for first 8 players using EN abbreviations. */
 const SAMPLE_POSITIONS: Array<{ positionPrimary: string; positionSecondary?: string }> = [
   { positionPrimary: "GK" },
   { positionPrimary: "CB" },
@@ -20,15 +20,29 @@ const SAMPLE_POSITIONS: Array<{ positionPrimary: string; positionSecondary?: str
 ];
 
 /**
- * Create `PLAYERS_PER_TEAM` players for the given team.
- * Uses the shared name pool to avoid duplicates across teams.
- * First 8 get sample positions for field-view testing.
+ * Create players for the given team.
+ * Uses real roster from CSV when available; falls back to random Dutch names.
+ * Real rosters get NO positions — coaches fill those in via the app.
  */
 export async function seedPlayersForTeam(
   ctx: ActionCtx,
   teamId: Id<"teams">,
+  teamSlug: string,
   usedNames: Set<string>,
 ): Promise<number> {
+  const roster = REAL_PLAYER_ROSTERS[teamSlug];
+
+  if (roster) {
+    const players = roster.map((name, i) => ({ name, number: i + 1 }));
+
+    await ctx.runMutation(api.admin.createPlayers, {
+      teamId,
+      players,
+      adminPin: SEED_ADMIN_PIN,
+    });
+    return players.length;
+  }
+
   const names = pickUniqueNames(PLAYERS_PER_TEAM, usedNames);
   const players = names.map((name, i) => {
     const pos = SAMPLE_POSITIONS[i];

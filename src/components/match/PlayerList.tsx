@@ -11,6 +11,9 @@ interface PlayerListProps {
   pin: string;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
+  playersAbsent?: MatchPlayer[];
+  canEdit?: boolean;
+  canToggleAbsent?: boolean;
 }
 
 export function PlayerList({
@@ -18,9 +21,13 @@ export function PlayerList({
   pin,
   playersOnField,
   playersOnBench,
+  playersAbsent = [],
+  canEdit = true,
+  canToggleAbsent = false,
 }: PlayerListProps) {
   const toggleOnField = useMutation(api.matchActions.togglePlayerOnField);
   const toggleKeeper = useMutation(api.matchActions.toggleKeeper);
+  const toggleAbsent = useMutation(api.matchActions.togglePlayerAbsent);
 
   return (
     <div className="space-y-4">
@@ -43,11 +50,11 @@ export function PlayerList({
                 number={player.number}
                 isKeeper={player.isKeeper}
                 onField={player.onField}
-                onToggleField={() =>
-                  toggleOnField({ matchId, pin, playerId: player.playerId })
+                onToggleField={
+                  canEdit ? () => toggleOnField({ matchId, pin, playerId: player.playerId }) : undefined
                 }
-                onToggleKeeper={() =>
-                  toggleKeeper({ matchId, pin, playerId: player.playerId })
+                onToggleKeeper={
+                  canEdit ? () => toggleKeeper({ matchId, pin, playerId: player.playerId }) : undefined
                 }
               />
             ))}
@@ -74,17 +81,50 @@ export function PlayerList({
                 number={player.number}
                 isKeeper={player.isKeeper}
                 onField={player.onField}
-                onToggleField={() =>
-                  toggleOnField({ matchId, pin, playerId: player.playerId })
+                onToggleField={
+                  canEdit ? () => toggleOnField({ matchId, pin, playerId: player.playerId }) : undefined
                 }
-                onToggleKeeper={() =>
-                  toggleKeeper({ matchId, pin, playerId: player.playerId })
+                onToggleKeeper={
+                  canEdit ? () => toggleKeeper({ matchId, pin, playerId: player.playerId }) : undefined
                 }
+                onToggleAbsent={
+                  canToggleAbsent
+                    ? () => toggleAbsent({ matchId, pin, playerId: player.playerId })
+                    : undefined
+                }
+                absent={false}
               />
             ))}
           </div>
         )}
       </section>
+
+      {/* Absent (not physically present, e.g. called in sick) - pregame only */}
+      {playersAbsent.length > 0 && (
+        <section className="bg-white rounded-xl shadow-md p-4">
+          <h2 className="font-semibold mb-3 text-amber-700 flex items-center gap-2">
+            <span className="w-3 h-3 bg-amber-500 rounded-full"></span>
+            Niet aanwezig ({playersAbsent.length})
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {playersAbsent.map((player) => (
+              <PlayerCard
+                key={player.playerId}
+                name={player.name}
+                number={player.number}
+                isKeeper={player.isKeeper}
+                onField={false}
+                absent={true}
+                onToggleAbsent={
+                  canToggleAbsent
+                    ? () => toggleAbsent({ matchId, pin, playerId: player.playerId })
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

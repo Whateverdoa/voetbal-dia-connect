@@ -28,6 +28,36 @@ export const listByTeam = query({
   },
 });
 
+// List team players not yet in this match (for pregame add-player flow)
+export const listTeamPlayersNotInMatch = query({
+  args: { matchId: v.id("matches"), pin: v.string() },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) return null;
+
+    const coach = await ctx.db
+      .query("coaches")
+      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .first();
+    if (!coach || !coach.teamIds.includes(match.teamId)) return null;
+
+    const inMatch = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+    const inMatchIds = new Set(inMatch.map((mp) => mp.playerId));
+
+    const allTeam = await ctx.db
+      .query("players")
+      .withIndex("by_team", (q) => q.eq("teamId", match.teamId))
+      .collect();
+
+    return allTeam
+      .filter((p) => p.active && !inMatchIds.has(p._id))
+      .map((p) => ({ id: p._id, name: p.name, number: p.number }));
+  },
+});
+
 // Verify coach PIN and get accessible matches
 export const verifyCoachPin = query({
   args: { pin: v.string() },

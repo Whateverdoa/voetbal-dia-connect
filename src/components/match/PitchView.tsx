@@ -17,9 +17,10 @@ interface PitchViewProps {
   pin: string;
   players: MatchPlayer[];
   formationId: string | undefined;
+  canEdit?: boolean;
 }
 
-export function PitchView({ matchId, pin, players, formationId }: PitchViewProps) {
+export function PitchView({ matchId, pin, players, formationId, canEdit = true }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);
@@ -30,7 +31,9 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
   const cfg = FIELDS[fieldMode];
 
   const onField = players.filter((p) => p.onField);
-  const onBench = players.filter((p) => !p.onField);
+  const onBench = players.filter(
+    (p) => !p.onField && !(p.absent ?? false)
+  );
   const onFieldUnassigned = onField.filter(
     (p) => p.fieldSlotIndex === undefined || p.fieldSlotIndex === null
   );
@@ -54,6 +57,7 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
 
   // --- Click: field player tile ---
   const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
+    if (!canEdit) return;
     if (!selectedPlayerId) {
       setSelectedPlayerId(player.playerId);
       return;
@@ -73,13 +77,14 @@ export function PitchView({ matchId, pin, players, formationId }: PitchViewProps
 
   // --- Click: empty slot ---
   const handleEmptySlotClick = (slotId: number) => {
-    if (!selectedPlayerId) return;
+    if (!canEdit || !selectedPlayerId) return;
     assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
     setSelectedPlayerId(null);
   };
 
   // --- Click: bench / unassigned player ---
   const handleBenchPlayerClick = (playerId: Id<"players">) => {
+    if (!canEdit) return;
     if (!selectedPlayerId) {
       setSelectedPlayerId(playerId);
       return;

@@ -4,7 +4,14 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import {
+  verifyCoachTeamMembership,
+  verifyIsMatchLead,
+} from "./pinHelpers";
+import {
+  buildEventGameTimeStamp,
+  getEffectiveEventTime,
+} from "./lib/matchEventGameTime";
 
 // Record a goal
 export const addGoal = mutation({
@@ -40,6 +47,10 @@ export const addGoal = mutation({
       }
     }
 
+    const now = Date.now();
+    const effectiveEventTime = getEffectiveEventTime(match, now);
+    const goalStamp = buildEventGameTimeStamp(match, effectiveEventTime);
+
     // Log goal event
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
@@ -49,26 +60,29 @@ export const addGoal = mutation({
       quarter: match.currentQuarter,
       isOwnGoal: args.isOwnGoal,
       isOpponentGoal: args.isOpponentGoal,
-      timestamp: Date.now(),
-      createdAt: Date.now(),
+      timestamp: effectiveEventTime,
+      ...goalStamp,
+      createdAt: now,
     });
 
     // Log assist if provided
     if (args.assistPlayerId && !args.isOpponentGoal && !args.isOwnGoal) {
+      const assistStamp = buildEventGameTimeStamp(match, effectiveEventTime);
       await ctx.db.insert("matchEvents", {
         matchId: args.matchId,
         type: "assist",
         playerId: args.assistPlayerId,
         relatedPlayerId: args.playerId,
         quarter: match.currentQuarter,
-        timestamp: Date.now(),
-        createdAt: Date.now(),
+        timestamp: effectiveEventTime,
+        ...assistStamp,
+        createdAt: now,
       });
     }
   },
 });
 
-// Substitution
+// Substitution — only the lead coach may execute
 export const substitute = mutation({
   args: {
     matchId: v.id("matches"),
@@ -81,11 +95,13 @@ export const substitute = mutation({
     if (!match) {
       throw new Error("Invalid match or PIN");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyIsMatchLead(ctx, match, args.pin))) {
+      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
     const now = Date.now();
+    const effectiveEventTime = getEffectiveEventTime(match, now);
+    const substitutionStamp = buildEventGameTimeStamp(match, effectiveEventTime);
 
     // Find match players
     const mpOut = await ctx.db
@@ -102,18 +118,27 @@ export const substitute = mutation({
       )
       .first();
 
-    // Player going OFF - record their playing time
-    if (mpOut) {
-      if (mpOut.lastSubbedInAt) {
-        await recordPlayingTime(ctx, mpOut, now);
-      }
-      await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
+    if (!mpOut || !mpIn) {
+      throw new Error("Speler niet in deze wedstrijd");
+    }
+    if (!mpOut.onField) {
+      throw new Error("Speler die eruit gaat moet op het veld staan");
+    }
+    if (mpIn.onField) {
+      throw new Error("Speler die erin gaat moet op de bank staan");
+    }
+    if (mpIn.absent) {
+      throw new Error("Afwezige speler kan niet worden ingewisseld");
     }
 
-    // Player going ON - start tracking their time
-    if (mpIn) {
-      await startPlayingTime(ctx, mpIn._id, now);
+    // Player going OFF - record their playing time
+    if (mpOut.lastSubbedInAt) {
+      await recordPlayingTime(ctx, mpOut, now);
     }
+    await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
+
+    // Player going ON - start tracking their time
+    await startPlayingTime(ctx, mpIn._id, now);
 
     // Log events
     await ctx.db.insert("matchEvents", {
@@ -122,7 +147,8 @@ export const substitute = mutation({
       playerId: args.playerOutId,
       relatedPlayerId: args.playerInId,
       quarter: match.currentQuarter,
-      timestamp: now,
+      timestamp: effectiveEventTime,
+      ...substitutionStamp,
       createdAt: now,
     });
 
@@ -132,7 +158,8 @@ export const substitute = mutation({
       playerId: args.playerInId,
       relatedPlayerId: args.playerOutId,
       quarter: match.currentQuarter,
-      timestamp: now,
+      timestamp: effectiveEventTime,
+      ...substitutionStamp,
       createdAt: now,
     });
   },

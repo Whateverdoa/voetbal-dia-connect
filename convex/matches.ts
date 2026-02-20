@@ -10,7 +10,12 @@ import { Doc, Id } from "./_generated/dataModel";
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
 export { listPublicMatches } from "./publicQueries";
-export { listActiveReferees, listByTeam, verifyCoachPin } from "./coachQueries";
+export {
+  listActiveReferees,
+  listByTeam,
+  listTeamPlayersNotInMatch,
+  verifyCoachPin,
+} from "./coachQueries";
 
 // Get match by public code (for spectators)
 export const getByPublicCode = query({
@@ -134,6 +139,7 @@ export const getForCoach = query({
           number: player.number,
           onField: mp.onField,
           isKeeper: mp.isKeeper,
+          absent: mp.absent ?? false,
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,
@@ -178,6 +184,10 @@ export const getForCoach = query({
     // Strip coachPin from response — coach already knows it, no need to send over wire
     const { coachPin: _pin, ...safeMatch } = match;
 
+    const isCurrentCoachLead = match.leadCoachId === coach._id;
+    const canControlClock =
+      !!match.refereeId || isCurrentCoachLead;
+
     return {
       ...safeMatch,
       teamName: team?.name ?? "Team",
@@ -187,6 +197,8 @@ export const getForCoach = query({
       leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
       hasLead: !!safeMatch.leadCoachId,
+      isCurrentCoachLead,
+      canControlClock,
     };
   },
 });

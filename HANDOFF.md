@@ -89,7 +89,7 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 - **teams** — JO12-1, JO13-2, etc. Fields: `clubId` (→clubs), `name`, `slug`, `createdAt`. Indexes: `by_club`, `by_slug` (clubId+slug), `by_slug_only`
 - **coaches** — PIN-authenticated, linked to 1+ teams. Fields: `name`, `pin`, `teamIds[]` (→teams), `createdAt`. Index: `by_pin`
 - **referees** — global referee records. Fields: `name`, `pin`, `active`, `createdAt`. Index: `by_pin`
-- **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (K/V/M/A), `positionSecondary`, `createdAt`. Index: `by_team`
+- **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (EN codes: GK/CB/RB/LB/CM/etc.), `positionSecondary`, `createdAt`. Index: `by_team`
 - **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
 - **matchPlayers** — junction: players in a match. Fields: `matchId` (→matches), `playerId` (→players), `isKeeper`, `onField`, `fieldSlotIndex` (pitch position slot), `minutesPlayed`, `lastSubbedInAt`, `createdAt`. Indexes: `by_match`, `by_match_player`, `by_player`
 - **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/assist/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card), `playerId`, `relatedPlayerId`, `quarter`, `isOwnGoal`, `isOpponentGoal`, `note`, `timestamp`, `createdAt`. Indexes: `by_match`, `by_match_type`
@@ -129,7 +129,8 @@ Four roles, all PIN-based (no user accounts):
 - Coach match management ✅ (lineup, substitutions, goals with player attribution, playing time tracking)
 - Referee role ✅ (separate PIN, clock control, score editing with optional shirt number)
 - Clock pause/resume ✅ (mid-quarter pause for injuries/stoppages, affects playing time)
-- Seed data ✅ (club DIA, 3 teams, 14 players each, 4 coaches, 4 referees, 3 matches with referee assignments)
+- Seed data ✅ (club DIA, 3 teams with real rosters from CSV, 6 coaches (4 real JO12-1), 4 referees, 7 matches)
+- CSV import system ✅ (reusable scripts: `import-players.mjs`, `import-matches.mjs` with dry-run, validation, dedup)
 - Admin pages ✅ — CRUD for clubs, teams, players, coaches, referees
 - Public match browser ✅ (homepage hero element — code input removed, match browser primary, coach/referee login secondary)
 - Standen page ✅ (/standen — defaults to today's matches, ?alle=true for all, minimal scoreboard for kantine/tablet)
@@ -156,7 +157,7 @@ Four roles, all PIN-based (no user accounts):
 
 | Task | Description | Status |
 |------|-------------|--------|
-| **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
+| **CSV Match Import** | CLI-based CSV import for matches and players. Scripts: `scripts/import-players.mjs`, `scripts/import-matches.mjs`. Convex mutations in `convex/import/`. Supports dry-run, validation, dedup. | ✅ Implemented |
 | **Playing Time View Filter** | When coach taps "Speeltijd", the player list should switch to show only on-field + bench players for that match (not all team players). Currently shows the full player list. | ❌ Not started |
 | **Add Players to Active Match** | Coach should be able to add additional players to a match after creation (e.g. late arrivals, extra subs). Currently players are only set at match creation time. | ❌ Not started |
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
@@ -240,7 +241,7 @@ Findings from code-reviewer, test-agent, mobile-ux-auditor, and convex-specialis
 
 - **Named login (user accounts)**: Replace anonymous PIN-only auth with name + PIN login. Users would be identifiable (e.g., "Coach Mike logged in") instead of just a PIN. Enables: personal dashboards, audit trails ("who made this change?"), multi-device sessions, and per-user preferences. Could start simple (name stored on coach record, displayed after PIN login) and evolve toward full accounts later.
 - **Cumulative clock mode**: Display game time cumulatively across quarters (e.g., 0–60 min) instead of per-quarter (0–15 min). Should be a coach setting per match. Next priority.
-- **Seed data expansion**: Currently seeds 4 coaches, 4 referees, 3 teams with 14 players each, 3 matches with referee assignments. Modular seed system in `convex/seed/`. Run `npx convex run seed:init`. Needs further expansion (more realistic season data, CSV import integration).
+- **Seed data expansion**: Seeds 6 coaches (4 real JO12-1), 4 referees, 3 teams with real rosters (from CSV), 7 real matches. Modular seed in `convex/seed/`. Reusable CSV import in `scripts/` + `convex/import/`. Future: add more teams' match schedules, expand referee rosters with real data.
 - **Opponent roster support**: Store rosters for both teams (not just ours). Enables sharing match data (goals, events, stats) with both teams afterwards. Shirt numbers stored by the referee in goal events can then be resolved to named players for either team.
 - **Own goal registration**: In youth football, own goals happen by accident. Currently not tracked as a distinct event type. When needed, add an `isOwnGoal` flow to the GoalModal (separate from opponent goals) with appropriate score handling. Low priority for kindervoetbal — coaches generally don't want to single out a child.
 - **Goal ownership split (coach vs referee)**: When a referee is actively assigned and controlling a match, the **coach should no longer be able to add new goals** — only the referee enters scores/goals. However, the coach **should still be able to edit goal details** (e.g., add or correct the player name on a goal that the referee registered with only a shirt number). This keeps the referee as the single source of truth for scoring, while the coach enriches the data afterwards with player names. Requires: (1) a check on coach goal mutations: if `match.refereeId` is set, reject new goals from coach; (2) a new "edit goal event" mutation for the coach to update `playerId`/`playerName` on existing goal events; (3) UI changes in the coach GoalModal to show "referee-controlled" state.
@@ -295,6 +296,66 @@ npm run dev:backend  # Convex only
 npm run build        # Production build
 npx convex dev       # Convex dashboard + sync
 ```
+
+## Production Seed & Import Runbook
+
+### Database Operations (Development)
+
+```bash
+# 1. Clear ALL data (dev only — destroys everything)
+npx convex run "seed/index:clearAll"
+
+# 2. Re-seed with real data (club, teams, real rosters, coaches, referees, matches)
+npx convex run "seed/index:init"
+```
+
+### Database Operations (Production)
+
+**IMPORTANT:** In production, use `clearMatchesOnly` to preserve teams/coaches/players.
+
+```bash
+# 1. Clear ONLY match data (safe: keeps clubs, teams, coaches, players, referees)
+npx convex run "seed/index:clearMatchesOnly"
+
+# 2. Import players from CSV (dry-run first!)
+node scripts/import-players.mjs path/to/players.csv --dry-run --pin <ADMIN_PIN>
+node scripts/import-players.mjs path/to/players.csv --pin <ADMIN_PIN>
+
+# 3. Import matches from CSV
+node scripts/import-matches.mjs path/to/matches.csv --dry-run --pin <ADMIN_PIN> --coach-pin <PIN>
+node scripts/import-matches.mjs path/to/matches.csv --pin <ADMIN_PIN> --coach-pin <PIN>
+```
+
+### CSV Formats
+
+**Players CSV** (`Team,Naam` or `Team;Naam`):
+```
+Team,Naam
+JO12-1,Hendriks Revi
+JO12-1,Smit Sem
+```
+Names are auto-reordered from "Lastname Firstname" to "Firstname Lastname".
+
+**Matches CSV** (`team_slug,opponent,date,time,is_home,finished,home_score,away_score`):
+```
+team_slug,opponent,date,time,is_home,finished,home_score,away_score
+jo12-1,SCO JO12-2,2026-01-24,10:00,true,true,3,2
+jo12-1,Baronie JO12-4,2026-03-07,11:30,false,false,,
+```
+
+### Production Reseed Procedure
+
+1. **Backup**: Export current data via Convex Dashboard (snapshot)
+2. **Clear matches**: `npx convex run "seed/index:clearMatchesOnly"`
+3. **Import/upsert players**: Run `import-players.mjs` with `--dry-run`, then commit
+4. **Import matches**: Run `import-matches.mjs` with `--dry-run`, then commit
+5. **Spot-check**: Open coach UI → login → verify JO12-1 has correct roster and schedule
+6. **Rollback**: If issues, restore from Convex Dashboard snapshot
+
+### Rollback
+
+- Convex Dashboard → Deployments → select previous deployment → "Restore"
+- Or re-run the import scripts with corrected data (idempotent/dedup-safe)
 
 ## Pre-Push Verification
 

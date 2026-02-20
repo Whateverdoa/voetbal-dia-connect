@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { getAdminPin } from "@/lib/adminSession";
 import { MatchRow, type AdminMatch } from "./MatchRow";
+import { MatchEditPanel } from "./MatchEditPanel";
 import { MatchForm } from "./MatchForm";
 
 type StatusFilter = "alle" | "scheduled" | "live" | "finished";
@@ -20,12 +21,20 @@ export function MatchesTab({ teams }: MatchesTabProps) {
   const coaches = useQuery(api.admin.listCoaches);
   const referees = useQuery(api.matches.listActiveReferees);
   const updateMatch = useMutation(api.admin.updateMatch);
+  const addPlayerToMatch = useMutation(api.admin.addPlayerToMatch);
+  const createPlayerAndAddToMatch = useMutation(api.admin.createPlayerAndAddToMatch);
 
   const [teamFilter, setTeamFilter] = useState<string>("alle");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
   const [statusMessage, setStatusMessage] = useState("");
   const [editingId, setEditingId] = useState<Id<"matches"> | null>(null);
   const [editRefereeId, setEditRefereeId] = useState<string>("");
+  const [editOpponent, setEditOpponent] = useState("");
+  const [editIsHome, setEditIsHome] = useState(true);
+  const [editScheduledAt, setEditScheduledAt] = useState("");
+  const [addPlayerId, setAddPlayerId] = useState<string>("");
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerNumber, setNewPlayerNumber] = useState("");
 
   // Apply filters
   let filtered = matches ?? [];
@@ -54,6 +63,9 @@ export function MatchesTab({ teams }: MatchesTabProps) {
       await updateMatch({
         matchId,
         adminPin,
+        opponent: editOpponent.trim() || undefined,
+        isHome: editIsHome,
+        scheduledAt: editScheduledAt ? new Date(editScheduledAt).getTime() : undefined,
         refereeId: editRefereeId
           ? (editRefereeId as Id<"referees">)
           : null,
@@ -66,9 +78,53 @@ export function MatchesTab({ teams }: MatchesTabProps) {
     }
   };
 
+  const handleAddPlayer = async (matchId: Id<"matches">) => {
+    if (!addPlayerId) return;
+    try {
+      await addPlayerToMatch({
+        matchId,
+        playerId: addPlayerId as Id<"players">,
+        adminPin,
+      });
+      setAddPlayerId("");
+      setStatusMessage("Speler toegevoegd");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Onbekende fout";
+      setStatusMessage(`Fout: ${msg}`);
+    }
+  };
+
+  const handleCreateAndAddPlayer = async (matchId: Id<"matches">) => {
+    if (!newPlayerName.trim()) return;
+    try {
+      await createPlayerAndAddToMatch({
+        matchId,
+        name: newPlayerName.trim(),
+        number: newPlayerNumber ? parseInt(newPlayerNumber, 10) : undefined,
+        adminPin,
+      });
+      setNewPlayerName("");
+      setNewPlayerNumber("");
+      setStatusMessage("Speler aangemaakt en toegevoegd");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Onbekende fout";
+      setStatusMessage(`Fout: ${msg}`);
+    }
+  };
+
   const startEdit = (matchId: Id<"matches">) => {
     const match = matches?.find((m) => m._id === matchId);
     setEditRefereeId(match?.refereeId ?? "");
+    setEditOpponent(match?.opponent ?? "");
+    setEditIsHome(match?.isHome ?? true);
+    setEditScheduledAt(
+      match?.scheduledAt
+        ? new Date(match.scheduledAt).toISOString().slice(0, 16)
+        : ""
+    );
+    setAddPlayerId("");
+    setNewPlayerName("");
+    setNewPlayerNumber("");
     setEditingId(matchId);
   };
 
@@ -141,35 +197,28 @@ export function MatchesTab({ teams }: MatchesTabProps) {
               />
               {/* Inline edit panel for referee assignment */}
               {editingId === match._id && (
-                <div className="ml-4 mt-1 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Scheidsrechter toewijzen
-                  </label>
-                  <select
-                    value={editRefereeId}
-                    onChange={(e) => setEditRefereeId(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg bg-white text-sm"
-                  >
-                    <option value="">Geen scheidsrechter</option>
-                    {referees?.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => handleSaveEdit(match._id)}
-                      className="px-4 py-1.5 bg-dia-green text-white rounded-lg text-sm font-medium"
-                    >
-                      Opslaan
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
-                    >
-                      Annuleren
-                    </button>
-                  </div>
-                </div>
+                <MatchEditPanel
+                  match={match}
+                  editOpponent={editOpponent}
+                  setEditOpponent={setEditOpponent}
+                  editIsHome={editIsHome}
+                  setEditIsHome={setEditIsHome}
+                  editScheduledAt={editScheduledAt}
+                  setEditScheduledAt={setEditScheduledAt}
+                  editRefereeId={editRefereeId}
+                  setEditRefereeId={setEditRefereeId}
+                  addPlayerId={addPlayerId}
+                  setAddPlayerId={setAddPlayerId}
+                  newPlayerName={newPlayerName}
+                  setNewPlayerName={setNewPlayerName}
+                  newPlayerNumber={newPlayerNumber}
+                  setNewPlayerNumber={setNewPlayerNumber}
+                  referees={referees}
+                  onSave={() => handleSaveEdit(match._id)}
+                  onAddPlayer={() => handleAddPlayer(match._id)}
+                  onCreatePlayer={() => handleCreateAndAddPlayer(match._id)}
+                  onCancel={() => setEditingId(null)}
+                />
               )}
             </div>
           ))}

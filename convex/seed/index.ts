@@ -19,8 +19,8 @@ import { seedMatchesForTeam } from "./seedMatches";
 
 /**
  * Idempotent seed action for DIA Live development data.
- * Creates: 1 club, 3 teams, 14 players each, 4 coaches,
- *          4 referees, 3 matches with referee assignments.
+ * Creates: 1 club, 3 teams (real rosters), 6 coaches,
+ *          4 referees, 7 matches with referee assignments.
  */
 export const init = action({
   handler: async (ctx) => {
@@ -54,7 +54,7 @@ export const init = action({
       });
       teamMap[cfg.slug] = teamId;
 
-      const count = await seedPlayersForTeam(ctx, teamId, usedNames);
+      const count = await seedPlayersForTeam(ctx, teamId, cfg.slug, usedNames);
       teamSummary.push({ name: cfg.name, players: count });
     }
 
@@ -91,7 +91,7 @@ export const init = action({
     const matchResults = await seedMatchesForTeam(
       ctx,
       jo12Id,
-      "1234", // Coach Mike's PIN
+      "1234", // Remco Hendriks' PIN
       refereeMap,
     );
 
@@ -182,5 +182,28 @@ export const clearAll = mutation({
       total += docs.length;
     }
     return { message: `Cleared ${total} records across ${tableNames.length} tables.`, total };
+  },
+});
+
+/** Clear only match-related data: matchEvents, matchPlayers, matches.
+ *  Leaves clubs, teams, coaches, players, referees intact.
+ *  Safe for production — use before re-importing match schedules. */
+export const clearMatchesOnly = mutation({
+  handler: async (ctx) => {
+    const tableNames = ["matchEvents", "matchPlayers", "matches"] as const;
+
+    let total = 0;
+    for (const table of tableNames) {
+      const docs = await ctx.db.query(table).collect();
+      for (const doc of docs) {
+        await ctx.db.delete(doc._id);
+      }
+      total += docs.length;
+    }
+    return {
+      message: `Cleared ${total} match records across ${tableNames.length} tables.`,
+      total,
+      tablesCleared: [...tableNames],
+    };
   },
 });

@@ -115,6 +115,47 @@ describe('MatchClock', () => {
     expect(screen.getByText('45:00')).toBeInTheDocument();
   });
 
+  it('anchors second half at 30:00 for 2-half matches', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={2}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
+    expect(screen.getByText('30:00')).toBeInTheDocument();
+  });
+
+  it('shows paused global time correctly', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now - 90_000}
+        pausedAt={now - 30_000}
+      />
+    );
+    expect(screen.getByText('16:00')).toBeInTheDocument();
+  });
+
+  it('accounts for accumulated pause time while running', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={1}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now - 120_000}
+        accumulatedPauseTime={60_000}
+      />
+    );
+    expect(screen.getByText('01:00')).toBeInTheDocument();
+  });
+
   it('ticks every second when live', () => {
     const now = Date.now();
     render(

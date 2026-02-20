@@ -178,6 +178,8 @@ function RefereeScoreHeader({
             {getLabel()}
             {isLive && (
               <MatchClock
+                currentQuarter={currentQuarter}
+                quarterCount={quarterCount}
                 quarterStartedAt={quarterStartedAt}
                 pausedAt={pausedAt}
                 accumulatedPauseTime={accumulatedPauseTime}

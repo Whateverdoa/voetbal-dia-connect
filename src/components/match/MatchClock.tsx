@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import type { MatchStatus } from "./types";
 
 interface MatchClockProps {
+  currentQuarter: number;
+  quarterCount: number;
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
@@ -22,13 +24,22 @@ export function formatElapsed(ms: number): string {
 }
 
 /**
- * Real-time match clock showing elapsed time in the current quarter.
+ * Real-time match clock showing elapsed time in global match time.
+ * Quarter anchors:
+ * - Q1 starts at 00:00
+ * - Q2 starts at 15:00 (for 4 quarters)
+ * - Q3 starts at 30:00
+ * - Q4 starts at 45:00
+ * For 2 halves, anchors are 00:00 and 30:00.
+ *
  * Accounts for pauses via pausedAt + accumulatedPauseTime.
- * - Running:  elapsed = now - quarterStartedAt - accumulatedPauseTime
- * - Paused:   elapsed = pausedAt - quarterStartedAt - accumulatedPauseTime
+ * - Running:  elapsed = quarterBase + (now - quarterStartedAt - accumulatedPauseTime)
+ * - Paused:   elapsed = quarterBase + (pausedAt - quarterStartedAt - accumulatedPauseTime)
  * - Stopped:  displays "--:--"
  */
 export function MatchClock({
+  currentQuarter,
+  quarterCount,
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime = 0,
@@ -38,10 +49,18 @@ export function MatchClock({
   const isPaused = isLive && pausedAt != null;
   const shouldTick = isLive && quarterStartedAt != null && !isPaused;
 
-  const calcElapsed = (refTime: number) =>
-    quarterStartedAt != null
-      ? refTime - quarterStartedAt - accumulatedPauseTime
-      : 0;
+  const quarterDurationMs = (60 * 60 * 1000) / Math.max(1, quarterCount);
+  const quarterBaseMs = Math.max(0, currentQuarter - 1) * quarterDurationMs;
+  const calcElapsed = (refTime: number) => {
+    if (quarterStartedAt == null) {
+      return 0;
+    }
+    const quarterElapsed = Math.max(
+      0,
+      refTime - quarterStartedAt - accumulatedPauseTime
+    );
+    return quarterBaseMs + quarterElapsed;
+  };
 
   const [elapsed, setElapsed] = useState(() =>
     isPaused && pausedAt != null
@@ -71,7 +90,14 @@ export function MatchClock({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [shouldTick, isPaused, quarterStartedAt, pausedAt, accumulatedPauseTime]);
+  }, [
+    shouldTick,
+    isPaused,
+    quarterStartedAt,
+    pausedAt,
+    accumulatedPauseTime,
+    quarterBaseMs,
+  ]);
 
   const isActive = shouldTick || isPaused;
   const display = isActive ? formatElapsed(elapsed) : "--:--";

@@ -37,10 +37,16 @@ interface TimelineEventProps {
 }
 
 function TimelineEvent({ event, teamName }: TimelineEventProps) {
-  const time = new Date(event.timestamp).toLocaleTimeString("nl-NL", {
+  const wallClockTime = new Date(event.timestamp).toLocaleTimeString("nl-NL", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const gameMinute =
+    event.displayMinute != null
+      ? event.displayExtraMinute && event.displayExtraMinute > 0
+        ? `${event.displayMinute}+${event.displayExtraMinute}'`
+        : `${event.displayMinute}'`
+      : null;
 
   let icon = "•";
   let text = "";
@@ -73,7 +79,18 @@ function TimelineEvent({ event, teamName }: TimelineEventProps) {
   return (
     <div className={highlight ? "bg-green-50 -mx-2 px-2 py-1 rounded" : "py-1"}>
       <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-400 w-12">{time}</span>
+        {gameMinute ? (
+          <div className="w-14 leading-tight">
+            <span className="text-xs text-gray-700 font-semibold font-mono block">
+              {gameMinute}
+            </span>
+            <span className="text-[10px] text-gray-400 font-mono block">
+              {wallClockTime}
+            </span>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-400 w-12">{wallClockTime}</span>
+        )}
         <span className="text-lg">{icon}</span>
         <span className={highlight ? "font-medium" : ""}>{text}</span>
       </div>

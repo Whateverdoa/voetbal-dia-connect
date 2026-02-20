@@ -27,6 +27,9 @@ export interface MatchEvent {
   isOwnGoal?: boolean;
   isOpponentGoal?: boolean;
   timestamp: number;
+  gameSecond?: number;
+  displayMinute?: number;
+  displayExtraMinute?: number;
 }
 
 export interface Match {

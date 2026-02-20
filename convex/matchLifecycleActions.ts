@@ -250,7 +250,6 @@ export const resumeFromHalftime = mutation({
     const quarterStartStamp = buildEventGameTimeStamp(
       {
         ...match,
-        status: "live",
         quarterStartedAt: now,
         pausedAt: undefined,
         accumulatedPauseTime: 0,

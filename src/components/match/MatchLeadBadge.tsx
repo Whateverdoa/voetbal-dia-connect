@@ -91,8 +91,8 @@ export function MatchLeadBadge({
       {isOpen && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
           <p className="text-sm text-gray-500">
-            De wedstrijdleider coördineert de wedstrijd. Fase 1: alle acties
-            blijven beschikbaar voor iedere coach.
+            De wedstrijdleider mag wissels uitvoeren en de klok bedienen
+            (indien geen scheidsrechter aangewezen).
           </p>
 
           {/* Status messages */}

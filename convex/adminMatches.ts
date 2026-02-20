@@ -7,11 +7,19 @@ import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 // --- Queries ---
 
 export const listAllMatches = query({
-  args: { adminPin: v.string() },
+  args: { adminPin: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     verifyAdminPin(args.adminPin);
+    if (args.limit !== undefined && args.limit <= 0) {
+      throw new Error("Limiet moet groter zijn dan 0");
+    }
 
-    const matches = await ctx.db.query("matches").collect();
+    const matchesQuery = ctx.db
+      .query("matches")
+      .withIndex("by_createdAt")
+      .order("desc");
+    const matches =
+      args.limit !== undefined ? await matchesQuery.take(args.limit) : await matchesQuery.collect();
 
     // Batch-fetch related data
     const enriched = await Promise.all(
@@ -67,6 +75,32 @@ export const listAllMatches = query({
     });
 
     return enriched;
+  },
+});
+
+// List team players not yet in this match (for pregame add-player in admin)
+export const listTeamPlayersNotInMatch = query({
+  args: { matchId: v.id("matches"), adminPin: v.string() },
+  handler: async (ctx, args) => {
+    verifyAdminPin(args.adminPin);
+
+    const match = await ctx.db.get(args.matchId);
+    if (!match) return null;
+
+    const inMatch = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+    const inMatchIds = new Set(inMatch.map((mp) => mp.playerId));
+
+    const allTeam = await ctx.db
+      .query("players")
+      .withIndex("by_team", (q) => q.eq("teamId", match.teamId))
+      .collect();
+
+    return allTeam
+      .filter((p) => p.active && !inMatchIds.has(p._id))
+      .map((p) => ({ id: p._id, name: p.name, number: p.number }));
   },
 });
 
@@ -227,6 +261,95 @@ export const updateMatch = mutation({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * Add an existing team player to a scheduled match. Admin only.
+ */
+export const addPlayerToMatch = mutation({
+  args: {
+    matchId: v.id("matches"),
+    playerId: v.id("players"),
+    adminPin: v.string(),
+  },
+  handler: async (ctx, args) => {
+    verifyAdminPin(args.adminPin);
+
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (match.status !== "scheduled") {
+      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
+    }
+
+    const player = await ctx.db.get(args.playerId);
+    if (!player || player.teamId !== match.teamId) {
+      throw new Error("Speler niet gevonden of hoort niet bij dit team");
+    }
+
+    const existing = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match_player", (q) =>
+        q.eq("matchId", args.matchId).eq("playerId", args.playerId)
+      )
+      .first();
+    if (existing) throw new Error("Speler staat al in de wedstrijd");
+
+    await ctx.db.insert("matchPlayers", {
+      matchId: args.matchId,
+      playerId: args.playerId,
+      isKeeper: false,
+      onField: false,
+      createdAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Create a new player and add to a scheduled match. Admin only.
+ */
+export const createPlayerAndAddToMatch = mutation({
+  args: {
+    matchId: v.id("matches"),
+    name: v.string(),
+    number: v.optional(v.number()),
+    positionPrimary: v.optional(v.string()),
+    positionSecondary: v.optional(v.string()),
+    adminPin: v.string(),
+  },
+  handler: async (ctx, args) => {
+    verifyAdminPin(args.adminPin);
+
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (match.status !== "scheduled") {
+      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
+    }
+
+    const trimmed = args.name.trim();
+    if (!trimmed) throw new Error("Naam is verplicht");
+
+    const playerId = await ctx.db.insert("players", {
+      teamId: match.teamId,
+      name: trimmed,
+      number: args.number,
+      positionPrimary: args.positionPrimary,
+      positionSecondary: args.positionSecondary,
+      active: true,
+      createdAt: Date.now(),
+    });
+
+    await ctx.db.insert("matchPlayers", {
+      matchId: args.matchId,
+      playerId,
+      isKeeper: false,
+      onField: false,
+      createdAt: Date.now(),
+    });
+
+    return { playerId };
   },
 });
 

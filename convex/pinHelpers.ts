@@ -32,12 +32,9 @@ export async function verifyCoachTeamMembership(
 }
 
 /**
- * Verify that the given PIN is valid for clock/score control.
- * Accepts any coach assigned to the match's team, **or** the
- * assigned referee's PIN.
- *
- * The referee doc must be pre-fetched by the caller (via match.refereeId)
- * to avoid redundant DB reads across multiple helpers.
+ * Verify that the given PIN is valid for clock/match-control actions.
+ * Referee-first: when a referee is assigned, referee keeps full access.
+ * When no referee is assigned, only the lead coach may control the clock.
  */
 export async function verifyClockPin(
   ctx: { db: DbReader },
@@ -45,13 +42,32 @@ export async function verifyClockPin(
   pin: string,
   referee?: Doc<"referees"> | null,
 ): Promise<boolean> {
-  // Check coach team membership first
-  const coach = await verifyCoachTeamMembership(ctx, match, pin);
-  if (coach) return true;
-
-  // Fall back to referee PIN
+  // Referee PIN: always allow when match has this referee assigned
   if (referee && match.refereeId && referee._id === match.refereeId) {
-    return referee.pin === pin;
+    if (referee.pin === pin) return true;
   }
-  return false;
+
+  // Coach: require team membership
+  const coach = await verifyCoachTeamMembership(ctx, match, pin);
+  if (!coach) return false;
+
+  // When referee is assigned: allow any team coach (backward compat)
+  if (match.refereeId) return true;
+
+  // When no referee: only lead coach may control clock
+  return match.leadCoachId === coach._id;
+}
+
+/**
+ * Verify that the given PIN belongs to the match lead (wedstrijdleider).
+ * Returns the coach doc if they are the lead, null otherwise.
+ */
+export async function verifyIsMatchLead(
+  ctx: { db: DbReader },
+  match: Doc<"matches">,
+  pin: string,
+): Promise<Doc<"coaches"> | null> {
+  const coach = await verifyCoachTeamMembership(ctx, match, pin);
+  if (!coach || match.leadCoachId !== coach._id) return null;
+  return coach;
 }

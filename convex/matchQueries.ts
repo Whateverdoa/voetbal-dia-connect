@@ -88,6 +88,7 @@ export const getSuggestedSubstitutions = query({
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           onField: mp.onField,
           isKeeper: mp.isKeeper,
+          absent: mp.absent ?? false,
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,
         };
@@ -99,7 +100,7 @@ export const getSuggestedSubstitutions = query({
       .filter((p) => p.onField && !p.isKeeper)
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
     const onBench = validPlayers
-      .filter((p) => !p.onField)
+      .filter((p) => !p.onField && !p.absent)
       .sort((a, b) => a.minutesPlayed - b.minutesPlayed);
 
     function positionMatch(

@@ -80,6 +80,7 @@ export default defineSchema({
     // Clock pause state
     pausedAt: v.optional(v.number()), // Timestamp when clock was paused (undefined = running)
     accumulatedPauseTime: v.optional(v.number()), // Total ms paused this quarter (resets each quarter)
+    bankedOverrunSeconds: v.optional(v.number()), // Overage from completed quarters, carried to full-time
 
     // Referee assignment (optional — when set, referee can control the clock)
     refereeId: v.optional(v.id("referees")),
@@ -100,6 +101,7 @@ export default defineSchema({
     .index("by_team", ["teamId"])
     .index("by_code", ["publicCode"])
     .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"])
     .index("by_refereeId", ["refereeId"]),
 
   // Match lineup - which players are in this match
@@ -108,6 +110,8 @@ export default defineSchema({
     playerId: v.id("players"),
     isKeeper: v.boolean(),
     onField: v.boolean(), // Currently on field?
+    // Absent: in squad but not physically present (e.g. called in sick). Cannot be subbed in.
+    absent: v.optional(v.boolean()),
     // Slot on pitch (0 = keeper, 1..N = outfield per formation); undefined = list-only
     fieldSlotIndex: v.optional(v.number()),
     // Playing time tracking
@@ -139,6 +143,9 @@ export default defineSchema({
     isOpponentGoal: v.optional(v.boolean()), // Goal by opponent
     note: v.optional(v.string()),
     timestamp: v.number(), // When event occurred
+    gameSecond: v.optional(v.number()), // Nominal match second (without extra-time suffix)
+    displayMinute: v.optional(v.number()), // Minute shown in UI, e.g. 10 -> "10'"
+    displayExtraMinute: v.optional(v.number()), // Added-time suffix minute, e.g. 2 -> "45+2'"
     createdAt: v.number(),
   })
     .index("by_match", ["matchId"])

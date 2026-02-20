@@ -10,4 +10,5 @@ export {
   swapFieldPositions,
   setMatchFormation,
 } from "./matchLineupCore";
+export { substituteFromField } from "./matchLineupSubstitutions";
 export { togglePlayerAbsent, toggleShowLineup } from "./matchLineupAvailability";

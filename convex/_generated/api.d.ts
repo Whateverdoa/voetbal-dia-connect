@@ -31,6 +31,7 @@ import type * as matchLifecycleActions from "../matchLifecycleActions.js";
 import type * as matchLineup from "../matchLineup.js";
 import type * as matchLineupAvailability from "../matchLineupAvailability.js";
 import type * as matchLineupCore from "../matchLineupCore.js";
+import type * as matchLineupSubstitutions from "../matchLineupSubstitutions.js";
 import type * as matchPregameActions from "../matchPregameActions.js";
 import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
@@ -80,6 +81,7 @@ declare const fullApi: ApiFromModules<{
   matchLineup: typeof matchLineup;
   matchLineupAvailability: typeof matchLineupAvailability;
   matchLineupCore: typeof matchLineupCore;
+  matchLineupSubstitutions: typeof matchLineupSubstitutions;
   matchPregameActions: typeof matchPregameActions;
   matchQueries: typeof matchQueries;
   matches: typeof matches;

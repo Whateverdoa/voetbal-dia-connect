@@ -178,6 +178,7 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
                 pin={pin}
                 players={match.players}
                 formationId={match.formationId}
+                status={match.status}
                 canEdit={canEditLineup}
               />
             ) : (

@@ -30,6 +30,11 @@ describe('formatElapsed', () => {
 });
 
 describe('MatchClock', () => {
+  const baseProps = {
+    currentQuarter: 1,
+    quarterCount: 4,
+  } as const;
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -39,56 +44,160 @@ describe('MatchClock', () => {
   });
 
   it('shows --:-- when status is not live', () => {
-    render(<MatchClock status="halftime" quarterStartedAt={Date.now()} />);
+    render(
+      <MatchClock
+        {...baseProps}
+        status="halftime"
+        quarterStartedAt={Date.now()}
+      />
+    );
     expect(screen.getByText('--:--')).toBeInTheDocument();
   });
 
   it('shows --:-- when status is finished', () => {
-    render(<MatchClock status="finished" />);
+    render(<MatchClock {...baseProps} status="finished" />);
     expect(screen.getByText('--:--')).toBeInTheDocument();
   });
 
   it('shows --:-- when live but quarterStartedAt is undefined', () => {
-    render(<MatchClock status="live" />);
+    render(<MatchClock {...baseProps} status="live" />);
     expect(screen.getByText('--:--')).toBeInTheDocument();
   });
 
-  it('shows elapsed time when live with quarterStartedAt', () => {
+  it('shows elapsed time when live in Q1 (global starts at 00:00)', () => {
     const now = Date.now();
-    // quarterStartedAt was 65 seconds ago
-    render(<MatchClock status="live" quarterStartedAt={now - 65_000} />);
+    render(
+      <MatchClock
+        {...baseProps}
+        status="live"
+        quarterStartedAt={now - 65_000}
+      />
+    );
     expect(screen.getByText('01:05')).toBeInTheDocument();
+  });
+
+  it('anchors Q2 at 15:00', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
+    expect(screen.getByText('15:00')).toBeInTheDocument();
+  });
+
+  it('anchors Q3 at 30:00', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={3}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
+    expect(screen.getByText('30:00')).toBeInTheDocument();
+  });
+
+  it('anchors Q4 at 45:00', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={4}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
+    expect(screen.getByText('45:00')).toBeInTheDocument();
+  });
+
+  it('anchors second half at 30:00 for 2-half matches', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={2}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
+    expect(screen.getByText('30:00')).toBeInTheDocument();
+  });
+
+  it('shows paused global time correctly', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now - 90_000}
+        pausedAt={now - 30_000}
+      />
+    );
+    expect(screen.getByText('16:00')).toBeInTheDocument();
+  });
+
+  it('accounts for accumulated pause time while running', () => {
+    const now = Date.now();
+    render(
+      <MatchClock
+        currentQuarter={1}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now - 120_000}
+        accumulatedPauseTime={60_000}
+      />
+    );
+    expect(screen.getByText('01:00')).toBeInTheDocument();
   });
 
   it('ticks every second when live', () => {
     const now = Date.now();
-    render(<MatchClock status="live" quarterStartedAt={now} />);
+    render(
+      <MatchClock
+        currentQuarter={2}
+        quarterCount={4}
+        status="live"
+        quarterStartedAt={now}
+      />
+    );
 
-    // Initially at 00:00
-    expect(screen.getByText('00:00')).toBeInTheDocument();
+    // Q2 starts at 15:00
+    expect(screen.getByText('15:00')).toBeInTheDocument();
 
     // Advance 5 seconds
     act(() => {
       vi.advanceTimersByTime(5_000);
     });
-    expect(screen.getByText('00:05')).toBeInTheDocument();
+    expect(screen.getByText('15:05')).toBeInTheDocument();
 
     // Advance another 60 seconds
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(screen.getByText('01:05')).toBeInTheDocument();
+    expect(screen.getByText('16:05')).toBeInTheDocument();
   });
 
   it('has accessibility label for screen readers when live', () => {
     const now = Date.now();
-    render(<MatchClock status="live" quarterStartedAt={now - 125_000} />);
+    render(
+      <MatchClock
+        {...baseProps}
+        status="live"
+        quarterStartedAt={now - 125_000}
+      />
+    );
     const el = screen.getByLabelText(/Speeltijd/);
     expect(el).toBeInTheDocument();
   });
 
   it('has stopped label when not live', () => {
-    render(<MatchClock status="halftime" />);
+    render(<MatchClock {...baseProps} status="halftime" />);
     const el = screen.getByLabelText('Klok gestopt');
     expect(el).toBeInTheDocument();
   });

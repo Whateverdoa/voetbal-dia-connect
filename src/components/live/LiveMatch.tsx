@@ -93,6 +93,8 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   LIVE
                   <MatchClock
+                    currentQuarter={match.currentQuarter}
+                    quarterCount={match.quarterCount}
                     quarterStartedAt={match.quarterStartedAt}
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}
@@ -105,6 +107,8 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                   <span className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
                   GEPAUZEERD
                   <MatchClock
+                    currentQuarter={match.currentQuarter}
+                    quarterCount={match.quarterCount}
                     quarterStartedAt={match.quarterStartedAt}
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}

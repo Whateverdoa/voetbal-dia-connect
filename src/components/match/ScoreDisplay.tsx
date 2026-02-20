@@ -78,6 +78,8 @@ export function ScoreDisplay({
               <span>{quarterLabel}</span>
               {isLive && (
                 <MatchClock
+                  currentQuarter={currentQuarter}
+                  quarterCount={quarterCount}
                   quarterStartedAt={quarterStartedAt}
                   pausedAt={pausedAt}
                   accumulatedPauseTime={accumulatedPauseTime}

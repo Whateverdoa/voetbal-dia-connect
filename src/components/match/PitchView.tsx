@@ -11,20 +11,25 @@ import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
 import type { MatchPlayer } from "./types";
+import type { MatchStatus } from "./types";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
   pin: string;
   players: MatchPlayer[];
   formationId: string | undefined;
+  status: MatchStatus;
   canEdit?: boolean;
 }
 
-export function PitchView({ matchId, pin, players, formationId, canEdit = true }: PitchViewProps) {
+export function PitchView({ matchId, pin, players, formationId, status, canEdit = true }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);
   const swapPositions = useMutation(api.matchActions.swapFieldPositions);
+  const substituteFromField = useMutation(api.matchActions.substituteFromField);
+
+  const isLiveOrHalftime = status === "live" || status === "halftime";
 
   const formation = formationId ? getFormation(formationId) : undefined;
   const fieldMode = fieldModeFromFormation(formationId);
@@ -68,6 +73,13 @@ export function PitchView({ matchId, pin, players, formationId, canEdit = true }
     }
     if (isPlayerOnField(selectedPlayerId)) {
       swapPositions({ matchId, pin, playerAId: selectedPlayerId, playerBId: player.playerId });
+    } else if (isLiveOrHalftime) {
+      substituteFromField({
+        matchId,
+        pin,
+        playerOutId: player.playerId,
+        playerInId: selectedPlayerId,
+      });
     } else {
       assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
       toggleOffField({ matchId, pin, playerId: player.playerId });
@@ -98,10 +110,19 @@ export function PitchView({ matchId, pin, players, formationId, canEdit = true }
       return;
     }
     if (isPlayerOnField(selectedPlayerId)) {
-      const slot = slotOfPlayer(selectedPlayerId);
-      if (slot !== undefined) {
-        assignToSlot({ matchId, pin, playerId, fieldSlotIndex: slot });
-        toggleOffField({ matchId, pin, playerId: selectedPlayerId });
+      if (isLiveOrHalftime) {
+        substituteFromField({
+          matchId,
+          pin,
+          playerOutId: selectedPlayerId,
+          playerInId: playerId,
+        });
+      } else {
+        const slot = slotOfPlayer(selectedPlayerId);
+        if (slot !== undefined) {
+          assignToSlot({ matchId, pin, playerId, fieldSlotIndex: slot });
+          toggleOffField({ matchId, pin, playerId: selectedPlayerId });
+        }
       }
     }
     setSelectedPlayerId(null);

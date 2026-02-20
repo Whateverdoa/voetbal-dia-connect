@@ -40,7 +40,11 @@ export const api = {
   matchActions: {
     addGoal: 'matchActions:addGoal',
     substitute: 'matchActions:substitute',
+    substituteFromField: 'matchActions:substituteFromField',
     removeLastGoal: 'matchActions:removeLastGoal',
+    assignPlayerToSlot: 'matchActions:assignPlayerToSlot',
+    togglePlayerOnField: 'matchActions:togglePlayerOnField',
+    swapFieldPositions: 'matchActions:swapFieldPositions',
     start: 'matchActions:start',
     nextQuarter: 'matchActions:nextQuarter',
     resumeFromHalftime: 'matchActions:resumeFromHalftime',

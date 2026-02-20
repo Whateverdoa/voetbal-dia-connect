@@ -12,6 +12,7 @@ interface SubstitutionPanelProps {
   pin: string;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
+  canEdit?: boolean;
   onClose: () => void;
 }
 
@@ -20,6 +21,7 @@ export function SubstitutionPanel({
   pin,
   playersOnField,
   playersOnBench,
+  canEdit = true,
   onClose,
 }: SubstitutionPanelProps) {
   const [playerOut, setPlayerOut] = useState<Id<"players"> | null>(null);
@@ -179,7 +181,7 @@ export function SubstitutionPanel({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!playerOut || !playerIn || isSubmitting}
+            disabled={!canEdit || !playerOut || !playerIn || isSubmitting}
             className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]
                        disabled:bg-gray-300 disabled:cursor-not-allowed"
           >

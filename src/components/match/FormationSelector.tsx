@@ -13,6 +13,7 @@ interface FormationSelectorProps {
   formationId: string | undefined;
   lineupView: LineupView;
   onLineupViewChange: (view: LineupView) => void;
+  canEdit?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ export function FormationSelector({
   formationId,
   lineupView,
   onLineupViewChange,
+  canEdit = true,
 }: FormationSelectorProps) {
   const setMatchFormation = useMutation(api.matchActions.setMatchFormation);
 
@@ -34,6 +36,7 @@ export function FormationSelector({
       <label className="text-sm font-medium text-gray-700">Formatie</label>
       <select
         value={formationId ?? ""}
+        disabled={!canEdit}
         onChange={(e) => {
           const v = e.target.value || undefined;
           setMatchFormation({ matchId, pin, formationId: v });

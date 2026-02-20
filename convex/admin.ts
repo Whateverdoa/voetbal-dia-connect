@@ -49,8 +49,11 @@ export {
 } from "./adminReferees";
 
 export {
-  listAllMatches,
+  addPlayerToMatch,
   createMatch,
-  updateMatch,
+  createPlayerAndAddToMatch,
   deleteMatch,
+  listAllMatches,
+  listTeamPlayersNotInMatch,
+  updateMatch,
 } from "./adminMatches";

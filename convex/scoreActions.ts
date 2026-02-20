@@ -8,6 +8,10 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyClockPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
+import {
+  buildEventGameTimeStamp,
+  getEffectiveEventTime,
+} from "./lib/matchEventGameTime";
 
 /**
  * Adjust the match score by +1 or -1 for a given team.
@@ -56,13 +60,16 @@ export const adjustScore = mutation({
         (args.team === "away" && match.isHome);
 
       const now = Date.now();
+      const effectiveEventTime = getEffectiveEventTime(match, now);
+      const eventStamp = buildEventGameTimeStamp(match, effectiveEventTime);
       await ctx.db.insert("matchEvents", {
         matchId: args.matchId,
         type: "goal",
         quarter: match.currentQuarter,
         isOpponentGoal: isOpponentGoal || undefined,
         note: `Rugnummer: ${args.scorerNumber}`,
-        timestamp: now,
+        timestamp: effectiveEventTime,
+        ...eventStamp,
         createdAt: now,
       });
     }

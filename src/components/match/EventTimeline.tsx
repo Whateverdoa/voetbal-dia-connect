@@ -24,6 +24,16 @@ function formatTime(timestamp: number): string {
   });
 }
 
+function formatGameMinute(event: MatchEvent): string | null {
+  if (event.displayMinute == null) {
+    return null;
+  }
+  if (event.displayExtraMinute && event.displayExtraMinute > 0) {
+    return `${event.displayMinute}+${event.displayExtraMinute}'`;
+  }
+  return `${event.displayMinute}'`;
+}
+
 function getEventText(event: MatchEvent): string {
   switch (event.type) {
     case "goal":
@@ -75,10 +85,26 @@ export function EventTimeline({ events }: EventTimelineProps) {
             key={event._id}
             className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            {/* Time */}
-            <span className="text-xs text-gray-400 w-12 flex-shrink-0 font-mono">
-              {formatTime(event.timestamp)}
-            </span>
+            {(() => {
+              const gameMinute = formatGameMinute(event);
+              if (!gameMinute) {
+                return (
+                  <span className="text-xs text-gray-400 w-12 flex-shrink-0 font-mono">
+                    {formatTime(event.timestamp)}
+                  </span>
+                );
+              }
+              return (
+                <div className="w-14 flex-shrink-0 leading-tight">
+                  <span className="text-xs text-gray-700 font-semibold font-mono block">
+                    {gameMinute}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-mono block">
+                    {formatTime(event.timestamp)}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Icon */}
             <span className="text-base w-6 text-center flex-shrink-0">

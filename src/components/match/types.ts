@@ -9,6 +9,7 @@ export interface MatchPlayer {
   number?: number;
   onField: boolean;
   isKeeper: boolean;
+  absent?: boolean; // In squad but not physically present (e.g. called in sick)
   minutesPlayed?: number;
   positionPrimary?: string;
   positionSecondary?: string;
@@ -26,6 +27,9 @@ export interface MatchEvent {
   isOwnGoal?: boolean;
   isOpponentGoal?: boolean;
   timestamp: number;
+  gameSecond?: number;
+  displayMinute?: number;
+  displayExtraMinute?: number;
 }
 
 export interface Match {
@@ -34,6 +38,7 @@ export interface Match {
   publicCode: string;
   opponent: string;
   isHome: boolean;
+  scheduledAt?: number;
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
@@ -49,6 +54,8 @@ export interface Match {
   leadCoachId?: Id<"coaches"> | null;
   leadCoachName?: string | null;
   hasLead?: boolean;
+  isCurrentCoachLead?: boolean;
+  canControlClock?: boolean;
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

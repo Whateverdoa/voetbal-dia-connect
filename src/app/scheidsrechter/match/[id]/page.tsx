@@ -162,12 +162,12 @@ function RefereeScoreHeader({
         isPaused
           ? "bg-gradient-to-b from-orange-500 to-orange-600"
           : isLive
-            ? "bg-gradient-to-b from-red-600 to-red-700"
+            ? "bg-gradient-to-b from-green-600 to-green-700"
             : isHalftime
               ? "bg-gradient-to-b from-orange-500 to-orange-600"
               : isFinished
-                ? "bg-gradient-to-b from-gray-600 to-gray-700"
-                : "bg-gradient-to-b from-dia-green to-green-700"
+                ? "bg-gradient-to-b from-red-600 to-red-700"
+                : "bg-gradient-to-b from-blue-600 to-blue-700"
       }`}
     >
       <div className="max-w-lg mx-auto">

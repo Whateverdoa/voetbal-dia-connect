@@ -45,7 +45,7 @@ export function QuarterProgress({
               className={clsx(
                 "flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all",
                 isPast && "bg-white/30 text-white",
-                isCurrent && isLive && "bg-white text-red-600 ring-2 ring-white ring-offset-2 ring-offset-red-600",
+                isCurrent && isLive && "bg-white text-green-600 ring-2 ring-white ring-offset-2 ring-offset-green-600",
                 isCurrent && isHalftime && "bg-white text-orange-600 ring-2 ring-white ring-offset-2 ring-offset-orange-500",
                 isCurrent && !isLive && !isHalftime && "bg-white/50 text-white",
                 isFuture && "bg-white/10 text-white/50",

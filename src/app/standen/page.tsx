@@ -27,15 +27,15 @@ const groups = [
     key: "live",
     label: "LIVE",
     filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
-    dotClass: "bg-red-500 animate-pulse",
-    labelClass: "text-red-600",
+    dotClass: "bg-green-500 animate-pulse",
+    labelClass: "text-green-600",
   },
   {
     key: "finished",
     label: "AFGELOPEN",
     filter: (m: PublicMatch) => m.status === "finished",
-    dotClass: "bg-gray-400",
-    labelClass: "text-gray-400",
+    dotClass: "bg-red-500",
+    labelClass: "text-red-600",
   },
   {
     key: "scheduled",
@@ -60,7 +60,7 @@ function ScoreRow({ match }: { match: PublicMatch }) {
           {leftTeam}
         </span>
         {showScore ? (
-          <span className={`tabular-nums font-bold min-w-[5ch] text-center ${isLive ? "text-red-600" : "text-gray-800"}`}>
+          <span className={`tabular-nums font-bold min-w-[5ch] text-center ${isLive ? "text-green-600" : "text-gray-800"}`}>
             {match.homeScore} - {match.awayScore}
           </span>
         ) : (

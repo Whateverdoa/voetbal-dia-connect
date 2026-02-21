@@ -77,7 +77,7 @@ describe("PitchView", () => {
   const mockSubstituteFromField = vi.fn().mockResolvedValue(undefined);
 
   function setupMocks() {
-    mockUseMutation.mockImplementation((mutationId: string) => {
+    (mockUseMutation as any).mockImplementation((mutationId: unknown) => {
       if (mutationId === api.matchActions.assignPlayerToSlot) return mockAssign;
       if (mutationId === api.matchActions.togglePlayerOnField) return mockToggle;
       if (mutationId === api.matchActions.swapFieldPositions) return mockSwap;

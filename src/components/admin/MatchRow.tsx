@@ -31,10 +31,10 @@ interface MatchRowProps {
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   scheduled: { label: "Gepland", cls: "bg-blue-100 text-blue-700" },
-  lineup: { label: "Opstelling", cls: "bg-purple-100 text-purple-700" },
-  live: { label: "LIVE", cls: "bg-red-100 text-red-700" },
+  lineup: { label: "Opstelling", cls: "bg-blue-100 text-blue-700" },
+  live: { label: "LIVE", cls: "bg-green-100 text-green-700" },
   halftime: { label: "Rust", cls: "bg-orange-100 text-orange-700" },
-  finished: { label: "Afgelopen", cls: "bg-gray-100 text-gray-600" },
+  finished: { label: "Afgelopen", cls: "bg-red-100 text-red-700" },
 };
 
 const showScore = new Set(["live", "halftime", "finished"]);

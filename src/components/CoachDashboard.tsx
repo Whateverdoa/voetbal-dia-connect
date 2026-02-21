@@ -68,9 +68,9 @@ export function CoachDashboard({ data, pin, onLogout }: CoachDashboardProps) {
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         {liveMatches.length > 0 && (
-          <section className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
-            <h2 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
-              <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+          <section className="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
+            <h2 className="text-lg font-bold text-green-700 mb-3 flex items-center gap-2">
+              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
               Actieve wedstrijden
             </h2>
             <div className="space-y-3">
@@ -211,7 +211,7 @@ function DashboardMatchCard({
       href={`/coach/match/${match._id}?pin=${pin}`}
       className={`block rounded-xl border-2 transition-all active:scale-[0.98] touch-manipulation ${
         isActive
-          ? "border-red-300 bg-red-50 shadow-md hover:shadow-lg"
+          ? "border-green-300 bg-green-50 shadow-md hover:shadow-lg"
           : "border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300"
       } ${compact ? "p-3" : "p-4"}`}
     >
@@ -220,7 +220,7 @@ function DashboardMatchCard({
           <div className="flex items-center gap-2 mb-1">
             <StatusBadge status={match.status as MatchStatus} size="sm" />
             {isActive && match.status === "live" && (
-              <span className="text-xs text-red-600 font-medium">
+              <span className="text-xs text-green-600 font-medium">
                 K{match.currentQuarter}
               </span>
             )}
@@ -245,7 +245,7 @@ function DashboardMatchCard({
           {showScore ? (
             <div
               className={`font-bold tabular-nums ${
-                isActive ? "text-red-600" : "text-gray-900"
+                isActive ? "text-green-600" : "text-gray-900"
               } ${compact ? "text-2xl" : "text-3xl"}`}
             >
               {match.homeScore} - {match.awayScore}

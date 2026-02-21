@@ -13,8 +13,8 @@ const statusGroups = [
     key: "live" as const,
     label: "Live",
     filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
-    dotClass: "bg-red-500 animate-pulse",
-    labelClass: "text-red-600",
+    dotClass: "bg-green-500 animate-pulse",
+    labelClass: "text-green-600",
   },
   {
     key: "scheduled" as const,
@@ -27,8 +27,8 @@ const statusGroups = [
     key: "finished" as const,
     label: "Afgelopen",
     filter: (m: PublicMatch) => m.status === "finished",
-    dotClass: "bg-gray-400",
-    labelClass: "text-gray-500",
+    dotClass: "bg-red-500",
+    labelClass: "text-red-600",
   },
 ];
 
@@ -47,7 +47,7 @@ function MatchRow({ match }: { match: PublicMatch }) {
         "flex items-center gap-3 rounded-xl border bg-white p-3 min-h-[56px]",
         "transition-all active:scale-[0.98] touch-manipulation",
         isLive
-          ? "border-red-200 shadow-md hover:shadow-lg"
+          ? "border-green-200 shadow-md hover:shadow-lg"
           : "border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
       )}
     >
@@ -58,7 +58,7 @@ function MatchRow({ match }: { match: PublicMatch }) {
         </p>
         <div className="flex items-center gap-2 mt-1">
           {isLive && (
-            <span className="text-xs font-medium text-red-600">
+            <span className="text-xs font-medium text-green-600">
               {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
             </span>
           )}
@@ -79,7 +79,7 @@ function MatchRow({ match }: { match: PublicMatch }) {
           <span
             className={clsx(
               "text-2xl font-bold tabular-nums",
-              isLive ? "text-red-600" : "text-gray-800"
+              isLive ? "text-green-600" : "text-gray-800"
             )}
           >
             {match.homeScore} - {match.awayScore}

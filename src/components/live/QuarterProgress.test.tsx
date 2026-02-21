@@ -75,7 +75,7 @@ describe('QuarterProgress', () => {
       );
       const q2Circle = getCircle('Q2');
       expect(q2Circle).toHaveClass('ring-2');
-      expect(q2Circle).toHaveClass('text-red-600');
+      expect(q2Circle).toHaveClass('text-green-600');
     });
 
     it('highlights current quarter with orange ring during halftime', () => {

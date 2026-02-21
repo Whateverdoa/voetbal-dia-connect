@@ -13,7 +13,7 @@ interface StatusBadgeProps {
 const statusConfig: Record<MatchStatus, { label: string; className: string }> = {
   scheduled: {
     label: "Gepland",
-    className: "bg-gray-500 text-white",
+    className: "bg-blue-500 text-white",
   },
   lineup: {
     label: "Opstelling",
@@ -21,7 +21,7 @@ const statusConfig: Record<MatchStatus, { label: string; className: string }> = 
   },
   live: {
     label: "LIVE",
-    className: "bg-red-500 text-white animate-pulse",
+    className: "bg-green-500 text-white animate-pulse",
   },
   halftime: {
     label: "Rust",
@@ -29,7 +29,7 @@ const statusConfig: Record<MatchStatus, { label: string; className: string }> = 
   },
   finished: {
     label: "Afgelopen",
-    className: "bg-gray-800 text-white",
+    className: "bg-red-600 text-white",
   },
 };
 

@@ -15,7 +15,7 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 | Styling | Tailwind CSS 4 via `@theme` in `globals.css` (no config file), tokens: `dia-green`, `dia-green-light`, `dia-green-dark` |
 | Icons | lucide-react (SVG icon library) |
 | Utilities | clsx (conditional CSS classes) |
-| Field view | SVG pitch with FC-style player cards, formation lines, perspective tilt. Components: `PitchView`, `FieldPlayerCard`, `FieldLines`, `FormationLines`, `PitchBench`. Config: `src/lib/formations.ts`, `src/lib/fieldConfig.ts`, `src/lib/roleColors.ts` |
+| Field view | SVG pitch with FC-style player cards, formation lines, perspective tilt, and live bench↔field substitutions. Components: `PitchView`, `FieldPlayerCard`, `FieldLines`, `FormationLines`, `PitchBench`. Config: `src/lib/formations.ts`, `src/lib/fieldConfig.ts`, `src/lib/roleColors.ts` |
 | Testing | Vitest 4, React Testing Library, @testing-library/jest-dom |
 | Image opt. | sharp |
 | Package mgr | npm (with npm-run-all for parallel dev) |
@@ -62,6 +62,7 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 │  Mutations (barrel: matchActions.ts)                         │
 │  ├─ matchEvents.ts       Goals, cards, subs                  │
 │  ├─ matchLineup.ts       Lineup management                   │
+│  ├─ matchLineupSubstitutions.ts Field-view substitutions      │
 │  ├─ clockActions.ts      Clock pause/resume                  │
 │  ├─ scoreActions.ts      Score adjustments                   │
 │  ├─ refereeActions.ts    Referee assignment                   │
@@ -90,9 +91,9 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 - **coaches** — PIN-authenticated, linked to 1+ teams. Fields: `name`, `pin`, `teamIds[]` (→teams), `createdAt`. Index: `by_pin`
 - **referees** — global referee records. Fields: `name`, `pin`, `active`, `createdAt`. Index: `by_pin`
 - **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (EN codes: GK/CB/RB/LB/CM/etc.), `positionSecondary`, `createdAt`. Index: `by_team`
-- **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
+- **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `bankedOverrunSeconds` (carry-over for end-of-match extra time), `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
 - **matchPlayers** — junction: players in a match. Fields: `matchId` (→matches), `playerId` (→players), `isKeeper`, `onField`, `fieldSlotIndex` (pitch position slot), `minutesPlayed`, `lastSubbedInAt`, `createdAt`. Indexes: `by_match`, `by_match_player`, `by_player`
-- **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/assist/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card), `playerId`, `relatedPlayerId`, `quarter`, `isOwnGoal`, `isOpponentGoal`, `note`, `timestamp`, `createdAt`. Indexes: `by_match`, `by_match_type`
+- **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/assist/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card), `playerId`, `relatedPlayerId`, `quarter`, `isOwnGoal`, `isOpponentGoal`, `note`, `timestamp`, `gameSecond`, `displayMinute`, `displayExtraMinute`, `createdAt`. Indexes: `by_match`, `by_match_type`
 
 ## Auth Model
 
@@ -138,7 +139,9 @@ Four roles, all PIN-based (no user accounts):
 - Admin match management ✅ (Wedstrijden tab in admin: list/create/edit/delete matches, referee assignment, cascade delete)
 - Team match history ✅ (`/team/[slug]/history` — season stats, match list, result badges)
 - Position/formation data model ✅ (schema fields + `src/lib/formations.ts` + `src/lib/positions.ts`)
-- PitchView field component ✅ (EA FC-style player cards with role colors K=amber/V=blue/M=green/A=red, avatar silhouettes, formation connecting lines, SVG field markings, 3D perspective tilt, tap-to-swap player positions, field-bench substitution, 90px uniform card size, full-field player spread)
+- PitchView field component ✅ (EA FC-style player cards with role colors K=amber/V=blue/M=green/A=red, avatar silhouettes, formation connecting lines, SVG field markings, 3D perspective tilt, tap-to-swap player positions, live field-bench substitution with event logging, 90px uniform card size, full-field player spread)
+- Global match clock ✅ (displayed clock anchored by quarter: 0/15/30/45 for 4 quarters, 0/30 for halves; no per-quarter reset in coach/public/referee headers)
+- Event game-time in timeline ✅ (events now show football-style match minute like `10'` and `60+X'` with wall-clock fallback)
 - Component tests ✅ (Vitest + RTL — coach login, match controls, live view components, playing time, substitutions, admin tabs)
 - PWA — not yet
 - Deployment — Vercel + Convex configured ✅
@@ -170,7 +173,7 @@ Four roles, all PIN-based (no user accounts):
 | **Match History Stats** | Post-match summaries, player stat aggregation | ❌ Not started |
 | **Mobile UX Audit** | Professional review of pitch-side usability | ❌ Not started |
 | **Named Login** | Replace PIN-only with name + PIN for audit trails | ❌ Not started |
-| **Cumulative Clock** | Display game time 0-60 min instead of per-quarter | ❌ Not started |
+| **Public/Parents Veld View** | Optional public/live toggle to show player positions on field (`Veld`) for parents and spectators | ❌ Not started |
 
 ## Follow-Up Items (from code review)
 
@@ -194,7 +197,9 @@ Four roles, all PIN-based (no user accounts):
 - ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
 - ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
 
-- ~~**PitchView field component**~~: Visual football field for the coach match page. SVG-based field lines (FIFA/KNVB accurate for 8-tal and 11-tal). EA FC-style player cards with role-based colors (K=amber, V=blue, M=green, A=red), avatar silhouettes, name bars, number badges. Formation connecting lines (dashed SVG). CSS perspective tilt (12deg). Tap-to-swap: tap two field players to exchange positions, tap field + bench to substitute. Uniform 90px card size (field and bench). Players spread across full field (y: 16-90%). Backend: `swapFieldPositions` mutation for atomic field swaps. Files: `FieldPlayerCard.tsx`, `FormationLines.tsx`, `FieldLines.tsx`, `PitchBench.tsx`, `PitchView.tsx`, `roleColors.ts`, `fieldConfig.ts`. Formations: 8v8 (3-3-1, 1-4-2-1, 1-3-2-2) and 11v11 (4-3-3) with formation line links.
+- ~~**PitchView field component**~~: Visual football field for the coach match page. SVG-based field lines (FIFA/KNVB accurate for 8-tal and 11-tal). EA FC-style player cards with role-based colors (K=amber, V=blue, M=green, A=red), avatar silhouettes, name bars, number badges. Formation connecting lines (dashed SVG). CSS perspective tilt (12deg). Tap-to-swap: tap two field players to exchange positions, tap field + bench to substitute. Uniform 90px card size (field and bench). Players spread across full field (y: 16-90%). Backend: `swapFieldPositions` + `substituteFromField` mutation for live-safe field swaps/substitutions with timeline events. Files: `FieldPlayerCard.tsx`, `FormationLines.tsx`, `FieldLines.tsx`, `PitchBench.tsx`, `PitchView.tsx`, `roleColors.ts`, `fieldConfig.ts`. Formations: 8v8 (3-3-1, 1-4-2-1, 1-3-2-2) and 11v11 (4-3-3) with formation line links.
+- ~~**Cumulative clock mode**~~: Implemented. Displayed match clock is now cumulative across quarters/halves (anchors 0/15/30/45 or 0/30) instead of resetting to 0 each quarter.
+- ~~**Event game-time display**~~: Implemented. Event timeline now stores and renders match-minute (`displayMinute`, `displayExtraMinute`) while keeping wall-clock fallback for legacy events.
 
 ## Current Work: Formations
 
@@ -209,7 +214,7 @@ Findings from code-reviewer, test-agent, mobile-ux-auditor, and convex-specialis
 
 | Item | Source | Description |
 |------|--------|-------------|
-| Atomic bench-to-field swap | code-reviewer | Current PitchView fires 2 separate mutations for bench↔field sub (race condition risk). Create single `swapBenchField` mutation. |
+| ~~Atomic bench-to-field swap~~ | code-reviewer | **Resolved** with `substituteFromField` mutation (single backend operation + event logging). |
 | Mutation error handling | code-reviewer | All mutation calls in PitchView are fire-and-forget with no `.catch()`. Add error feedback (toast/status). |
 | `fieldSlotIndex` validation | code-reviewer | No range/integer check on `assignPlayerToSlot`. Add `fieldSlotIndex >= 0 && Number.isInteger()` guard. |
 | PitchView test coverage | test-agent | Zero tests for 8 new PitchView files. Priority: P0 pure function tests (`formations.ts`, `fieldConfig.ts`, `roleColors.ts`), P1 interaction tests. |
@@ -247,6 +252,8 @@ Findings from code-reviewer, test-agent, mobile-ux-auditor, and convex-specialis
 - **Goal ownership split (coach vs referee)**: When a referee is actively assigned and controlling a match, the **coach should no longer be able to add new goals** — only the referee enters scores/goals. However, the coach **should still be able to edit goal details** (e.g., add or correct the player name on a goal that the referee registered with only a shirt number). This keeps the referee as the single source of truth for scoring, while the coach enriches the data afterwards with player names. Requires: (1) a check on coach goal mutations: if `match.refereeId` is set, reject new goals from coach; (2) a new "edit goal event" mutation for the coach to update `playerId`/`playerName` on existing goal events; (3) UI changes in the coach GoalModal to show "referee-controlled" state.
 - **Full score editing (coach)**: Allow coach to manually set home/away score directly, for situations where the app gets out of sync with the real match. (Referee score editing already implemented.)
 - **Quarter time warning**: When elapsed time exceeds the expected quarter duration (e.g., 15 min), show a visual/audio warning to the coach. Not a hard stop, just a nudge. Useful when the coach loses track of time pitch-side.
+- **Professional player shields with photos**: Upgrade player cards to professional-style shields/cards with player headshots (where available), fallback avatar silhouettes, and role/number overlays tuned for sunlight readability.
+- **Club logos in key views**: Add club/team logos to public live view, standings, match cards, and coach/referee headers (with graceful fallback when no logo is uploaded).
 
 ## Subagent Workflow
 

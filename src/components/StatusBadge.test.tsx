@@ -31,10 +31,10 @@ describe('StatusBadge', () => {
   });
 
   describe('Status Styling', () => {
-    it('applies gray background for scheduled status', () => {
+    it('applies blue background for planned status', () => {
       render(<StatusBadge status="scheduled" />);
       const badge = screen.getByText('Gepland');
-      expect(badge).toHaveClass('bg-gray-500');
+      expect(badge).toHaveClass('bg-blue-500');
     });
 
     it('applies blue background for lineup status', () => {
@@ -43,10 +43,10 @@ describe('StatusBadge', () => {
       expect(badge).toHaveClass('bg-blue-500');
     });
 
-    it('applies red background and pulse animation for live status', () => {
+    it('applies green background and pulse animation for live status', () => {
       render(<StatusBadge status="live" />);
       const badge = screen.getByText('LIVE');
-      expect(badge).toHaveClass('bg-red-500');
+      expect(badge).toHaveClass('bg-green-500');
       expect(badge).toHaveClass('animate-pulse');
     });
 
@@ -56,10 +56,10 @@ describe('StatusBadge', () => {
       expect(badge).toHaveClass('bg-orange-500');
     });
 
-    it('applies dark gray background for finished status', () => {
+    it('applies red background for finished status', () => {
       render(<StatusBadge status="finished" />);
       const badge = screen.getByText('Afgelopen');
-      expect(badge).toHaveClass('bg-gray-800');
+      expect(badge).toHaveClass('bg-red-600');
     });
   });
 
@@ -107,7 +107,7 @@ describe('StatusBadge', () => {
       render(<StatusBadge status="live" className="my-custom-class" />);
       const badge = screen.getByText('LIVE');
       expect(badge).toHaveClass('my-custom-class');
-      expect(badge).toHaveClass('bg-red-500'); // Still has default class
+      expect(badge).toHaveClass('bg-green-500'); // Still has default class
     });
   });
 

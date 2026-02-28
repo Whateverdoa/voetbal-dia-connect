@@ -5,6 +5,7 @@
 This doc contains **ready-to-paste prompts** for Cursor and Claude Code, organized by development task. Each prompt is self-contained with enough context to get useful output in a single session.
 
 **Workflow:**
+
 1. Pick the task you want to work on
 2. Copy the prompt into Cursor or Claude Code
 3. Review output, test, iterate
@@ -14,7 +15,7 @@ This doc contains **ready-to-paste prompts** for Cursor and Claude Code, organiz
 
 ## 🏗️ PHASE 1: Foundation (Do These First)
 
-### 1.1 — Seed Script (Convex)
+### 1.1 — Seed Script (Convex) first check if this allready has been done
 
 **Use in: Claude Code or Cursor**
 

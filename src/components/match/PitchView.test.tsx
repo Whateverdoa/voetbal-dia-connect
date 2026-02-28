@@ -116,6 +116,7 @@ describe("PitchView", () => {
         pin,
         playerOutId: "p1",
         playerInId: "p3",
+        correlationId: expect.any(String),
       });
       expect(mockAssign).not.toHaveBeenCalled();
       expect(mockToggle).not.toHaveBeenCalled();
@@ -132,6 +133,7 @@ describe("PitchView", () => {
         pin,
         playerOutId: "p1",
         playerInId: "p3",
+        correlationId: expect.any(String),
       });
       expect(mockAssign).not.toHaveBeenCalled();
       expect(mockToggle).not.toHaveBeenCalled();

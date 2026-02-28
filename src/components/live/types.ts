@@ -22,12 +22,17 @@ export interface MatchData {
 }
 
 export interface MatchEvent {
+  _id?: string;
   type: string;
   playerName?: string;
   relatedPlayerName?: string;
+  stagedEventId?: string;
+  targetEventId?: string;
   quarter: number;
+  matchMs?: number;
   isOwnGoal?: boolean;
   isOpponentGoal?: boolean;
+  note?: string;
   timestamp: number;
   gameSecond?: number;
   displayMinute?: number;

@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "./types";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface MatchControlsProps {
   matchId: Id<"matches">;
@@ -183,7 +184,17 @@ export function MatchControls({
           {/* Secondary: Quarter control */}
           {canControlClock && (
           <button
-            onClick={() => handleMutation(() => nextQuarter({ matchId, pin }), "Volgende kwart")}
+            onClick={() =>
+              handleMutation(
+                () =>
+                  nextQuarter({
+                    matchId,
+                    pin,
+                    correlationId: createCorrelationId("next-quarter"),
+                  }),
+                "Volgende kwart"
+              )
+            }
             disabled={isLoading}
             className="w-full py-3 border-2 border-gray-300 text-gray-700 font-semibold 
                        rounded-xl min-h-[48px] active:scale-[0.98] transition-transform

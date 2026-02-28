@@ -143,6 +143,8 @@ export const start = mutation({
       matchId: args.matchId,
       type: "quarter_start",
       quarter: 1,
+      matchMs: quarterStartStamp.gameSecond * 1000,
+      commandType: "START_MATCH",
       timestamp: now,
       ...quarterStartStamp,
       createdAt: now,
@@ -152,7 +154,11 @@ export const start = mutation({
 
 // End current quarter / start next
 export const nextQuarter = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: {
+    matchId: v.id("matches"),
+    pin: v.string(),
+    correlationId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
@@ -188,6 +194,9 @@ export const nextQuarter = mutation({
       matchId: args.matchId,
       type: "quarter_end",
       quarter: match.currentQuarter,
+      matchMs: quarterEndStamp.gameSecond * 1000,
+      correlationId: args.correlationId,
+      commandType: "NEXT_QUARTER",
       timestamp: effectiveEndTime,
       ...quarterEndStamp,
       createdAt: now,
@@ -261,6 +270,8 @@ export const resumeFromHalftime = mutation({
       matchId: args.matchId,
       type: "quarter_start",
       quarter: match.currentQuarter,
+      matchMs: quarterStartStamp.gameSecond * 1000,
+      commandType: "RESUME_FROM_HALFTIME",
       timestamp: now,
       ...quarterStartStamp,
       createdAt: now,

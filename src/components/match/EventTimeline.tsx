@@ -11,6 +11,10 @@ const EVENT_ICONS: Record<string, string> = {
   assist: "👟",
   sub_in: "🟢",
   sub_out: "🔴",
+  substitution_staged: "🗂️",
+  substitution_executed: "✅",
+  substitution_cancelled: "🚫",
+  goal_enrichment: "✍️",
   quarter_start: "▶️",
   quarter_end: "⏸️",
   yellow_card: "🟨",
@@ -38,14 +42,22 @@ function getEventText(event: MatchEvent): string {
   switch (event.type) {
     case "goal":
       if (event.isOpponentGoal) return "Tegendoelpunt";
-      if (event.isOwnGoal) return `Eigen goal ${event.playerName || ""}`;
-      return `Goal ${event.playerName || ""}`;
+      if (event.isOwnGoal) return `Eigen doelpunt ${event.playerName || ""}`;
+      return `Doelpunt ${event.playerName || ""}`;
     case "assist":
       return `Assist ${event.playerName || ""}`;
     case "sub_in":
       return `${event.playerName || "Speler"} erin`;
     case "sub_out":
       return `${event.playerName || "Speler"} eruit`;
+    case "substitution_staged":
+      return `Wissel klaargezet: ${event.playerName || "Speler"} → ${event.relatedPlayerName || "Speler"}`;
+    case "substitution_executed":
+      return `Klaargezette wissel bevestigd`;
+    case "substitution_cancelled":
+      return `Klaargezette wissel geannuleerd`;
+    case "goal_enrichment":
+      return "Scorer en assist toegevoegd";
     case "quarter_start":
       return `Kwart ${event.quarter} gestart`;
     case "quarter_end":
@@ -99,7 +111,7 @@ export function EventTimeline({ events }: EventTimelineProps) {
                   <span className="text-xs text-gray-700 font-semibold font-mono block">
                     {gameMinute}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-mono block">
+                  <span className="text-xs text-gray-500 font-mono block">
                     {formatTime(event.timestamp)}
                   </span>
                 </div>

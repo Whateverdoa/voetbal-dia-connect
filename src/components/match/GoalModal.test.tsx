@@ -133,6 +133,7 @@ describe('GoalModal', () => {
           matchId: defaultMatchId,
           pin: defaultPin,
           isOpponentGoal: true,
+          correlationId: expect.any(String),
         });
       });
     });
@@ -417,6 +418,7 @@ describe('GoalModal', () => {
           playerId: 'p1',
           assistPlayerId: undefined,
           isOpponentGoal: false,
+          correlationId: expect.any(String),
         });
       });
     });
@@ -452,6 +454,7 @@ describe('GoalModal', () => {
           playerId: 'p1',
           assistPlayerId: 'p2',
           isOpponentGoal: false,
+          correlationId: expect.any(String),
         });
       });
     });

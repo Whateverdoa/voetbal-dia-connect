@@ -6,6 +6,11 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import {
+  applyGoalEnrichments,
+  deriveOpenStagedSubstitutions,
+  isCoachOnlyEvent,
+} from "./lib/matchEventProjection";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -16,6 +21,7 @@ export {
   listTeamPlayersNotInMatch,
   verifyCoachPin,
 } from "./coachQueries";
+export { getForReferee, getMatchesForReferee } from "./refereeQueries";
 
 // Get match by public code (for spectators)
 export const getByPublicCode = query({
@@ -35,6 +41,7 @@ export const getByPublicCode = query({
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
       .collect();
+    events.sort((a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id)));
 
     const playerIds = new Set<string>();
     events.forEach((e) => {
@@ -53,7 +60,11 @@ export const getByPublicCode = query({
       ...e,
       playerName: e.playerId ? playerMap[e.playerId] : undefined,
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
+      matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
+    const projectedEvents = applyGoalEnrichments(enrichedEvents).filter(
+      (event) => !isCoachOnlyEvent(event)
+    );
 
     let lineup = null;
     if (match.showLineup) {
@@ -94,7 +105,7 @@ export const getByPublicCode = query({
       teamName: team?.name ?? "Team",
       teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",
-      events: enrichedEvents,
+      events: projectedEvents,
       lineup,
     };
   },
@@ -152,6 +163,7 @@ export const getForCoach = query({
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
       .collect();
+    events.sort((a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id)));
 
     const allPlayerIds = new Set<string>();
     events.forEach((e) => {
@@ -169,7 +181,10 @@ export const getForCoach = query({
       ...e,
       playerName: e.playerId ? playerMap[e.playerId] : undefined,
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
+      matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
+    const projectedEvents = applyGoalEnrichments(enrichedEvents);
+    const stagedSubstitutions = deriveOpenStagedSubstitutions(projectedEvents);
 
     // Resolve referee name if assigned
     const referee = match.refereeId
@@ -192,113 +207,14 @@ export const getForCoach = query({
       ...safeMatch,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
-      events: enrichedEvents,
+      events: projectedEvents,
+      stagedSubstitutions,
       refereeName: referee?.name ?? null,
       leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
       hasLead: !!safeMatch.leadCoachId,
       isCurrentCoachLead,
       canControlClock,
-    };
-  },
-});
-
-// Get match for referee (verify referee PIN via referees table + assignment)
-export const getForReferee = query({
-  args: { code: v.string(), pin: v.string() },
-  handler: async (ctx, args) => {
-    // 1. Look up the referee globally by PIN
-    const referee = await ctx.db
-      .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
-    if (!referee || !referee.active) return null;
-
-    // 2. Look up the match by public code
-    const match = await ctx.db
-      .query("matches")
-      .withIndex("by_code", (q) => q.eq("publicCode", args.code.toUpperCase()))
-      .first();
-    if (!match) return null;
-
-    // 3. Verify this referee is assigned to this match
-    if (!match.refereeId || match.refereeId !== referee._id) return null;
-
-    const team = await ctx.db.get(match.teamId);
-
-    return {
-      id: match._id,
-      opponent: match.opponent,
-      isHome: match.isHome,
-      status: match.status,
-      currentQuarter: match.currentQuarter,
-      quarterCount: match.quarterCount,
-      homeScore: match.homeScore,
-      awayScore: match.awayScore,
-      startedAt: match.startedAt,
-      quarterStartedAt: match.quarterStartedAt,
-      pausedAt: match.pausedAt,
-      accumulatedPauseTime: match.accumulatedPauseTime,
-      teamName: team?.name ?? "Team",
-      refereeName: referee.name,
-    };
-  },
-});
-
-// Get all matches assigned to a referee (referee enters PIN → sees match list)
-export const getMatchesForReferee = query({
-  args: { pin: v.string() },
-  handler: async (ctx, args) => {
-    // 1. Look up the referee by PIN
-    const referee = await ctx.db
-      .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
-    if (!referee || !referee.active) return null;
-
-    // 2. Find all matches assigned to this referee
-    const matches = await ctx.db
-      .query("matches")
-      .withIndex("by_refereeId", (q) => q.eq("refereeId", referee._id))
-      .collect();
-
-    // 3. Enrich each match with team name
-    const enriched = await Promise.all(
-      matches.map(async (m) => {
-        const team = await ctx.db.get(m.teamId);
-        return {
-          id: m._id,
-          publicCode: m.publicCode,
-          opponent: m.opponent,
-          isHome: m.isHome,
-          status: m.status,
-          currentQuarter: m.currentQuarter,
-          quarterCount: m.quarterCount,
-          homeScore: m.homeScore,
-          awayScore: m.awayScore,
-          scheduledAt: m.scheduledAt,
-          startedAt: m.startedAt,
-          finishedAt: m.finishedAt,
-          teamName: team?.name ?? "Team",
-        };
-      })
-    );
-
-    // Sort: live first, then scheduled, then finished
-    const statusOrder: Record<string, number> = {
-      live: 0,
-      halftime: 1,
-      lineup: 2,
-      scheduled: 3,
-      finished: 4,
-    };
-    enriched.sort(
-      (a, b) => (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5)
-    );
-
-    return {
-      referee: { id: referee._id, name: referee.name },
-      matches: enriched,
     };
   },
 });

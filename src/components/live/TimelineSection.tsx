@@ -23,7 +23,7 @@ export function TimelineSection({
       ) : (
         <div className="space-y-1">
           {[...events].reverse().map((event, i) => (
-            <TimelineEvent key={i} event={event} teamName={teamName} />
+            <TimelineEvent key={event._id ?? `${event.timestamp}-${i}`} event={event} teamName={teamName} />
           ))}
         </div>
       )}
@@ -58,12 +58,26 @@ function TimelineEvent({ event, teamName }: TimelineEventProps) {
       if (event.isOpponentGoal) {
         text = "Tegendoelpunt";
       } else if (event.isOwnGoal) {
-        text = `Eigen goal ${event.playerName || ""}`;
+        text = `Eigen doelpunt ${event.playerName || ""}`;
       } else {
-        text = event.playerName ? `Goal ${event.playerName}` : `Goal ${teamName}`;
+        text = event.playerName
+          ? `Doelpunt ${event.playerName}`
+          : event.note
+          ? `${teamName} (${event.note})`
+          : `Doelpunt ${teamName}`;
         highlight = true;
       }
       break;
+    case "sub_out":
+      icon = "🔁";
+      text =
+        event.playerName && event.relatedPlayerName
+          ? `Wissel: ${event.playerName} eruit, ${event.relatedPlayerName} erin`
+          : "Wissel uitgevoerd";
+      break;
+    case "sub_in":
+      // sub_out already explains the pair; avoid duplicate noisy line.
+      return null;
     case "quarter_start":
       icon = "▶️";
       text = event.quarter === 1 ? "Wedstrijd gestart" : `Kwart ${event.quarter} gestart`;

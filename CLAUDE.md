@@ -80,6 +80,7 @@ Run `npx convex run seed:init` (if seed function exists) or use Convex dashboard
 ## Testing
 
 - Run `npx convex dev` in one terminal, `npm run dev:frontend` in another
+- Use `npm run dev:restart` to cleanly restart local frontend+backend without duplicate/stale dev processes
 - Test public view: enter match code on homepage
 - Test coach: use PIN to access coach dashboard
 - Check Convex dashboard for data state

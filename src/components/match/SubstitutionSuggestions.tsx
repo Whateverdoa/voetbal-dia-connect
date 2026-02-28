@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface SubstitutionSuggestionsProps {
   matchId: Id<"matches">;
@@ -42,6 +43,7 @@ export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestion
         pin,
         playerOutId: suggestion.playerOut.playerId,
         playerInId: suggestion.playerIn.playerId,
+        correlationId: createCorrelationId("sub-suggest"),
       });
     } catch (err) {
       console.error("Failed to execute substitution:", err);

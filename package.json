@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
+    "dev:restart": "powershell -ExecutionPolicy Bypass -File ./scripts/restart-dev.ps1",
     "dev:frontend": "next dev --turbopack",
     "dev:backend": "convex dev",
     "build": "node scripts/build.mjs",

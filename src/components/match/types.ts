@@ -18,18 +18,47 @@ export interface MatchPlayer {
 
 export interface MatchEvent {
   _id: Id<"matchEvents">;
-  type: "goal" | "assist" | "sub_in" | "sub_out" | "quarter_start" | "quarter_end" | "yellow_card" | "red_card";
+  type:
+    | "goal"
+    | "assist"
+    | "sub_in"
+    | "sub_out"
+    | "substitution_staged"
+    | "substitution_executed"
+    | "substitution_cancelled"
+    | "goal_enrichment"
+    | "quarter_start"
+    | "quarter_end"
+    | "yellow_card"
+    | "red_card";
   playerId?: Id<"players">;
   relatedPlayerId?: Id<"players">;
+  stagedEventId?: Id<"matchEvents">;
+  targetEventId?: Id<"matchEvents">;
   playerName?: string;
   relatedPlayerName?: string;
   quarter: number;
+  matchMs?: number;
   isOwnGoal?: boolean;
   isOpponentGoal?: boolean;
+  note?: string;
+  correlationId?: string;
+  commandType?: string;
   timestamp: number;
   gameSecond?: number;
   displayMinute?: number;
   displayExtraMinute?: number;
+}
+
+export interface StagedSubstitution {
+  stagedEventId: Id<"matchEvents">;
+  outId?: Id<"players">;
+  outName?: string;
+  inId?: Id<"players">;
+  inName?: string;
+  quarter: number;
+  matchMs?: number;
+  createdAt: number;
 }
 
 export interface Match {
@@ -60,6 +89,7 @@ export interface Match {
   teamName: string;
   players: MatchPlayer[];
   events: MatchEvent[];
+  stagedSubstitutions?: StagedSubstitution[];
   formationId?: string;
   pitchType?: "full" | "half";
 }

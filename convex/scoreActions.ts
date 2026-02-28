@@ -8,6 +8,7 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyClockPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
+import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -17,10 +18,8 @@ import {
  * Adjust the match score by +1 or -1 for a given team.
  *
  * - Both coach and referee PINs are accepted (verifyClockPin).
- * - When delta is +1 and a scorerNumber (shirt number) is provided,
- *   a lightweight "goal" event is logged with the shirt number in the note.
- *   The coach can later resolve this to a named player.
- * - When delta is -1 (correction) or no scorerNumber, no event is created.
+ * - When delta is +1, a lightweight "goal" event is always logged.
+ *   If scorerNumber is provided, it is stored in the note so coach can enrich later.
  * - Score is clamped to a minimum of 0.
  */
 export const adjustScore = mutation({
@@ -30,6 +29,7 @@ export const adjustScore = mutation({
     team: v.union(v.literal("home"), v.literal("away")),
     delta: v.union(v.literal(1), v.literal(-1)),
     scorerNumber: v.optional(v.number()),
+    correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
@@ -39,6 +39,14 @@ export const adjustScore = mutation({
     const referee = await fetchRefereeForMatch(ctx, match);
     if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
       throw new Error("Invalid match or PIN");
+    }
+    const accepted = await consumeCommandIdempotency(ctx, {
+      matchId: args.matchId,
+      commandType: "ADJUST_SCORE",
+      correlationId: args.correlationId,
+    });
+    if (!accepted) {
+      return { deduped: true };
     }
 
     // Calculate new score, clamped to 0
@@ -53,8 +61,9 @@ export const adjustScore = mutation({
       await ctx.db.patch(args.matchId, { awayScore: newScore });
     }
 
-    // When incrementing with a shirt number, log a lightweight goal event
-    if (args.delta === 1 && args.scorerNumber != null) {
+    // When incrementing, always log a lightweight goal event.
+    // Shirt number stays optional so coach can enrich later.
+    if (args.delta === 1) {
       const isOpponentGoal =
         (args.team === "home" && !match.isHome) ||
         (args.team === "away" && match.isHome);
@@ -66,8 +75,14 @@ export const adjustScore = mutation({
         matchId: args.matchId,
         type: "goal",
         quarter: match.currentQuarter,
+        matchMs: eventStamp.gameSecond * 1000,
         isOpponentGoal: isOpponentGoal || undefined,
-        note: `Rugnummer: ${args.scorerNumber}`,
+        note:
+          args.scorerNumber != null
+            ? `Rugnummer: ${args.scorerNumber}`
+            : undefined,
+        correlationId: args.correlationId,
+        commandType: "ADJUST_SCORE",
         timestamp: effectiveEventTime,
         ...eventStamp,
         createdAt: now,

@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { getFormation } from "@/lib/formations";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
+import { createCorrelationId } from "@/lib/correlationId";
 import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
@@ -79,6 +80,7 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
         pin,
         playerOutId: player.playerId,
         playerInId: selectedPlayerId,
+        correlationId: createCorrelationId("sub-field"),
       });
     } else {
       assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
@@ -116,6 +118,7 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
           pin,
           playerOutId: selectedPlayerId,
           playerInId: playerId,
+          correlationId: createCorrelationId("sub-field"),
         });
       } else {
         const slot = slotOfPlayer(selectedPlayerId);

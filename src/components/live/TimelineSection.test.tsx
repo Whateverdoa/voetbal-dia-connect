@@ -37,4 +37,24 @@ describe("TimelineSection", () => {
 
     expect(screen.getByText("60+2'")).toBeInTheDocument();
   });
+
+  it("renders substitution events in public timeline", () => {
+    render(
+      <TimelineSection
+        teamName="DIA JO12-1"
+        isScheduled={false}
+        events={[
+          buildEvent({
+            type: "sub_out",
+            playerName: "Jens",
+            relatedPlayerName: "Lars",
+          }),
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByText("Wissel: Jens eruit, Lars erin")
+    ).toBeInTheDocument();
+  });
 });

@@ -123,6 +123,18 @@ export default defineSchema({
     .index("by_match_player", ["matchId", "playerId"])
     .index("by_player", ["playerId"]), // For getPlayerStats query
 
+  // Idempotency guard per UI command
+  matchCommandDedupes: defineTable({
+    matchId: v.id("matches"),
+    commandType: v.string(),
+    correlationId: v.string(),
+    createdAt: v.number(),
+  }).index("by_match_command_correlation", [
+    "matchId",
+    "commandType",
+    "correlationId",
+  ]),
+
   // Events during match (goals, assists, subs)
   matchEvents: defineTable({
     matchId: v.id("matches"),
@@ -131,6 +143,10 @@ export default defineSchema({
       v.literal("assist"),
       v.literal("sub_in"),
       v.literal("sub_out"),
+      v.literal("substitution_staged"),
+      v.literal("substitution_executed"),
+      v.literal("substitution_cancelled"),
+      v.literal("goal_enrichment"),
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
@@ -139,8 +155,13 @@ export default defineSchema({
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
     quarter: v.number(),
+    matchMs: v.optional(v.number()), // Milliseconds from match start (derived from gameSecond)
     isOwnGoal: v.optional(v.boolean()),
     isOpponentGoal: v.optional(v.boolean()), // Goal by opponent
+    stagedEventId: v.optional(v.id("matchEvents")), // For staged sub confirm/cancel events
+    targetEventId: v.optional(v.id("matchEvents")), // For enrichment events
+    correlationId: v.optional(v.string()), // Required for UI-initiated writes
+    commandType: v.optional(v.string()), // Command that produced this event
     note: v.optional(v.string()),
     timestamp: v.number(), // When event occurred
     gameSecond: v.optional(v.number()), // Nominal match second (without extra-time suffix)

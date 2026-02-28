@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
 import type { MatchPlayer } from "./types";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface SubstitutionPanelProps {
   matchId: Id<"matches">;
@@ -29,27 +30,28 @@ export function SubstitutionPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const substitute = useMutation(api.matchActions.substitute);
+  const stageSubstitution = useMutation(api.matchActions.stageSubstitution);
 
   const handleSubmit = async () => {
     if (!playerOut || !playerIn) return;
     setIsSubmitting(true);
     setError(null);
     try {
-      await substitute({
+      await stageSubstitution({
         matchId,
         pin,
         playerOutId: playerOut,
         playerInId: playerIn,
+        correlationId: createCorrelationId("stage-sub"),
       });
       onClose();
     } catch (err) {
       console.error("Failed to substitute:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
       if (message.includes("Invalid match or PIN")) {
-        setError("Sessie verlopen. Sluit dit venster en herlaad de pagina.");
+        setError("Sessie verlopen. Herlaad de pagina.");
       } else {
-        setError(`Fout bij wissel: ${message}`);
+        setError(`Fout bij klaarzetten: ${message}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -185,7 +187,7 @@ export function SubstitutionPanel({
             className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]
                        disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Bezig..." : "Wissel bevestigen"}
+            {isSubmitting ? "Bezig..." : "Wissel klaarzetten"}
           </button>
         </div>
       </div>

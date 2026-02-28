@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "@/components/match/types";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeClockControlsProps {
   matchId: Id<"matches">;
@@ -45,7 +46,7 @@ export function RefereeClockControls({
       await action();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setError(msg.includes("Invalid match or PIN") ? "PIN niet geldig" : `Fout: ${msg}`);
+      setError(msg.includes("Invalid match or PIN") ? "Ongeldige PIN" : `Fout: ${msg}`);
       setTimeout(() => setError(null), 5000);
     } finally {
       setIsLoading(false);
@@ -109,7 +110,17 @@ export function RefereeClockControls({
           )}
 
           <button
-            onClick={() => handleAction(() => nextQuarter({ matchId, pin }), "Einde kwart")}
+            onClick={() =>
+              handleAction(
+                () =>
+                  nextQuarter({
+                    matchId,
+                    pin,
+                    correlationId: createCorrelationId("next-quarter"),
+                  }),
+                "Einde kwart"
+              )
+            }
             disabled={isLoading}
             className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold
                        rounded-xl min-h-[56px] active:scale-[0.98] transition-transform

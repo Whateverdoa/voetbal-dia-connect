@@ -298,10 +298,21 @@ npm run test:coverage # Run with coverage report
 
 ```bash
 npm run dev          # Next.js + Convex in parallel
+npm run dev:restart  # Stop stale local dev processes/locks, then start one clean dev session
 npm run dev:frontend # Next.js only
 npm run dev:backend  # Convex only
 npm run build        # Production build
 npx convex dev       # Convex dashboard + sync
+```
+
+### Clean Restart Helper
+
+- Script: `scripts/restart-dev.ps1`
+- Default behavior: kills stale local `next dev` / `convex dev` processes for this repo, removes `.next/dev/lock` if present, then starts `npm run dev` in a new PowerShell window.
+- Current-terminal mode:
+
+```bash
+powershell -ExecutionPolicy Bypass -File ./scripts/restart-dev.ps1 -NoNewWindow
 ```
 
 ## Production Seed & Import Runbook

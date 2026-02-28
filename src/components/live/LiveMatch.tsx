@@ -57,11 +57,8 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
     setShowGoalCelebration(false);
   }, []);
 
-  // Filter relevant events for public view
-  const publicEvents: MatchEvent[] = match.events.filter(
-    (e) =>
-      e.type === "goal" || e.type === "quarter_start" || e.type === "quarter_end"
-  );
+  // Public query already strips coach-only events; keep full cumulative timeline.
+  const publicEvents: MatchEvent[] = match.events;
 
   return (
     <main className="min-h-screen bg-gray-50">

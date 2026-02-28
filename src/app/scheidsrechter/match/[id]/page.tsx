@@ -36,11 +36,28 @@ function RefereeMatchContent() {
   const matchId = params.id as string;
   const pin = searchParams.get("pin") || "";
   const code = searchParams.get("code") || "";
+  const missingParams = !code || !pin;
 
   const match = useQuery(
     api.matches.getForReferee,
     code && pin ? { code, pin } : "skip"
   );
+
+  if (missingParams) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-md p-6 max-w-sm w-full text-center space-y-4">
+          <p className="text-red-600 font-medium">Ongeldige link: code of PIN ontbreekt</p>
+          <Link
+            href="/scheidsrechter"
+            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
+          >
+            Naar scheidsrechter login
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   if (match === undefined) {
     return <LoadingScreen />;

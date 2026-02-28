@@ -288,6 +288,7 @@ describe('SubstitutionSuggestions', () => {
           pin: defaultPin,
           playerOutId: 'p1',
           playerInId: 'p2',
+          correlationId: expect.any(String),
         });
       });
     });

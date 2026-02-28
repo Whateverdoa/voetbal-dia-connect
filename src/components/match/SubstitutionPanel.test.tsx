@@ -73,7 +73,7 @@ describe('SubstitutionPanel', () => {
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
-    it('shows "Wissel bevestigen" submit button', () => {
+    it('shows "Wissel klaarzetten" submit button', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
@@ -83,7 +83,7 @@ describe('SubstitutionPanel', () => {
           onClose={mockOnClose}
         />
       );
-      expect(screen.getByText('Wissel bevestigen')).toBeInTheDocument();
+      expect(screen.getByText('Wissel klaarzetten')).toBeInTheDocument();
     });
   });
 
@@ -343,7 +343,7 @@ describe('SubstitutionPanel', () => {
         />
       );
 
-      expect(screen.getByText('Wissel bevestigen')).toBeDisabled();
+      expect(screen.getByText('Wissel klaarzetten')).toBeDisabled();
     });
 
     it('disables submit button when only player out selected', () => {
@@ -359,7 +359,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Jan'));
 
-      expect(screen.getByText('Wissel bevestigen')).toBeDisabled();
+      expect(screen.getByText('Wissel klaarzetten')).toBeDisabled();
     });
 
     it('disables submit button when only player in selected', () => {
@@ -375,7 +375,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Henk'));
 
-      expect(screen.getByText('Wissel bevestigen')).toBeDisabled();
+      expect(screen.getByText('Wissel klaarzetten')).toBeDisabled();
     });
 
     it('enables submit button when both players selected', () => {
@@ -392,7 +392,7 @@ describe('SubstitutionPanel', () => {
       fireEvent.click(screen.getByText('Jan')); // out
       fireEvent.click(screen.getByText('Henk')); // in
 
-      expect(screen.getByText('Wissel bevestigen')).toBeEnabled();
+      expect(screen.getByText('Wissel klaarzetten')).toBeEnabled();
     });
   });
 
@@ -410,7 +410,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Jan')); // out (p1)
       fireEvent.click(screen.getByText('Henk')); // in (p5)
-      fireEvent.click(screen.getByText('Wissel bevestigen'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
 
       await waitFor(() => {
         expect(mockSubstitute).toHaveBeenCalledWith({
@@ -418,6 +418,7 @@ describe('SubstitutionPanel', () => {
           pin: defaultPin,
           playerOutId: 'p1',
           playerInId: 'p5',
+          correlationId: expect.any(String),
         });
       });
     });
@@ -435,7 +436,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Jan'));
       fireEvent.click(screen.getByText('Henk'));
-      fireEvent.click(screen.getByText('Wissel bevestigen'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
 
       await waitFor(() => {
         expect(mockOnClose).toHaveBeenCalled();
@@ -457,7 +458,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Jan'));
       fireEvent.click(screen.getByText('Henk'));
-      fireEvent.click(screen.getByText('Wissel bevestigen'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
 
       expect(screen.getByText('Bezig...')).toBeInTheDocument();
     });
@@ -477,7 +478,7 @@ describe('SubstitutionPanel', () => {
 
       fireEvent.click(screen.getByText('Jan'));
       fireEvent.click(screen.getByText('Henk'));
-      fireEvent.click(screen.getByText('Wissel bevestigen'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
 
       expect(screen.getByText('Bezig...')).toBeDisabled();
     });
@@ -571,7 +572,7 @@ describe('SubstitutionPanel', () => {
       );
 
       expect(screen.getByText('Annuleren')).toHaveClass('min-h-[48px]');
-      expect(screen.getByText('Wissel bevestigen')).toHaveClass('min-h-[48px]');
+      expect(screen.getByText('Wissel klaarzetten')).toHaveClass('min-h-[48px]');
     });
   });
 

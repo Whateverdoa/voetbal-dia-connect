@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeScoreControlsProps {
   matchId: Id<"matches">;
@@ -35,7 +36,7 @@ export function RefereeScoreControls({
 
   const handleError = (err: unknown) => {
     const msg = err instanceof Error ? err.message : "Onbekende fout";
-    setError(msg.includes("Invalid match or PIN") ? "PIN niet geldig" : `Fout: ${msg}`);
+    setError(msg.includes("Invalid match or PIN") ? "Ongeldige PIN" : `Fout: ${msg}`);
     setTimeout(() => setError(null), 5000);
   };
 
@@ -44,7 +45,13 @@ export function RefereeScoreControls({
     setIsLoading(true);
     setError(null);
     try {
-      await adjustScore({ matchId, pin, team, delta: -1 });
+      await adjustScore({
+        matchId,
+        pin,
+        team,
+        delta: -1,
+        correlationId: createCorrelationId("adjust-score"),
+      });
     } catch (err) {
       handleError(err);
     } finally {
@@ -76,6 +83,7 @@ export function RefereeScoreControls({
         team: pendingTeam,
         delta: 1,
         scorerNumber,
+        correlationId: createCorrelationId("adjust-score"),
       });
     } catch (err) {
       handleError(err);

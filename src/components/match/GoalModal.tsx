@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
 import type { MatchPlayer } from "./types";
+import { createCorrelationId } from "@/lib/correlationId";
 
 interface GoalModalProps {
   matchId: Id<"matches">;
@@ -30,7 +31,12 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
     setIsSubmitting(true);
     setError(null);
     try {
-      await addGoal({ matchId, pin, isOpponentGoal: true });
+      await addGoal({
+        matchId,
+        pin,
+        isOpponentGoal: true,
+        correlationId: createCorrelationId("goal-opponent"),
+      });
       onClose();
     } catch (err) {
       console.error("Failed to add opponent goal:", err);
@@ -56,6 +62,7 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
         playerId: scorer,
         assistPlayerId: assist ?? undefined,
         isOpponentGoal: false,
+        correlationId: createCorrelationId("goal"),
       });
       onClose();
     } catch (err) {

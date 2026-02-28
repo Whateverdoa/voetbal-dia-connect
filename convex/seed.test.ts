@@ -111,8 +111,8 @@ describe('Seed Data Configuration', () => {
   });
 
   describe('Coach configuration', () => {
-    it('has 4 coaches', () => {
-      expect(COACH_CONFIGS).toHaveLength(4);
+    it('has 6 coaches', () => {
+      expect(COACH_CONFIGS).toHaveLength(6);
     });
 
     it('PINs are 4 digits', () => {

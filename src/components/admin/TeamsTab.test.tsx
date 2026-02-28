@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useQuery, useMutation } from 'convex/react';
 import { TeamsTab } from './TeamsTab';
 
+vi.mock('@/lib/adminSession', () => ({ getAdminPin: () => '9999' }));
+
 // Type the mocks
 const mockUseQuery = vi.mocked(useQuery);
 const mockUseMutation = vi.mocked(useMutation);

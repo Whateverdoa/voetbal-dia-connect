@@ -9,7 +9,7 @@
     "dev:backend": "convex dev",
     "build": "node scripts/build.mjs",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

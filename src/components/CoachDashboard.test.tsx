@@ -316,8 +316,8 @@ describe('CoachDashboard', () => {
       render(
         <CoachDashboard data={manyFinished} pin={defaultPin} onLogout={mockOnLogout} />
       );
-      // Should show "+2 meer" for the remaining matches
-      expect(screen.getByText('+2 meer')).toBeInTheDocument();
+      // Should show "+2 meer tonen ▼" for the remaining matches
+      expect(screen.getByText(/\+2 meer tonen ▼/)).toBeInTheDocument();
     });
   });
 

@@ -3,12 +3,14 @@ import type { MatchEvent } from "./types";
 interface TimelineSectionProps {
   events: MatchEvent[];
   teamName: string;
+  opponentName: string;
   isScheduled: boolean;
 }
 
 export function TimelineSection({
   events,
   teamName,
+  opponentName,
   isScheduled,
 }: TimelineSectionProps) {
   return (
@@ -23,7 +25,12 @@ export function TimelineSection({
       ) : (
         <div className="space-y-1">
           {[...events].reverse().map((event, i) => (
-            <TimelineEvent key={event._id ?? `${event.timestamp}-${i}`} event={event} teamName={teamName} />
+            <TimelineEvent
+              key={event._id ?? `${event.timestamp}-${i}`}
+              event={event}
+              teamName={teamName}
+              opponentName={opponentName}
+            />
           ))}
         </div>
       )}
@@ -34,9 +41,10 @@ export function TimelineSection({
 interface TimelineEventProps {
   event: MatchEvent;
   teamName: string;
+  opponentName: string;
 }
 
-function TimelineEvent({ event, teamName }: TimelineEventProps) {
+function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   const wallClockTime = new Date(event.timestamp).toLocaleTimeString("nl-NL", {
     hour: "2-digit",
     minute: "2-digit",
@@ -55,16 +63,26 @@ function TimelineEvent({ event, teamName }: TimelineEventProps) {
   switch (event.type) {
     case "goal":
       icon = "⚽";
+      const scoringTeamName =
+        event.isOpponentGoal || event.isOwnGoal ? opponentName : teamName;
       if (event.isOpponentGoal) {
-        text = "Tegendoelpunt";
+        text = event.playerName
+          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
+          : event.note
+            ? `Doelpunt ${scoringTeamName} (${event.note})`
+            : `Doelpunt ${scoringTeamName}`;
       } else if (event.isOwnGoal) {
-        text = `Eigen doelpunt ${event.playerName || ""}`;
+        text = event.playerName
+          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
+          : event.note
+            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
+            : `Eigen doelpunt (${scoringTeamName})`;
       } else {
         text = event.playerName
-          ? `Doelpunt ${event.playerName}`
+          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
           : event.note
-          ? `${teamName} (${event.note})`
-          : `Doelpunt ${teamName}`;
+            ? `Doelpunt ${scoringTeamName} (${event.note})`
+            : `Doelpunt ${scoringTeamName}`;
         highlight = true;
       }
       break;

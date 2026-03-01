@@ -4,6 +4,8 @@ import type { MatchEvent } from "./types";
 
 interface EventTimelineProps {
   events: MatchEvent[];
+  teamName?: string;
+  opponentName?: string;
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -38,12 +40,31 @@ function formatGameMinute(event: MatchEvent): string | null {
   return `${event.displayMinute}'`;
 }
 
-function getEventText(event: MatchEvent): string {
+function getEventText(
+  event: MatchEvent,
+  teamName?: string,
+  opponentName?: string
+): string {
   switch (event.type) {
     case "goal":
-      if (event.isOpponentGoal) return "Tegendoelpunt";
-      if (event.isOwnGoal) return `Eigen doelpunt ${event.playerName || ""}`;
-      return `Doelpunt ${event.playerName || ""}`;
+      const scoredByOpponent = event.isOpponentGoal || event.isOwnGoal;
+      const scoringTeamName = scoredByOpponent
+        ? opponentName || "Tegenstander"
+        : teamName || "Ons team";
+      if (event.isOwnGoal) {
+        return event.playerName
+          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
+          : event.note
+            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
+            : `Eigen doelpunt (${scoringTeamName})`;
+      }
+      if (event.playerName) {
+        return `Doelpunt ${event.playerName} (${scoringTeamName})`;
+      }
+      if (event.note) {
+        return `Doelpunt ${scoringTeamName} (${event.note})`;
+      }
+      return `Doelpunt ${scoringTeamName}`;
     case "assist":
       return `Assist ${event.playerName || ""}`;
     case "sub_in":
@@ -71,7 +92,11 @@ function getEventText(event: MatchEvent): string {
   }
 }
 
-export function EventTimeline({ events }: EventTimelineProps) {
+export function EventTimeline({
+  events,
+  teamName,
+  opponentName,
+}: EventTimelineProps) {
   // Reverse chronological order
   const sortedEvents = [...events].reverse();
 
@@ -125,7 +150,7 @@ export function EventTimeline({ events }: EventTimelineProps) {
 
             {/* Description */}
             <span className="flex-1 text-sm text-gray-700 truncate">
-              {getEventText(event)}
+              {getEventText(event, teamName, opponentName)}
             </span>
 
             {/* Quarter badge */}

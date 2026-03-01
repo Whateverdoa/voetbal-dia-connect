@@ -160,6 +160,7 @@ export const confirmSubstitution = mutation({
       throw new Error("Wissel mislukt: speler die erin moet is niet beschikbaar op de bank");
     }
 
+    const slotToTransfer = mpOut.fieldSlotIndex;
     const now = Date.now();
     const effectiveEventTime = getEffectiveEventTime(match, now);
     const stamp = buildEventGameTimeStamp(match, effectiveEventTime);
@@ -167,8 +168,15 @@ export const confirmSubstitution = mutation({
     if (mpOut.lastSubbedInAt) {
       await recordPlayingTime(ctx, mpOut, now);
     }
-    await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
+    await ctx.db.patch(mpOut._id, {
+      onField: false,
+      lastSubbedInAt: undefined,
+      fieldSlotIndex: undefined,
+    });
     await startPlayingTime(ctx, mpIn._id, now);
+    if (slotToTransfer !== undefined && slotToTransfer !== null) {
+      await ctx.db.patch(mpIn._id, { fieldSlotIndex: slotToTransfer });
+    }
 
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,

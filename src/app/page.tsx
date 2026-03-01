@@ -40,18 +40,24 @@ export default function Home() {
         </div>
 
         {/* Secondary navigation */}
-        <div className="flex gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Link
             href="/coach"
-            className="flex-1 py-2.5 px-4 text-center border-2 border-dia-green text-dia-green text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
+            className="py-2.5 px-4 text-center border-2 border-dia-green text-dia-green text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
           >
             Coach login
           </Link>
           <Link
             href="/scheidsrechter"
-            className="flex-1 py-2.5 px-4 text-center border-2 border-gray-400 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+            className="py-2.5 px-4 text-center border-2 border-gray-400 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
           >
             Scheidsrechter
+          </Link>
+          <Link
+            href="/admin"
+            className="py-2.5 px-4 text-center border-2 border-amber-500 text-amber-700 text-sm font-semibold rounded-lg hover:bg-amber-50 transition-colors"
+          >
+            Admin
           </Link>
         </div>
 

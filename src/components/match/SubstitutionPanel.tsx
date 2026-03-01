@@ -29,6 +29,7 @@ export function SubstitutionPanel({
   const [playerIn, setPlayerIn] = useState<Id<"players"> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNextPrompt, setShowNextPrompt] = useState(false);
 
   const stageSubstitution = useMutation(api.matchActions.stageSubstitution);
 
@@ -44,7 +45,7 @@ export function SubstitutionPanel({
         playerInId: playerIn,
         correlationId: createCorrelationId("stage-sub"),
       });
-      onClose();
+      setShowNextPrompt(true);
     } catch (err) {
       console.error("Failed to substitute:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
@@ -60,6 +61,19 @@ export function SubstitutionPanel({
 
   const playerOutData = playersOnField.find((p) => p.playerId === playerOut);
   const playerInData = playersOnBench.find((p) => p.playerId === playerIn);
+  const selectionDisabled = isSubmitting || showNextPrompt || !canEdit;
+
+  const handleCreateAnother = () => {
+    setPlayerOut(null);
+    setPlayerIn(null);
+    setError(null);
+    setShowNextPrompt(false);
+  };
+
+  const handleCloseAfterStage = () => {
+    setShowNextPrompt(false);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
@@ -112,11 +126,13 @@ export function SubstitutionPanel({
                 <button
                   key={p.playerId}
                   onClick={() => setPlayerOut(p.playerId)}
+                  disabled={selectionDisabled}
                   className={clsx(
                     "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                     playerOut === p.playerId
                       ? "border-red-500 bg-red-50 shadow-md"
-                      : "border-green-200 bg-green-50 hover:border-green-300"
+                      : "border-green-200 bg-green-50 hover:border-green-300",
+                    selectionDisabled && "opacity-60 cursor-not-allowed"
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -151,11 +167,13 @@ export function SubstitutionPanel({
                   <button
                     key={p.playerId}
                     onClick={() => setPlayerIn(p.playerId)}
+                    disabled={selectionDisabled}
                     className={clsx(
                       "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                       playerIn === p.playerId
                         ? "border-green-500 bg-green-50 shadow-md"
-                        : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                        : "border-gray-200 bg-gray-50 hover:border-gray-300",
+                      selectionDisabled && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -174,22 +192,44 @@ export function SubstitutionPanel({
         </div>
 
         {/* Fixed bottom actions */}
-        <div className="p-4 border-t bg-gray-50 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 border-2 border-gray-300 rounded-xl font-semibold min-h-[48px]"
-          >
-            Annuleren
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!canEdit || !playerOut || !playerIn || isSubmitting}
-            className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]
-                       disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Bezig..." : "Wissel klaarzetten"}
-          </button>
-        </div>
+        {showNextPrompt ? (
+          <div className="p-4 border-t bg-gray-50 space-y-3">
+            <p className="text-sm font-medium text-center text-gray-700">
+              Nog een wissel klaarzetten?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCreateAnother}
+                className="flex-1 py-3 border-2 border-dia-green text-dia-green rounded-xl font-semibold min-h-[48px]"
+              >
+                Ja, nieuwe wissel
+              </button>
+              <button
+                onClick={handleCloseAfterStage}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]"
+              >
+                Nee, sluiten
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 border-t bg-gray-50 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 border-2 border-gray-300 rounded-xl font-semibold min-h-[48px]"
+            >
+              Annuleren
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!canEdit || !playerOut || !playerIn || isSubmitting}
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]
+                         disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Bezig..." : "Wissel klaarzetten"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

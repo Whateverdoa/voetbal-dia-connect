@@ -17,7 +17,6 @@ import {
   MatchSettingsEdit,
   RefereeAssignment,
   StagedSubstitutionsPanel,
-  GoalEnrichmentPanel,
 } from "@/components/match";
 import type { Match } from "@/components/match";
 import { TabButton } from "@/components/match/TabButton";
@@ -125,11 +124,14 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
           onSubClick={() => setShowSubModal(true)}
         />
 
-        <StagedSubstitutionsPanel
-          matchId={match._id}
-          pin={pin}
-          stagedSubstitutions={match.stagedSubstitutions ?? []}
-        />
+        {canDoSubstitutions && (
+          <StagedSubstitutionsPanel
+            matchId={match._id}
+            pin={pin}
+            stagedSubstitutions={match.stagedSubstitutions}
+            canManage={canDoSubstitutions}
+          />
+        )}
 
         <RefereeAssignment
           matchId={match._id}
@@ -202,12 +204,6 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
             )}
 
             <EventTimeline events={match.events} />
-            <GoalEnrichmentPanel
-              matchId={match._id}
-              pin={pin}
-              events={match.events}
-              players={match.players}
-            />
           </>
         )}
 
@@ -218,12 +214,6 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
             )}
             <PlayingTimePanel matchId={match._id} pin={pin} />
             <EventTimeline events={match.events} />
-            <GoalEnrichmentPanel
-              matchId={match._id}
-              pin={pin}
-              events={match.events}
-              players={match.players}
-            />
           </>
         )}
       </div>

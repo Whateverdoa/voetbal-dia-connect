@@ -40,6 +40,9 @@ export const api = {
   matchActions: {
     addGoal: 'matchActions:addGoal',
     substitute: 'matchActions:substitute',
+    stageSubstitution: 'matchActions:stageSubstitution',
+    confirmSubstitution: 'matchActions:confirmSubstitution',
+    cancelStagedSubstitution: 'matchActions:cancelStagedSubstitution',
     substituteFromField: 'matchActions:substituteFromField',
     removeLastGoal: 'matchActions:removeLastGoal',
     assignPlayerToSlot: 'matchActions:assignPlayerToSlot',

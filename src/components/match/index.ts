@@ -4,8 +4,6 @@ export { MatchClock, formatElapsed } from "./MatchClock";
 export { MatchControls } from "./MatchControls";
 export { GoalModal } from "./GoalModal";
 export { SubstitutionPanel } from "./SubstitutionPanel";
-export { StagedSubstitutionsPanel } from "./StagedSubstitutionsPanel";
-export { GoalEnrichmentPanel } from "./GoalEnrichmentPanel";
 export { PlayerCard } from "./PlayerCard";
 export { FieldPlayerCard } from "./FieldPlayerCard";
 export { PlayerList } from "./PlayerList";
@@ -15,6 +13,7 @@ export { EventTimeline } from "./EventTimeline";
 export { LineupToggle } from "./LineupToggle";
 export { PlayingTimePanel } from "./PlayingTimePanel";
 export { SubstitutionSuggestions } from "./SubstitutionSuggestions";
+export { StagedSubstitutionsPanel } from "./StagedSubstitutionsPanel";
 
 // Playing time sub-components
 export { PlayingTimeSummary } from "./PlayingTimeSummary";
@@ -35,10 +34,4 @@ export { MatchLoadingScreen } from "./MatchLoadingScreen";
 export { MatchErrorScreen } from "./MatchErrorScreen";
 
 // Types
-export type {
-  Match,
-  MatchPlayer,
-  MatchEvent,
-  MatchStatus,
-  StagedSubstitution,
-} from "./types";
+export type { Match, MatchPlayer, MatchEvent, MatchStatus } from "./types";

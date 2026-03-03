@@ -21,6 +21,20 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 | Package mgr | npm (with npm-run-all for parallel dev) |
 | Deployment | Vercel (frontend) + Convex Cloud (backend) |
 
+## Latest Handoff Update (2026-03-03)
+
+- **GitHub status**
+  - PR **#9** merged into `main` on **2026-03-03** (catch-up merge for stacked iOS work).
+  - PR **#8** (`codex/pr8-offline-cache` -> `codex/pr6-session-bootstrap`) is still **OPEN** as of **2026-03-03 11:27 CET**.
+- **Fase 3 progress**
+  - **A6 complete**: coach UI now has a staged substitutions panel with per-item confirm/cancel, explicit confirm-failure feedback, and batch confirm that stops on first failure.
+  - **A12 complete**: added `src/lib/agent/tools.ts` with `stage_substitution`, `confirm_substitution`, `cancel_staged_substitution`, `enrich_goal` and 1:1 command mapping.
+  - **A14 started**: verification prep updated, but final A14 sign-off remains blocked until A7/A8/A9/A10/A11/A13 are done.
+- **Verification run (this update)**
+  - `vitest run src/components/match/StagedSubstitutionsPanel.test.tsx src/lib/agent/tools.test.ts` -> **8/8 tests passed**
+  - `npx tsc --noEmit` -> **passed**
+  - `npx tsc -p convex/tsconfig.json --noEmit` -> **passed**
+
 ## Architecture
 
 ```
@@ -57,18 +71,14 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 │  Queries (barrel: matches.ts)                                │
 │  ├─ publicQueries.ts     Public match list (no auth)         │
 │  ├─ coachQueries.ts      Coach PIN verify, team lists        │
-│  ├─ matchQueries.ts      Playing time, substitution data     │
-│  ├─ refereeQueries.ts    Referee match by code+PIN, list     │
-│  └─ lib/matchEventProjection.ts applyGoalEnrichments, staged subs   │
+│  └─ matchQueries.ts      Playing time, substitution data     │
 │                                                              │
 │  Mutations (barrel: matchActions.ts)                         │
 │  ├─ matchEvents.ts       Goals, cards, subs                  │
 │  ├─ matchLineup.ts       Lineup management                   │
 │  ├─ matchLineupSubstitutions.ts Field-view substitutions      │
-│  ├─ matchPhase3Actions.ts Staged substitutions (stage/confirm/cancel) │
-│  ├─ matchGoalEnrichmentActions.ts Goal enrichment (scorer/assist)     │
 │  ├─ clockActions.ts      Clock pause/resume                  │
-│  ├─ scoreActions.ts      Score adjustments (always goal event on +1) │
+│  ├─ scoreActions.ts      Score adjustments                   │
 │  ├─ refereeActions.ts    Referee assignment                   │
 │  └─ matchLeadActions.ts  Wedstrijdleider claim/release       │
 │                                                              │
@@ -97,8 +107,7 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 - **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (EN codes: GK/CB/RB/LB/CM/etc.), `positionSecondary`, `createdAt`. Index: `by_team`
 - **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `bankedOverrunSeconds` (carry-over for end-of-match extra time), `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
 - **matchPlayers** — junction: players in a match. Fields: `matchId` (→matches), `playerId` (→players), `isKeeper`, `onField`, `fieldSlotIndex` (pitch position slot), `minutesPlayed`, `lastSubbedInAt`, `createdAt`. Indexes: `by_match`, `by_match_player`, `by_player`
-- **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card/substitution_staged/substitution_executed/substitution_cancelled/goal_enrichment), `playerId`, `relatedPlayerId`, `quarter`, `matchMs`, `isOwnGoal`, `isOpponentGoal`, `stagedEventId`, `targetEventId`, `correlationId`, `commandType`, `note`, `timestamp`, `gameSecond`, `displayMinute`, `displayExtraMinute`, `createdAt`. Indexes: `by_match`, `by_match_type`
-- **matchCommandDedupes** — idempotency. Fields: `matchId`, `commandType`, `correlationId`, `createdAt`. Index: `by_match_command_correlation`
+- **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/assist/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card), `playerId`, `relatedPlayerId`, `quarter`, `isOwnGoal`, `isOpponentGoal`, `note`, `timestamp`, `gameSecond`, `displayMinute`, `displayExtraMinute`, `createdAt`. Indexes: `by_match`, `by_match_type`
 
 ## Auth Model
 
@@ -151,19 +160,6 @@ Four roles, all PIN-based (no user accounts):
 - PWA — not yet
 - Deployment — Vercel + Convex configured ✅
 
-## Recent release: Phase 3 (veld test) — merged to main
-
-PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fixes.
-
-- **Staged substitutions**: Coach stages a swap (Wissel klaarzetten) → confirm or cancel. Events `substitution_staged` / `substitution_executed` / `substitution_cancelled` are coach-only; public sees only the final `sub_out` (with names). Backend: `matchPhase3Actions.ts`, projection in `convex/lib/matchEventProjection.ts`.
-- **Goal enrichment**: Coach can add scorer and assist to any goal (including referee +1 goals). Mutation `enrichGoal` in `matchGoalEnrichmentActions.ts`; projection merges `goal_enrichment` into goal display.
-- **Idempotency**: `correlationId` on mutations + `matchCommandDedupes` table prevent duplicate actions (double-click, retry). Helper `convex/lib/commandIdempotency.ts`; client `src/lib/correlationId.ts`.
-- **Referee +1 always creates goal event**: `adjustScore` with delta +1 always inserts a `goal` event (with optional `note` for shirt number). Coach can enrich later. Parent timeline shows all goals.
-- **Referee page**: Missing `code` or `pin` in URL shows clear error instead of infinite loading.
-- **Referee queries**: Moved to `convex/refereeQueries.ts` (getForReferee, getMatchesForReferee).
-- **Event projection**: `applyGoalEnrichments`, `deriveOpenStagedSubstitutions`, `isCoachOnlyEvent` in `convex/lib/matchEventProjection.ts`. Public query returns cumulative events with coach-only events filtered out.
-- **Restart helper**: `npm run dev:restart` runs `scripts/restart-dev.ps1` to kill stale dev processes and start a clean session.
-
 ## What Needs Work
 
 - **Smart substitution suggestions** — current sub suggestions sort by playing time only; next step is position-aware filtering (prefer bench player whose positionPrimary matches the outgoing player's slot role, fallback to playing time)
@@ -173,24 +169,6 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 - **Test coverage** — component tests exist (Vitest + RTL), but Convex function tests and smoke test automation still needed
 
 ## TODO — Priority Task List
-
-### Roadmap — steps we're taking (in order)
-
-| Step | Scope | Branch / status |
-|------|--------|------------------|
-| **Step 1** | Pre-existing test failures + lint config. Fix: seed test (6 coaches), coach page mock (useConvexConnectionState), CoachDashboard (+2 meer tonen ▼), TeamsTab (getAdminPin mock); fix `npm run lint`. | `fix/pre-existing-tests-and-lint` — **done**: tests 402/402, lint runs via ESLint CLI (see below). |
-| **Step 2** | Goal teamnaam, veldversie wissels + slot, scheidsrechter scorer-lijst, admin + coach navigatie (items 1–4). | Nieuwe feature branch |
-| **Step 3** | Role model simplification ("The Big One"). | Aparte branch |
-| **Step 4** | Clerk authentication. | Aparte branch |
-
-### Next to-dos (Phase 3 follow-up — for Step 2)
-
-| Task | Description |
-|------|-------------|
-| **Teamnaam bij goal-enrichment** | In coach goal-enrichment en in parent/live view: toon expliciet de **teamnaam van het scorende team** (eigen team vs tegenstander) bij elk doelpunt. |
-| **Veldversie wissels + slot-overname** | Staged substitutions ook in de veldversie (PitchView); invaller op de **plek van de uitvaller** zetten (slot/positie overnemen). Plan eerst, dan implementatie. |
-| **Scheidsrechter: scorer uit lijst** | Spelers in een lijst tonen zodat de scheidsrechter makkelijk kan zien/klikken wie de scoorder is (DIA-team). |
-| **Admin + coach navigatie** | Admin zichtbaar in navbar of op loginpagina; vanuit coach-view eenvoudig terug naar parent/live view. |
 
 ### 🔴 HIGH PRIORITY
 
@@ -236,11 +214,11 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 - ~~**PitchView field component**~~: Visual football field for the coach match page. SVG-based field lines (FIFA/KNVB accurate for 8-tal and 11-tal). EA FC-style player cards with role-based colors (K=amber, V=blue, M=green, A=red), avatar silhouettes, name bars, number badges. Formation connecting lines (dashed SVG). CSS perspective tilt (12deg). Tap-to-swap: tap two field players to exchange positions, tap field + bench to substitute. Uniform 90px card size (field and bench). Players spread across full field (y: 16-90%). Backend: `swapFieldPositions` + `substituteFromField` mutation for live-safe field swaps/substitutions with timeline events. Files: `FieldPlayerCard.tsx`, `FormationLines.tsx`, `FieldLines.tsx`, `PitchBench.tsx`, `PitchView.tsx`, `roleColors.ts`, `fieldConfig.ts`. Formations: 8v8 (3-3-1, 1-4-2-1, 1-3-2-2) and 11v11 (4-3-3) with formation line links.
 - ~~**Cumulative clock mode**~~: Implemented. Displayed match clock is now cumulative across quarters/halves (anchors 0/15/30/45 or 0/30) instead of resetting to 0 each quarter.
 - ~~**Event game-time display**~~: Implemented. Event timeline now stores and renders match-minute (`displayMinute`, `displayExtraMinute`) while keeping wall-clock fallback for legacy events.
-- ~~**Phase 3 (veld test)**~~: Staged substitutions (stage/confirm/cancel), goal enrichment (scorer/assist), idempotency (correlationId + matchCommandDedupes), referee +1 always creates goal event, referee page error for missing code/pin, refereeQueries split, event projection and coach-only filtering, dev restart script. See "Recent release: Phase 3" above.
 
-## Current Work
+## Current Work: Formations
 
-**Branch:** `main` (Phase 3 merged). No active feature branch; next work should start from a new branch off `main`.
+**Branch:** `feature/clock-pause-and-referee`
+**Focus:** Expanding the formation system — adding more formations, improving formation management UI, and position-aware features.
 
 ## Next Sprint — Tech Debt (from agent review 2026-02-14)
 
@@ -334,35 +312,11 @@ npm run test:coverage # Run with coverage report
 
 ```bash
 npm run dev          # Next.js + Convex in parallel
-npm run dev:restart  # Stop stale local dev processes/locks, then start one clean dev session
 npm run dev:frontend # Next.js only
 npm run dev:backend  # Convex only
 npm run build        # Production build
-npm run lint         # ESLint (Next.js 16: use ESLint CLI; next lint removed)
-npm run test:run     # Vitest once
 npx convex dev       # Convex dashboard + sync
 ```
-
-### Lint (Next.js 16)
-
-Next.js 16 removed `next lint`; the project uses the ESLint CLI. Config: `eslint.config.mjs` (flat config) with `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`. Scripts and `convex/_generated` are ignored. Some rules are set to `warn` so the command passes; tighten in follow-up if desired.
-
-### Clean Restart Helper
-
-- Script: `scripts/restart-dev.ps1`
-- **Aanbevolen volgorde als er meerdere dev-sessies lopen:** eerst alles stoppen, dan één keer starten. Zo voorkom je Convex “another write batch” / file-lock errors.
-- **Alleen stoppen (geen nieuwe start):** sluit alle dev-processen en verwijdert het Next.js lockbestand. Start daarna handmatig één keer `npm run dev` in één terminal.
-  ```bash
-  npm run dev:restart -- -StopOnly
-  ```
-  Daarna in dezelfde (of één andere) terminal: `npm run dev`.
-- **Default (stoppen + nieuw venster):** stopt stale processen, verwijdert `.next/dev/lock`, start `npm run dev` in een **nieuw** PowerShell-venster. Sluit oude dev-vensters zodat je niet opnieuw meerdere runs hebt.
-- **In de huidige terminal starten:**
-  ```bash
-  powershell -ExecutionPolicy Bypass -File ./scripts/restart-dev.ps1 -NoNewWindow
-  ```
-
-**Convex “Persisting failed” / “Another write batch or compaction is already active”:** dit komt bijna altijd doordat **meerdere** `convex dev` (of meerdere `npm run dev`) tegelijk draaien en naar dezelfde lokale Convex-data schrijven. Oplossing: alles stoppen met `npm run dev:restart -- -StopOnly`, eventueel andere terminals/vensters met dev sluiten, dan **één keer** `npm run dev` starten. De melding “user-mapped section open” (Windows os error 1224) past bij bestanden die door een ander proces zijn geopend.
 
 ## Production Seed & Import Runbook
 

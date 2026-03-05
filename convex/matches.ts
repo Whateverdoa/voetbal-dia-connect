@@ -223,9 +223,6 @@ export const getForCoach = query({
       leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
       hasLead: !!safeMatch.leadCoachId,
-      isCurrentCoachLead,
-      canControlClock,
-      canDoSubstitutions: capabilities.canDoSubstitutions,
       capabilities,
     };
   },

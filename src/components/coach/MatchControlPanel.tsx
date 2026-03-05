@@ -69,10 +69,9 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
   const isLive = match.status === "live" || match.status === "halftime";
   const isPregame = match.status === "scheduled" || match.status === "lineup";
   const capabilities = match.capabilities ?? {
-    canControlClock: match.canControlClock ?? true,
-    canDoSubstitutions:
-      match.canDoSubstitutions ?? match.isCurrentCoachLead ?? false,
-    canManageLineup: isPregame || (match.isCurrentCoachLead ?? false),
+    canControlClock: true,
+    canDoSubstitutions: false,
+    canManageLineup: isPregame,
     canManagePregameSettings: isPregame,
     canAssignReferee: isPregame,
     canEnrichGoals: true,

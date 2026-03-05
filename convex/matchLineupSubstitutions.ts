@@ -4,10 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import {
-  verifyCoachTeamMembership,
-  verifyIsMatchLead,
-} from "./pinHelpers";
+import { requireCoachTeamAccess, requireMatchLeadAccess } from "./authz";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -25,17 +22,10 @@ export const substituteFromField = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match) {
-      throw new Error("Invalid match or PIN");
-    }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
-    }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
+    await requireCoachTeamAccess(ctx, match, args.pin);
+    if (!match) throw new Error("Invalid match or PIN");
+    if (match.status === "live" || match.status === "halftime") {
+      await requireMatchLeadAccess(ctx, match, args.pin);
     }
 
     const now = Date.now();

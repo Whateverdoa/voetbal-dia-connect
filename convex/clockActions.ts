@@ -7,8 +7,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { verifyClockPin } from "./pinHelpers";
-import { fetchRefereeForMatch } from "./refereeHelpers";
+import { requireClockControlAccess } from "./authz";
 
 /**
  * Pause the match clock mid-quarter.
@@ -19,13 +18,8 @@ export const pauseClock = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match) {
-      throw new Error("Wedstrijd niet gevonden");
-    }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
-    }
+    await requireClockControlAccess(ctx, match, args.pin);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {
       throw new Error("Klok kan alleen gepauzeerd worden tijdens een live kwart");
@@ -61,13 +55,8 @@ export const resumeClock = mutation({
   args: { matchId: v.id("matches"), pin: v.string() },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match) {
-      throw new Error("Wedstrijd niet gevonden");
-    }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
-    }
+    await requireClockControlAccess(ctx, match, args.pin);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {
       throw new Error("Klok kan alleen hervat worden tijdens een live kwart");

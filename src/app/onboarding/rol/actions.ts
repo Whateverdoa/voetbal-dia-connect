@@ -120,6 +120,10 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
           linkedCoachName: coachData.coach.name,
           linkedTeamIds: coachData.teams.map((team) => team.id),
         },
+        privateMetadata: {
+          ...user.privateMetadata,
+          linkedPin: trimmedPin,
+        },
       });
       return { ok: true };
     }
@@ -138,6 +142,10 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
           linkedRefereeId: refereeData.referee.id,
           linkedRefereeName: refereeData.referee.name,
         },
+        privateMetadata: {
+          ...user.privateMetadata,
+          linkedPin: trimmedPin,
+        },
       });
       return { ok: true };
     }
@@ -150,6 +158,10 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
       publicMetadata: {
         ...user.publicMetadata,
         linkedAdmin: true,
+      },
+      privateMetadata: {
+        ...user.privateMetadata,
+        linkedPin: trimmedPin,
       },
     });
     return { ok: true };

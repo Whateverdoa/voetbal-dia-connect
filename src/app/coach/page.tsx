@@ -12,12 +12,16 @@ import {
   ResumeSessionPrompt,
   type CoachSession,
 } from "@/components/ResumeSessionPrompt";
+import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 const PIN_LOAD_TIMEOUT_MS = 6000;
 
 const MAX_PIN_LENGTH = 6;
 const MIN_PIN_LENGTH = 4;
 const COACH_SESSION_KEY = "dia_coach_session";
+const hasClerkPublishableKey = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
 
 function saveCoachSession(session: CoachSession) {
   if (typeof window !== "undefined") {
@@ -61,6 +65,20 @@ export default function CoachLoginPage() {
       setExistingSession(session);
     }
   }, []);
+
+  useEffect(() => {
+    if (!hasClerkPublishableKey || existingSession || submitted) {
+      return;
+    }
+    void (async () => {
+      const linked = await getLinkedPinForRole("coach");
+      if (!linked.ok || !linked.pin) {
+        return;
+      }
+      setPin(linked.pin);
+      setSubmitted(true);
+    })();
+  }, [existingSession, submitted]);
 
   const coachData = useQuery(
     api.matches.verifyCoachPin,

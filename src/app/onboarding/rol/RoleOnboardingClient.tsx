@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { setUserRole } from "./actions";
+import { linkUserRoleWithPin, setUserRole } from "./actions";
 
 type UserRole = "admin" | "coach" | "referee";
 
@@ -35,11 +35,30 @@ export function RoleOnboardingClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [pinInput, setPinInput] = useState("");
+  const [isLinkPending, startLinkTransition] = useTransition();
+  const [isLinkedLocally, setIsLinkedLocally] = useState(false);
 
   const currentRole = useMemo(() => {
     const rawRole = user?.publicMetadata?.role;
     return typeof rawRole === "string" ? rawRole : null;
   }, [user?.publicMetadata?.role]);
+
+  let hasLinkedRecord = false;
+  if (currentRole) {
+    if (isLinkedLocally) {
+      hasLinkedRecord = true;
+    } else if (user?.publicMetadata) {
+      if (currentRole === "coach") {
+        hasLinkedRecord = typeof user.publicMetadata.linkedCoachId === "string";
+      } else if (currentRole === "referee") {
+        hasLinkedRecord =
+          typeof user.publicMetadata.linkedRefereeId === "string";
+      } else {
+        hasLinkedRecord = user.publicMetadata.linkedAdmin === true;
+      }
+    }
+  }
 
   const handleSelectRole = (role: UserRole) => {
     setErrorMessage(null);
@@ -54,7 +73,25 @@ export function RoleOnboardingClient() {
       }
 
       setSuccessMessage(
-        "Rol opgeslagen. Log opnieuw in (of ververs) om direct de juiste toegang te krijgen."
+        "Rol opgeslagen. Koppel nu je bestaande account met je PIN."
+      );
+    });
+  };
+
+  const handleLinkWithPin = () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    startLinkTransition(async () => {
+      const result = await linkUserRoleWithPin(pinInput);
+      if (!result.ok) {
+        setErrorMessage(result.error ?? "Koppelen mislukt.");
+        return;
+      }
+
+      setIsLinkedLocally(true);
+      setPinInput("");
+      setSuccessMessage(
+        "Account succesvol gekoppeld aan bestaand record. Je kunt nu verder naar de app."
       );
     });
   };
@@ -67,15 +104,46 @@ export function RoleOnboardingClient() {
           Je account is aangemaakt, maar heeft nog geen rol. Kies hieronder hoe je deze app gebruikt.
         </p>
 
-        {currentRole ? (
+        {currentRole && hasLinkedRecord ? (
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <p className="text-sm text-green-800">
-              Je rol is al ingesteld op <strong>{currentRole}</strong>.
+              Je rol is ingesteld op <strong>{currentRole}</strong> en je account is gekoppeld.
             </p>
             <div className="mt-3">
               <Link href="/" className="text-sm font-medium text-green-800 hover:underline">
                 Naar startpagina
               </Link>
+            </div>
+          </div>
+        ) : currentRole ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+            <p className="text-sm text-amber-800">
+              Rol ingesteld op <strong>{currentRole}</strong>. Koppel nu met je bestaande{" "}
+              {currentRole === "coach"
+                ? "coach"
+                : currentRole === "referee"
+                  ? "scheidsrechter"
+                  : "admin"}{" "}
+              PIN.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="password"
+                inputMode="numeric"
+                placeholder="PIN (4-6 cijfers)"
+                value={pinInput}
+                onChange={(event) => setPinInput(event.target.value)}
+                className="flex-1 rounded-lg border border-amber-300 px-3 py-2 text-sm"
+                maxLength={6}
+              />
+              <button
+                type="button"
+                onClick={handleLinkWithPin}
+                disabled={isLinkPending || pinInput.trim().length < 4}
+                className="rounded-lg bg-dia-green px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isLinkPending ? "Koppelen..." : "Koppel met PIN"}
+              </button>
             </div>
           </div>
         ) : (

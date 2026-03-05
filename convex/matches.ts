@@ -200,8 +200,18 @@ export const getForCoach = query({
     const { coachPin: _pin, ...safeMatch } = match;
 
     const isCurrentCoachLead = match.leadCoachId === coach._id;
-    const canControlClock =
-      !!match.refereeId || isCurrentCoachLead;
+    const isLiveWindow = match.status === "live" || match.status === "halftime";
+    const isPregame = match.status === "scheduled" || match.status === "lineup";
+    const canControlClock = !!match.refereeId || isCurrentCoachLead;
+    const capabilities = {
+      canControlClock,
+      canDoSubstitutions: isCurrentCoachLead,
+      canManageLineup: !isLiveWindow || isCurrentCoachLead,
+      canManagePregameSettings: isPregame,
+      canAssignReferee: isPregame,
+      canEnrichGoals: true,
+      canAddGoals: true,
+    };
 
     return {
       ...safeMatch,
@@ -215,6 +225,8 @@ export const getForCoach = query({
       hasLead: !!safeMatch.leadCoachId,
       isCurrentCoachLead,
       canControlClock,
+      canDoSubstitutions: capabilities.canDoSubstitutions,
+      capabilities,
     };
   },
 });

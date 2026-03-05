@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "./types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { UndoGoalButton } from "./UndoGoalButton";
 
 interface MatchControlsProps {
   matchId: Id<"matches">;
@@ -18,6 +19,7 @@ interface MatchControlsProps {
   pausedAt?: number;
   canControlClock?: boolean;
   canDoSubstitutions?: boolean;
+  canAddGoals?: boolean;
   onGoalClick: () => void;
   onSubClick: () => void;
 }
@@ -33,6 +35,7 @@ export function MatchControls({
   pausedAt,
   canControlClock = true,
   canDoSubstitutions = true,
+  canAddGoals = true,
   onGoalClick,
   onSubClick,
 }: MatchControlsProps) {
@@ -127,32 +130,40 @@ export function MatchControls({
       {isLive && (
         <div className="space-y-3">
           {/* Primary actions: Goal buttons */}
-          <div className={`grid gap-3 ${canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"}`}>
-            <button
-              onClick={onGoalClick}
-              disabled={isLoading}
-              className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl 
-                         min-h-[64px] active:scale-[0.98] transition-transform
-                         hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+          {(canAddGoals || canDoSubstitutions) && (
+            <div
+              className={`grid gap-3 ${
+                canAddGoals && canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"
+              }`}
             >
-              <span className="text-2xl">⚽</span>
-              <span>GOAL!</span>
-            </button>
-            {canDoSubstitutions && (
-              <button
-                onClick={onSubClick}
-                disabled={isLoading}
-                className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl 
+              {canAddGoals && (
+                <button
+                  onClick={onGoalClick}
+                  disabled={isLoading}
+                  className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl 
+                           min-h-[64px] active:scale-[0.98] transition-transform
+                           hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="text-2xl">⚽</span>
+                  <span>GOAL!</span>
+                </button>
+              )}
+              {canDoSubstitutions && (
+                <button
+                  onClick={onSubClick}
+                  disabled={isLoading}
+                  className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl 
                            min-h-[64px] active:scale-[0.98] transition-transform
                            hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2
                            disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="text-2xl">🔄</span>
-                <span>Wissel</span>
-              </button>
-            )}
-          </div>
+                >
+                  <span className="text-2xl">🔄</span>
+                  <span>Wissel</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Clock pause/resume — only when coach can control clock */}
           {canControlClock && (isPaused ? (
@@ -243,57 +254,5 @@ export function MatchControls({
         </div>
       )}
     </section>
-  );
-}
-
-/** Two-step undo button: first tap reveals confirm/cancel, second tap executes. */
-function UndoGoalButton({
-  isConfirming,
-  isLoading,
-  onFirstTap,
-  onConfirm,
-  onCancel,
-}: {
-  isConfirming: boolean;
-  isLoading: boolean;
-  onFirstTap: () => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (isConfirming) {
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          disabled={isLoading}
-          className="flex-1 py-2 border-2 border-gray-300 text-gray-600 font-semibold 
-                     rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                     disabled:opacity-50"
-        >
-          Annuleren
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={isLoading}
-          className="flex-1 py-2 bg-red-600 text-white font-semibold 
-                     rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                     disabled:opacity-50"
-        >
-          {isLoading ? "Bezig..." : "Ja, verwijder"}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={onFirstTap}
-      disabled={isLoading}
-      className="w-full py-2 text-red-600 border-2 border-red-200 font-medium 
-                 rounded-xl min-h-[44px] active:scale-[0.98] transition-transform
-                 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 text-sm"
-    >
-      Laatste doelpunt ongedaan maken
-    </button>
   );
 }

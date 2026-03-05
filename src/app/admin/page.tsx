@@ -11,10 +11,15 @@ import { PlayersTab } from "@/components/admin/PlayersTab";
 import { CoachesTab } from "@/components/admin/CoachesTab";
 import { RefereesTab } from "@/components/admin/RefereesTab";
 import { MatchesTab } from "@/components/admin/MatchesTab";
+import { AdminSetupTab } from "@/components/admin/AdminSetupTab";
 import { Lock, Users, UserCog, Shield, Flag, Calendar } from "lucide-react";
 import { setAdminPin, getAdminPin, clearAdminSession, isAdminAuthenticated } from "@/lib/adminSession";
+import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 type Tab = "wedstrijden" | "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
+const hasClerkPublishableKey = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,6 +35,31 @@ export default function AdminPage() {
       setIsAuthenticated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!hasClerkPublishableKey || isAuthenticated || verifying) {
+      return;
+    }
+    void (async () => {
+      const linked = await getLinkedPinForRole("admin");
+      if (!linked.ok || !linked.pin) {
+        return;
+      }
+      setPinInput(linked.pin);
+      setVerifying(true);
+      setPinError(false);
+      try {
+        await convex.query(api.admin.verifyAdminPinQuery, { pin: linked.pin });
+        setAdminPin(linked.pin);
+        setIsAuthenticated(true);
+      } catch {
+        setPinError(true);
+        setPinInput("");
+      } finally {
+        setVerifying(false);
+      }
+    })();
+  }, [convex, isAuthenticated, verifying]);
 
   const handlePinSubmit = async () => {
     if (!pinInput || verifying) return;
@@ -168,7 +198,7 @@ export default function AdminPage() {
           {activeTab === "spelers" && <PlayersTabWrapper />}
           {activeTab === "coaches" && <CoachesTabWrapper />}
           {activeTab === "scheidsrechters" && <RefereesTabWrapper />}
-          {activeTab === "setup" && <SetupTab />}
+          {activeTab === "setup" && <AdminSetupTab />}
         </div>
       </div>
     </main>
@@ -263,30 +293,3 @@ function RefereesTabWrapper() {
   );
 }
 
-function SetupTab() {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-4">Setup & Seed Data</h2>
-      <p className="text-sm text-gray-600 mb-4">
-        Seed DIA club met teams, spelers, coaches, scheidsrechters en wedstrijden.
-        Idempotent: kan veilig meerdere keren worden uitgevoerd.
-      </p>
-      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-        <h3 className="font-medium text-gray-700">Seed via terminal</h3>
-        <code className="block bg-gray-200 px-3 py-2 rounded text-sm font-mono">
-          npx convex run seed:init
-        </code>
-        <div className="text-sm text-gray-600 space-y-1">
-          <p><strong>Dit maakt aan:</strong></p>
-          <ul className="list-disc list-inside space-y-0.5 ml-2">
-            <li>DIA club met 3 teams (JO11-1, JO12-1, JO13-2)</li>
-            <li>14 spelers per team</li>
-            <li>4 coaches (PIN: 1234, 5678, 2468, 1357)</li>
-            <li>4 scheidsrechters (PIN: 7777, 8888, 6666, 5555)</li>
-            <li>3 wedstrijden voor JO12-1 met scheidsrechter toewijzingen</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -11,6 +11,7 @@ const isProtectedRoute = createRouteMatcher([
   "/coach(.*)",
   "/scheidsrechter(.*)",
 ]);
+const isRoleOnboardingRoute = createRouteMatcher(["/onboarding/rol(.*)"]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isCoachRoute = createRouteMatcher(["/coach(.*)"]);
@@ -51,8 +52,28 @@ function unauthorizedRedirect(req: NextRequest): NextResponse {
   return NextResponse.redirect(deniedUrl);
 }
 
+function roleOnboardingRedirect(req: NextRequest): NextResponse {
+  const onboardingUrl = new URL("/onboarding/rol", req.url);
+  onboardingUrl.searchParams.set("from", req.nextUrl.pathname);
+  return NextResponse.redirect(onboardingUrl);
+}
+
 export default clerkMiddleware(async (auth, req) => {
   if (!hasClerkEnv) {
+    if (isRoleOnboardingRoute(req)) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (isRoleOnboardingRoute(req)) {
+    await auth.protect();
+
+    const authResult = await auth();
+    const role = getRoleFromClaims(authResult);
+    if (role) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
     return NextResponse.next();
   }
 
@@ -62,7 +83,7 @@ export default clerkMiddleware(async (auth, req) => {
     const authResult = await auth();
     const role = getRoleFromClaims(authResult);
     if (!role) {
-      return unauthorizedRedirect(req);
+      return roleOnboardingRedirect(req);
     }
     if (!isRoleAllowedForRoute(req, role)) {
       return unauthorizedRedirect(req);

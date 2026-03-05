@@ -181,7 +181,7 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 | **Step 1** | Pre-existing test failures + lint config. Fix: seed test (6 coaches), coach page mock (useConvexConnectionState), CoachDashboard (+2 meer tonen ▼), TeamsTab (getAdminPin mock); fix `npm run lint`. | `fix/pre-existing-tests-and-lint` — **done**: tests 402/402, lint runs via ESLint CLI (see below). |
 | **Step 2** | Goal teamnaam, veldversie wissels + slot, scheidsrechter scorer-lijst, admin + coach navigatie (items 1–4). | `feature/step2-goal-field-referee-admin` — **done** (PR #14 merged). |
 | **Step 3** | Role model simplification ("The Big One"). | In progress via stacked PRs: #16 (backend authz), #17 (frontend capabilities), #18 (cleanup/tests). |
-| **Step 4** | Clerk authentication. | In progress: `feature/clerk-auth-foundation` (foundation) + `feature/clerk-role-policy` (role-based middleware for admin/coach/scheidsrechter). |
+| **Step 4** | Clerk authentication. | In progress: `feature/clerk-auth-foundation` (foundation) + `feature/clerk-role-policy` (route policy) + `feature/clerk-role-onboarding` (self role selection + bootstrap-admin via `CLERK_BOOTSTRAP_ADMIN_EMAILS`). |
 
 ### Next to-dos (Phase 3 follow-up — for Step 2)
 

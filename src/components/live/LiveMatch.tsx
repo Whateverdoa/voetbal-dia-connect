@@ -197,6 +197,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
         <TimelineSection
           events={publicEvents}
           teamName={match.teamName}
+          opponentName={match.opponent}
           isScheduled={isScheduled}
         />
 

@@ -29,6 +29,7 @@ export const adjustScore = mutation({
     team: v.union(v.literal("home"), v.literal("away")),
     delta: v.union(v.literal(1), v.literal(-1)),
     scorerNumber: v.optional(v.number()),
+    scorerPlayerId: v.optional(v.id("players")),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -64,6 +65,18 @@ export const adjustScore = mutation({
     // When incrementing, always log a lightweight goal event.
     // Shirt number stays optional so coach can enrich later.
     if (args.delta === 1) {
+      if (args.scorerPlayerId) {
+        const scorerInMatch = await ctx.db
+          .query("matchPlayers")
+          .withIndex("by_match_player", (q) =>
+            q.eq("matchId", args.matchId).eq("playerId", args.scorerPlayerId!)
+          )
+          .first();
+        if (!scorerInMatch) {
+          throw new Error("Geselecteerde scorer staat niet in deze wedstrijd");
+        }
+      }
+
       const isOpponentGoal =
         (args.team === "home" && !match.isHome) ||
         (args.team === "away" && match.isHome);
@@ -74,6 +87,7 @@ export const adjustScore = mutation({
       await ctx.db.insert("matchEvents", {
         matchId: args.matchId,
         type: "goal",
+        playerId: args.scorerPlayerId,
         quarter: match.currentQuarter,
         matchMs: eventStamp.gameSecond * 1000,
         isOpponentGoal: isOpponentGoal || undefined,

@@ -17,6 +17,7 @@ describe("TimelineSection", () => {
     render(
       <TimelineSection
         teamName="DIA JO12-1"
+        opponentName="SCO JO12-2"
         isScheduled={false}
         events={[buildEvent({ displayMinute: 23 })]}
       />
@@ -30,6 +31,7 @@ describe("TimelineSection", () => {
     render(
       <TimelineSection
         teamName="DIA JO12-1"
+        opponentName="SCO JO12-2"
         isScheduled={false}
         events={[buildEvent({ displayMinute: 60, displayExtraMinute: 2 })]}
       />
@@ -42,6 +44,7 @@ describe("TimelineSection", () => {
     render(
       <TimelineSection
         teamName="DIA JO12-1"
+        opponentName="SCO JO12-2"
         isScheduled={false}
         events={[
           buildEvent({
@@ -56,5 +59,18 @@ describe("TimelineSection", () => {
     expect(
       screen.getByText("Wissel: Jens eruit, Lars erin")
     ).toBeInTheDocument();
+  });
+
+  it("shows scoring team name for opponent goals", () => {
+    render(
+      <TimelineSection
+        teamName="DIA JO12-1"
+        opponentName="SCO JO12-2"
+        isScheduled={false}
+        events={[buildEvent({ type: "goal", isOpponentGoal: true })]}
+      />
+    );
+
+    expect(screen.getByText("Doelpunt SCO JO12-2")).toBeInTheDocument();
   });
 });

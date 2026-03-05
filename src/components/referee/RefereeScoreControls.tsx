@@ -13,6 +13,13 @@ interface RefereeScoreControlsProps {
   awayScore: number;
   homeName: string;
   awayName: string;
+  diaTeamSide: "home" | "away";
+  diaPlayers: {
+    playerId: Id<"players">;
+    name: string;
+    number?: number;
+    onField: boolean;
+  }[];
 }
 
 type PendingTeam = "home" | "away" | null;
@@ -24,6 +31,8 @@ export function RefereeScoreControls({
   awayScore,
   homeName,
   awayName,
+  diaTeamSide,
+  diaPlayers,
 }: RefereeScoreControlsProps) {
   const adjustScore = useMutation(api.matchActions.adjustScore);
 
@@ -33,6 +42,9 @@ export function RefereeScoreControls({
   // State for the optional shirt number prompt
   const [pendingTeam, setPendingTeam] = useState<PendingTeam>(null);
   const [shirtNumber, setShirtNumber] = useState("");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(
+    null
+  );
 
   const handleError = (err: unknown) => {
     const msg = err instanceof Error ? err.message : "Onbekende fout";
@@ -63,6 +75,7 @@ export function RefereeScoreControls({
   const handleIncrementStart = (team: "home" | "away") => {
     setPendingTeam(team);
     setShirtNumber("");
+    setSelectedPlayerId(null);
   };
 
   /** Confirm increment with optional shirt number */
@@ -71,11 +84,18 @@ export function RefereeScoreControls({
     setIsLoading(true);
     setError(null);
     try {
-      const parsedNumber = skip ? undefined : parseInt(shirtNumber, 10);
-      const scorerNumber =
-        parsedNumber != null && !isNaN(parsedNumber) && parsedNumber > 0
-          ? parsedNumber
-          : undefined;
+      const isDiaGoal = pendingTeam === diaTeamSide;
+      let scorerNumber: number | undefined;
+      let scorerPlayerId: Id<"players"> | undefined;
+      if (isDiaGoal) {
+        scorerPlayerId = skip ? undefined : selectedPlayerId || undefined;
+      } else {
+        const parsedNumber = skip ? undefined : parseInt(shirtNumber, 10);
+        scorerNumber =
+          parsedNumber != null && !isNaN(parsedNumber) && parsedNumber > 0
+            ? parsedNumber
+            : undefined;
+      }
 
       await adjustScore({
         matchId,
@@ -83,6 +103,7 @@ export function RefereeScoreControls({
         team: pendingTeam,
         delta: 1,
         scorerNumber,
+        scorerPlayerId,
         correlationId: createCorrelationId("adjust-score"),
       });
     } catch (err) {
@@ -91,12 +112,14 @@ export function RefereeScoreControls({
       setIsLoading(false);
       setPendingTeam(null);
       setShirtNumber("");
+      setSelectedPlayerId(null);
     }
   };
 
   const handleCancel = () => {
     setPendingTeam(null);
     setShirtNumber("");
+    setSelectedPlayerId(null);
   };
 
   return (
@@ -133,17 +156,115 @@ export function RefereeScoreControls({
 
       {/* Shirt number prompt overlay */}
       {pendingTeam && (
-        <ShirtNumberPrompt
-          teamName={pendingTeam === "home" ? homeName : awayName}
-          shirtNumber={shirtNumber}
-          onShirtNumberChange={setShirtNumber}
-          onConfirm={() => handleIncrementConfirm(false)}
-          onSkip={() => handleIncrementConfirm(true)}
-          onCancel={handleCancel}
-          isLoading={isLoading}
-        />
+        <>
+          {pendingTeam === diaTeamSide ? (
+            <DiaScorerPrompt
+              teamName={pendingTeam === "home" ? homeName : awayName}
+              players={diaPlayers}
+              selectedPlayerId={selectedPlayerId}
+              onSelectPlayer={setSelectedPlayerId}
+              onConfirm={() => handleIncrementConfirm(false)}
+              onSkip={() => handleIncrementConfirm(true)}
+              onCancel={handleCancel}
+              isLoading={isLoading}
+            />
+          ) : (
+            <ShirtNumberPrompt
+              teamName={pendingTeam === "home" ? homeName : awayName}
+              shirtNumber={shirtNumber}
+              onShirtNumberChange={setShirtNumber}
+              onConfirm={() => handleIncrementConfirm(false)}
+              onSkip={() => handleIncrementConfirm(true)}
+              onCancel={handleCancel}
+              isLoading={isLoading}
+            />
+          )}
+        </>
       )}
     </section>
+  );
+}
+
+function DiaScorerPrompt({
+  teamName,
+  players,
+  selectedPlayerId,
+  onSelectPlayer,
+  onConfirm,
+  onSkip,
+  onCancel,
+  isLoading,
+}: {
+  teamName: string;
+  players: {
+    playerId: Id<"players">;
+    name: string;
+    number?: number;
+    onField: boolean;
+  }[];
+  selectedPlayerId: Id<"players"> | null;
+  onSelectPlayer: (id: Id<"players">) => void;
+  onConfirm: () => void;
+  onSkip: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  const sortedPlayers = [...players].sort(
+    (a, b) => Number(b.onField) - Number(a.onField)
+  );
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in duration-200">
+      <p className="text-sm font-medium text-gray-700 text-center">
+        Doelpunt voor <strong>{teamName}</strong>
+      </p>
+      <label className="block text-xs text-gray-500 text-center">
+        Selecteer de scorer (DIA-team)
+      </label>
+      <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+        {sortedPlayers.map((player) => (
+          <button
+            key={String(player.playerId)}
+            onClick={() => onSelectPlayer(player.playerId)}
+            disabled={isLoading}
+            className={`text-left px-3 py-2 rounded-lg border text-sm min-h-[44px] ${
+              selectedPlayerId === player.playerId
+                ? "border-dia-green bg-green-50"
+                : "border-gray-200 bg-white hover:bg-gray-50"
+            }`}
+          >
+            <span className="font-medium">{player.name}</span>
+            {player.number != null ? ` (#${player.number})` : ""}
+            <span className="block text-xs text-gray-500">
+              {player.onField ? "Op veld" : "Bank"}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1 py-3 border border-gray-300 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 disabled:opacity-50"
+        >
+          Annuleer
+        </button>
+        <button
+          onClick={onSkip}
+          disabled={isLoading}
+          className="flex-1 py-3 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+        >
+          {isLoading ? "Bezig..." : "Sla over"}
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isLoading || !selectedPlayerId}
+          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium rounded-lg hover:bg-dia-green-light disabled:opacity-50"
+        >
+          {isLoading ? "Bezig..." : "Opslaan"}
+        </button>
+      </div>
+    </div>
   );
 }
 

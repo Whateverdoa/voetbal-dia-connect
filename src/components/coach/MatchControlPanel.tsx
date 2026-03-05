@@ -76,12 +76,20 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
     <main className="min-h-screen bg-gray-100 pb-8">
       <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Link
-            href={`/coach?pin=${pin}`}
-            className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 min-h-[44px] px-2 -ml-2"
-          >
-            ← Terug
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href={`/coach?pin=${pin}`}
+              className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 min-h-[44px] px-2 -ml-2"
+            >
+              ← Terug
+            </Link>
+            <Link
+              href={`/live/${match.publicCode}`}
+              className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
+            >
+              Live view
+            </Link>
+          </div>
           <div className="flex items-center gap-2">
             {!isConnected && (
               <span className="flex items-center gap-1 text-xs bg-red-500/80 px-2 py-1 rounded-full">
@@ -201,12 +209,18 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
               />
             )}
 
-            <EventTimeline events={match.events} />
+            <EventTimeline
+              events={match.events}
+              teamName={match.teamName}
+              opponentName={match.opponent}
+            />
             <GoalEnrichmentPanel
               matchId={match._id}
               pin={pin}
               events={match.events}
               players={match.players}
+              teamName={match.teamName}
+              opponentName={match.opponent}
             />
           </>
         )}
@@ -217,12 +231,18 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
               <SubstitutionSuggestions matchId={match._id} pin={pin} />
             )}
             <PlayingTimePanel matchId={match._id} pin={pin} />
-            <EventTimeline events={match.events} />
+            <EventTimeline
+              events={match.events}
+              teamName={match.teamName}
+              opponentName={match.opponent}
+            />
             <GoalEnrichmentPanel
               matchId={match._id}
               pin={pin}
               events={match.events}
               players={match.players}
+              teamName={match.teamName}
+              opponentName={match.opponent}
             />
           </>
         )}

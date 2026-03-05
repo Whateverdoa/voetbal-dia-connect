@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,6 +12,8 @@ interface GoalEnrichmentPanelProps {
   pin: string;
   events: MatchEvent[];
   players: MatchPlayer[];
+  teamName: string;
+  opponentName: string;
 }
 
 export function GoalEnrichmentPanel({
@@ -19,6 +21,8 @@ export function GoalEnrichmentPanel({
   pin,
   events,
   players,
+  teamName,
+  opponentName,
 }: GoalEnrichmentPanelProps) {
   const enrichGoal = useMutation(api.matchActions.enrichGoal);
   const [targetId, setTargetId] = useState<Id<"matchEvents"> | null>(null);
@@ -28,10 +32,23 @@ export function GoalEnrichmentPanel({
   const [error, setError] = useState<string | null>(null);
 
   const goals = useMemo(
-    () =>
-      events.filter((event) => event.type === "goal" && !event.playerId) as MatchEvent[],
+    () => events.filter((event) => event.type === "goal") as MatchEvent[],
     [events]
   );
+  const selectedGoal = useMemo(
+    () => goals.find((goal) => goal._id === targetId),
+    [goals, targetId]
+  );
+
+  useEffect(() => {
+    if (!selectedGoal) {
+      setScorerId("");
+      setAssistId("");
+      return;
+    }
+    setScorerId(selectedGoal.playerId ?? "");
+    setAssistId(selectedGoal.relatedPlayerId ?? "");
+  }, [selectedGoal]);
 
   if (goals.length === 0) {
     return null;
@@ -64,7 +81,7 @@ export function GoalEnrichmentPanel({
     <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
       <h2 className="font-bold text-lg">Doelpunt aanvullen</h2>
       <p className="text-sm text-gray-600">
-        Vul achteraf de doelpuntenmaker en assist in voor doelpunten zonder naam.
+        Kies een doelpunt en vul scorer/assist in of pas deze achteraf aan.
       </p>
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -81,6 +98,11 @@ export function GoalEnrichmentPanel({
         {goals.map((goal) => (
           <option key={String(goal._id)} value={String(goal._id)}>
             Kwart {goal.quarter} • {goal.displayMinute ?? "?"}'
+            {` • ${
+              goal.isOpponentGoal || goal.isOwnGoal ? opponentName : teamName
+            }`}
+            {goal.playerName ? ` • scorer: ${goal.playerName}` : ""}
+            {goal.relatedPlayerName ? ` • assist: ${goal.relatedPlayerName}` : ""}
             {goal.note ? ` • ${goal.note}` : ""}
           </option>
         ))}

@@ -423,7 +423,7 @@ describe('SubstitutionPanel', () => {
       });
     });
 
-    it('calls onClose after successful substitution', async () => {
+    it('shows follow-up question after successful substitution', async () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
@@ -439,8 +439,55 @@ describe('SubstitutionPanel', () => {
       fireEvent.click(screen.getByText('Wissel klaarzetten'));
 
       await waitFor(() => {
-        expect(mockOnClose).toHaveBeenCalled();
+        expect(screen.getByText('Nog een wissel klaarzetten?')).toBeInTheDocument();
       });
+      expect(mockOnClose).not.toHaveBeenCalled();
+    });
+
+    it('closes when choosing "Nee, sluiten"', async () => {
+      render(
+        <SubstitutionPanel
+          matchId={defaultMatchId}
+          pin={defaultPin}
+          playersOnField={mockPlayersOnField}
+          playersOnBench={mockPlayersOnBench}
+          onClose={mockOnClose}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Jan'));
+      fireEvent.click(screen.getByText('Henk'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Nee, sluiten')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText('Nee, sluiten'));
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('resets selection when choosing "Ja, nieuwe wissel"', async () => {
+      render(
+        <SubstitutionPanel
+          matchId={defaultMatchId}
+          pin={defaultPin}
+          playersOnField={mockPlayersOnField}
+          playersOnBench={mockPlayersOnBench}
+          onClose={mockOnClose}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Jan'));
+      fireEvent.click(screen.getByText('Henk'));
+      fireEvent.click(screen.getByText('Wissel klaarzetten'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Ja, nieuwe wissel')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText('Ja, nieuwe wissel'));
+
+      expect(screen.getByText('Wissel klaarzetten')).toBeDisabled();
+      expect(screen.queryByText('Nog een wissel klaarzetten?')).not.toBeInTheDocument();
     });
 
     it('shows "Bezig..." while submitting', async () => {

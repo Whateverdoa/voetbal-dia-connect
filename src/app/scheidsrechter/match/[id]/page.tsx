@@ -120,6 +120,8 @@ function RefereeMatchContent() {
           awayScore={match.awayScore}
           homeName={match.isHome ? match.teamName : match.opponent}
           awayName={match.isHome ? match.opponent : match.teamName}
+          diaTeamSide={match.isHome ? "home" : "away"}
+          diaPlayers={match.diaPlayers ?? []}
         />
         <RefereeClockControls
           matchId={match.id as Id<"matches">}

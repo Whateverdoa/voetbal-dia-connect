@@ -19,6 +19,23 @@ export const getForReferee = query({
     if (!match.refereeId || match.refereeId !== referee._id) return null;
 
     const team = await ctx.db.get(match.teamId);
+    const matchPlayers = await ctx.db
+      .query("matchPlayers")
+      .withIndex("by_match", (q) => q.eq("matchId", match._id))
+      .collect();
+    const diaPlayers = await Promise.all(
+      matchPlayers
+        .filter((mp) => !mp.absent)
+        .map(async (mp) => {
+          const player = await ctx.db.get(mp.playerId);
+          return {
+            playerId: mp.playerId,
+            name: player?.name ?? "Onbekende speler",
+            number: player?.number,
+            onField: mp.onField,
+          };
+        })
+    );
 
     return {
       id: match._id,
@@ -35,6 +52,7 @@ export const getForReferee = query({
       accumulatedPauseTime: match.accumulatedPauseTime,
       teamName: team?.name ?? "Team",
       refereeName: referee.name,
+      diaPlayers,
     };
   },
 });

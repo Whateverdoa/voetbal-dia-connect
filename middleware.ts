@@ -59,38 +59,41 @@ function roleOnboardingRedirect(req: NextRequest): NextResponse {
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!hasClerkEnv) {
+  try {
+    if (!hasClerkEnv) {
+      if (isRoleOnboardingRoute(req)) {
+        return NextResponse.redirect(new URL("/", req.url));
+      }
+      return NextResponse.next();
+    }
+
     if (isRoleOnboardingRoute(req)) {
-      return NextResponse.redirect(new URL("/", req.url));
+      await auth.protect();
+      const authResult = await auth();
+      const role = getRoleFromClaims(authResult);
+      if (role) {
+        return NextResponse.redirect(new URL("/", req.url));
+      }
+      return NextResponse.next();
     }
+
+    if (isProtectedRoute(req)) {
+      await auth.protect();
+      const authResult = await auth();
+      const role = getRoleFromClaims(authResult);
+      if (!role) {
+        return roleOnboardingRedirect(req);
+      }
+      if (!isRoleAllowedForRoute(req, role)) {
+        return unauthorizedRedirect(req);
+      }
+    }
+
+    return NextResponse.next();
+  } catch {
+    // Clerk/auth failed (e.g. missing/invalid keys on Vercel) — avoid 500, allow request
     return NextResponse.next();
   }
-
-  if (isRoleOnboardingRoute(req)) {
-    await auth.protect();
-
-    const authResult = await auth();
-    const role = getRoleFromClaims(authResult);
-    if (role) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-
-    const authResult = await auth();
-    const role = getRoleFromClaims(authResult);
-    if (!role) {
-      return roleOnboardingRedirect(req);
-    }
-    if (!isRoleAllowedForRoute(req, role)) {
-      return unauthorizedRedirect(req);
-    }
-  }
-
-  return NextResponse.next();
 });
 
 export const config = {

@@ -117,12 +117,12 @@ describe('CoachDashboard', () => {
       expect(screen.getByText('Nieuwe wedstrijd')).toBeInTheDocument();
     });
 
-    it('new match button links to correct URL with pin and teamId', () => {
+    it('new match button links to correct URL with teamId', () => {
       render(
         <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
       );
       const newMatchLink = screen.getByText('Nieuwe wedstrijd').closest('a');
-      expect(newMatchLink).toHaveAttribute('href', '/coach/new?pin=1234&teamId=team456');
+      expect(newMatchLink).toHaveAttribute('href', '/coach/new?teamId=team456');
     });
 
     it('shows empty state message when no matches', () => {
@@ -340,12 +340,12 @@ describe('CoachDashboard', () => {
       ],
     };
 
-    it('match card links to match control page with pin', () => {
+    it('match card links to match control page', () => {
       render(
         <CoachDashboard data={dataWithMatch} pin={defaultPin} onLogout={mockOnLogout} />
       );
       const matchLink = screen.getByText(/VV Oranje/).closest('a');
-      expect(matchLink).toHaveAttribute('href', '/coach/match/match789?pin=1234');
+      expect(matchLink).toHaveAttribute('href', '/coach/match/match789');
     });
   });
 
@@ -357,7 +357,7 @@ describe('CoachDashboard', () => {
       const newMatchLink = screen.getByText('Nieuwe wedstrijd').closest('a');
       // The link should exist and be clickable
       expect(newMatchLink).toBeInTheDocument();
-      expect(newMatchLink).toHaveAttribute('href', '/coach/new?pin=1234&teamId=team456');
+      expect(newMatchLink).toHaveAttribute('href', '/coach/new?teamId=team456');
     });
   });
 });

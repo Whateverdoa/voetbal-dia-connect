@@ -12,7 +12,6 @@ import {
   ResumeSessionPrompt,
   type CoachSession,
 } from "@/components/ResumeSessionPrompt";
-import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 const PIN_LOAD_TIMEOUT_MS = 6000;
 
@@ -50,6 +49,7 @@ function clearCoachSession() {
 }
 
 export default function CoachLoginPage() {
+  const accountMode = hasClerkPublishableKey;
   const [pin, setPin] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -67,22 +67,13 @@ export default function CoachLoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!hasClerkPublishableKey || existingSession || submitted) {
-      return;
-    }
-    void (async () => {
-      const linked = await getLinkedPinForRole("coach");
-      if (!linked.ok || !linked.pin) {
-        return;
-      }
-      setPin(linked.pin);
-      setSubmitted(true);
-    })();
-  }, [existingSession, submitted]);
+    if (!accountMode || existingSession || submitted) return;
+    setSubmitted(true);
+  }, [accountMode, existingSession, submitted]);
 
   const coachData = useQuery(
     api.matches.verifyCoachPin,
-    submitted && pin.length >= MIN_PIN_LENGTH ? { pin } : "skip"
+    submitted && (accountMode || pin.length >= MIN_PIN_LENGTH) ? {} : "skip"
   );
 
   // If we're waiting for PIN verification and the query never returns (no connection), show "try again" after a timeout
@@ -113,6 +104,7 @@ export default function CoachLoginPage() {
   }, [submitted, coachData, pin]);
 
   useEffect(() => {
+    if (accountMode) return;
     if (submitted && coachData === null) {
       setShowError(true);
       const timer = setTimeout(() => {
@@ -122,7 +114,7 @@ export default function CoachLoginPage() {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [submitted, coachData]);
+  }, [accountMode, submitted, coachData]);
 
   const handleKeyPress = useCallback(
     (digit: string) => {
@@ -149,16 +141,21 @@ export default function CoachLoginPage() {
   }, [submitted]);
 
   const handleSubmit = useCallback(() => {
+    if (accountMode) {
+      setSubmitted(true);
+      return;
+    }
     if (pin.length >= MIN_PIN_LENGTH) {
       setSubmitted(true);
     }
-  }, [pin.length]);
+  }, [accountMode, pin.length]);
 
   useEffect(() => {
+    if (accountMode) return;
     if (pin.length === MAX_PIN_LENGTH && !submitted) {
       setSubmitted(true);
     }
-  }, [pin.length, submitted]);
+  }, [accountMode, pin.length, submitted]);
 
   const handleLogout = () => {
     clearCoachSession();
@@ -174,7 +171,15 @@ export default function CoachLoginPage() {
   };
 
   if (submitted && coachData) {
-    return <CoachDashboard data={coachData} pin={pin} onLogout={handleLogout} />;
+    return <CoachDashboard data={coachData} onLogout={handleLogout} />;
+  }
+
+  if (accountMode && submitted && coachData === undefined) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <p className="text-gray-600 font-medium">Coachrechten controleren...</p>
+      </main>
+    );
   }
 
   if (existingSession && !submitted) {
@@ -190,6 +195,22 @@ export default function CoachLoginPage() {
           setExistingSession(null);
         }}
       />
+    );
+  }
+
+  if (accountMode && submitted && coachData === null) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-4">
+          <h1 className="text-xl font-bold text-dia-green">Geen coachtoegang</h1>
+          <p className="text-sm text-gray-600">
+            Dit account heeft nog geen coachkoppeling via e-mail.
+          </p>
+          <Link href="/" className="inline-block text-sm text-dia-green hover:underline">
+            ← Terug naar start
+          </Link>
+        </div>
+      </main>
     );
   }
 

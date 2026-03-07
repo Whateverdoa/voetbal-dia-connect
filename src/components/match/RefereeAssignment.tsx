@@ -38,7 +38,7 @@ export function RefereeAssignment({
     setSuccess(null);
 
     try {
-      await assignReferee({ matchId, pin, refereeId });
+      await assignReferee({ matchId, refereeId });
       setSuccess("Scheidsrechter toegewezen");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -56,7 +56,7 @@ export function RefereeAssignment({
     setSuccess(null);
 
     try {
-      await assignReferee({ matchId, pin, refereeId: undefined });
+      await assignReferee({ matchId, refereeId: undefined });
       setSuccess("Scheidsrechter verwijderd");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {

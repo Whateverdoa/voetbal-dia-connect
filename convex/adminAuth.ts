@@ -1,42 +1,46 @@
 /**
  * Admin authentication helper
- * Centralized admin PIN verification for all admin operations.
+ * Centralized email-based admin verification for all admin operations.
  *
- * The PIN lives ONLY on the server (Convex environment variable).
- * It is NEVER sent to the client bundle.
- * For Convex, set via: npx convex env set ADMIN_PIN your-secure-pin
+ * Admin access is derived from the signed-in identity email and the
+ * CLERK_BOOTSTRAP_ADMIN_EMAILS allowlist.
  */
 import { query } from "./_generated/server";
-import { v } from "convex/values";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
-const ADMIN_PIN = process.env.ADMIN_PIN || "9999";
+type AdminCtx = MutationCtx | QueryCtx;
 
-/**
- * Verify admin PIN (throws on invalid — use in mutations)
- */
-export function verifyAdminPin(pin: string): void {
-  if (pin !== ADMIN_PIN) {
-    throw new Error("Ongeldige admin PIN");
+function getAdminEmailAllowlist(): Set<string> {
+  const raw = process.env.CLERK_BOOTSTRAP_ADMIN_EMAILS ?? "";
+  return new Set(
+    raw
+      .split(",")
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+export async function requireAdminAccess(ctx: AdminCtx): Promise<void> {
+  const identity = await ctx.auth.getUserIdentity();
+  const email = identity?.email?.toLowerCase();
+  if (!email) {
+    throw new Error("Niet ingelogd");
+  }
+  if (!getAdminEmailAllowlist().has(email)) {
+    throw new Error("Geen admin-toegang");
   }
 }
 
 /**
- * Check if admin PIN is valid (non-throwing — use in mutations)
+ * Convex query for client-side verification of admin access.
  */
-export function isValidAdminPin(pin: string): boolean {
-  return pin === ADMIN_PIN;
-}
-
-/**
- * Convex query for client-side login verification.
- * Returns { valid: true } or throws — PIN never leaves the server.
- */
-export const verifyAdminPinQuery = query({
-  args: { pin: v.string() },
-  handler: async (_ctx, args) => {
-    if (args.pin !== ADMIN_PIN) {
-      throw new Error("Ongeldige admin PIN");
+export const verifyAdminAccessQuery = query({
+  handler: async (ctx) => {
+    try {
+      await requireAdminAccess(ctx);
+      return { valid: true };
+    } catch {
+      return { valid: false };
     }
-    return { valid: true };
   },
 });

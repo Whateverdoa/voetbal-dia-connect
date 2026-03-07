@@ -9,7 +9,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeClockControlsProps {
   matchId: Id<"matches">;
-  pin: string;
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
@@ -18,7 +17,6 @@ interface RefereeClockControlsProps {
 
 export function RefereeClockControls({
   matchId,
-  pin,
   status,
   currentQuarter,
   quarterCount,
@@ -70,7 +68,7 @@ export function RefereeClockControls({
       {/* Pre-match: Start */}
       {isScheduled && (
         <button
-          onClick={() => handleAction(() => startMatch({ matchId, pin }), "Start")}
+          onClick={() => handleAction(() => startMatch({ matchId }), "Start")}
           disabled={isLoading}
           className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
                      min-h-[64px] active:scale-[0.98] transition-transform
@@ -85,7 +83,7 @@ export function RefereeClockControls({
         <>
           {isPaused ? (
             <button
-              onClick={() => handleAction(() => resumeClockMut({ matchId, pin }), "Hervat")}
+              onClick={() => handleAction(() => resumeClockMut({ matchId }), "Hervat")}
               disabled={isLoading}
               className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
                          min-h-[64px] active:scale-[0.98] transition-transform
@@ -97,7 +95,7 @@ export function RefereeClockControls({
             </button>
           ) : (
             <button
-              onClick={() => handleAction(() => pauseClockMut({ matchId, pin }), "Pauzeer")}
+              onClick={() => handleAction(() => pauseClockMut({ matchId }), "Pauzeer")}
               disabled={isLoading}
               className="w-full py-5 bg-orange-500 text-white text-xl font-bold rounded-xl
                          min-h-[64px] active:scale-[0.98] transition-transform
@@ -115,7 +113,6 @@ export function RefereeClockControls({
                 () =>
                   nextQuarter({
                     matchId,
-                    pin,
                     correlationId: createCorrelationId("next-quarter"),
                   }),
                 "Einde kwart"
@@ -138,7 +135,7 @@ export function RefereeClockControls({
       {/* Halftime: Resume */}
       {isHalftime && (
         <button
-          onClick={() => handleAction(() => resumeHalftime({ matchId, pin }), "Hervatten")}
+          onClick={() => handleAction(() => resumeHalftime({ matchId }), "Hervatten")}
           disabled={isLoading}
           className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
                      min-h-[64px] active:scale-[0.98] transition-transform

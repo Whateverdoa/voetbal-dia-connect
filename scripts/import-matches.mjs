@@ -3,7 +3,7 @@
  * Import matches from a CSV file into Convex.
  *
  * Usage:
- *   node scripts/import-matches.mjs path/to/matches.csv [--dry-run] [--pin 9999] [--coach-pin 1234]
+ *   node scripts/import-matches.mjs path/to/matches.csv [--dry-run] [--coach-pin 1234]
  *
  * CSV format (header required):
  *   team_slug,opponent,date,time,is_home,finished,home_score,away_score
@@ -17,20 +17,17 @@ import { parseMatchesCsv } from "./lib/csv-utils.mjs";
 const args = process.argv.slice(2);
 const csvPath = args.find((a) => !a.startsWith("--"));
 const dryRun = args.includes("--dry-run");
-const pinIdx = args.indexOf("--pin");
-const adminPin = pinIdx !== -1 ? args[pinIdx + 1] : "9999";
 const cpIdx = args.indexOf("--coach-pin");
 const coachPin = cpIdx !== -1 ? args[cpIdx + 1] : "1234";
 
 if (!csvPath) {
   console.error(
-    "Usage: node scripts/import-matches.mjs <csv-path> [--dry-run] [--pin <pin>] [--coach-pin <pin>]",
+    "Usage: node scripts/import-matches.mjs <csv-path> [--dry-run] [--coach-pin <pin>]",
   );
   process.exit(1);
 }
 
 console.log(`\n📂 Reading CSV: ${csvPath}`);
-console.log(`🔑 Admin PIN: ${"*".repeat(adminPin.length)}`);
 console.log(`🏃 Mode: ${dryRun ? "DRY-RUN (no writes)" : "COMMIT (will write to DB)"}\n`);
 
 const matches = parseMatchesCsv(csvPath);
@@ -75,7 +72,6 @@ console.log("=== IMPORTING ===\n");
 for (const slug of teamSlugs) {
   const teamMatches = byTeam[slug].map(({ teamSlug: _, ...rest }) => rest);
   const payload = JSON.stringify({
-    adminPin,
     teamSlug: slug,
     coachPin,
     matches: teamMatches,

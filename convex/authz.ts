@@ -15,14 +15,14 @@ type Ctx = MutationCtx | QueryCtx;
 export async function requireCoachTeamAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin: string
+  pin?: string
 ): Promise<Doc<"coaches">> {
   if (!match) {
-    throw new Error("Invalid match or PIN");
+    throw new Error("Wedstrijd niet gevonden");
   }
   const coach = await verifyCoachTeamMembership(ctx, match, pin);
   if (!coach) {
-    throw new Error("Invalid match or PIN");
+    throw new Error("Geen coachtoegang voor deze wedstrijd");
   }
   return coach;
 }
@@ -30,10 +30,10 @@ export async function requireCoachTeamAccess(
 export async function requireMatchLeadAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin: string
+  pin?: string
 ): Promise<Doc<"coaches">> {
   if (!match) {
-    throw new Error("Invalid match or PIN");
+    throw new Error("Wedstrijd niet gevonden");
   }
   const leadCoach = await verifyIsMatchLead(ctx, match, pin);
   if (!leadCoach) {
@@ -45,7 +45,7 @@ export async function requireMatchLeadAccess(
 export async function requireClockControlAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin: string
+  pin?: string
 ): Promise<void> {
   if (!match) {
     throw new Error("Wedstrijd niet gevonden");
@@ -53,7 +53,7 @@ export async function requireClockControlAccess(
   const referee = await fetchRefereeForMatch(ctx, match);
   const allowed = await verifyClockPin(ctx, match, pin, referee);
   if (!allowed) {
-    throw new Error("Invalid match or PIN");
+    throw new Error("Geen rechten om de klok te bedienen");
   }
 }
 

@@ -32,6 +32,7 @@ export interface SeedCoach {
 
 /** Coaches for all four JO12 teams (from DIA leiders en trainers 25-26) */
 export const COACH_CONFIGS: SeedCoach[] = [
+  { name: "Remco", pin: "0001", teamSlugs: ["jo12-1"] },
   { name: "Remco Hendriks", pin: "1234", teamSlugs: ["jo12-1"] },
   { name: "Martin Nieuwenhuizen", pin: "5678", teamSlugs: ["jo12-1"] },
   { name: "Mike ten Hoonte", pin: "2468", teamSlugs: ["jo12-1"] },
@@ -74,42 +75,42 @@ export interface SeedMatch {
   refereeSlug: string;
 }
 
-/** Per-team match schedules (gespeeld + komend) voor alle JO12-teams */
+/** Per-team match schedules. Tijden staan 1 uur eerder (UTC); app toont ze als NL (UTC+1). */
 export const MATCH_SCHEDULE_JO12_1: SeedMatch[] = [
-  { date: "2026-01-31T10:00:00", opponent: "VOAB JO12-2", isHome: false, finished: true, homeScore: 4, awayScore: 5, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-02-07T10:00:00", opponent: "Terheijden JO12-1", isHome: true, finished: true, homeScore: 3, awayScore: 6, refereeSlug: "scheidsr-jansen" },
-  { date: "2026-02-28T10:00:00", opponent: "Oosterhout JO12-2", isHome: false, finished: true, homeScore: 4, awayScore: 3, refereeSlug: "scheidsr-bakker" },
-  { date: "2026-03-07T11:30:00", opponent: "Baronie JO12-4", isHome: false, refereeSlug: "scheidsr-visser" },
-  { date: "2026-03-14T09:00:00", opponent: "Boeimeer JO12-2", isHome: true, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-03-21T09:00:00", opponent: "Madese Boys JO12-1", isHome: false, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-01-31T09:00:00.000Z", opponent: "VOAB JO12-2", isHome: false, finished: true, homeScore: 4, awayScore: 5, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-02-07T09:00:00.000Z", opponent: "Terheijden JO12-1", isHome: true, finished: true, homeScore: 3, awayScore: 6, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-02-28T09:00:00.000Z", opponent: "Oosterhout JO12-2", isHome: false, finished: true, homeScore: 4, awayScore: 3, refereeSlug: "scheidsr-bakker" },
+  { date: "2026-03-07T10:30:00.000Z", opponent: "Baronie JO12-4", isHome: false, refereeSlug: "scheidsr-visser" },
+  { date: "2026-03-14T08:00:00.000Z", opponent: "Boeimeer JO12-2", isHome: true, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-03-21T08:00:00.000Z", opponent: "Madese Boys JO12-1", isHome: false, refereeSlug: "scheidsr-jansen" },
 ];
 
 export const MATCH_SCHEDULE_JO12_2: SeedMatch[] = [
-  { date: "2026-01-24T10:00:00", opponent: "Waspik JO12-1", isHome: true, finished: true, homeScore: 9, awayScore: 0, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-01-31T10:00:00", opponent: "TSC JO12-3", isHome: false, finished: true, homeScore: 4, awayScore: 7, refereeSlug: "scheidsr-jansen" },
-  { date: "2026-02-07T10:00:00", opponent: "Viola JO12-1", isHome: true, finished: true, homeScore: 3, awayScore: 2, refereeSlug: "scheidsr-bakker" },
-  { date: "2026-02-28T10:00:00", opponent: "SCO JO12-3", isHome: false, finished: true, homeScore: 2, awayScore: 1, refereeSlug: "scheidsr-visser" },
-  { date: "2026-03-07T11:30:00", opponent: "Beek Vooruit JO12-2", isHome: false, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-03-14T10:45:00", opponent: "Olympia'60 JO12-1", isHome: true, refereeSlug: "scheidsr-jansen" },
-  { date: "2026-03-21T10:30:00", opponent: "Oosterhout JO12-3", isHome: false, refereeSlug: "scheidsr-bakker" },
+  { date: "2026-01-24T09:00:00.000Z", opponent: "Waspik JO12-1", isHome: true, finished: true, homeScore: 9, awayScore: 0, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-01-31T09:00:00.000Z", opponent: "TSC JO12-3", isHome: false, finished: true, homeScore: 4, awayScore: 7, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-02-07T09:00:00.000Z", opponent: "Viola JO12-1", isHome: true, finished: true, homeScore: 3, awayScore: 2, refereeSlug: "scheidsr-bakker" },
+  { date: "2026-02-28T09:00:00.000Z", opponent: "SCO JO12-3", isHome: false, finished: true, homeScore: 2, awayScore: 1, refereeSlug: "scheidsr-visser" },
+  { date: "2026-03-07T10:30:00.000Z", opponent: "Beek Vooruit JO12-2", isHome: false, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-03-14T09:45:00.000Z", opponent: "Olympia'60 JO12-1", isHome: true, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-03-21T09:30:00.000Z", opponent: "Oosterhout JO12-3", isHome: false, refereeSlug: "scheidsr-bakker" },
 ];
 
 export const MATCH_SCHEDULE_JO12_3: SeedMatch[] = [
-  { date: "2026-01-31T10:00:00", opponent: "VOAB JO12-4", isHome: true, finished: true, homeScore: 2, awayScore: 6, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-02-07T10:00:00", opponent: "Gesta JO12-1JM", isHome: true, finished: true, homeScore: 6, awayScore: 3, refereeSlug: "scheidsr-jansen" },
-  { date: "2026-02-28T10:00:00", opponent: "Oosterhout JO12-4", isHome: false, finished: true, homeScore: 6, awayScore: 2, refereeSlug: "scheidsr-bakker" },
-  { date: "2026-03-07T09:00:00", opponent: "Bavel JO12-3", isHome: true, refereeSlug: "scheidsr-visser" },
-  { date: "2026-03-14T09:30:00", opponent: "Advendo JO12-1", isHome: false, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-03-21T10:45:00", opponent: "Unitas'30 JO12-6", isHome: true, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-01-31T09:00:00.000Z", opponent: "VOAB JO12-4", isHome: true, finished: true, homeScore: 2, awayScore: 6, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-02-07T09:00:00.000Z", opponent: "Gesta JO12-1JM", isHome: true, finished: true, homeScore: 6, awayScore: 3, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-02-28T09:00:00.000Z", opponent: "Oosterhout JO12-4", isHome: false, finished: true, homeScore: 6, awayScore: 2, refereeSlug: "scheidsr-bakker" },
+  { date: "2026-03-07T08:00:00.000Z", opponent: "Bavel JO12-3", isHome: true, refereeSlug: "scheidsr-visser" },
+  { date: "2026-03-14T08:30:00.000Z", opponent: "Advendo JO12-1", isHome: false, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-03-21T09:45:00.000Z", opponent: "Unitas'30 JO12-6", isHome: true, refereeSlug: "scheidsr-jansen" },
 ];
 
 export const MATCH_SCHEDULE_JO12_4: SeedMatch[] = [
-  { date: "2026-01-31T10:00:00", opponent: "Sprundel JO12-2", isHome: true, finished: true, homeScore: 3, awayScore: 5, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-02-07T10:00:00", opponent: "DSE JO12-2", isHome: true, finished: true, homeScore: 1, awayScore: 5, refereeSlug: "scheidsr-jansen" },
-  { date: "2026-02-28T10:00:00", opponent: "Baronie JO12-6", isHome: false, finished: true, homeScore: 4, awayScore: 2, refereeSlug: "scheidsr-bakker" },
-  { date: "2026-03-07T09:00:00", opponent: "Boeimeer JO12-3", isHome: true, refereeSlug: "scheidsr-visser" },
-  { date: "2026-03-14T10:00:00", opponent: "Groen Wit JO12-4", isHome: false, refereeSlug: "scheidsr-de-vries" },
-  { date: "2026-03-21T09:00:00", opponent: "Unitas'30 JO12-8", isHome: true, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-01-31T09:00:00.000Z", opponent: "Sprundel JO12-2", isHome: true, finished: true, homeScore: 3, awayScore: 5, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-02-07T09:00:00.000Z", opponent: "DSE JO12-2", isHome: true, finished: true, homeScore: 1, awayScore: 5, refereeSlug: "scheidsr-jansen" },
+  { date: "2026-02-28T09:00:00.000Z", opponent: "Baronie JO12-6", isHome: false, finished: true, homeScore: 4, awayScore: 2, refereeSlug: "scheidsr-bakker" },
+  { date: "2026-03-07T08:00:00.000Z", opponent: "Boeimeer JO12-3", isHome: true, refereeSlug: "scheidsr-visser" },
+  { date: "2026-03-14T09:00:00.000Z", opponent: "Groen Wit JO12-4", isHome: false, refereeSlug: "scheidsr-de-vries" },
+  { date: "2026-03-21T08:00:00.000Z", opponent: "Unitas'30 JO12-8", isHome: true, refereeSlug: "scheidsr-jansen" },
 ];
 
 /** Map team slug -> schedule for JO12 seed */

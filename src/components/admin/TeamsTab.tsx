@@ -6,8 +6,6 @@ import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check } from "lucide-react";
 
-import { getAdminPin } from "@/lib/adminSession";
-
 export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   const teams = useQuery(
     api.admin.listTeamsByClub,
@@ -35,7 +33,6 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
         clubId,
         name: newName.trim(),
         slug: newSlug.trim() || newName.toLowerCase().replace(/\s+/g, "-"),
-        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewSlug("");
@@ -49,7 +46,7 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   const handleUpdate = async (teamId: Id<"teams">) => {
     if (!editName.trim()) return;
     try {
-      await updateTeam({ teamId, name: editName.trim(), adminPin: getAdminPin() });
+      await updateTeam({ teamId, name: editName.trim() });
       setEditingId(null);
       setStatus("✅ Team bijgewerkt");
     } catch (err) {
@@ -60,7 +57,7 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
 
   const handleDelete = async (teamId: Id<"teams">) => {
     try {
-      await deleteTeam({ teamId, adminPin: getAdminPin() });
+      await deleteTeam({ teamId });
       setDeleteConfirm(null);
       setStatus("✅ Team verwijderd");
     } catch (err) {

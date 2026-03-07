@@ -1,15 +1,34 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import type { QueryCtx } from "./_generated/server";
+
+async function resolveReferee(ctx: QueryCtx, pin?: string) {
+  const identity = await ctx.auth.getUserIdentity();
+  const identityEmail = identity?.email?.toLowerCase();
+  if (identityEmail) {
+    const byEmail = await ctx.db
+      .query("referees")
+      .withIndex("by_email", (q) => q.eq("email", identityEmail))
+      .first();
+    if (byEmail && byEmail.active) return byEmail;
+  }
+
+  const normalizedPin = (pin ?? "").trim();
+  if (!normalizedPin) return null;
+  const byPin = await ctx.db
+    .query("referees")
+    .withIndex("by_pin", (q) => q.eq("pin", normalizedPin))
+    .first();
+  if (!byPin || !byPin.active) return null;
+  return byPin;
+}
 
 // Get match for referee (verify referee PIN via referees table + assignment)
 export const getForReferee = query({
-  args: { code: v.string(), pin: v.string() },
+  args: { code: v.string() },
   handler: async (ctx, args) => {
-    const referee = await ctx.db
-      .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
-    if (!referee || !referee.active) return null;
+    const referee = await resolveReferee(ctx);
+    if (!referee) return null;
 
     const match = await ctx.db
       .query("matches")
@@ -59,13 +78,10 @@ export const getForReferee = query({
 
 // Get all matches assigned to a referee (referee enters PIN → sees match list)
 export const getMatchesForReferee = query({
-  args: { pin: v.string() },
-  handler: async (ctx, args) => {
-    const referee = await ctx.db
-      .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
-    if (!referee || !referee.active) return null;
+  args: {},
+  handler: async (ctx) => {
+    const referee = await resolveReferee(ctx);
+    if (!referee) return null;
 
     const matches = await ctx.db
       .query("matches")

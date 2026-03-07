@@ -116,7 +116,7 @@ export function MatchControls({
       {/* Pre-match: Start button */}
       {isScheduled && canControlClock && (
         <button
-          onClick={() => handleMutation(() => startMatch({ matchId, pin }), "Start wedstrijd")}
+          onClick={() => handleMutation(() => startMatch({ matchId }), "Start wedstrijd")}
           disabled={isLoading}
           className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
                      min-h-[56px] active:scale-[0.98] transition-transform
@@ -168,7 +168,7 @@ export function MatchControls({
           {/* Clock pause/resume — only when coach can control clock */}
           {canControlClock && (isPaused ? (
             <button
-              onClick={() => handleMutation(() => resumeClockMut({ matchId, pin }), "Hervat klok")}
+              onClick={() => handleMutation(() => resumeClockMut({ matchId }), "Hervat klok")}
               disabled={isLoading}
               className="w-full py-3 bg-dia-green text-white font-semibold 
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
@@ -180,7 +180,7 @@ export function MatchControls({
             </button>
           ) : (
             <button
-              onClick={() => handleMutation(() => pauseClockMut({ matchId, pin }), "Pauzeer klok")}
+              onClick={() => handleMutation(() => pauseClockMut({ matchId }), "Pauzeer klok")}
               disabled={isLoading}
               className="w-full py-3 bg-orange-500 text-white font-semibold 
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
@@ -200,7 +200,6 @@ export function MatchControls({
                 () =>
                   nextQuarter({
                     matchId,
-                    pin,
                     correlationId: createCorrelationId("next-quarter"),
                   }),
                 "Volgende kwart"
@@ -224,7 +223,7 @@ export function MatchControls({
               onConfirm={() => {
                 setUndoConfirm(false);
                 handleMutation(
-                  () => removeLastGoal({ matchId, pin }),
+                  () => removeLastGoal({ matchId }),
                   "Doelpunt ongedaan maken"
                 );
               }}
@@ -237,7 +236,7 @@ export function MatchControls({
       {/* Rest period: Resume button (universal — all inter-quarter breaks) */}
       {isHalftime && canControlClock && (
         <button
-          onClick={() => handleMutation(() => resumeHalftime({ matchId, pin }), "Hervatten")}
+          onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
           disabled={isLoading}
           className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
                      min-h-[56px] active:scale-[0.98] transition-transform

@@ -3,7 +3,7 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 
 // ============ CLUBS ============
 
@@ -11,10 +11,9 @@ export const createClub = mutation({
   args: { 
     name: v.string(), 
     slug: v.string(),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
     return await ctx.db.insert("clubs", {
       name: args.name,
@@ -45,12 +44,11 @@ export const updateClub = mutation({
     clubId: v.id("clubs"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
-    const { clubId, adminPin: _, ...updates } = args;
+    const { clubId, ...updates } = args;
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
@@ -64,10 +62,9 @@ export const updateClub = mutation({
 export const deleteClub = mutation({
   args: { 
     clubId: v.id("clubs"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
     // Delete all teams in club first
     const teams = await ctx.db

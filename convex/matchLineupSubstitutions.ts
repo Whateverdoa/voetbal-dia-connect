@@ -15,17 +15,16 @@ import {
 export const substituteFromField = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     correlationId: v.optional(v.string()),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match, args.pin);
-    if (!match) throw new Error("Invalid match or PIN");
+    await requireCoachTeamAccess(ctx, match, "");
+    if (!match) throw new Error("Wedstrijd niet gevonden");
     if (match.status === "live" || match.status === "halftime") {
-      await requireMatchLeadAccess(ctx, match, args.pin);
+      await requireMatchLeadAccess(ctx, match, "");
     }
 
     const now = Date.now();

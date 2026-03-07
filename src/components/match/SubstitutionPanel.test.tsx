@@ -415,7 +415,6 @@ describe('SubstitutionPanel', () => {
       await waitFor(() => {
         expect(mockSubstitute).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerOutId: 'p1',
           playerInId: 'p5',
           correlationId: expect.any(String),

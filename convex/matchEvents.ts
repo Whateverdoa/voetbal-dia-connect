@@ -17,7 +17,6 @@ import {
 export const addGoal = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     correlationId: v.optional(v.string()),
     playerId: v.optional(v.id("players")),
     assistPlayerId: v.optional(v.id("players")),
@@ -27,10 +26,10 @@ export const addGoal = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
     // Update score
@@ -93,7 +92,6 @@ export const addGoal = mutation({
 export const substitute = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     correlationId: v.optional(v.string()),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
@@ -101,9 +99,9 @@ export const substitute = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyIsMatchLead(ctx, match, args.pin))) {
+    if (!(await verifyIsMatchLead(ctx, match, ""))) {
       throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
@@ -183,15 +181,14 @@ export const substitute = mutation({
 export const removeLastGoal = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
     // Find most recent goal event for this match, ordered by timestamp desc

@@ -33,21 +33,20 @@ function LoadingScreen() {
 function RefereeMatchContent() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const matchId = params.id as string;
-  const pin = searchParams.get("pin") || "";
+  const matchId = params.id as Id<"matches">;
   const code = searchParams.get("code") || "";
-  const missingParams = !code || !pin;
+  const missingParams = !code;
 
   const match = useQuery(
     api.matches.getForReferee,
-    code && pin ? { code, pin } : "skip"
+    code ? { code } : "skip"
   );
 
   if (missingParams) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-xl shadow-md p-6 max-w-sm w-full text-center space-y-4">
-          <p className="text-red-600 font-medium">Ongeldige link: code of PIN ontbreekt</p>
+          <p className="text-red-600 font-medium">Ongeldige link: code ontbreekt</p>
           <Link
             href="/scheidsrechter"
             className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
@@ -67,7 +66,9 @@ function RefereeMatchContent() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-xl shadow-md p-6 max-w-sm w-full text-center space-y-4">
-          <p className="text-red-600 font-medium">Wedstrijd niet gevonden of PIN ongeldig</p>
+          <p className="text-red-600 font-medium">
+            Wedstrijd niet gevonden of geen scheidsrechtertoegang
+          </p>
           <Link
             href="/scheidsrechter"
             className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
@@ -115,7 +116,6 @@ function RefereeMatchContent() {
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <RefereeScoreControls
           matchId={match.id as Id<"matches">}
-          pin={pin}
           homeScore={match.homeScore}
           awayScore={match.awayScore}
           homeName={match.isHome ? match.teamName : match.opponent}
@@ -125,7 +125,6 @@ function RefereeMatchContent() {
         />
         <RefereeClockControls
           matchId={match.id as Id<"matches">}
-          pin={pin}
           status={match.status as MatchStatus}
           currentQuarter={match.currentQuarter}
           quarterCount={match.quarterCount}

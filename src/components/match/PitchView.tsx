@@ -73,18 +73,17 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
       return;
     }
     if (isPlayerOnField(selectedPlayerId)) {
-      swapPositions({ matchId, pin, playerAId: selectedPlayerId, playerBId: player.playerId });
+      swapPositions({ matchId, playerAId: selectedPlayerId, playerBId: player.playerId });
     } else if (isLiveOrHalftime) {
       substituteFromField({
         matchId,
-        pin,
         playerOutId: player.playerId,
         playerInId: selectedPlayerId,
         correlationId: createCorrelationId("sub-field"),
       });
     } else {
-      assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
-      toggleOffField({ matchId, pin, playerId: player.playerId });
+      assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+      toggleOffField({ matchId, playerId: player.playerId });
     }
     setSelectedPlayerId(null);
   };
@@ -92,7 +91,7 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
   // --- Click: empty slot ---
   const handleEmptySlotClick = (slotId: number) => {
     if (!canEdit || !selectedPlayerId) return;
-    assignToSlot({ matchId, pin, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+    assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
     setSelectedPlayerId(null);
   };
 
@@ -115,7 +114,6 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
       if (isLiveOrHalftime) {
         substituteFromField({
           matchId,
-          pin,
           playerOutId: selectedPlayerId,
           playerInId: playerId,
           correlationId: createCorrelationId("sub-field"),
@@ -123,8 +121,8 @@ export function PitchView({ matchId, pin, players, formationId, status, canEdit 
       } else {
         const slot = slotOfPlayer(selectedPlayerId);
         if (slot !== undefined) {
-          assignToSlot({ matchId, pin, playerId, fieldSlotIndex: slot });
-          toggleOffField({ matchId, pin, playerId: selectedPlayerId });
+          assignToSlot({ matchId, playerId, fieldSlotIndex: slot });
+          toggleOffField({ matchId, playerId: selectedPlayerId });
         }
       }
     }

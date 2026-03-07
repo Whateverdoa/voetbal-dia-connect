@@ -196,14 +196,13 @@ export const getForCoach = query({
     // Strip coachPin from response — coach already knows it, no need to send over wire
     const { coachPin: _pin, ...safeMatch } = match;
 
-    const isCurrentCoachLead = match.leadCoachId === coach._id;
     const isLiveWindow = match.status === "live" || match.status === "halftime";
     const isPregame = match.status === "scheduled" || match.status === "lineup";
-    const canControlClock = !!match.refereeId || isCurrentCoachLead;
+    const canModifyLineup = match.status !== "finished";
     const capabilities = {
-      canControlClock,
-      canDoSubstitutions: isCurrentCoachLead,
-      canManageLineup: !isLiveWindow || isCurrentCoachLead,
+      canControlClock: true,
+      canDoSubstitutions: canModifyLineup,
+      canManageLineup: canModifyLineup,
       canManagePregameSettings: isPregame,
       canAssignReferee: isPregame,
       canEnrichGoals: true,

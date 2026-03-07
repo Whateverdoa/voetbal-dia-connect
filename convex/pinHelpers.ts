@@ -125,11 +125,10 @@ export async function verifyClockPin(
   const coach = await verifyCoachTeamMembership(ctx, match, normalizedPin);
   if (!coach) return false;
 
-  // When referee is assigned: allow any team coach (backward compat)
+  // Any team coach may control the clock.
+  // Referee assignment still grants referee access, but no longer restricts coaches.
   if (match.refereeId) return true;
-
-  // When no referee: only lead coach may control clock
-  return match.leadCoachId === coach._id;
+  return !!coach;
 }
 
 /**

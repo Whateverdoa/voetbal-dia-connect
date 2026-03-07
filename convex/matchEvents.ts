@@ -4,10 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import {
-  verifyCoachTeamMembership,
-  verifyIsMatchLead,
-} from "./pinHelpers";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -88,7 +85,7 @@ export const addGoal = mutation({
   },
 });
 
-// Substitution — only the lead coach may execute
+// Substitution
 export const substitute = mutation({
   args: {
     matchId: v.id("matches"),
@@ -101,11 +98,15 @@ export const substitute = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyIsMatchLead(ctx, match, ""))) {
-      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
+    if (match.status === "finished") {
+      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
     const now = Date.now();
+    const shouldTrackPlayingTime = match.status === "live";
     const effectiveEventTime = getEffectiveEventTime(match, now);
     const substitutionStamp = buildEventGameTimeStamp(match, effectiveEventTime);
 
@@ -138,13 +139,17 @@ export const substitute = mutation({
     }
 
     // Player going OFF - record their playing time
-    if (mpOut.lastSubbedInAt) {
+    if (shouldTrackPlayingTime && mpOut.lastSubbedInAt) {
       await recordPlayingTime(ctx, mpOut, now);
     }
     await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
 
-    // Player going ON - start tracking their time
-    await startPlayingTime(ctx, mpIn._id, now);
+    // Player going ON
+    if (shouldTrackPlayingTime) {
+      await startPlayingTime(ctx, mpIn._id, now);
+    } else {
+      await ctx.db.patch(mpIn._id, { onField: true, lastSubbedInAt: undefined });
+    }
 
     // Log events
     await ctx.db.insert("matchEvents", {

@@ -43,3 +43,10 @@ devoorbereiding/
 
 # Hookify local rules
 .claude/*.local.md
+
+# Local planning notes and source spreadsheets
+.cursor/plans/seed_jo12_teams_en_wedstrijden.plan.md
+.cursor/plans/spectator-wedstrijdselectie_en_live-overzicht_7e7e731d.plan.md
+docs/DIA leiders en trainers 25-26.csv
+docs/DIA leiders en trainers 25-26.xlsx
+docs/Teamindelingen_25-26.csv

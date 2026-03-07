@@ -85,6 +85,16 @@ export interface Match {
   hasLead?: boolean;
   isCurrentCoachLead?: boolean;
   canControlClock?: boolean;
+  canDoSubstitutions?: boolean;
+  capabilities?: {
+    canControlClock: boolean;
+    canDoSubstitutions: boolean;
+    canManageLineup: boolean;
+    canManagePregameSettings: boolean;
+    canAssignReferee: boolean;
+    canEnrichGoals: boolean;
+    canAddGoals: boolean;
+  };
   finishedAt?: number;
   teamName: string;
   players: MatchPlayer[];

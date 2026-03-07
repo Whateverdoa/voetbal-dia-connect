@@ -6,8 +6,7 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyClockPin } from "./pinHelpers";
-import { fetchRefereeForMatch } from "./refereeHelpers";
+import { requireClockControlAccess } from "./authz";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 import {
   buildEventGameTimeStamp,
@@ -34,13 +33,8 @@ export const adjustScore = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match) {
-      throw new Error("Wedstrijd niet gevonden");
-    }
-    const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
-    }
+    await requireClockControlAccess(ctx, match, args.pin);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,
       commandType: "ADJUST_SCORE",

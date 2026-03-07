@@ -5,8 +5,12 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
+import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 const PIN_LOAD_TIMEOUT_MS = 6000;
+const hasClerkPublishableKey = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
 
 export default function ScheidsrechterPage() {
   const [pin, setPin] = useState("");
@@ -28,6 +32,20 @@ export default function ScheidsrechterPage() {
     const t = setTimeout(() => setConnectionTimeout(true), PIN_LOAD_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [submittedPin, data]);
+
+  useEffect(() => {
+    if (!hasClerkPublishableKey || submittedPin) {
+      return;
+    }
+    void (async () => {
+      const linked = await getLinkedPinForRole("referee");
+      if (!linked.ok || !linked.pin) {
+        return;
+      }
+      setPin(linked.pin);
+      setSubmittedPin(linked.pin);
+    })();
+  }, [submittedPin]);
 
   // Handle PIN form submit
   const handleSubmit = (e: React.FormEvent) => {

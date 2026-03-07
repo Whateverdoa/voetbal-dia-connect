@@ -1,11 +1,12 @@
 /**
- * Seed matches for JO12-1.
+ * Seed matches per team — uses per-team schedule or default MATCH_SCHEDULE.
  */
 import { ActionCtx } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { generatePublicCode } from "./helpers";
 import { MATCH_SCHEDULE } from "./seedData";
+import type { SeedMatch } from "./seedData";
 
 interface MatchResult {
   opponent: string;
@@ -16,19 +17,21 @@ interface MatchResult {
 
 /**
  * Create seed matches for the given team.
- * Assigns referees from `refereeMap` based on refereeSlug in the schedule.
+ * Uses `schedule` when provided, otherwise MATCH_SCHEDULE (JO12-1).
+ * Assigns referees from refereeMap based on refereeSlug in the schedule.
  */
 export async function seedMatchesForTeam(
   ctx: ActionCtx,
   teamId: Id<"teams">,
   coachPin: string,
   refereeMap: Record<string, Id<"referees">>,
+  schedule?: SeedMatch[],
 ): Promise<MatchResult[]> {
-  // Get all players for this team
+  const entries = schedule ?? MATCH_SCHEDULE;
   const players = await ctx.runQuery(api.admin.listPlayersByTeam, { teamId });
   const results: MatchResult[] = [];
 
-  for (const entry of MATCH_SCHEDULE) {
+  for (const entry of entries) {
     const publicCode = generatePublicCode();
     const scheduledAt = new Date(entry.date).getTime();
 

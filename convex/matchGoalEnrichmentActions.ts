@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { buildEventGameTimeStamp, getEffectiveEventTime } from "./lib/matchEventGameTime";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import { requireCoachTeamAccess } from "./authz";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 
 function toMatchMs(gameSecond?: number): number | undefined {
@@ -19,9 +19,8 @@ export const enrichGoal = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || !(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
-    }
+    await requireCoachTeamAccess(ctx, match, args.pin);
+    if (!match) throw new Error("Invalid match or PIN");
 
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,

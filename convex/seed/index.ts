@@ -9,22 +9,27 @@ import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import {
   CLUB,
-  TEAM_CONFIGS,
+  JO12_TEAM_CONFIGS,
   COACH_CONFIGS,
   REFEREE_CONFIGS,
   SEED_ADMIN_PIN,
+  JO12_SCHEDULES,
 } from "./seedData";
 import { seedPlayersForTeam } from "./seedPlayers";
 import { seedMatchesForTeam } from "./seedMatches";
 
+/** First coach PIN per team slug (used as match coachPin for seed) */
+function getFirstCoachPinForTeam(teamSlug: string): string {
+  const coach = COACH_CONFIGS.find((c) => c.teamSlugs.includes(teamSlug));
+  return coach?.pin ?? "1234";
+}
+
 /**
- * Idempotent seed action for DIA Live development data.
- * Creates: 1 club, 3 teams (real rosters), 6 coaches,
- *          4 referees, 7 matches with referee assignments.
+ * Idempotent seed action for DIA Live: 4 JO12 teams, coaches, players, full match schedules.
+ * Creates: 1 club, 4 teams (JO12-1..4), 13 coaches, 4 referees, all gespeeld + komend matches.
  */
 export const init = action({
   handler: async (ctx) => {
-    // Idempotency check
     const existingClub = await ctx.runQuery(api.admin.getClubBySlug, { slug: CLUB.slug });
     if (existingClub) {
       return {
@@ -33,19 +38,17 @@ export const init = action({
       };
     }
 
-    // ========= CLUB =========
     const clubId = await ctx.runMutation(api.admin.createClub, {
       name: CLUB.name,
       slug: CLUB.slug,
       adminPin: SEED_ADMIN_PIN,
     });
 
-    // ========= TEAMS + PLAYERS =========
     const teamMap: Record<string, Id<"teams">> = {};
     const teamSummary: Array<{ name: string; players: number }> = [];
     const usedNames = new Set<string>();
 
-    for (const cfg of TEAM_CONFIGS) {
+    for (const cfg of JO12_TEAM_CONFIGS) {
       const teamId = await ctx.runMutation(api.admin.createTeam, {
         clubId,
         name: cfg.name,
@@ -53,12 +56,10 @@ export const init = action({
         adminPin: SEED_ADMIN_PIN,
       });
       teamMap[cfg.slug] = teamId;
-
       const count = await seedPlayersForTeam(ctx, teamId, cfg.slug, usedNames);
       teamSummary.push({ name: cfg.name, players: count });
     }
 
-    // ========= COACHES =========
     const coachSummary: Array<{ name: string; pin: string }> = [];
     for (const cfg of COACH_CONFIGS) {
       const teamIds = cfg.teamSlugs.map((s) => teamMap[s]).filter(Boolean);
@@ -71,7 +72,6 @@ export const init = action({
       coachSummary.push({ name: cfg.name, pin: cfg.pin });
     }
 
-    // ========= REFEREES =========
     const refereeMap: Record<string, Id<"referees">> = {};
     const refereeSummary: Array<{ name: string; pin: string }> = [];
     for (const cfg of REFEREE_CONFIGS) {
@@ -80,20 +80,21 @@ export const init = action({
         pin: cfg.pin,
         adminPin: SEED_ADMIN_PIN,
       });
-      // Create a slug from the name for referral in match schedule
       const slug = cfg.name.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-");
       refereeMap[slug] = id;
       refereeSummary.push({ name: cfg.name, pin: cfg.pin });
     }
 
-    // ========= MATCHES =========
-    const jo12Id = teamMap["jo12-1"];
-    const matchResults = await seedMatchesForTeam(
-      ctx,
-      jo12Id,
-      "1234", // Remco Hendriks' PIN
-      refereeMap,
-    );
+    const allMatchResults: Array<{ team: string; opponent: string; code: string; date: string; result: string | null }> = [];
+    for (const cfg of JO12_TEAM_CONFIGS) {
+      const teamId = teamMap[cfg.slug];
+      const coachPin = getFirstCoachPinForTeam(cfg.slug);
+      const schedule = JO12_SCHEDULES[cfg.slug];
+      const results = await seedMatchesForTeam(ctx, teamId, coachPin, refereeMap, schedule);
+      for (const r of results) {
+        allMatchResults.push({ team: cfg.name, ...r });
+      }
+    }
 
     return {
       message: "Seed data created successfully!",
@@ -101,7 +102,7 @@ export const init = action({
       teams: teamSummary,
       coaches: coachSummary,
       referees: refereeSummary,
-      matches: matchResults,
+      matches: allMatchResults,
     };
   },
 });

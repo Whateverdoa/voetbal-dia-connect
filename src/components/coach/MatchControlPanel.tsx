@@ -68,9 +68,22 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
 
   const isLive = match.status === "live" || match.status === "halftime";
   const isPregame = match.status === "scheduled" || match.status === "lineup";
-  const canEditLineup = isPregame || (match.isCurrentCoachLead ?? false);
-  const canDoSubstitutions = match.isCurrentCoachLead ?? false;
-  const canControlClock = match.canControlClock ?? true;
+  const capabilities = match.capabilities ?? {
+    canControlClock: true,
+    canDoSubstitutions: false,
+    canManageLineup: isPregame,
+    canManagePregameSettings: isPregame,
+    canAssignReferee: isPregame,
+    canEnrichGoals: true,
+    canAddGoals: true,
+  };
+  const canEditLineup = capabilities.canManageLineup;
+  const canDoSubstitutions = capabilities.canDoSubstitutions;
+  const canControlClock = capabilities.canControlClock;
+  const canManagePregameSettings = capabilities.canManagePregameSettings;
+  const canAssignReferee = capabilities.canAssignReferee;
+  const canEnrichGoals = capabilities.canEnrichGoals;
+  const canAddGoals = capabilities.canAddGoals;
 
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
@@ -129,24 +142,29 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
           pausedAt={match.pausedAt}
           canControlClock={canControlClock}
           canDoSubstitutions={canDoSubstitutions}
+          canAddGoals={canAddGoals}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
         />
 
-        <StagedSubstitutionsPanel
-          matchId={match._id}
-          pin={pin}
-          stagedSubstitutions={match.stagedSubstitutions ?? []}
-        />
+        {canDoSubstitutions && (
+          <StagedSubstitutionsPanel
+            matchId={match._id}
+            pin={pin}
+            stagedSubstitutions={match.stagedSubstitutions ?? []}
+          />
+        )}
 
-        <RefereeAssignment
-          matchId={match._id}
-          pin={pin}
-          currentRefereeId={match.refereeId}
-          currentRefereeName={match.refereeName}
-        />
+        {canAssignReferee && (
+          <RefereeAssignment
+            matchId={match._id}
+            pin={pin}
+            currentRefereeId={match.refereeId}
+            currentRefereeName={match.refereeName}
+          />
+        )}
 
-        {isPregame && <MatchSettingsEdit match={match} pin={pin} />}
+        {canManagePregameSettings && <MatchSettingsEdit match={match} pin={pin} />}
 
         <MatchLeadBadge
           matchId={match._id}
@@ -214,14 +232,16 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            <GoalEnrichmentPanel
-              matchId={match._id}
-              pin={pin}
-              events={match.events}
-              players={match.players}
-              teamName={match.teamName}
-              opponentName={match.opponent}
-            />
+            {canEnrichGoals && (
+              <GoalEnrichmentPanel
+                matchId={match._id}
+                pin={pin}
+                events={match.events}
+                players={match.players}
+                teamName={match.teamName}
+                opponentName={match.opponent}
+              />
+            )}
           </>
         )}
 
@@ -236,14 +256,16 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            <GoalEnrichmentPanel
-              matchId={match._id}
-              pin={pin}
-              events={match.events}
-              players={match.players}
-              teamName={match.teamName}
-              opponentName={match.opponent}
-            />
+            {canEnrichGoals && (
+              <GoalEnrichmentPanel
+                matchId={match._id}
+                pin={pin}
+                events={match.events}
+                players={match.players}
+                teamName={match.teamName}
+                opponentName={match.opponent}
+              />
+            )}
           </>
         )}
       </div>

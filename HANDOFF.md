@@ -179,9 +179,9 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 | Step | Scope | Branch / status |
 |------|--------|------------------|
 | **Step 1** | Pre-existing test failures + lint config. Fix: seed test (6 coaches), coach page mock (useConvexConnectionState), CoachDashboard (+2 meer tonen ▼), TeamsTab (getAdminPin mock); fix `npm run lint`. | `fix/pre-existing-tests-and-lint` — **done**: tests 402/402, lint runs via ESLint CLI (see below). |
-| **Step 2** | Goal teamnaam, veldversie wissels + slot, scheidsrechter scorer-lijst, admin + coach navigatie (items 1–4). | Nieuwe feature branch |
-| **Step 3** | Role model simplification ("The Big One"). | Aparte branch |
-| **Step 4** | Clerk authentication. | Aparte branch |
+| **Step 2** | Goal teamnaam, veldversie wissels + slot, scheidsrechter scorer-lijst, admin + coach navigatie (items 1–4). | `feature/step2-goal-field-referee-admin` — **done** (PR #14 merged). |
+| **Step 3** | Role model simplification ("The Big One"). | In progress via stacked PRs: #16 (backend authz), #17 (frontend capabilities), #18 (cleanup/tests). |
+| **Step 4** | Clerk authentication. | In progress: `feature/clerk-auth-foundation` (foundation) + `feature/clerk-role-policy` (route policy) + `feature/clerk-role-onboarding` (self role selection + PIN-link naar bestaand coach/scheids/admin record + bootstrap-admin via `CLERK_BOOTSTRAP_ADMIN_EMAILS` + account-first auto-login voor coach/scheids/admin via Clerk private metadata). |
 
 ### Next to-dos (Phase 3 follow-up — for Step 2)
 
@@ -473,6 +473,17 @@ These are set automatically by `npx convex dev` and stored in `.env.local` (giti
 
 No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 
+**Clerk (optioneel, voor account-inloggen):** Zet in `.env.local` in de projectroot (naast `package.json`). Niet committen.
+
+| Variable | Waar te halen | Doel |
+|----------|----------------|------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys → Publishable key | Toont echte Clerk SignIn/SignUp UI op `/sign-in` en `/sign-up` |
+| `CLERK_SECRET_KEY` | Zelfde scherm → Secret key | Server-side sessies; nooit in de browser |
+
+Zonder deze twee vars: geen Clerk-UI, alleen fallbacktekst “Inloggen niet actief” op `/sign-in`. Na toevoegen: dev-server herstarten, daarna is de sign-in knop/UI zichtbaar. Op de homepage verschijnt dan ook een link **Account inloggen** → `/sign-in`.
+
+**Keyless mode:** Clerk kan zonder env vars draaien: er worden dan tijdelijke keys gegenereerd en een “Configure your application” prompt getoond om later te claimen. Voor productie of vaste sessies gebruik je de keys uit het Clerk Dashboard.
+
 ### Vercel Deployment (Environment Variables)
 
 **CRITICAL: `CONVEX_DEPLOY_KEY` must be scoped to Production only.**
@@ -481,6 +492,8 @@ No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 |----------|-------------|--------------|---------|
 | `CONVEX_DEPLOY_KEY` | **Production ONLY** | Convex Dashboard → Settings → Deploy Keys → generate "Production" key (starts with `prod:`) | Authenticates `convex deploy` during production builds |
 | `NEXT_PUBLIC_CONVEX_URL` | **All Environments** | Convex Dashboard → Settings → URL | Connects the React client to Convex in every build |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | All (indien Clerk gebruikt) | Clerk Dashboard → API Keys | Echte Clerk SignIn/SignUp UI |
+| `CLERK_SECRET_KEY` | All (indien Clerk gebruikt) | Clerk Dashboard → API Keys | Server-side Clerk sessies |
 
 **Why Production only?** Vercel creates **preview** deployments for every PR/branch push. If `CONVEX_DEPLOY_KEY` is set for "All Environments", Convex CLI detects a production key in a non-production context and **refuses to deploy** with error:
 ```

@@ -18,9 +18,8 @@ interface Coach {
   pin: string;
   teamIds: Id<"teams">[];
   teams: { id: Id<"teams">; name: string }[];
+  email?: string;
 }
-
-import { getAdminPin } from "@/lib/adminSession";
 
 export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
   const coaches = useQuery(api.admin.listCoaches) as Coach[] | undefined;
@@ -30,10 +29,12 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
 
   const [newName, setNewName] = useState("");
   const [newPin, setNewPin] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newTeamIds, setNewTeamIds] = useState<Id<"teams">[]>([]);
   const [editingId, setEditingId] = useState<Id<"coaches"> | null>(null);
   const [editName, setEditName] = useState("");
   const [editPin, setEditPin] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editTeamIds, setEditTeamIds] = useState<Id<"teams">[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"coaches"> | null>(null);
   const [status, setStatus] = useState("");
@@ -45,10 +46,11 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         name: newName.trim(),
         pin: newPin.trim(),
         teamIds: newTeamIds,
-        adminPin: getAdminPin(),
+        email: newEmail.trim() || undefined,
       });
       setNewName("");
       setNewPin("");
+      setNewEmail("");
       setNewTeamIds([]);
       setStatus("✅ Coach aangemaakt");
     } catch (err) {
@@ -64,7 +66,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         name: editName.trim() || undefined,
         pin: editPin.trim() || undefined,
         teamIds: editTeamIds,
-        adminPin: getAdminPin(),
+        email: editEmail.trim() || undefined,
       });
       setEditingId(null);
       setStatus("✅ Coach bijgewerkt");
@@ -76,7 +78,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
 
   const handleDelete = async (coachId: Id<"coaches">) => {
     try {
-      await deleteCoach({ coachId, adminPin: getAdminPin() });
+      await deleteCoach({ coachId });
       setDeleteConfirm(null);
       setStatus("✅ Coach verwijderd");
     } catch (err) {
@@ -109,13 +111,13 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
             >
               {editingId === coach._id ? (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <input
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       placeholder="Naam"
-                      className="flex-1 px-2 py-1 border rounded"
+                      className="flex-1 min-w-[120px] px-2 py-1 border rounded"
                       autoFocus
                     />
                     <input
@@ -124,6 +126,13 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                       onChange={(e) => setEditPin(e.target.value)}
                       placeholder="PIN"
                       className="w-24 px-2 py-1 border rounded font-mono"
+                    />
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="E-mail (Clerk, optioneel)"
+                      className="flex-1 min-w-[180px] px-2 py-1 border rounded text-sm"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -175,11 +184,14 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{coach.name}</span>
                       <span className="text-sm text-gray-500 font-mono">
                         PIN: {coach.pin}
                       </span>
+                      {coach.email && (
+                        <span className="text-sm text-gray-500">{coach.email}</span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">
                       Teams: {coach.teams.length > 0 ? coach.teams.map((t) => t.name).join(", ") : "Geen"}
@@ -190,6 +202,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                       setEditingId(coach._id);
                       setEditName(coach.name);
                       setEditPin(coach.pin);
+                      setEditEmail(coach.email ?? "");
                       setEditTeamIds(coach.teamIds);
                     }}
                     className="p-2 text-gray-500 hover:bg-gray-100 rounded"
@@ -215,13 +228,13 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
           <Plus size={18} /> Nieuwe coach
         </h3>
         <div className="space-y-2">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Naam"
-              className="flex-1 px-3 py-2 border rounded-lg"
+              className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
             <input
               type="text"
@@ -229,6 +242,13 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
               onChange={(e) => setNewPin(e.target.value)}
               placeholder="PIN"
               className="w-24 px-3 py-2 border rounded-lg font-mono"
+            />
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="E-mail (Clerk, optioneel)"
+              className="flex-1 min-w-[180px] px-3 py-2 border rounded-lg text-sm"
             />
           </div>
           <div>

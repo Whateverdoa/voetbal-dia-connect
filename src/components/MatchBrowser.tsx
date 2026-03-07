@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
+import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
 
 const statusGroups = [
   {
@@ -32,7 +34,13 @@ const statusGroups = [
   },
 ];
 
-function MatchRow({ match }: { match: PublicMatch }) {
+function MatchRow({
+  match,
+  showCoachLink,
+}: {
+  match: PublicMatch;
+  showCoachLink: boolean;
+}) {
   const isLive = match.status === "live" || match.status === "halftime";
   const showScore = match.status !== "scheduled";
 
@@ -41,9 +49,10 @@ function MatchRow({ match }: { match: PublicMatch }) {
     : `${match.teamName} @ ${match.opponent}`;
 
   return (
-    <Link
-      href={`/live/${match.publicCode}`}
-      className={clsx(
+    <div className="flex flex-col gap-1">
+      <Link
+        href={`/live/${match.publicCode}`}
+        className={clsx(
         "flex items-center gap-3 rounded-xl border bg-white p-3 min-h-[56px]",
         "transition-all active:scale-[0.98] touch-manipulation",
         isLive
@@ -89,6 +98,15 @@ function MatchRow({ match }: { match: PublicMatch }) {
         )}
       </div>
     </Link>
+      {showCoachLink && (
+        <Link
+          href={`/coach/match/${match._id}`}
+          className="text-xs text-dia-green font-medium hover:underline pl-1"
+        >
+          Als coach openen
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -96,6 +114,9 @@ export function MatchBrowser() {
   const matches = useQuery(api.matches.listPublicMatches);
   const connection = useConvexConnectionState();
   const [showConnectionIssue, setShowConnectionIssue] = useState(false);
+  const { user } = useUser();
+  const roles = parseRolesFromMetadata(user?.publicMetadata);
+  const isCoach = hasRole(roles, "coach");
 
   // If we stay in "loading" (undefined) and the client never connected or keeps retrying, show connection message
   useEffect(() => {
@@ -169,7 +190,11 @@ export function MatchBrowser() {
               </div>
               <div className="space-y-2">
                 {groupMatches.map((match) => (
-                  <MatchRow key={match._id} match={match as PublicMatch} />
+                  <MatchRow
+                    key={match._id}
+                    match={match as PublicMatch}
+                    showCoachLink={isCoach}
+                  />
                 ))}
               </div>
             </section>

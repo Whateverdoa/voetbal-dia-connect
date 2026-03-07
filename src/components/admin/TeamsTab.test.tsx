@@ -3,8 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useQuery, useMutation } from 'convex/react';
 import { TeamsTab } from './TeamsTab';
 
-vi.mock('@/lib/adminSession', () => ({ getAdminPin: () => '9999' }));
-
 // Type the mocks
 const mockUseQuery = vi.mocked(useQuery);
 const mockUseMutation = vi.mocked(useMutation);
@@ -163,7 +161,6 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14-1',
           slug: 'jo14-1',
-          adminPin: '9999',
         });
       });
     });
@@ -180,7 +177,6 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14 Team',
           slug: 'jo14-team', // Auto-generated from name
-          adminPin: '9999',
         });
       });
     });
@@ -284,7 +280,6 @@ describe('TeamsTab', () => {
         expect(mockUpdateTeam).toHaveBeenCalledWith({
           teamId: 'team1',
           name: 'JO11-2',
-          adminPin: '9999',
         });
       });
     });
@@ -367,7 +362,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1', adminPin: '9999' });
+        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1' });
       });
     });
 

@@ -12,19 +12,18 @@ import { verifyCoachTeamMembership } from "./pinHelpers";
 export const togglePlayerAbsent = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerId: v.id("players"),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
     if (match.status !== "scheduled" && match.status !== "lineup") {
       throw new Error("Afwezigheid kan alleen vóór de aftrap worden gewijzigd");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
     const mp = await ctx.db
@@ -50,14 +49,14 @@ export const togglePlayerAbsent = mutation({
 
 // Toggle public lineup visibility
 export const toggleShowLineup = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
     await ctx.db.patch(args.matchId, { showLineup: !match.showLineup });

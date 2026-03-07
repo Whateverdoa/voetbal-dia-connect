@@ -9,11 +9,11 @@ import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Get playing time for all players in a match
 export const getPlayingTime = query({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db
@@ -59,11 +59,11 @@ export const getPlayingTime = query({
 
 // Get suggested substitutions based on fairness (equal playing time)
 export const getSuggestedSubstitutions = query({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db

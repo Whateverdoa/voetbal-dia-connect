@@ -3,7 +3,7 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 
 // ============ COACHES ============
 
@@ -12,25 +12,31 @@ export const createCoach = mutation({
     name: v.string(),
     pin: v.string(),
     teamIds: v.array(v.id("teams")),
-    adminPin: v.string(),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
-    
-    // Check PIN is unique
+    await requireAdminAccess(ctx);
+
     const existing = await ctx.db
       .query("coaches")
       .withIndex("by_pin", (q) => q.eq("pin", args.pin))
       .first();
-    
-    if (existing) {
-      throw new Error("PIN already in use");
+    if (existing) throw new Error("PIN already in use");
+
+    const emailNorm = args.email?.trim().toLowerCase();
+    if (emailNorm) {
+      const byEmail = await ctx.db
+        .query("coaches")
+        .withIndex("by_email", (q) => q.eq("email", emailNorm))
+        .first();
+      if (byEmail) throw new Error("E-mail al gekoppeld aan een andere coach");
     }
 
     return await ctx.db.insert("coaches", {
       name: args.name,
       pin: args.pin,
       teamIds: args.teamIds,
+      email: emailNorm ?? undefined,
       createdAt: Date.now(),
     });
   },
@@ -59,27 +65,37 @@ export const updateCoach = mutation({
     name: v.optional(v.string()),
     pin: v.optional(v.string()),
     teamIds: v.optional(v.array(v.id("teams"))),
-    adminPin: v.string(),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
-    
-    const { coachId, adminPin: _, ...updates } = args;
-    
-    // Check PIN uniqueness if changing
+    await requireAdminAccess(ctx);
+
+    const { coachId, ...updates } = args;
+
     if (updates.pin) {
       const existing = await ctx.db
         .query("coaches")
         .withIndex("by_pin", (q) => q.eq("pin", updates.pin!))
         .first();
-      if (existing && existing._id !== coachId) {
-        throw new Error("PIN already in use");
-      }
+      if (existing && existing._id !== coachId) throw new Error("PIN already in use");
     }
-    
-    const filtered = Object.fromEntries(
-      Object.entries(updates).filter(([, v]) => v !== undefined)
-    );
+
+    const emailNorm = updates.email !== undefined
+      ? (updates.email?.trim().toLowerCase() || undefined)
+      : undefined;
+    if (emailNorm !== undefined && emailNorm) {
+      const byEmail = await ctx.db
+        .query("coaches")
+        .withIndex("by_email", (q) => q.eq("email", emailNorm))
+        .first();
+      if (byEmail && byEmail._id !== coachId) throw new Error("E-mail al gekoppeld aan een andere coach");
+    }
+
+    const filtered: Record<string, unknown> = {};
+    if (updates.name !== undefined) filtered.name = updates.name;
+    if (updates.pin !== undefined) filtered.pin = updates.pin;
+    if (updates.teamIds !== undefined) filtered.teamIds = updates.teamIds;
+    if (updates.email !== undefined) filtered.email = emailNorm;
     await ctx.db.patch(coachId, filtered);
   },
 });
@@ -87,10 +103,9 @@ export const updateCoach = mutation({
 export const deleteCoach = mutation({
   args: { 
     coachId: v.id("coaches"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     await ctx.db.delete(args.coachId);
   },
 });

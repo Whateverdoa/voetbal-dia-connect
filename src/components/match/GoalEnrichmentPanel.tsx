@@ -61,7 +61,6 @@ export function GoalEnrichmentPanel({
     try {
       await enrichGoal({
         matchId,
-        pin,
         eventId: targetId,
         scorerId: scorerId || undefined,
         assistId: assistId || undefined,

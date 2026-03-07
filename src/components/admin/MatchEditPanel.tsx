@@ -3,7 +3,6 @@
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
-import { getAdminPin } from "@/lib/adminSession";
 import type { AdminMatch } from "./MatchRow";
 
 interface MatchEditPanelProps {
@@ -51,11 +50,10 @@ export function MatchEditPanel({
   onCreatePlayer,
   onCancel,
 }: MatchEditPanelProps) {
-  const adminPin = getAdminPin();
   const playersNotInMatch = useQuery(
     api.admin.listTeamPlayersNotInMatch,
     match.status === "scheduled"
-      ? { matchId: match._id, adminPin }
+      ? { matchId: match._id }
       : "skip"
   );
 

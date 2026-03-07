@@ -29,7 +29,7 @@ interface Suggestion {
 }
 
 export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestionsProps) {
-  const suggestionsData = useQuery(api.matches.getSuggestedSubstitutions, { matchId, pin });
+  const suggestionsData = useQuery(api.matches.getSuggestedSubstitutions, { matchId });
   const substitute = useMutation(api.matchActions.substitute);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,6 @@ export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestion
     try {
       await substitute({
         matchId,
-        pin,
         playerOutId: suggestion.playerOut.playerId,
         playerInId: suggestion.playerIn.playerId,
         correlationId: createCorrelationId("sub-suggest"),

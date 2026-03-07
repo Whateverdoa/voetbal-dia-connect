@@ -93,7 +93,6 @@ describe('MatchControls', () => {
       await waitFor(() => {
         expect(mockRemoveLastGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
         });
       });
     });

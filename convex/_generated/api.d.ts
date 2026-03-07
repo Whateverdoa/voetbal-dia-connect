@@ -18,6 +18,7 @@ import type * as adminReferees from "../adminReferees.js";
 import type * as adminSeed from "../adminSeed.js";
 import type * as adminTeams from "../adminTeams.js";
 import type * as authz from "../authz.js";
+import type * as clerkLink from "../clerkLink.js";
 import type * as clockActions from "../clockActions.js";
 import type * as coachQueries from "../coachQueries.js";
 import type * as helpers from "../helpers.js";
@@ -74,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   adminSeed: typeof adminSeed;
   adminTeams: typeof adminTeams;
   authz: typeof authz;
+  clerkLink: typeof clerkLink;
   clockActions: typeof clockActions;
   coachQueries: typeof coachQueries;
   helpers: typeof helpers;

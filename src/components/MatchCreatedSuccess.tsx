@@ -8,14 +8,12 @@ interface MatchCreatedSuccessProps {
   publicCode: string;
   matchId: string;
   opponent: string;
-  pin: string;
 }
 
 export function MatchCreatedSuccess({
   publicCode,
   matchId,
   opponent,
-  pin,
 }: MatchCreatedSuccessProps) {
   const [copied, setCopied] = useState(false);
 
@@ -145,7 +143,7 @@ export function MatchCreatedSuccess({
         {/* Navigation buttons */}
         <div className="space-y-3 pt-4">
           <Link
-            href={`/coach/match/${matchId}?pin=${pin}`}
+            href={`/coach/match/${matchId}`}
             className="flex items-center justify-center gap-2 w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-light transition-colors min-h-[56px]"
           >
             <span>Naar wedstrijd</span>
@@ -153,7 +151,7 @@ export function MatchCreatedSuccess({
           </Link>
 
           <Link
-            href={`/coach?pin=${pin}`}
+            href="/coach"
             className="flex items-center justify-center gap-2 w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors min-h-[56px]"
           >
             Terug naar dashboard

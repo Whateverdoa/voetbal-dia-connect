@@ -6,11 +6,10 @@
  */
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "../adminAuth";
+import { requireAdminAccess } from "../adminAuth";
 
 export const upsertTeamPlayers = mutation({
   args: {
-    adminPin: v.string(),
     teamSlug: v.string(),
     players: v.array(
       v.object({
@@ -21,7 +20,7 @@ export const upsertTeamPlayers = mutation({
     dryRun: v.boolean(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const team = await ctx.db
       .query("teams")

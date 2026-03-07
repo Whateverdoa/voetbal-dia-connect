@@ -21,7 +21,7 @@ export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
           <p className="text-sm text-gray-500">Voor publiek op live pagina</p>
         </div>
         <button
-          onClick={() => toggleLineup({ matchId, pin })}
+          onClick={() => toggleLineup({ matchId })}
           className={`relative w-14 h-8 rounded-full transition-colors min-w-[56px] ${
             showLineup ? "bg-dia-green" : "bg-gray-300"
           }`}

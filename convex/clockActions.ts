@@ -15,10 +15,10 @@ import { requireClockControlAccess } from "./authz";
  * is never counted towards their playing minutes.
  */
 export const pauseClock = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, args.pin);
+    await requireClockControlAccess(ctx, match, "");
     if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {
@@ -52,10 +52,10 @@ export const pauseClock = mutation({
  * playing-time tracking for on-field players.
  */
 export const resumeClock = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, args.pin);
+    await requireClockControlAccess(ctx, match, "");
     if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {

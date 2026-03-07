@@ -4,7 +4,6 @@ import { useQuery, useMutation } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getAdminPin } from "@/lib/adminSession";
 import { MatchRow, type AdminMatch } from "./MatchRow";
 import { MatchEditPanel } from "./MatchEditPanel";
 import { MatchForm } from "./MatchForm";
@@ -16,8 +15,7 @@ interface MatchesTabProps {
 }
 
 export function MatchesTab({ teams }: MatchesTabProps) {
-  const adminPin = getAdminPin();
-  const matches = useQuery(api.admin.listAllMatches, { adminPin });
+  const matches = useQuery(api.admin.listAllMatches, {});
   const coaches = useQuery(api.admin.listCoaches);
   const referees = useQuery(api.matches.listActiveReferees);
   const updateMatch = useMutation(api.admin.updateMatch);
@@ -62,7 +60,6 @@ export function MatchesTab({ teams }: MatchesTabProps) {
     try {
       await updateMatch({
         matchId,
-        adminPin,
         opponent: editOpponent.trim() || undefined,
         isHome: editIsHome,
         scheduledAt: editScheduledAt ? new Date(editScheduledAt).getTime() : undefined,
@@ -84,7 +81,6 @@ export function MatchesTab({ teams }: MatchesTabProps) {
       await addPlayerToMatch({
         matchId,
         playerId: addPlayerId as Id<"players">,
-        adminPin,
       });
       setAddPlayerId("");
       setStatusMessage("Speler toegevoegd");
@@ -101,7 +97,6 @@ export function MatchesTab({ teams }: MatchesTabProps) {
         matchId,
         name: newPlayerName.trim(),
         number: newPlayerNumber ? parseInt(newPlayerNumber, 10) : undefined,
-        adminPin,
       });
       setNewPlayerName("");
       setNewPlayerNumber("");

@@ -30,7 +30,6 @@ function LoadingScreen() {
 
 function NewMatchContent() {
   const searchParams = useSearchParams();
-  const pin = searchParams.get("pin") || "";
   const teamId = searchParams.get("teamId") as Id<"teams"> | null;
 
   const [opponent, setOpponent] = useState("");
@@ -95,7 +94,7 @@ function NewMatchContent() {
         teamId,
         opponent: trimmedOpponent,
         isHome,
-        coachPin: pin,
+        coachPin: "",
         quarterCount,
         playerIds: Array.from(selectedPlayers) as Id<"players">[],
       });
@@ -127,7 +126,6 @@ function NewMatchContent() {
         publicCode={createdMatch.publicCode}
         matchId={createdMatch.matchId}
         opponent={opponent}
-        pin={pin}
       />
     );
   }
@@ -150,7 +148,7 @@ function NewMatchContent() {
       <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto">
           <Link
-            href={`/coach?pin=${pin}`}
+            href="/coach"
             className="text-sm opacity-75 hover:opacity-100 min-h-[44px] inline-flex items-center"
           >
             ← Terug

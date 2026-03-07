@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { useConvex } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
 import { TeamsTab } from "@/components/admin/TeamsTab";
@@ -13,8 +12,6 @@ import { RefereesTab } from "@/components/admin/RefereesTab";
 import { MatchesTab } from "@/components/admin/MatchesTab";
 import { AdminSetupTab } from "@/components/admin/AdminSetupTab";
 import { Lock, Users, UserCog, Shield, Flag, Calendar } from "lucide-react";
-import { setAdminPin, getAdminPin, clearAdminSession, isAdminAuthenticated } from "@/lib/adminSession";
-import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 type Tab = "wedstrijden" | "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 const hasClerkPublishableKey = Boolean(
@@ -22,98 +19,52 @@ const hasClerkPublishableKey = Boolean(
 );
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("wedstrijden");
-  const convex = useConvex();
+  const access = useQuery(
+    api.admin.verifyAdminAccessQuery,
+    hasClerkPublishableKey ? {} : "skip"
+  );
 
-  // Check session storage on mount
-  useEffect(() => {
-    if (isAdminAuthenticated()) {
-      setIsAuthenticated(true);
+  if (!hasClerkPublishableKey || !access?.valid) {
+    if (hasClerkPublishableKey) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm text-center space-y-3">
+            <div className="flex items-center justify-center">
+              <div className="w-12 h-12 bg-dia-green rounded-full flex items-center justify-center">
+                <Lock className="text-white" size={24} />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold">Admin toegang</h1>
+            {access === undefined ? (
+              <p className="text-sm text-gray-600">Rechten controleren...</p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Dit account heeft geen admin-rechten.
+              </p>
+            )}
+            <Link
+              href="/"
+              className="block text-center text-sm text-gray-500 mt-4 hover:underline"
+            >
+              ← Terug naar home
+            </Link>
+          </div>
+        </main>
+      );
     }
-  }, []);
-
-  useEffect(() => {
-    if (!hasClerkPublishableKey || isAuthenticated || verifying) {
-      return;
-    }
-    void (async () => {
-      const linked = await getLinkedPinForRole("admin");
-      if (!linked.ok || !linked.pin) {
-        return;
-      }
-      setPinInput(linked.pin);
-      setVerifying(true);
-      setPinError(false);
-      try {
-        await convex.query(api.admin.verifyAdminPinQuery, { pin: linked.pin });
-        setAdminPin(linked.pin);
-        setIsAuthenticated(true);
-      } catch {
-        setPinError(true);
-        setPinInput("");
-      } finally {
-        setVerifying(false);
-      }
-    })();
-  }, [convex, isAuthenticated, verifying]);
-
-  const handlePinSubmit = async () => {
-    if (!pinInput || verifying) return;
-    setVerifying(true);
-    setPinError(false);
-    try {
-      // Server-side PIN verification — PIN never hardcoded in client bundle
-      await convex.query(api.admin.verifyAdminPinQuery, { pin: pinInput });
-      setAdminPin(pinInput);
-      setIsAuthenticated(true);
-    } catch {
-      setPinError(true);
-      setPinInput("");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  if (!isAuthenticated) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm text-center space-y-3">
           <div className="flex items-center justify-center mb-4">
             <div className="w-12 h-12 bg-dia-green rounded-full flex items-center justify-center">
               <Lock className="text-white" size={24} />
             </div>
           </div>
-          <h1 className="text-xl font-bold text-center mb-4">Admin toegang</h1>
-          <div className="space-y-3">
-            <input
-              type="password"
-              value={pinInput}
-              onChange={(e) => {
-                setPinInput(e.target.value);
-                setPinError(false);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
-              placeholder="Admin PIN"
-              className={`w-full px-4 py-3 border rounded-lg text-center text-lg font-mono ${
-                pinError ? "border-red-500 bg-red-50" : "border-gray-300"
-              }`}
-              autoFocus
-            />
-            {pinError && (
-              <p className="text-red-600 text-sm text-center">Ongeldige PIN</p>
-            )}
-            <button
-              onClick={handlePinSubmit}
-              disabled={!pinInput || verifying}
-              className="w-full py-3 bg-dia-green text-white rounded-lg font-semibold disabled:bg-gray-300"
-            >
-              {verifying ? "Controleren..." : "Inloggen"}
-            </button>
-          </div>
+          <h1 className="text-xl font-bold text-center mb-1">Admin toegang</h1>
+          <p className="text-sm text-gray-600">
+            Deze omgeving vereist inloggen via e-mail (Clerk).
+          </p>
           <Link
             href="/"
             className="block text-center text-sm text-gray-500 mt-4 hover:underline"
@@ -137,10 +88,7 @@ export default function AdminPage() {
             <h1 className="text-xl font-bold">Admin Panel</h1>
           </div>
           <button
-            onClick={() => {
-              clearAdminSession();
-              setIsAuthenticated(false);
-            }}
+            onClick={() => window.location.assign("/")}
             className="text-sm text-white/80 hover:text-white"
           >
             Uitloggen

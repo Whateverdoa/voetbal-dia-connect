@@ -5,7 +5,6 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
-import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 const PIN_LOAD_TIMEOUT_MS = 6000;
 const hasClerkPublishableKey = Boolean(
@@ -13,15 +12,18 @@ const hasClerkPublishableKey = Boolean(
 );
 
 export default function ScheidsrechterPage() {
+  const accountMode = hasClerkPublishableKey;
   const [pin, setPin] = useState("");
-  const [submittedPin, setSubmittedPin] = useState<string | null>(null);
+  const [submittedPin, setSubmittedPin] = useState<string | null>(
+    accountMode ? "" : null
+  );
   const [error, setError] = useState<string | null>(null);
   const [connectionTimeout, setConnectionTimeout] = useState(false);
 
   // Only query after the referee submits their PIN
   const data = useQuery(
     api.matches.getMatchesForReferee,
-    submittedPin ? { pin: submittedPin } : "skip"
+    submittedPin !== null ? {} : "skip"
   );
 
   useEffect(() => {
@@ -34,23 +36,19 @@ export default function ScheidsrechterPage() {
   }, [submittedPin, data]);
 
   useEffect(() => {
-    if (!hasClerkPublishableKey || submittedPin) {
-      return;
-    }
-    void (async () => {
-      const linked = await getLinkedPinForRole("referee");
-      if (!linked.ok || !linked.pin) {
-        return;
-      }
-      setPin(linked.pin);
-      setSubmittedPin(linked.pin);
-    })();
-  }, [submittedPin]);
+    if (!accountMode || submittedPin) return;
+    setSubmittedPin("");
+  }, [accountMode, submittedPin]);
 
   // Handle PIN form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (accountMode) {
+      setSubmittedPin("");
+      return;
+    }
 
     if (pin.length < 4) {
       setError("Voer een geldige PIN in (minimaal 4 cijfers)");
@@ -77,14 +75,37 @@ export default function ScheidsrechterPage() {
   };
 
   // Show match list after successful login
-  if (submittedPin && data) {
+  if (submittedPin !== null && data) {
     return (
       <RefereeMatchList
         refereeName={data.referee.name}
         matches={data.matches}
-        pin={submittedPin}
         onLogout={handleLogout}
       />
+    );
+  }
+
+  if (accountMode && submittedPin !== null && data === undefined) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <p className="text-gray-600 font-medium">Scheidsrechterrechten controleren...</p>
+      </main>
+    );
+  }
+
+  if (accountMode && submittedPin !== null && data === null) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-3">
+          <h1 className="text-xl font-bold text-dia-green">Geen scheidsrechtertoegang</h1>
+          <p className="text-sm text-gray-600">
+            Dit account heeft nog geen scheidsrechterkoppeling via e-mail.
+          </p>
+          <Link href="/" className="text-sm text-dia-green hover:underline">
+            ← Terug naar start
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -130,14 +151,14 @@ export default function ScheidsrechterPage() {
           </div>
 
           {/* Error messages */}
-          {(error || isInvalidPin) && (
+          {(error || isInvalidPin) && !accountMode && (
             <p className="text-red-600 text-sm text-center font-medium">
               {error ?? "Ongeldige PIN of account niet actief"}
             </p>
           )}
 
           {/* Loading state */}
-          {submittedPin && data === undefined && !connectionTimeout && (
+          {submittedPin !== null && data === undefined && !connectionTimeout && (
             <p className="text-gray-500 text-sm text-center">
               Gegevens laden...
             </p>
@@ -170,7 +191,7 @@ export default function ScheidsrechterPage() {
                        hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                        transition-colors min-h-[48px]"
           >
-            Inloggen
+            {accountMode ? "Laden..." : "Inloggen"}
           </button>
         </form>
 

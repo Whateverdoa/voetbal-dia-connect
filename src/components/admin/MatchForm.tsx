@@ -5,7 +5,6 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Plus, ChevronDown, ChevronUp } from "lucide-react";
-import { getAdminPin } from "@/lib/adminSession";
 import { PlayerSelector } from "./PlayerSelector";
 
 interface MatchFormProps {
@@ -98,7 +97,6 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
         refereeId: refereeId ? (refereeId as Id<"referees">) : undefined,
         playerIds: Array.from(selectedPlayerIds),
-        adminPin: getAdminPin(),
       });
       onCreated(result.publicCode);
       resetForm();

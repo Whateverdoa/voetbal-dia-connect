@@ -1,11 +1,16 @@
 "use client";
 
 import { useQuery, useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { Pencil, Trash2, Plus, X, Check } from "lucide-react";
-import { getAdminPin } from "@/lib/adminSession";
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof ConvexError) return String(err.data);
+  return err instanceof Error ? err.message : "Onbekende fout";
+}
 
 interface Referee {
   _id: Id<"referees">;
@@ -35,14 +40,12 @@ export function RefereesTab() {
       await createReferee({
         name: newName.trim(),
         pin: newPin.trim(),
-        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewPin("");
       setStatus("Scheidsrechter aangemaakt");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${getErrorMessage(err)}`);
     }
   };
 
@@ -53,24 +56,21 @@ export function RefereesTab() {
         name: editName.trim() || undefined,
         pin: editPin.trim() || undefined,
         active: editActive,
-        adminPin: getAdminPin(),
       });
       setEditingId(null);
       setStatus("Scheidsrechter bijgewerkt");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${getErrorMessage(err)}`);
     }
   };
 
   const handleDelete = async (refereeId: Id<"referees">) => {
     try {
-      await deleteReferee({ refereeId, adminPin: getAdminPin() });
+      await deleteReferee({ refereeId });
       setDeleteConfirm(null);
       setStatus("Scheidsrechter verwijderd");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${getErrorMessage(err)}`);
     }
   };
 

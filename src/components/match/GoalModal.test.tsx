@@ -131,7 +131,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           isOpponentGoal: true,
           correlationId: expect.any(String),
         });
@@ -414,7 +413,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerId: 'p1',
           assistPlayerId: undefined,
           isOpponentGoal: false,
@@ -450,7 +448,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerId: 'p1',
           assistPlayerId: 'p2',
           isOpponentGoal: false,

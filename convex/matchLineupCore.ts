@@ -4,34 +4,23 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import {
-  verifyCoachTeamMembership,
-  verifyIsMatchLead,
-} from "./pinHelpers";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Toggle player on/off field
 export const togglePlayerOnField = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerId: v.id("players"),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    const coach = await verifyCoachTeamMembership(ctx, match, "");
     if (!coach) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
-    }
-
     const now = Date.now();
 
     const mp = await ctx.db
@@ -71,25 +60,17 @@ export const togglePlayerOnField = mutation({
 export const toggleKeeper = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerId: v.id("players"),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    const coach = await verifyCoachTeamMembership(ctx, match, "");
     if (!coach) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag wijzigingen uitvoeren");
-    }
-
     const mp = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -120,25 +101,17 @@ export const toggleKeeper = mutation({
 export const assignPlayerToSlot = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerId: v.id("players"),
     fieldSlotIndex: v.number(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag opstelling wijzigen");
-    }
-
     const mp = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -175,25 +148,17 @@ export const assignPlayerToSlot = mutation({
 export const swapFieldPositions = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerAId: v.id("players"),
     playerBId: v.id("players"),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag opstelling wijzigen");
-    }
-
     const mpA = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -221,23 +186,16 @@ export const swapFieldPositions = mutation({
 export const setMatchFormation = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     formationId: v.optional(v.string()),
     pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
-    }
-    if (
-      (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
-    ) {
-      throw new Error("Alleen de wedstrijdleider mag formatie wijzigen");
+    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+      throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
     const updates: { formationId?: string; pitchType?: "full" | "half" } = {};
     if (args.formationId !== undefined) updates.formationId = args.formationId;

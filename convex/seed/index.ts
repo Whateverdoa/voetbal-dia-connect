@@ -12,7 +12,6 @@ import {
   JO12_TEAM_CONFIGS,
   COACH_CONFIGS,
   REFEREE_CONFIGS,
-  SEED_ADMIN_PIN,
   JO12_SCHEDULES,
 } from "./seedData";
 import { seedPlayersForTeam } from "./seedPlayers";
@@ -41,7 +40,6 @@ export const init = action({
     const clubId = await ctx.runMutation(api.admin.createClub, {
       name: CLUB.name,
       slug: CLUB.slug,
-      adminPin: SEED_ADMIN_PIN,
     });
 
     const teamMap: Record<string, Id<"teams">> = {};
@@ -53,7 +51,6 @@ export const init = action({
         clubId,
         name: cfg.name,
         slug: cfg.slug,
-        adminPin: SEED_ADMIN_PIN,
       });
       teamMap[cfg.slug] = teamId;
       const count = await seedPlayersForTeam(ctx, teamId, cfg.slug, usedNames);
@@ -67,7 +64,6 @@ export const init = action({
         name: cfg.name,
         pin: cfg.pin,
         teamIds,
-        adminPin: SEED_ADMIN_PIN,
       });
       coachSummary.push({ name: cfg.name, pin: cfg.pin });
     }
@@ -78,7 +74,6 @@ export const init = action({
       const id = await ctx.runMutation(api.admin.createReferee, {
         name: cfg.name,
         pin: cfg.pin,
-        adminPin: SEED_ADMIN_PIN,
       });
       const slug = cfg.name.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-");
       refereeMap[slug] = id;

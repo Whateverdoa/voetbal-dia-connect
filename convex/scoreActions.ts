@@ -24,7 +24,6 @@ import {
 export const adjustScore = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     team: v.union(v.literal("home"), v.literal("away")),
     delta: v.union(v.literal(1), v.literal(-1)),
     scorerNumber: v.optional(v.number()),
@@ -33,7 +32,7 @@ export const adjustScore = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, args.pin);
+    await requireClockControlAccess(ctx, match, "");
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,

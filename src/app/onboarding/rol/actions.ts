@@ -3,6 +3,7 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
 
 type AssignableRole = "admin" | "coach" | "referee";
 
@@ -81,7 +82,20 @@ export async function setUserRole(role: AssignableRole): Promise<RoleActionResul
   return { ok: true };
 }
 
+/** After choosing Coach: if email is in CLERK_COACH_EMAIL_PIN, link automatically (geen PIN nodig). */
+export async function tryBootstrapCoach(): Promise<{ linked: boolean }> {
+  const result = await getLinkedPinForRole("coach");
+  return { linked: result.ok };
+}
+
 export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult> {
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return {
+      ok: false,
+      error: "PIN-koppeling is uitgefaseerd. Toegang gaat nu via e-mailrollen.",
+    };
+  }
+
   const trimmedPin = pin.trim();
   if (!/^\d{4,6}$/.test(trimmedPin)) {
     return { ok: false, error: "Voer een geldige PIN in (4-6 cijfers)." };
@@ -106,9 +120,7 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
 
   try {
     if (role === "coach") {
-      const coachData = await convex.query(api.matches.verifyCoachPin, {
-        pin: trimmedPin,
-      });
+      const coachData = await convex.query(api.matches.verifyCoachPin, {});
       if (!coachData) {
         return { ok: false, error: "Coach PIN ongeldig." };
       }
@@ -129,9 +141,7 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
     }
 
     if (role === "referee") {
-      const refereeData = await convex.query(api.matches.getMatchesForReferee, {
-        pin: trimmedPin,
-      });
+      const refereeData = await convex.query(api.matches.getMatchesForReferee, {});
       if (!refereeData) {
         return { ok: false, error: "Scheidsrechter PIN ongeldig." };
       }
@@ -150,9 +160,10 @@ export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult
       return { ok: true };
     }
 
-    await convex.query(api.admin.verifyAdminPinQuery, {
-      pin: trimmedPin,
-    });
+    const adminAccess = await convex.query(api.admin.verifyAdminAccessQuery, {});
+    if (!adminAccess.valid) {
+      return { ok: false, error: "Admin-toegang ontbreekt voor dit account." };
+    }
 
     await client.users.updateUserMetadata(userId, {
       publicMetadata: {

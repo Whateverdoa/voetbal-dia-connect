@@ -30,3 +30,43 @@ export function pickUniqueNames(count: number, usedNames: Set<string>): string[]
   picked.forEach((n) => usedNames.add(n));
   return picked;
 }
+
+/**
+ * Convert seed date string to UTC timestamp (ms).
+ * - If string ends with "Z", parses as UTC.
+ * - Otherwise treats the string as Dutch local time (Europe/Amsterdam) so the
+ *   same time shows correctly in the app (toLocaleTimeString("nl-NL")).
+ * Prevents server timezone from changing the stored value.
+ */
+export function seedDateToUtcTimestamp(dateStr: string): number {
+  const trimmed = dateStr.trim();
+  if (trimmed.endsWith("Z")) {
+    return new Date(trimmed).getTime();
+  }
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!match) {
+    return new Date(trimmed).getTime();
+  }
+  const [, y, mo, d, h, min] = match.map(Number);
+  const month = mo - 1;
+  // Europe/Amsterdam: winter CET = UTC+1, summer CEST = UTC+2 (last Sun Mar 02:00 – last Sun Oct 03:00)
+  const utcDate = new Date(Date.UTC(y, month, d, h, min || 0, 0, 0));
+  const isSummer = isCEST(utcDate);
+  const offsetMs = (isSummer ? 2 : 1) * 60 * 60 * 1000;
+  return utcDate.getTime() - offsetMs;
+}
+
+function isCEST(d: Date): boolean {
+  const y = d.getUTCFullYear();
+  const marchLast = lastSundayOfMonth(y, 2);
+  const octLast = lastSundayOfMonth(y, 9);
+  const start = new Date(Date.UTC(y, 2, marchLast, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(y, 9, octLast, 1, 0, 0, 0));
+  return d >= start && d < end;
+}
+
+function lastSundayOfMonth(year: number, month: number): number {
+  const last = new Date(Date.UTC(year, month + 1, 0));
+  const day = last.getUTCDay();
+  return last.getUTCDate() - day;
+}

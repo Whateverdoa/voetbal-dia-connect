@@ -6,12 +6,11 @@
  */
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "../adminAuth";
+import { requireAdminAccess } from "../adminAuth";
 import { generatePublicCode } from "../seed/helpers";
 
 export const importMatchBatch = mutation({
   args: {
-    adminPin: v.string(),
     teamSlug: v.string(),
     coachPin: v.string(),
     matches: v.array(
@@ -27,7 +26,7 @@ export const importMatchBatch = mutation({
     dryRun: v.boolean(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const team = await ctx.db
       .query("teams")

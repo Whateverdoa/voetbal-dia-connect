@@ -473,6 +473,17 @@ These are set automatically by `npx convex dev` and stored in `.env.local` (giti
 
 No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 
+**Clerk (optioneel, voor account-inloggen):** Zet in `.env.local` in de projectroot (naast `package.json`). Niet committen.
+
+| Variable | Waar te halen | Doel |
+|----------|----------------|------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | [Clerk Dashboard](https://dashboard.clerk.com) → API Keys → Publishable key | Toont echte Clerk SignIn/SignUp UI op `/sign-in` en `/sign-up` |
+| `CLERK_SECRET_KEY` | Zelfde scherm → Secret key | Server-side sessies; nooit in de browser |
+
+Zonder deze twee vars: geen Clerk-UI, alleen fallbacktekst “Inloggen niet actief” op `/sign-in`. Na toevoegen: dev-server herstarten, daarna is de sign-in knop/UI zichtbaar. Op de homepage verschijnt dan ook een link **Account inloggen** → `/sign-in`.
+
+**Keyless mode:** Clerk kan zonder env vars draaien: er worden dan tijdelijke keys gegenereerd en een “Configure your application” prompt getoond om later te claimen. Voor productie of vaste sessies gebruik je de keys uit het Clerk Dashboard.
+
 ### Vercel Deployment (Environment Variables)
 
 **CRITICAL: `CONVEX_DEPLOY_KEY` must be scoped to Production only.**
@@ -481,6 +492,8 @@ No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 |----------|-------------|--------------|---------|
 | `CONVEX_DEPLOY_KEY` | **Production ONLY** | Convex Dashboard → Settings → Deploy Keys → generate "Production" key (starts with `prod:`) | Authenticates `convex deploy` during production builds |
 | `NEXT_PUBLIC_CONVEX_URL` | **All Environments** | Convex Dashboard → Settings → URL | Connects the React client to Convex in every build |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | All (indien Clerk gebruikt) | Clerk Dashboard → API Keys | Echte Clerk SignIn/SignUp UI |
+| `CLERK_SECRET_KEY` | All (indien Clerk gebruikt) | Clerk Dashboard → API Keys | Server-side Clerk sessies |
 
 **Why Production only?** Vercel creates **preview** deployments for every PR/branch push. If `CONVEX_DEPLOY_KEY` is set for "All Environments", Convex CLI detects a production key in a non-production context and **refuses to deploy** with error:
 ```

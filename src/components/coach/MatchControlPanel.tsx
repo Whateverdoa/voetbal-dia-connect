@@ -13,7 +13,6 @@ import {
   LineupToggle,
   PlayingTimePanel,
   SubstitutionSuggestions,
-  MatchLeadBadge,
   MatchSettingsEdit,
   RefereeAssignment,
   StagedSubstitutionsPanel,
@@ -165,13 +164,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
         )}
 
         {canManagePregameSettings && <MatchSettingsEdit match={match} pin={pin} />}
-
-        <MatchLeadBadge
-          matchId={match._id}
-          pin={pin}
-          hasLead={match.hasLead ?? false}
-          leadCoachName={match.leadCoachName ?? null}
-        />
 
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
           <TabButton

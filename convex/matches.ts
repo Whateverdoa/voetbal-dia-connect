@@ -196,7 +196,6 @@ export const getForCoach = query({
     // Strip coachPin from response — coach already knows it, no need to send over wire
     const { coachPin: _pin, ...safeMatch } = match;
 
-    const isLiveWindow = match.status === "live" || match.status === "halftime";
     const isPregame = match.status === "scheduled" || match.status === "lineup";
     const canModifyLineup = match.status !== "finished";
     const capabilities = {

@@ -22,6 +22,7 @@ import type * as clerkLink from "../clerkLink.js";
 import type * as clockActions from "../clockActions.js";
 import type * as coachQueries from "../coachQueries.js";
 import type * as helpers from "../helpers.js";
+import type * as historyActions from "../historyActions.js";
 import type * as import_importMatches from "../import/importMatches.js";
 import type * as import_importPlayers from "../import/importPlayers.js";
 import type * as lib_commandIdempotency from "../lib/commandIdempotency.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   clockActions: typeof clockActions;
   coachQueries: typeof coachQueries;
   helpers: typeof helpers;
+  historyActions: typeof historyActions;
   "import/importMatches": typeof import_importMatches;
   "import/importPlayers": typeof import_importPlayers;
   "lib/commandIdempotency": typeof lib_commandIdempotency;

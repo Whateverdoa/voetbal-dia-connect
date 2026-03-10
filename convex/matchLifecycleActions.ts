@@ -10,7 +10,7 @@ import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
-  getEffectiveEventTime,
+  getQuarterEndTimeWithPausedFallback,
 } from "./lib/matchEventGameTime";
 
 // Create a new match
@@ -162,7 +162,7 @@ export const nextQuarter = mutation({
 
     const now = Date.now();
     const nextQ = match.currentQuarter + 1;
-    const effectiveEndTime = getEffectiveEventTime(match, now);
+    const effectiveEndTime = getQuarterEndTimeWithPausedFallback(match, now);
     const quarterOverrunSeconds = computeQuarterOverrunSeconds(
       match,
       effectiveEndTime

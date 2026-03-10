@@ -5,7 +5,7 @@ import { ActionCtx } from "../_generated/server";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { pickUniqueNames } from "./helpers";
-import { PLAYERS_PER_TEAM, SEED_ADMIN_PIN } from "./seedData";
+import { PLAYERS_PER_TEAM } from "./seedData";
 import { REAL_PLAYER_ROSTERS } from "./realData";
 
 const SAMPLE_POSITIONS: Array<{ positionPrimary: string; positionSecondary?: string }> = [
@@ -38,7 +38,6 @@ export async function seedPlayersForTeam(
     await ctx.runMutation(api.admin.createPlayers, {
       teamId,
       players,
-      adminPin: SEED_ADMIN_PIN,
     });
     return players.length;
   }
@@ -59,7 +58,6 @@ export async function seedPlayersForTeam(
   await ctx.runMutation(api.admin.createPlayers, {
     teamId,
     players,
-    adminPin: SEED_ADMIN_PIN,
   });
 
   return players.length;

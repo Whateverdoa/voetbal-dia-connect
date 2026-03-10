@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/match";
 import type { Match, MatchPlayer, MatchEvent } from "@/components/match";
 import { MatchControlPanel } from "@/components/coach/MatchControlPanel";
+
 export default function CoachMatchPage() {
   return (
     <Suspense fallback={<MatchLoadingScreen />}>
@@ -21,15 +22,16 @@ export default function CoachMatchPage() {
 
 function CoachMatchContent() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const matchId = params.id as Id<"matches">;
-  const pin = searchParams.get("pin") || "";
 
   // Track connection state for visibility change handling
   const [isReconnecting, setIsReconnecting] = useState(false);
   const lastDataRef = useRef<typeof match>(undefined);
 
-  const match = useQuery(api.matches.getForCoach, { matchId, pin });
+  const match = useQuery(
+    api.matches.getForCoach,
+    { matchId }
+  );
 
   // Handle visibility change (mobile tab sleep/wake)
   useEffect(() => {
@@ -61,8 +63,8 @@ function CoachMatchContent() {
   if (match === null) {
     return (
       <MatchErrorScreen
-        message="Wedstrijd niet gevonden of ongeldige PIN"
-        backHref={`/coach?pin=${pin}`}
+        message="Wedstrijd niet gevonden of geen coachtoegang"
+        backHref="/coach"
       />
     );
   }
@@ -74,5 +76,5 @@ function CoachMatchContent() {
     events: match.events as MatchEvent[],
   };
 
-  return <MatchControlPanel match={typedMatch} pin={pin} />;
+  return <MatchControlPanel match={typedMatch} />;
 }

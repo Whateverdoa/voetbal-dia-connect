@@ -33,7 +33,6 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
     try {
       await addGoal({
         matchId,
-        pin,
         isOpponentGoal: true,
         correlationId: createCorrelationId("goal-opponent"),
       });
@@ -58,7 +57,6 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
     try {
       await addGoal({
         matchId,
-        pin,
         playerId: scorer,
         assistPlayerId: assist ?? undefined,
         isOpponentGoal: false,

@@ -3,7 +3,7 @@
  * Import players from a CSV file into Convex.
  *
  * Usage:
- *   node scripts/import-players.mjs path/to/players.csv [--dry-run] [--pin 9999]
+ *   node scripts/import-players.mjs path/to/players.csv [--dry-run]
  *
  * CSV format: Team,Naam (or Team;Naam)
  * Names are auto-reordered from "Lastname Firstname" to "Firstname Lastname".
@@ -15,16 +15,13 @@ import { parsePlayersCsv, groupByTeam } from "./lib/csv-utils.mjs";
 const args = process.argv.slice(2);
 const csvPath = args.find((a) => !a.startsWith("--"));
 const dryRun = args.includes("--dry-run");
-const pinIdx = args.indexOf("--pin");
-const adminPin = pinIdx !== -1 ? args[pinIdx + 1] : "9999";
 
 if (!csvPath) {
-  console.error("Usage: node scripts/import-players.mjs <csv-path> [--dry-run] [--pin <pin>]");
+  console.error("Usage: node scripts/import-players.mjs <csv-path> [--dry-run]");
   process.exit(1);
 }
 
 console.log(`\n📂 Reading CSV: ${csvPath}`);
-console.log(`🔑 Admin PIN: ${"*".repeat(adminPin.length)}`);
 console.log(`🏃 Mode: ${dryRun ? "DRY-RUN (no writes)" : "COMMIT (will write to DB)"}\n`);
 
 const players = parsePlayersCsv(csvPath);
@@ -58,7 +55,6 @@ console.log("=== IMPORTING ===\n");
 for (const slug of teamSlugs) {
   const roster = grouped[slug];
   const payload = JSON.stringify({
-    adminPin,
     teamSlug: slug,
     players: roster,
     dryRun: false,

@@ -12,15 +12,17 @@ function toMatchMs(gameSecond?: number): number | undefined {
 export const stageSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match, args.pin);
-    if (!match) throw new Error("Invalid match or PIN");
+    await requireCoachTeamAccess(ctx, match, "");
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (match.status === "finished") {
+      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
+    }
 
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,
@@ -95,14 +97,16 @@ export const stageSubstitution = mutation({
 export const confirmSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     stagedEventId: v.id("matchEvents"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match, args.pin);
-    if (!match) throw new Error("Invalid match or PIN");
+    await requireCoachTeamAccess(ctx, match, "");
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (match.status === "finished") {
+      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
+    }
 
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,
@@ -160,10 +164,11 @@ export const confirmSubstitution = mutation({
 
     const slotToTransfer = mpOut.fieldSlotIndex;
     const now = Date.now();
+    const shouldTrackPlayingTime = match.status === "live";
     const effectiveEventTime = getEffectiveEventTime(match, now);
     const stamp = buildEventGameTimeStamp(match, effectiveEventTime);
 
-    if (mpOut.lastSubbedInAt) {
+    if (shouldTrackPlayingTime && mpOut.lastSubbedInAt) {
       await recordPlayingTime(ctx, mpOut, now);
     }
     await ctx.db.patch(mpOut._id, {
@@ -171,7 +176,11 @@ export const confirmSubstitution = mutation({
       lastSubbedInAt: undefined,
       fieldSlotIndex: undefined,
     });
-    await startPlayingTime(ctx, mpIn._id, now);
+    if (shouldTrackPlayingTime) {
+      await startPlayingTime(ctx, mpIn._id, now);
+    } else {
+      await ctx.db.patch(mpIn._id, { onField: true, lastSubbedInAt: undefined });
+    }
     if (slotToTransfer !== undefined && slotToTransfer !== null) {
       await ctx.db.patch(mpIn._id, { fieldSlotIndex: slotToTransfer });
     }
@@ -228,14 +237,16 @@ export const confirmSubstitution = mutation({
 export const cancelStagedSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     stagedEventId: v.id("matchEvents"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match, args.pin);
-    if (!match) throw new Error("Invalid match or PIN");
+    await requireCoachTeamAccess(ctx, match, "");
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (match.status === "finished") {
+      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
+    }
 
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,

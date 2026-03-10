@@ -37,7 +37,7 @@ export function MatchLeadBadge({
     setSuccess(null);
 
     try {
-      await claimLead({ matchId, pin });
+      await claimLead({ matchId });
       setSuccess("Jij bent nu wedstrijdleider!");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -55,7 +55,7 @@ export function MatchLeadBadge({
     setSuccess(null);
 
     try {
-      await releaseLead({ matchId, pin });
+      await releaseLead({ matchId });
       setSuccess("Leiding vrijgegeven");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {

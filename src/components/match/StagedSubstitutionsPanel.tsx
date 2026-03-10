@@ -32,7 +32,6 @@ export function StagedSubstitutionsPanel({
     try {
       await confirm({
         matchId,
-        pin,
         stagedEventId,
         correlationId: `confirm-sub-${String(stagedEventId)}`,
       });
@@ -49,7 +48,6 @@ export function StagedSubstitutionsPanel({
     try {
       await cancel({
         matchId,
-        pin,
         stagedEventId,
         correlationId: `cancel-sub-${String(stagedEventId)}`,
       });

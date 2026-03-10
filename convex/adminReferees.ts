@@ -3,25 +3,29 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { ConvexError } from "convex/values";
+import { requireAdminAccess } from "./adminAuth";
+
+function refereeError(message: string): never {
+  throw new ConvexError(message);
+}
 
 export const createReferee = mutation({
   args: {
     name: v.string(),
     pin: v.string(),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const trimmedName = args.name.trim();
     if (!trimmedName) {
-      throw new Error("Naam is verplicht");
+      refereeError("Naam is verplicht");
     }
 
     const trimmedPin = args.pin.trim();
     if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-      throw new Error("PIN moet 4-6 tekens zijn");
+      refereeError("PIN moet 4-6 tekens zijn");
     }
 
     // Check PIN uniqueness across referees AND coaches
@@ -30,7 +34,7 @@ export const createReferee = mutation({
       .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
       .first();
     if (existingReferee) {
-      throw new Error("PIN is al in gebruik door een scheidsrechter");
+      refereeError("PIN is al in gebruik door een scheidsrechter");
     }
 
     const existingCoach = await ctx.db
@@ -38,7 +42,7 @@ export const createReferee = mutation({
       .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
       .first();
     if (existingCoach) {
-      throw new Error("PIN is al in gebruik door een coach");
+      refereeError("PIN is al in gebruik door een coach");
     }
 
     return await ctx.db.insert("referees", {
@@ -62,18 +66,17 @@ export const updateReferee = mutation({
     name: v.optional(v.string()),
     pin: v.optional(v.string()),
     active: v.optional(v.boolean()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
-    const { refereeId, adminPin: _, ...updates } = args;
+    const { refereeId, ...updates } = args;
 
     // Check PIN uniqueness if changing
     if (updates.pin) {
       const trimmedPin = updates.pin.trim();
       if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-        throw new Error("PIN moet 4-6 tekens zijn");
+        refereeError("PIN moet 4-6 tekens zijn");
       }
 
       const existingReferee = await ctx.db
@@ -81,7 +84,7 @@ export const updateReferee = mutation({
         .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
         .first();
       if (existingReferee && existingReferee._id !== refereeId) {
-        throw new Error("PIN is al in gebruik door een scheidsrechter");
+        refereeError("PIN is al in gebruik door een scheidsrechter");
       }
 
       const existingCoach = await ctx.db
@@ -89,7 +92,7 @@ export const updateReferee = mutation({
         .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
         .first();
       if (existingCoach) {
-        throw new Error("PIN is al in gebruik door een coach");
+        refereeError("PIN is al in gebruik door een coach");
       }
 
       updates.pin = trimmedPin;
@@ -105,10 +108,9 @@ export const updateReferee = mutation({
 export const deleteReferee = mutation({
   args: {
     refereeId: v.id("referees"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     await ctx.db.delete(args.refereeId);
   },
 });

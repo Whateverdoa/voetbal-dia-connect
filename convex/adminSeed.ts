@@ -3,16 +3,14 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 
 // ============ SEED DATA ============
 
 export const seedDIA = mutation({
-  args: {
-    adminPin: v.string(),
-  },
-  handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+  args: {},
+  handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     
     // Check if DIA already exists
     const existing = await ctx.db
@@ -87,11 +85,9 @@ export const seedDIA = mutation({
 
 // Seed upcoming matches for JO12-1 (voorjaar 2026)
 export const seedMatches = mutation({
-  args: {
-    adminPin: v.string(),
-  },
-  handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+  args: {},
+  handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     
     // Find JO12-1 team
     const club = await ctx.db

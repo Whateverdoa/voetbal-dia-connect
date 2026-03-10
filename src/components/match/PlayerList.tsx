@@ -51,10 +51,10 @@ export function PlayerList({
                 isKeeper={player.isKeeper}
                 onField={player.onField}
                 onToggleField={
-                  canEdit ? () => toggleOnField({ matchId, pin, playerId: player.playerId }) : undefined
+                  canEdit ? () => toggleOnField({ matchId, playerId: player.playerId }) : undefined
                 }
                 onToggleKeeper={
-                  canEdit ? () => toggleKeeper({ matchId, pin, playerId: player.playerId }) : undefined
+                  canEdit ? () => toggleKeeper({ matchId, playerId: player.playerId }) : undefined
                 }
               />
             ))}
@@ -82,14 +82,14 @@ export function PlayerList({
                 isKeeper={player.isKeeper}
                 onField={player.onField}
                 onToggleField={
-                  canEdit ? () => toggleOnField({ matchId, pin, playerId: player.playerId }) : undefined
+                  canEdit ? () => toggleOnField({ matchId, playerId: player.playerId }) : undefined
                 }
                 onToggleKeeper={
-                  canEdit ? () => toggleKeeper({ matchId, pin, playerId: player.playerId }) : undefined
+                  canEdit ? () => toggleKeeper({ matchId, playerId: player.playerId }) : undefined
                 }
                 onToggleAbsent={
                   canToggleAbsent
-                    ? () => toggleAbsent({ matchId, pin, playerId: player.playerId })
+                    ? () => toggleAbsent({ matchId, playerId: player.playerId })
                     : undefined
                 }
                 absent={false}
@@ -117,7 +117,7 @@ export function PlayerList({
                 absent={true}
                 onToggleAbsent={
                   canToggleAbsent
-                    ? () => toggleAbsent({ matchId, pin, playerId: player.playerId })
+                    ? () => toggleAbsent({ matchId, playerId: player.playerId })
                     : undefined
                 }
               />

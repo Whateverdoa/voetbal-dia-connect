@@ -8,7 +8,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeScoreControlsProps {
   matchId: Id<"matches">;
-  pin: string;
   homeScore: number;
   awayScore: number;
   homeName: string;
@@ -26,7 +25,6 @@ type PendingTeam = "home" | "away" | null;
 
 export function RefereeScoreControls({
   matchId,
-  pin,
   homeScore,
   awayScore,
   homeName,
@@ -59,7 +57,6 @@ export function RefereeScoreControls({
     try {
       await adjustScore({
         matchId,
-        pin,
         team,
         delta: -1,
         correlationId: createCorrelationId("adjust-score"),
@@ -99,7 +96,6 @@ export function RefereeScoreControls({
 
       await adjustScore({
         matchId,
-        pin,
         team: pendingTeam,
         delta: 1,
         scorerNumber,

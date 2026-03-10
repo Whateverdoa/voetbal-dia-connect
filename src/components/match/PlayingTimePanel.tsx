@@ -37,7 +37,7 @@ function getFairnessStatus(
 }
 
 export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
-  const playingTimeData = useQuery(api.matches.getPlayingTime, { matchId, pin });
+  const playingTimeData = useQuery(api.matches.getPlayingTime, { matchId });
 
   if (playingTimeData === undefined) {
     return (

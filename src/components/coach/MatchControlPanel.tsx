@@ -13,7 +13,6 @@ import {
   LineupToggle,
   PlayingTimePanel,
   SubstitutionSuggestions,
-  MatchLeadBadge,
   MatchSettingsEdit,
   RefereeAssignment,
   StagedSubstitutionsPanel,
@@ -28,10 +27,10 @@ type LineupView = "veld" | "lijst";
 
 interface MatchControlPanelProps {
   match: Match;
-  pin: string;
+  pin?: string;
 }
 
-export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
+export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("opstelling");
@@ -70,8 +69,8 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
   const isPregame = match.status === "scheduled" || match.status === "lineup";
   const capabilities = match.capabilities ?? {
     canControlClock: true,
-    canDoSubstitutions: false,
-    canManageLineup: isPregame,
+    canDoSubstitutions: match.status !== "finished",
+    canManageLineup: match.status !== "finished",
     canManagePregameSettings: isPregame,
     canAssignReferee: isPregame,
     canEnrichGoals: true,
@@ -86,12 +85,12 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
   const canAddGoals = capabilities.canAddGoals;
 
   return (
-    <main className="min-h-screen bg-gray-100 pb-8">
-      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20">
+    <main className="min-h-dvh bg-gray-100 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Link
-              href={`/coach?pin=${pin}`}
+              href="/coach"
               className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 min-h-[44px] px-2 -ml-2"
             >
               ← Terug
@@ -100,7 +99,7 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
               href={`/live/${match.publicCode}`}
               className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
             >
-              Live view
+              Toeschouwerweergave
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -165,13 +164,6 @@ export function MatchControlPanel({ match, pin }: MatchControlPanelProps) {
         )}
 
         {canManagePregameSettings && <MatchSettingsEdit match={match} pin={pin} />}
-
-        <MatchLeadBadge
-          matchId={match._id}
-          pin={pin}
-          hasLead={match.hasLead ?? false}
-          leadCoachName={match.leadCoachName ?? null}
-        />
 
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
           <TabButton

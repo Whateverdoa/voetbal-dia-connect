@@ -11,6 +11,7 @@ import {
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
 } from "./lib/matchEventProjection";
+import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -111,19 +112,15 @@ export const getByPublicCode = query({
   },
 });
 
-// Get match for coach (with PIN auth)
+// Get match for coach (account identity first, PIN fallback)
 export const getForCoach = query({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    // Verify coach belongs to the match's team
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
-    if (!coach || !coach.teamIds.includes(match.teamId)) return null;
+    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    if (!coach) return null;
 
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);
@@ -199,14 +196,12 @@ export const getForCoach = query({
     // Strip coachPin from response — coach already knows it, no need to send over wire
     const { coachPin: _pin, ...safeMatch } = match;
 
-    const isCurrentCoachLead = match.leadCoachId === coach._id;
-    const isLiveWindow = match.status === "live" || match.status === "halftime";
     const isPregame = match.status === "scheduled" || match.status === "lineup";
-    const canControlClock = !!match.refereeId || isCurrentCoachLead;
+    const canModifyLineup = match.status !== "finished";
     const capabilities = {
-      canControlClock,
-      canDoSubstitutions: isCurrentCoachLead,
-      canManageLineup: !isLiveWindow || isCurrentCoachLead,
+      canControlClock: true,
+      canDoSubstitutions: canModifyLineup,
+      canManageLineup: canModifyLineup,
       canManagePregameSettings: isPregame,
       canAssignReferee: isPregame,
       canEnrichGoals: true,

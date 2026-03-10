@@ -30,7 +30,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
   const createAndAdd = useMutation(api.matchActions.createPlayerAndAddToMatch);
   const playersNotInMatch = useQuery(api.matches.listTeamPlayersNotInMatch, {
     matchId: match._id,
-    pin,
   });
 
   const toggleCls = (active: boolean) =>
@@ -43,7 +42,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await updateMetadata({
         matchId: match._id,
-        pin,
         opponent: opponent.trim() || undefined,
         isHome,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
@@ -59,7 +57,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await addExistingPlayer({
         matchId: match._id,
-        pin,
         playerId: addPlayerId as Id<"players">,
       });
       setAddPlayerId("");
@@ -74,7 +71,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await createAndAdd({
         matchId: match._id,
-        pin,
         name: newPlayerName.trim(),
         number: newPlayerNumber ? parseInt(newPlayerNumber, 10) : undefined,
       });

@@ -21,7 +21,6 @@ interface RefereeMatch {
 interface RefereeMatchListProps {
   refereeName: string;
   matches: RefereeMatch[];
-  pin: string;
   onLogout: () => void;
 }
 
@@ -57,13 +56,13 @@ function formatDate(timestamp?: number): string {
 }
 
 /** Card for a single match the referee can tap to enter */
-function MatchCard({ match, pin }: { match: RefereeMatch; pin: string }) {
+function MatchCard({ match }: { match: RefereeMatch }) {
   const isActive = match.status === "live" || match.status === "halftime";
   const isFinished = match.status === "finished";
   const homeName = match.isHome ? match.teamName : match.opponent;
   const awayName = match.isHome ? match.opponent : match.teamName;
 
-  const href = `/scheidsrechter/match/${match.id}?pin=${encodeURIComponent(pin)}&code=${match.publicCode}`;
+  const href = `/scheidsrechter/match/${match.id}?code=${match.publicCode}`;
 
   return (
     <Link
@@ -146,7 +145,6 @@ function MatchCard({ match, pin }: { match: RefereeMatch; pin: string }) {
 export function RefereeMatchList({
   refereeName,
   matches,
-  pin,
   onLogout,
 }: RefereeMatchListProps) {
   return (
@@ -192,7 +190,7 @@ export function RefereeMatchList({
           </div>
         ) : (
           matches.map((match) => (
-            <MatchCard key={match.id} match={match} pin={pin} />
+            <MatchCard key={match.id} match={match} />
           ))
         )}
       </div>

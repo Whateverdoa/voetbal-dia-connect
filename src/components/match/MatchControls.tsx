@@ -17,6 +17,7 @@ interface MatchControlsProps {
   homeScore: number;
   awayScore: number;
   pausedAt?: number;
+  pauseReminderMinutes?: number;
   canControlClock?: boolean;
   canDoSubstitutions?: boolean;
   canAddGoals?: boolean;
@@ -33,6 +34,7 @@ export function MatchControls({
   homeScore,
   awayScore,
   pausedAt,
+  pauseReminderMinutes = 3,
   canControlClock = true,
   canDoSubstitutions = true,
   canAddGoals = true,
@@ -49,6 +51,8 @@ export function MatchControls({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [undoConfirm, setUndoConfirm] = useState(false);
+  const [pauseReminderActive, setPauseReminderActive] = useState(false);
+  const [pauseReminderTriggered, setPauseReminderTriggered] = useState(false);
 
   // Auto-cancel undo confirmation after 5s to prevent accidental taps
   useEffect(() => {
@@ -82,9 +86,65 @@ export function MatchControls({
 
   const isLive = status === "live";
   const isPaused = isLive && pausedAt != null;
+  const playPauseReminderTone = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioContextClass =
+        window.AudioContext ??
+        (window as Window & { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 0.07;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
+      oscillator.onended = () => {
+        void audioContext.close();
+      };
+    } catch {
+      // No-op: reminder remains visual even without audio support.
+    }
+  };
+
+  // Pause reminder for long breaks.
+  useEffect(() => {
+    if (!isPaused || pausedAt == null) {
+      setPauseReminderActive(false);
+      setPauseReminderTriggered(false);
+      return;
+    }
+    if (pauseReminderTriggered) return;
+
+    const elapsedPausedMs = Date.now() - pausedAt;
+    const thresholdMs = pauseReminderMinutes * 60 * 1000;
+    const remainingMs = Math.max(0, thresholdMs - elapsedPausedMs);
+
+    const timer = window.setTimeout(() => {
+      setPauseReminderActive(true);
+      setPauseReminderTriggered(true);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([120, 80, 120]);
+      }
+      playPauseReminderTone();
+    }, remainingMs);
+
+    return () => window.clearTimeout(timer);
+  }, [isPaused, pausedAt, pauseReminderMinutes, pauseReminderTriggered]);
+
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
+  const canOpenSubstitutionPanel = canDoSubstitutions && !isFinished;
 
   // Label for the resume button during rest periods
   const getResumeLabel = () => {
@@ -112,11 +172,16 @@ export function MatchControls({
           {error}
         </div>
       )}
+      {isPaused && pauseReminderActive && (
+        <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-medium">
+          Pauze duurt langer dan {pauseReminderMinutes} minuten. Vergeet niet te hervatten.
+        </div>
+      )}
 
       {/* Pre-match: Start button */}
       {isScheduled && canControlClock && (
         <button
-          onClick={() => handleMutation(() => startMatch({ matchId, pin }), "Start wedstrijd")}
+          onClick={() => handleMutation(() => startMatch({ matchId }), "Start wedstrijd")}
           disabled={isLoading}
           className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
                      min-h-[56px] active:scale-[0.98] transition-transform
@@ -130,10 +195,10 @@ export function MatchControls({
       {isLive && (
         <div className="space-y-3">
           {/* Primary actions: Goal buttons */}
-          {(canAddGoals || canDoSubstitutions) && (
+          {(canAddGoals || canOpenSubstitutionPanel) && (
             <div
               className={`grid gap-3 ${
-                canAddGoals && canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"
+                canAddGoals && canOpenSubstitutionPanel ? "grid-cols-2" : "grid-cols-1"
               }`}
             >
               {canAddGoals && (
@@ -149,7 +214,7 @@ export function MatchControls({
                   <span>GOAL!</span>
                 </button>
               )}
-              {canDoSubstitutions && (
+              {canOpenSubstitutionPanel && (
                 <button
                   onClick={onSubClick}
                   disabled={isLoading}
@@ -168,7 +233,7 @@ export function MatchControls({
           {/* Clock pause/resume — only when coach can control clock */}
           {canControlClock && (isPaused ? (
             <button
-              onClick={() => handleMutation(() => resumeClockMut({ matchId, pin }), "Hervat klok")}
+              onClick={() => handleMutation(() => resumeClockMut({ matchId }), "Hervat klok")}
               disabled={isLoading}
               className="w-full py-3 bg-dia-green text-white font-semibold 
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
@@ -180,7 +245,7 @@ export function MatchControls({
             </button>
           ) : (
             <button
-              onClick={() => handleMutation(() => pauseClockMut({ matchId, pin }), "Pauzeer klok")}
+              onClick={() => handleMutation(() => pauseClockMut({ matchId }), "Pauzeer klok")}
               disabled={isLoading}
               className="w-full py-3 bg-orange-500 text-white font-semibold 
                          rounded-xl min-h-[48px] active:scale-[0.98] transition-transform
@@ -200,7 +265,6 @@ export function MatchControls({
                 () =>
                   nextQuarter({
                     matchId,
-                    pin,
                     correlationId: createCorrelationId("next-quarter"),
                   }),
                 "Volgende kwart"
@@ -224,7 +288,7 @@ export function MatchControls({
               onConfirm={() => {
                 setUndoConfirm(false);
                 handleMutation(
-                  () => removeLastGoal({ matchId, pin }),
+                  () => removeLastGoal({ matchId }),
                   "Doelpunt ongedaan maken"
                 );
               }}
@@ -234,10 +298,25 @@ export function MatchControls({
         </div>
       )}
 
+      {/* Non-live: substitutions remain available before/during breaks */}
+      {!isLive && !isFinished && canOpenSubstitutionPanel && (
+        <button
+          onClick={onSubClick}
+          disabled={isLoading}
+          className="mt-3 w-full py-3 bg-blue-600 text-white font-semibold rounded-xl
+                     min-h-[48px] active:scale-[0.98] transition-transform
+                     hover:bg-blue-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed
+                     flex items-center justify-center gap-2"
+        >
+          <span className="text-lg">🔄</span>
+          {isLoading ? "Bezig..." : "Wissel"}
+        </button>
+      )}
+
       {/* Rest period: Resume button (universal — all inter-quarter breaks) */}
       {isHalftime && canControlClock && (
         <button
-          onClick={() => handleMutation(() => resumeHalftime({ matchId, pin }), "Hervatten")}
+          onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
           disabled={isLoading}
           className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl 
                      min-h-[56px] active:scale-[0.98] transition-transform

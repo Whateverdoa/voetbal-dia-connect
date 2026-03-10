@@ -40,7 +40,6 @@ export function SubstitutionPanel({
     try {
       await stageSubstitution({
         matchId,
-        pin,
         playerOutId: playerOut,
         playerInId: playerIn,
         correlationId: createCorrelationId("stage-sub"),

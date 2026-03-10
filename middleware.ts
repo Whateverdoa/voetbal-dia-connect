@@ -1,6 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
+import {
+  hasRole,
+  parseRolesFromSessionClaims,
+  type AppRole,
+} from "@/lib/auth/roles";
 
 const hasClerkEnv =
   Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) &&
@@ -17,31 +22,14 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isCoachRoute = createRouteMatcher(["/coach(.*)"]);
 const isRefereeRoute = createRouteMatcher(["/scheidsrechter(.*)"]);
 
-type AppRole = "admin" | "coach" | "referee";
-
-function getRoleFromClaims(authResult: { sessionClaims?: unknown }): AppRole | null {
-  const claims = authResult.sessionClaims as
-    | {
-        metadata?: { role?: string };
-        public_metadata?: { role?: string };
-        publicMetadata?: { role?: string };
-      }
-    | undefined;
-  const roleCandidate =
-    claims?.metadata?.role ??
-    claims?.public_metadata?.role ??
-    claims?.publicMetadata?.role;
-
-  if (roleCandidate === "admin" || roleCandidate === "coach" || roleCandidate === "referee") {
-    return roleCandidate;
-  }
-  return null;
+function getRolesFromClaims(authResult: { sessionClaims?: unknown }): AppRole[] {
+  return parseRolesFromSessionClaims(authResult.sessionClaims);
 }
 
-function isRoleAllowedForRoute(req: NextRequest, role: AppRole): boolean {
-  if (role === "admin") return true;
-  if (isCoachRoute(req)) return role === "coach";
-  if (isRefereeRoute(req)) return role === "referee";
+function isRoleAllowedForRoute(req: NextRequest, roles: AppRole[]): boolean {
+  if (hasRole(roles, "admin")) return true;
+  if (isCoachRoute(req)) return hasRole(roles, "coach");
+  if (isRefereeRoute(req)) return hasRole(roles, "referee");
   if (isAdminRoute(req)) return false;
   return true;
 }
@@ -58,43 +46,53 @@ function roleOnboardingRedirect(req: NextRequest): NextResponse {
   return NextResponse.redirect(onboardingUrl);
 }
 
-export default clerkMiddleware(async (auth, req) => {
+const clerkHandler = (() => {
+  if (!hasClerkEnv) return null;
   try {
-    if (!hasClerkEnv) {
-      if (isRoleOnboardingRoute(req)) {
-        return NextResponse.redirect(new URL("/", req.url));
+    return clerkMiddleware(async (auth, req) => {
+      try {
+        if (isRoleOnboardingRoute(req)) {
+          await auth.protect();
+          const authResult = await auth();
+          const roles = getRolesFromClaims(authResult);
+          if (roles.length > 0) return NextResponse.redirect(new URL("/", req.url));
+          return NextResponse.next();
+        }
+        if (isProtectedRoute(req)) {
+          await auth.protect();
+          const authResult = await auth();
+          const roles = getRolesFromClaims(authResult);
+          if (roles.length > 0 && !isRoleAllowedForRoute(req, roles)) {
+            return unauthorizedRedirect(req);
+          }
+          // Allow through if no role (e.g. claims not synced yet): page shows PIN form or link-PIN
+        }
+        return NextResponse.next();
+      } catch {
+        return NextResponse.next();
       }
-      return NextResponse.next();
-    }
-
-    if (isRoleOnboardingRoute(req)) {
-      await auth.protect();
-      const authResult = await auth();
-      const role = getRoleFromClaims(authResult);
-      if (role) {
-        return NextResponse.redirect(new URL("/", req.url));
-      }
-      return NextResponse.next();
-    }
-
-    if (isProtectedRoute(req)) {
-      await auth.protect();
-      const authResult = await auth();
-      const role = getRoleFromClaims(authResult);
-      if (!role) {
-        return roleOnboardingRedirect(req);
-      }
-      if (!isRoleAllowedForRoute(req, role)) {
-        return unauthorizedRedirect(req);
-      }
-    }
-
-    return NextResponse.next();
+    });
   } catch {
-    // Clerk/auth failed (e.g. missing/invalid keys on Vercel) — avoid 500, allow request
+    return null;
+  }
+})();
+
+export default async function middleware(
+  req: NextRequest,
+  event: NextFetchEvent
+) {
+  if (!clerkHandler) {
+    if (isRoleOnboardingRoute(req)) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
     return NextResponse.next();
   }
-});
+  try {
+    return await clerkHandler(req, event);
+  } catch {
+    return NextResponse.next();
+  }
+}
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],

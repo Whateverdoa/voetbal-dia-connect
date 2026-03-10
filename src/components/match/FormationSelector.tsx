@@ -39,7 +39,7 @@ export function FormationSelector({
         disabled={!canEdit}
         onChange={(e) => {
           const v = e.target.value || undefined;
-          setMatchFormation({ matchId, pin, formationId: v });
+          setMatchFormation({ matchId, formationId: v });
         }}
         className="px-3 py-2 border rounded-lg text-sm flex-1 min-w-[140px]"
       >

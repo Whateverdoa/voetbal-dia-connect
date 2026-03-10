@@ -25,16 +25,22 @@ export default defineSchema({
     name: v.string(),
     pin: v.string(), // 4-6 digit PIN
     teamIds: v.array(v.id("teams")),
+    email: v.optional(v.string()), // Clerk login by email (no PIN needed when set)
     createdAt: v.number(),
-  }).index("by_pin", ["pin"]),
+  })
+    .index("by_pin", ["pin"])
+    .index("by_email", ["email"]),
 
   // Referees — global records with their own PIN (assigned to matches by admin/coach)
   referees: defineTable({
     name: v.string(),
     pin: v.string(), // 4-6 digit PIN
+    email: v.optional(v.string()), // Account-based login by email
     active: v.boolean(),
     createdAt: v.number(),
-  }).index("by_pin", ["pin"]),
+  })
+    .index("by_pin", ["pin"])
+    .index("by_email", ["email"]),
 
   // Players per team
   players: defineTable({

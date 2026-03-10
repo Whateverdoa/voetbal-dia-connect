@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { linkUserRoleWithPin, setUserRole } from "./actions";
+import { linkUserRoleWithPin, setUserRole, tryBootstrapCoach } from "./actions";
 
 type UserRole = "admin" | "coach" | "referee";
 
@@ -31,6 +32,7 @@ const roleCards: Array<{
 
 export function RoleOnboardingClient() {
   const { user } = useUser();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -72,6 +74,16 @@ export function RoleOnboardingClient() {
         return;
       }
 
+      if (role === "coach") {
+        const bootstrap = await tryBootstrapCoach();
+        if (bootstrap.linked) {
+          setIsLinkedLocally(true);
+          setSuccessMessage("Account gekoppeld aan coach (geen PIN nodig). Je kunt naar het coach-dashboard.");
+          router.push("/coach");
+          return;
+        }
+      }
+
       setSuccessMessage(
         "Rol opgeslagen. Koppel nu je bestaande account met je PIN."
       );
@@ -91,8 +103,20 @@ export function RoleOnboardingClient() {
       setIsLinkedLocally(true);
       setPinInput("");
       setSuccessMessage(
-        "Account succesvol gekoppeld aan bestaand record. Je kunt nu verder naar de app."
+        "Account gekoppeld. Je gaat nu naar het coach-dashboard."
       );
+      if (currentRole === "coach") {
+        router.push("/coach");
+        return;
+      }
+      if (currentRole === "referee") {
+        router.push("/scheidsrechter");
+        return;
+      }
+      if (currentRole === "admin") {
+        router.push("/admin");
+        return;
+      }
     });
   };
 

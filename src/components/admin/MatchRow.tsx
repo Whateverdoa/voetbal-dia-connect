@@ -5,7 +5,6 @@ import { useMutation } from "convex/react";
 import { Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getAdminPin } from "@/lib/adminSession";
 import { formatMatchDate } from "@/types/publicMatch";
 
 export interface AdminMatch {
@@ -45,7 +44,7 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
 
   const handleDelete = async () => {
     try {
-      await deleteMatch({ matchId: match._id, adminPin: getAdminPin() });
+      await deleteMatch({ matchId: match._id });
       onStatusMessage("Wedstrijd verwijderd");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Onbekende fout";

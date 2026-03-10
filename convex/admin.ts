@@ -1,12 +1,11 @@
 /**
  * Admin operations - Re-exports from split modules
  * 
- * All admin mutations require adminPin verification (server-side).
- * PIN never leaves the server — set via: npx convex env set ADMIN_PIN your-pin
+ * All admin mutations require identity-based admin verification (server-side).
  */
 
 // Admin login verification (server-side only)
-export { verifyAdminPinQuery } from "./adminAuth";
+export { verifyAdminAccessQuery } from "./adminAuth";
 
 // Re-export all admin operations
 export {

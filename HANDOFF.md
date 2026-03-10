@@ -102,21 +102,21 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 
 ## Auth Model
 
-Four roles, all PIN-based (no user accounts):
+Identity-first via Clerk email login with multi-role metadata:
 
-| Role | Auth method | PIN storage | Verification function |
-|------|-------------|-------------|-----------------------|
-| **Coach** | 4-6 digit PIN | `coaches.pin` | `verifyCoachPin()` — checks `match.coachPin === pin` |
-| **Referee** | 4-6 digit PIN | `referees.pin` | `verifyClockPin()` — accepts coach OR assigned referee PIN |
-| **Admin** | PIN (env var) | Convex `process.env.ADMIN_PIN` | `verifyAdminPin()` — server-side only, never in client bundle |
-| **Public** | 6-char code | `matches.publicCode` | No auth — read-only queries strip sensitive fields |
+| Role | Auth method | Verification function |
+|------|-------------|-----------------------|
+| **Coach** | Clerk identity (email) | `verifyCoachTeamMembership()` / `verifyCoachPin()` (identity-first) |
+| **Referee** | Clerk identity (email) | `resolveReferee()` / `getMatchesForReferee()` (identity-first) |
+| **Admin** | Clerk identity (email allowlist) | `requireAdminAccess()` / `verifyAdminAccessQuery()` |
+| **Public** | 6-char code | `getByPublicCode()` (read-only) |
 
 **Key flows:**
-- **Coach login:** PIN → `verifyCoachPin` query → returns coach + teams + matches → session stored client-side
-- **Referee login:** PIN → `getMatchesForReferee` query → returns referee + assigned matches → tap match to enter controls
-- **Admin login:** PIN → `verifyAdminPinQuery` query (server-side check against Convex env var) → PIN stored in `sessionStorage` via `src/lib/adminSession.ts` → all admin mutations verify PIN server-side
-- **Public access:** 6-char code in URL → `getByPublicCode` query → match data (coachPin, refereeId stripped)
-- **Clock/score:** `verifyClockPin(match, pin, referee?)` accepts either coach PIN or assigned referee PIN — enables both roles to control the match
+- **Coach login:** account-based (`verifyCoachPin` identity path) → returns coach + teams + matches
+- **Referee login:** account-based (`getMatchesForReferee` identity path) → assigned matches
+- **Admin login:** account-based (`verifyAdminAccessQuery`) → all admin mutations guarded by `requireAdminAccess`
+- **Public access:** 6-char code in URL → `getByPublicCode` query → match data
+- **Clock/score:** authorization is identity-first, with role/capability checks on backend
 
 ## Key Patterns
 
@@ -215,7 +215,7 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 
 ### ~~Critical — Security~~ (RESOLVED)
 
-- ~~**Admin PIN exposed in client bundle**~~: **FIXED.** `NEXT_PUBLIC_ADMIN_PIN` removed entirely. Admin login now verifies PIN server-side via `convex/adminAuth.ts` → `verifyAdminPinQuery`. PIN is stored in `sessionStorage` after successful server verification (cleared on tab close). All admin components read PIN from `src/lib/adminSession.ts` → `getAdminPin()`. The PIN never appears in the client JS bundle.
+- ~~**Admin PIN exposed in client bundle**~~: **FIXED.** Admin auth is now fully identity-based via Clerk (`requireAdminAccess`) and no longer uses client-side PIN session storage.
 
 ### Warnings — Code Quality
 
@@ -231,7 +231,7 @@ PR merged: staged substitutions, goal enrichment, idempotency, referee/parent fi
 - ~~**Homepage simplification**~~: Code input removed as primary UI. MatchBrowser is now the hero element. Coach/referee login as secondary links below. Collapsible "Heb je een code?" for edge cases. "Vandaag live" link to standen page.
 - ~~**Standen page (defaults to today)**~~: Minimal scoreboard at `/standen`. Defaults to **today's matches only** (live + finished today + scheduled today). `?alle=true` shows all matches. Toggle link between views. Supports `?team=` filter. Real-time score updates.
 - ~~**Wedstrijdleider (Phase 1)**~~: Coaches can claim/release "match lead" role. Schema: `leadCoachId: v.optional(v.id("coaches"))` on matches. Mutations in `convex/matchLeadActions.ts`. UI: collapsible `MatchLeadBadge` in coach match view. Phase 1 = informational only, no permission enforcement yet.
-- ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), all adminPin-protected. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`. Coach PIN stripped from admin API responses (security fix).
+- ~~**Admin Match Management**~~: Full CRUD for matches in admin panel. "Wedstrijden" is the first tab (default). Backend: `convex/adminMatches.ts` (listAllMatches, createMatch, updateMatch, deleteMatch), identity-protected via `requireAdminAccess`. Frontend: `MatchesTab.tsx` (list + filters), `MatchForm.tsx` (collapsible create form with team/coach/referee dropdowns, player auto-selection), `MatchRow.tsx` (status badges, referee warning indicator, inline delete confirmation), `PlayerSelector.tsx` (extracted checkbox grid). Inline referee edit panel. Cascade delete (matchPlayers + matchEvents). Shared code generation in `convex/helpers.ts`.
 
 - ~~**PitchView field component**~~: Visual football field for the coach match page. SVG-based field lines (FIFA/KNVB accurate for 8-tal and 11-tal). EA FC-style player cards with role-based colors (K=amber, V=blue, M=green, A=red), avatar silhouettes, name bars, number badges. Formation connecting lines (dashed SVG). CSS perspective tilt (12deg). Tap-to-swap: tap two field players to exchange positions, tap field + bench to substitute. Uniform 90px card size (field and bench). Players spread across full field (y: 16-90%). Backend: `swapFieldPositions` + `substituteFromField` mutation for live-safe field swaps/substitutions with timeline events. Files: `FieldPlayerCard.tsx`, `FormationLines.tsx`, `FieldLines.tsx`, `PitchBench.tsx`, `PitchView.tsx`, `roleColors.ts`, `fieldConfig.ts`. Formations: 8v8 (3-3-1, 1-4-2-1, 1-3-2-2) and 11v11 (4-3-3) with formation line links.
 - ~~**Cumulative clock mode**~~: Implemented. Displayed match clock is now cumulative across quarters/halves (anchors 0/15/30/45 or 0/30) instead of resetting to 0 each quarter.
@@ -481,6 +481,10 @@ No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 | `CLERK_SECRET_KEY` | Zelfde scherm → Secret key | Server-side sessies; nooit in de browser |
 
 Zonder deze twee vars: geen Clerk-UI, alleen fallbacktekst “Inloggen niet actief” op `/sign-in`. Na toevoegen: dev-server herstarten, daarna is de sign-in knop/UI zichtbaar. Op de homepage verschijnt dan ook een link **Account inloggen** → `/sign-in`.
+
+**Coach inloggen zonder PIN (aanbevolen: database):** Zet bij een coach in de **admin** (tab Coaches) het veld **E-mail** (Clerk-e-mail). Dan kan die coach inloggen met alleen Clerk — geen PIN meer. Vereist dat op de **server** (Vercel) en in **Convex** hetzelfde geheim staat: `CONVEX_LINK_SECRET` (willekeurige string). In Convex: `npx convex env set CONVEX_LINK_SECRET <geheim>`. In Vercel: Environment Variables → `CONVEX_LINK_SECRET` = dezelfde waarde. Geen env-lijst meer nodig.
+
+**Optioneel — fallback env-lijst:** `CLERK_COACH_EMAIL_PIN` = lijst `email:pin` (komma-gescheiden), bijv. `mjtenhoonte@gmail.com:2468`. Wordt alleen gebruikt als de coach in de database geen e-mail heeft. Voor schaal: liever e-mail in de database zetten (admin → Coaches → bewerken).
 
 **Keyless mode:** Clerk kan zonder env vars draaien: er worden dan tijdelijke keys gegenereerd en een “Configure your application” prompt getoond om later te claimen. Voor productie of vaste sessies gebruik je de keys uit het Clerk Dashboard.
 

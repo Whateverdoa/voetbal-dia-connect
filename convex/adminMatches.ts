@@ -1,15 +1,15 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 
 // --- Queries ---
 
 export const listAllMatches = query({
-  args: { adminPin: v.string(), limit: v.optional(v.number()) },
+  args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     if (args.limit !== undefined && args.limit <= 0) {
       throw new Error("Limiet moet groter zijn dan 0");
     }
@@ -80,9 +80,9 @@ export const listAllMatches = query({
 
 // List team players not yet in this match (for pregame add-player in admin)
 export const listTeamPlayersNotInMatch = query({
-  args: { matchId: v.id("matches"), adminPin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
@@ -116,10 +116,9 @@ export const createMatch = mutation({
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.id("referees")),
     playerIds: v.array(v.id("players")),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     // Validate inputs
     if (!args.opponent.trim()) {
@@ -193,7 +192,6 @@ export const createMatch = mutation({
 export const updateMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    adminPin: v.string(),
     opponent: v.optional(v.string()),
     isHome: v.optional(v.boolean()),
     scheduledAt: v.optional(v.number()),
@@ -202,7 +200,7 @@ export const updateMatch = mutation({
     status: v.optional(v.union(v.literal("scheduled"), v.literal("finished"))),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) {
@@ -271,10 +269,9 @@ export const addPlayerToMatch = mutation({
   args: {
     matchId: v.id("matches"),
     playerId: v.id("players"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
@@ -317,10 +314,9 @@ export const createPlayerAndAddToMatch = mutation({
     number: v.optional(v.number()),
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
@@ -356,10 +352,9 @@ export const createPlayerAndAddToMatch = mutation({
 export const deleteMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) {

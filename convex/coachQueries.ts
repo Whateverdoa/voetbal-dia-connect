@@ -5,6 +5,26 @@
  */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import type { QueryCtx } from "./_generated/server";
+
+async function resolveCoachByIdentityOrPin(ctx: QueryCtx, pin?: string) {
+  const identity = await ctx.auth.getUserIdentity();
+  const identityEmail = identity?.email?.toLowerCase();
+  if (identityEmail) {
+    const byEmail = await ctx.db
+      .query("coaches")
+      .withIndex("by_email", (q) => q.eq("email", identityEmail))
+      .first();
+    if (byEmail) return byEmail;
+  }
+
+  const normalizedPin = (pin ?? "").trim();
+  if (!normalizedPin) return null;
+  return await ctx.db
+    .query("coaches")
+    .withIndex("by_pin", (q) => q.eq("pin", normalizedPin))
+    .first();
+}
 
 // List active referees (for coach assignment dropdown)
 export const listActiveReferees = query({
@@ -30,15 +50,12 @@ export const listByTeam = query({
 
 // List team players not yet in this match (for pregame add-player flow)
 export const listTeamPlayersNotInMatch = query({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
+    const coach = await resolveCoachByIdentityOrPin(ctx, "");
     if (!coach || !coach.teamIds.includes(match.teamId)) return null;
 
     const inMatch = await ctx.db
@@ -60,12 +77,9 @@ export const listTeamPlayersNotInMatch = query({
 
 // Verify coach PIN and get accessible matches
 export const verifyCoachPin = query({
-  args: { pin: v.string() },
-  handler: async (ctx, args) => {
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
-      .first();
+  args: {},
+  handler: async (ctx) => {
+    const coach = await resolveCoachByIdentityOrPin(ctx);
 
     if (!coach) return null;
 

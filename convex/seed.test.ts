@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { DUTCH_NAMES, generatePublicCode, pickUniqueNames } from './seed/helpers';
-import { TEAM_CONFIGS, COACH_CONFIGS, REFEREE_CONFIGS, PLAYERS_PER_TEAM } from './seed/seedData';
+import {
+  TEAM_CONFIGS,
+  JO12_TEAM_CONFIGS,
+  COACH_CONFIGS,
+  REFEREE_CONFIGS,
+  PLAYERS_PER_TEAM,
+} from './seed/seedData';
 
 // Note: The actual Convex action (seed:init) requires integration testing
 // with a real Convex backend. These tests cover the pure helper functions
@@ -111,8 +117,8 @@ describe('Seed Data Configuration', () => {
   });
 
   describe('Coach configuration', () => {
-    it('has 6 coaches', () => {
-      expect(COACH_CONFIGS).toHaveLength(6);
+    it('has 14 JO12 coaches', () => {
+      expect(COACH_CONFIGS).toHaveLength(14);
     });
 
     it('PINs are 4 digits', () => {
@@ -127,8 +133,8 @@ describe('Seed Data Configuration', () => {
       expect(unique.size).toBe(COACH_CONFIGS.length);
     });
 
-    it('all teamSlugs reference valid teams', () => {
-      const slugs = new Set(TEAM_CONFIGS.map((t) => t.slug));
+    it('all coach teamSlugs reference JO12 teams', () => {
+      const slugs = new Set(JO12_TEAM_CONFIGS.map((t) => t.slug));
       COACH_CONFIGS.forEach((coach) => {
         coach.teamSlugs.forEach((slug) => {
           expect(slugs.has(slug)).toBe(true);

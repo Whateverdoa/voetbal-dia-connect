@@ -10,7 +10,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface SubstitutionPanelProps {
   matchId: Id<"matches">;
-  pin: string;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
   canEdit?: boolean;
@@ -19,7 +18,6 @@ interface SubstitutionPanelProps {
 
 export function SubstitutionPanel({
   matchId,
-  pin,
   playersOnField,
   playersOnBench,
   canEdit = true,
@@ -48,7 +46,7 @@ export function SubstitutionPanel({
     } catch (err) {
       console.error("Failed to substitute:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Invalid match or PIN")) {
+      if (message.includes("Geen rechten")) {
         setError("Sessie verlopen. Herlaad de pagina.");
       } else {
         setError(`Fout bij klaarzetten: ${message}`);

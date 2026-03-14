@@ -35,18 +35,13 @@ export const listAllMatches = query({
           refereeName = referee?.name ?? null;
         }
 
-        // Coach (lookup by coachPin via index)
+        // Coach
         let coachName: string | null = null;
-        const coach = await ctx.db
-          .query("coaches")
-          .withIndex("by_pin", (q) => q.eq("pin", match.coachPin))
-          .first();
+        const coach = match.coachId ? await ctx.db.get(match.coachId) : null;
         coachName = coach?.name ?? null;
 
-        // Strip sensitive fields before returning to client
-        const { coachPin: _pin, ...safeMatch } = match;
         return {
-          ...safeMatch,
+          ...match,
           teamName: team?.name ?? "Onbekend team",
           clubName: club?.name ?? "Onbekend club",
           refereeName,
@@ -111,7 +106,7 @@ export const createMatch = mutation({
     teamId: v.id("teams"),
     opponent: v.string(),
     isHome: v.boolean(),
-    coachPin: v.string(),
+    coachId: v.id("coaches"),
     quarterCount: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.id("referees")),
@@ -128,13 +123,12 @@ export const createMatch = mutation({
       throw new Error("Selecteer minimaal één speler");
     }
 
-    // Verify the coachPin belongs to an existing coach
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.coachPin))
-      .first();
+    const coach = await ctx.db.get(args.coachId);
     if (!coach) {
-      throw new Error("Geen coach gevonden met deze PIN");
+      throw new Error("Geen coach gevonden");
+    }
+    if (!coach.teamIds.includes(args.teamId)) {
+      throw new Error("Coach is niet gekoppeld aan dit team");
     }
 
     // Generate unique public code
@@ -157,8 +151,8 @@ export const createMatch = mutation({
     // Insert match
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
+      coachId: args.coachId,
       publicCode: code,
-      coachPin: args.coachPin,
       opponent: args.opponent.trim(),
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -196,7 +190,7 @@ export const updateMatch = mutation({
     isHome: v.optional(v.boolean()),
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.union(v.id("referees"), v.null())),
-    coachPin: v.optional(v.string()),
+    coachId: v.optional(v.id("coaches")),
     status: v.optional(v.union(v.literal("scheduled"), v.literal("finished"))),
   },
   handler: async (ctx, args) => {
@@ -214,7 +208,7 @@ export const updateMatch = mutation({
       isHome: boolean;
       scheduledAt: number;
       refereeId: Id<"referees"> | undefined;
-      coachPin: string;
+      coachId: Id<"coaches">;
       status: MatchStatus;
       finishedAt: number;
     }> = {};
@@ -239,8 +233,15 @@ export const updateMatch = mutation({
       patch.refereeId = args.refereeId === null ? undefined : args.refereeId;
     }
 
-    if (args.coachPin !== undefined) {
-      patch.coachPin = args.coachPin;
+    if (args.coachId !== undefined) {
+      const coach = await ctx.db.get(args.coachId);
+      if (!coach) {
+        throw new Error("Geen coach gevonden");
+      }
+      if (!coach.teamIds.includes(match.teamId)) {
+        throw new Error("Coach is niet gekoppeld aan dit team");
+      }
+      patch.coachId = args.coachId;
     }
 
     if (args.status !== undefined) {
@@ -265,126 +266,3 @@ export const updateMatch = mutation({
 /**
  * Add an existing team player to a scheduled match. Admin only.
  */
-export const addPlayerToMatch = mutation({
-  args: {
-    matchId: v.id("matches"),
-    playerId: v.id("players"),
-  },
-  handler: async (ctx, args) => {
-    await requireAdminAccess(ctx);
-
-    const match = await ctx.db.get(args.matchId);
-    if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
-
-    const player = await ctx.db.get(args.playerId);
-    if (!player || player.teamId !== match.teamId) {
-      throw new Error("Speler niet gevonden of hoort niet bij dit team");
-    }
-
-    const existing = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerId)
-      )
-      .first();
-    if (existing) throw new Error("Speler staat al in de wedstrijd");
-
-    await ctx.db.insert("matchPlayers", {
-      matchId: args.matchId,
-      playerId: args.playerId,
-      isKeeper: false,
-      onField: false,
-      createdAt: Date.now(),
-    });
-
-    return { success: true };
-  },
-});
-
-/**
- * Create a new player and add to a scheduled match. Admin only.
- */
-export const createPlayerAndAddToMatch = mutation({
-  args: {
-    matchId: v.id("matches"),
-    name: v.string(),
-    number: v.optional(v.number()),
-    positionPrimary: v.optional(v.string()),
-    positionSecondary: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    await requireAdminAccess(ctx);
-
-    const match = await ctx.db.get(args.matchId);
-    if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
-
-    const trimmed = args.name.trim();
-    if (!trimmed) throw new Error("Naam is verplicht");
-
-    const playerId = await ctx.db.insert("players", {
-      teamId: match.teamId,
-      name: trimmed,
-      number: args.number,
-      positionPrimary: args.positionPrimary,
-      positionSecondary: args.positionSecondary,
-      active: true,
-      createdAt: Date.now(),
-    });
-
-    await ctx.db.insert("matchPlayers", {
-      matchId: args.matchId,
-      playerId,
-      isKeeper: false,
-      onField: false,
-      createdAt: Date.now(),
-    });
-
-    return { playerId };
-  },
-});
-
-export const deleteMatch = mutation({
-  args: {
-    matchId: v.id("matches"),
-  },
-  handler: async (ctx, args) => {
-    await requireAdminAccess(ctx);
-
-    const match = await ctx.db.get(args.matchId);
-    if (!match) {
-      throw new Error("Wedstrijd niet gevonden");
-    }
-
-    // Safety: only allow deletion of scheduled or finished matches
-    if (!["scheduled", "finished"].includes(match.status)) {
-      throw new Error(
-        "Kan alleen geplande of afgelopen wedstrijden verwijderen"
-      );
-    }
-
-    // Cascade delete matchPlayers
-    const matchPlayers = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
-      .collect();
-    await Promise.all(matchPlayers.map((mp) => ctx.db.delete(mp._id)));
-
-    // Cascade delete matchEvents
-    const matchEvents = await ctx.db
-      .query("matchEvents")
-      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
-      .collect();
-    await Promise.all(matchEvents.map((ev) => ctx.db.delete(ev._id)));
-
-    // Delete match
-    await ctx.db.delete(args.matchId);
-
-    return { deleted: true };
-  },
-});

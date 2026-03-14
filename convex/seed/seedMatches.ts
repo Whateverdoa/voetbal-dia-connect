@@ -23,7 +23,7 @@ interface MatchResult {
 export async function seedMatchesForTeam(
   ctx: ActionCtx,
   teamId: Id<"teams">,
-  coachPin: string,
+  coachId: Id<"coaches">,
   refereeMap: Record<string, Id<"referees">>,
   schedule?: SeedMatch[],
 ): Promise<MatchResult[]> {
@@ -37,8 +37,8 @@ export async function seedMatchesForTeam(
 
     const matchId = await ctx.runMutation(internal.seed.createSeedMatch, {
       teamId,
+      coachId,
       publicCode,
-      coachPin,
       opponent: entry.opponent,
       isHome: entry.isHome,
       scheduledAt,

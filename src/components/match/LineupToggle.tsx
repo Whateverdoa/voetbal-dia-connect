@@ -6,11 +6,10 @@ import { Id } from "@/convex/_generated/dataModel";
 
 interface LineupToggleProps {
   matchId: Id<"matches">;
-  pin: string;
   showLineup: boolean;
 }
 
-export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
+export function LineupToggle({ matchId, showLineup }: LineupToggleProps) {
   const toggleLineup = useMutation(api.matchActions.toggleShowLineup);
 
   return (

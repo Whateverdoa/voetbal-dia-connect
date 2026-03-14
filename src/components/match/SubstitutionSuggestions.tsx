@@ -9,7 +9,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface SubstitutionSuggestionsProps {
   matchId: Id<"matches">;
-  pin: string;
 }
 
 interface PlayerSuggestion {
@@ -28,7 +27,7 @@ interface Suggestion {
   reason: string;
 }
 
-export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestionsProps) {
+export function SubstitutionSuggestions({ matchId }: SubstitutionSuggestionsProps) {
   const suggestionsData = useQuery(api.matches.getSuggestedSubstitutions, { matchId });
   const substitute = useMutation(api.matchActions.substitute);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
@@ -47,7 +46,10 @@ export function SubstitutionSuggestions({ matchId, pin }: SubstitutionSuggestion
     } catch (err) {
       console.error("Failed to execute substitution:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Invalid match or PIN")) {
+      if (
+        message.includes("Geen rechten") ||
+        message.includes("Invalid match or PIN")
+      ) {
         setError("Sessie verlopen. Herlaad de pagina.");
       } else {
         setError(`Wissel mislukt: ${message}`);

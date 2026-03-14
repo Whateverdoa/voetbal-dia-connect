@@ -37,10 +37,10 @@ export const seedDIA = mutation({
       createdAt: Date.now(),
     });
 
-    // Create coach with PIN 1234
+    // Create coach
     const coachId = await ctx.db.insert("coaches", {
       name: "Coach Mike",
-      pin: "1234",
+      email: "coach.mike@example.com",
       teamIds: [teamId],
       createdAt: Date.now(),
     });
@@ -78,7 +78,7 @@ export const seedDIA = mutation({
       teamId,
       coachId,
       playerCount: playerIds.length,
-      defaultPin: "1234",
+      defaultCoachEmail: "coach.mike@example.com",
     };
   },
 });
@@ -115,6 +115,10 @@ export const seedMatches = mutation({
       .collect();
 
     const playerIds = players.map((p) => p._id);
+    const coach = await ctx.db.query("coaches").first();
+    if (!coach) {
+      throw new Error("Geen coach gevonden. Run seedDIA eerst.");
+    }
 
     // Generate unique 6-char codes
     const generateCode = () => {
@@ -161,8 +165,8 @@ export const seedMatches = mutation({
 
       const matchId = await ctx.db.insert("matches", {
         teamId: team._id,
+        coachId: coach._id,
         publicCode,
-        coachPin: "1234",
         opponent: match.opponent,
         isHome: match.isHome,
         scheduledAt,

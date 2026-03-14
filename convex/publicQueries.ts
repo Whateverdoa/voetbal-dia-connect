@@ -1,7 +1,7 @@
 /**
  * Public queries — unauthenticated, read-only views for spectators.
  *
- * These queries NEVER return coachPin, refereeId, or other sensitive fields.
+ * These queries NEVER return private role-linking fields or other sensitive fields.
  */
 import { query } from "./_generated/server";
 

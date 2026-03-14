@@ -3,7 +3,7 @@
 
 export const api = {
   matches: {
-    verifyCoachPin: 'matches:verifyCoachPin',
+    verifyCoachAccess: 'matches:verifyCoachAccess',
     getByPublicCode: 'matches:getByPublicCode',
     getForCoach: 'matches:getForCoach',
     listByTeam: 'matches:listByTeam',

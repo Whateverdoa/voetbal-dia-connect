@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { createCorrelationId } from "@/lib/correlationId";
 import { ResultBadge, type MatchResult } from "./ResultBadge";
+import { HistoryGoalEditor } from "./HistoryGoalEditor";
 
 export interface HistoryMatch {
   id: string;
@@ -37,7 +38,6 @@ export interface HistoryMatch {
 interface HistoryMatchCardProps {
   match: HistoryMatch;
   canEdit?: boolean;
-  coachPin?: string;
 }
 
 function formatDate(timestamp: number): string {
@@ -53,7 +53,6 @@ function formatDate(timestamp: number): string {
 export function HistoryMatchCard({
   match,
   canEdit = false,
-  coachPin,
 }: HistoryMatchCardProps) {
   const correctMinutes = useMutation(api.historyActions.correctMatchPlayerMinutes);
   const enrichGoal = useMutation(api.matchActions.enrichGoal);
@@ -107,7 +106,6 @@ export function HistoryMatchCard({
       await correctMinutes({
         matchPlayerId: matchPlayerId as Id<"matchPlayers">,
         minutesPlayed: parsed,
-        pin: coachPin,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Onbekende fout");
@@ -126,7 +124,6 @@ export function HistoryMatchCard({
         eventId: selectedGoal.eventId as Id<"matchEvents">,
         scorerId: goalScorerId ? (goalScorerId as Id<"players">) : undefined,
         assistId: goalAssistId ? (goalAssistId as Id<"players">) : undefined,
-        pin: coachPin,
         correlationId: createCorrelationId("history-enrich-goal"),
       });
       setSelectedGoalId(null);
@@ -274,52 +271,16 @@ export function HistoryMatchCard({
             </section>
 
             {canEdit && selectedGoal && (
-              <section className="space-y-2 rounded-lg border border-dia-green/20 bg-dia-green/5 p-3">
-                <h3 className="text-sm font-semibold text-gray-800">
-                  Goal achteraf toewijzen
-                </h3>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <select
-                    value={goalScorerId}
-                    onChange={(event) => setGoalScorerId(event.target.value)}
-                    className="border border-gray-300 rounded-lg p-2 text-sm"
-                  >
-                    <option value="">Scorer (optioneel)</option>
-                    {playerOptions.map((option) => (
-                      <option key={option.playerId} value={option.playerId}>
-                        {option.playerName}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={goalAssistId}
-                    onChange={(event) => setGoalAssistId(event.target.value)}
-                    className="border border-gray-300 rounded-lg p-2 text-sm"
-                  >
-                    <option value="">Assist (optioneel)</option>
-                    {playerOptions.map((option) => (
-                      <option key={option.playerId} value={option.playerId}>
-                        {option.playerName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <button
-                    onClick={() => setSelectedGoalId(null)}
-                    className="text-xs px-2 py-1 rounded-lg border border-gray-300"
-                  >
-                    Annuleren
-                  </button>
-                  <button
-                    onClick={onSaveGoal}
-                    disabled={savingGoal}
-                    className="text-xs px-2 py-1 rounded-lg bg-dia-green text-white disabled:opacity-50"
-                  >
-                    {savingGoal ? "Bezig..." : "Goal opslaan"}
-                  </button>
-                </div>
-              </section>
+              <HistoryGoalEditor
+                playerOptions={playerOptions}
+                goalScorerId={goalScorerId}
+                goalAssistId={goalAssistId}
+                savingGoal={savingGoal}
+                onScorerChange={setGoalScorerId}
+                onAssistChange={setGoalAssistId}
+                onCancel={() => setSelectedGoalId(null)}
+                onSave={onSaveGoal}
+              />
             )}
           </div>
         )}

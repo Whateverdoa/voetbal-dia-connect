@@ -1,22 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useQuery, useConvexConnectionState } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
+import { useConvexConnectionState, useQuery } from "convex/react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import { CoachDashboard } from "@/components/CoachDashboard";
-import { PinDisplay } from "@/components/PinDisplay";
-import { NumericKeypad } from "@/components/NumericKeypad";
-import {
-  ResumeSessionPrompt,
-  type CoachSession,
-} from "@/components/ResumeSessionPrompt";
+import { type CoachSession } from "@/components/ResumeSessionPrompt";
 
-const PIN_LOAD_TIMEOUT_MS = 6000;
-
-const MAX_PIN_LENGTH = 6;
-const MIN_PIN_LENGTH = 4;
+const ACCESS_LOAD_TIMEOUT_MS = 6000;
 const COACH_SESSION_KEY = "dia_coach_session";
 const hasClerkPublishableKey = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -28,20 +20,6 @@ function saveCoachSession(session: CoachSession) {
   }
 }
 
-function getCoachSession(): CoachSession | null {
-  if (typeof window !== "undefined") {
-    const stored = sessionStorage.getItem(COACH_SESSION_KEY);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
-}
-
 function clearCoachSession() {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(COACH_SESSION_KEY);
@@ -49,118 +27,50 @@ function clearCoachSession() {
 }
 
 export default function CoachLoginPage() {
-  const accountMode = hasClerkPublishableKey;
-  const [pin, setPin] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [showError, setShowError] = useState(false);
   const [connectionTimeout, setConnectionTimeout] = useState(false);
-  const [existingSession, setExistingSession] = useState<CoachSession | null>(
-    null
-  );
   const connection = useConvexConnectionState();
 
   useEffect(() => {
-    const session = getCoachSession();
-    if (session) {
-      setExistingSession(session);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!accountMode || existingSession || submitted) return;
+    if (!hasClerkPublishableKey || submitted) return;
     setSubmitted(true);
-  }, [accountMode, existingSession, submitted]);
+  }, [submitted]);
 
-  const coachData = useQuery(
-    api.matches.verifyCoachPin,
-    submitted && (accountMode || pin.length >= MIN_PIN_LENGTH) ? {} : "skip"
-  );
+  const coachData = useQuery(api.matches.verifyCoachAccess, submitted ? {} : "skip");
 
-  // If we're waiting for PIN verification and the query never returns (no connection), show "try again" after a timeout
   useEffect(() => {
     if (!submitted || coachData !== undefined) {
       setConnectionTimeout(false);
       return;
     }
+
     const notConnected =
       !connection.isWebSocketConnected || !connection.hasEverConnected;
-    const t = setTimeout(
-      () => setConnectionTimeout(true),
-      PIN_LOAD_TIMEOUT_MS
-    );
-    return () => clearTimeout(t);
-  }, [submitted, coachData, connection.isWebSocketConnected, connection.hasEverConnected]);
+    if (!notConnected) return;
+
+    const timer = setTimeout(() => {
+      setConnectionTimeout(true);
+    }, ACCESS_LOAD_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [
+    submitted,
+    coachData,
+    connection.isWebSocketConnected,
+    connection.hasEverConnected,
+  ]);
 
   useEffect(() => {
-    if (submitted && coachData) {
-      const session: CoachSession = {
-        coachId: coachData.coach.id,
-        coachName: coachData.coach.name,
-        pin,
-        teams: coachData.teams,
-      };
-      saveCoachSession(session);
-    }
-  }, [submitted, coachData, pin]);
-
-  useEffect(() => {
-    if (accountMode) return;
-    if (submitted && coachData === null) {
-      setShowError(true);
-      const timer = setTimeout(() => {
-        setShowError(false);
-        setPin("");
-        setSubmitted(false);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [accountMode, submitted, coachData]);
-
-  const handleKeyPress = useCallback(
-    (digit: string) => {
-      if (pin.length < MAX_PIN_LENGTH && !submitted) {
-        setPin((prev) => prev + digit);
-        setShowError(false);
-      }
-    },
-    [pin.length, submitted]
-  );
-
-  const handleBackspace = useCallback(() => {
-    if (!submitted) {
-      setPin((prev) => prev.slice(0, -1));
-      setShowError(false);
-    }
-  }, [submitted]);
-
-  const handleClear = useCallback(() => {
-    if (!submitted) {
-      setPin("");
-      setShowError(false);
-    }
-  }, [submitted]);
-
-  const handleSubmit = useCallback(() => {
-    if (accountMode) {
-      setSubmitted(true);
-      return;
-    }
-    if (pin.length >= MIN_PIN_LENGTH) {
-      setSubmitted(true);
-    }
-  }, [accountMode, pin.length]);
-
-  useEffect(() => {
-    if (accountMode) return;
-    if (pin.length === MAX_PIN_LENGTH && !submitted) {
-      setSubmitted(true);
-    }
-  }, [accountMode, pin.length, submitted]);
+    if (!submitted || !coachData) return;
+    saveCoachSession({
+      coachId: coachData.coach.id,
+      coachName: coachData.coach.name,
+      teams: coachData.teams,
+    });
+  }, [submitted, coachData]);
 
   const handleLogout = () => {
     clearCoachSession();
-    setExistingSession(null);
-    setPin("");
     setSubmitted(false);
     setConnectionTimeout(false);
   };
@@ -170,11 +80,27 @@ export default function CoachLoginPage() {
     setSubmitted(false);
   };
 
+  if (!hasClerkPublishableKey) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-3">
+          <h1 className="text-xl font-bold text-dia-green">Clerk vereist</h1>
+          <p className="text-sm text-gray-600">
+            Deze omgeving gebruikt alleen account-login via e-mail en rollen.
+          </p>
+          <Link href="/" className="text-sm text-dia-green hover:underline">
+            ← Terug naar start
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   if (submitted && coachData) {
     return <CoachDashboard data={coachData} onLogout={handleLogout} />;
   }
 
-  if (accountMode && submitted && coachData === undefined) {
+  if (submitted && coachData === undefined) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <p className="text-gray-600 font-medium">Coachrechten controleren...</p>
@@ -182,23 +108,7 @@ export default function CoachLoginPage() {
     );
   }
 
-  if (existingSession && !submitted) {
-    return (
-      <ResumeSessionPrompt
-        session={existingSession}
-        onResume={() => {
-          setPin(existingSession.pin);
-          setSubmitted(true);
-        }}
-        onNewLogin={() => {
-          clearCoachSession();
-          setExistingSession(null);
-        }}
-      />
-    );
-  }
-
-  if (accountMode && submitted && coachData === null) {
+  if (submitted && coachData === null) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-4">
@@ -234,22 +144,15 @@ export default function CoachLoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center">
-            <p className="text-lg text-gray-700 font-medium">Voer je PIN in</p>
-            <p className="text-sm text-gray-500 mt-1">4-6 cijfers</p>
+            <p className="text-lg text-gray-700 font-medium">
+              Inloggen verloopt via accountrechten
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Deze omgeving gebruikt alleen Clerk op basis van e-mail en rollen.
+            </p>
           </div>
 
-          <PinDisplay
-            pin={pin}
-            maxLength={MAX_PIN_LENGTH}
-            showError={showError}
-          />
-
           <div className="h-6 flex items-center justify-center min-h-[24px]">
-            {showError && (
-              <p className="text-red-500 text-sm font-medium animate-pulse">
-                Ongeldige PIN
-              </p>
-            )}
             {connectionTimeout && (
               <p className="text-amber-600 text-sm font-medium text-center">
                 Geen verbinding. Controleer je internet en probeer opnieuw.
@@ -266,15 +169,6 @@ export default function CoachLoginPage() {
               Opnieuw proberen
             </button>
           )}
-
-          <NumericKeypad
-            onKeyPress={handleKeyPress}
-            onBackspace={handleBackspace}
-            onClear={handleClear}
-            onSubmit={handleSubmit}
-            canSubmit={pin.length >= MIN_PIN_LENGTH}
-            disabled={submitted && !connectionTimeout}
-          />
         </div>
       </div>
     </main>

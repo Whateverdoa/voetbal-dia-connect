@@ -13,7 +13,7 @@ export const getPlayingTime = query({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db
@@ -63,7 +63,7 @@ export const getSuggestedSubstitutions = query({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) return null;
+    if (!(await verifyCoachTeamMembership(ctx, match))) return null;
 
     const now = Date.now();
     const matchPlayers = await ctx.db

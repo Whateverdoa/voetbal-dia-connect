@@ -21,7 +21,7 @@ export const substituteFromField = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match, "");
+    await requireCoachTeamAccess(ctx, match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (match.status === "finished") {
       throw new Error("Wissels zijn niet toegestaan na het eindsignaal");

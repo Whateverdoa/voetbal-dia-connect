@@ -2,7 +2,7 @@
 
 ## Project Context
 
-Youth football match tracking app. Next.js 16 + Convex real-time backend. Two user roles: Coach (PIN-auth, manages match) and Public (code-based, read-only live view).
+Youth football match tracking app. Next.js 16 + Convex real-time backend. Two user roles: Coach (Clerk e-mail auth, manages match) and Public (code-based, read-only live view).
 
 Read `HANDOFF.md` for full architecture and data model.
 
@@ -31,7 +31,7 @@ Read `HANDOFF.md` for full architecture and data model.
 - Schema changes in `convex/schema.ts` — always backwards-compatible
 - Queries in `convex/matches.ts` (or new domain files)
 - Mutations in `convex/matchActions.ts` (or new domain files)
-- Every mutation must verify `coachPin` before modifying data
+- Every mutation must verify coach/referee identity and role before modifying data
 - Use indexes for all queries (never full table scans)
 
 ### Styling
@@ -51,7 +51,7 @@ Read `HANDOFF.md` for full architecture and data model.
 src/
   app/
     page.tsx           — Home (enter match code)
-    coach/             — Coach pages (PIN login, dashboard, match control)
+    coach/             — Coach pages (Clerk login, dashboard, match control)
     live/[code]/       — Public live match view
   components/          — Shared React components
   hooks/               — Custom hooks
@@ -67,7 +67,7 @@ convex/
 ### Add a new Convex query
 1. Add to appropriate file in `convex/`
 2. Use proper indexes from schema
-3. Return only needed fields (don't leak PINs to public queries)
+3. Return only needed fields (don't leak private role-linking data to public queries)
 
 ### Add a new page
 1. Create `src/app/[route]/page.tsx`
@@ -82,12 +82,12 @@ Run `npx convex run seed:init` (if seed function exists) or use Convex dashboard
 - Run `npx convex dev` in one terminal, `npm run dev:frontend` in another
 - Use `npm run dev:restart` to cleanly restart local frontend+backend without duplicate/stale dev processes
 - Test public view: enter match code on homepage
-- Test coach: use PIN to access coach dashboard
+- Test coach: use linked e-mail account to access coach dashboard
 - Check Convex dashboard for data state
 
 ## Boundaries
 
 - Don't modify `convex/_generated/` — auto-generated
-- Don't add authentication beyond PIN (keep it simple for volunteer coaches)
+- Keep authentication simple: Clerk login + role checks only
 - Don't add external APIs yet — keep it self-contained
 - Performance: matches may have 20+ events, keep queries efficient

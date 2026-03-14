@@ -25,7 +25,7 @@ export const claimMatchLead = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
       throw new Error("Geen coachtoegang voor dit team");
     }
@@ -56,7 +56,7 @@ export const releaseMatchLead = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
       throw new Error("Geen coachtoegang voor dit team");
     }

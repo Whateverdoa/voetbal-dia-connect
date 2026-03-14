@@ -12,7 +12,7 @@ import { generatePublicCode } from "../seed/helpers";
 export const importMatchBatch = mutation({
   args: {
     teamSlug: v.string(),
-    coachPin: v.string(),
+    coachId: v.id("coaches"),
     matches: v.array(
       v.object({
         opponent: v.string(),
@@ -45,6 +45,13 @@ export const importMatchBatch = mutation({
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
+    const coach = await ctx.db.get(args.coachId);
+    if (!coach) {
+      return { error: "Coach niet gevonden", created: 0, skipped: 0 };
+    }
+    if (!coach.teamIds.includes(team._id)) {
+      return { error: "Coach hoort niet bij dit team", created: 0, skipped: 0 };
+    }
 
     const existingKeys = new Set(
       existing.map((m) => `${m.opponent}|${m.scheduledAt}`),
@@ -68,8 +75,8 @@ export const importMatchBatch = mutation({
         const isFinished = m.finished ?? false;
         await ctx.db.insert("matches", {
           teamId: team._id,
+          coachId: args.coachId,
           publicCode: generatePublicCode(),
-          coachPin: args.coachPin,
           opponent: m.opponent,
           isHome: m.isHome,
           scheduledAt,

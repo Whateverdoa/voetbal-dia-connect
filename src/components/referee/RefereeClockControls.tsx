@@ -44,7 +44,7 @@ export function RefereeClockControls({
       await action();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setError(msg.includes("Invalid match or PIN") ? "Ongeldige PIN" : `Fout: ${msg}`);
+      setError(msg.includes("Geen rechten") ? "Geen toegang" : `Fout: ${msg}`);
       setTimeout(() => setError(null), 5000);
     } finally {
       setIsLoading(false);

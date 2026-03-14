@@ -16,14 +16,19 @@ import type { MatchStatus } from "./types";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
-  pin: string;
   players: MatchPlayer[];
   formationId: string | undefined;
   status: MatchStatus;
   canEdit?: boolean;
 }
 
-export function PitchView({ matchId, pin, players, formationId, status, canEdit = true }: PitchViewProps) {
+export function PitchView({
+  matchId,
+  players,
+  formationId,
+  status,
+  canEdit = true,
+}: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);

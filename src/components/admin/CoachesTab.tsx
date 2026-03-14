@@ -15,7 +15,6 @@ interface Team {
 interface Coach {
   _id: Id<"coaches">;
   name: string;
-  pin: string;
   teamIds: Id<"teams">[];
   teams: { id: Id<"teams">; name: string }[];
   email?: string;
@@ -28,28 +27,24 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
   const deleteCoach = useMutation(api.admin.deleteCoach);
 
   const [newName, setNewName] = useState("");
-  const [newPin, setNewPin] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newTeamIds, setNewTeamIds] = useState<Id<"teams">[]>([]);
   const [editingId, setEditingId] = useState<Id<"coaches"> | null>(null);
   const [editName, setEditName] = useState("");
-  const [editPin, setEditPin] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editTeamIds, setEditTeamIds] = useState<Id<"teams">[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"coaches"> | null>(null);
   const [status, setStatus] = useState("");
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newPin.trim()) return;
+    if (!newName.trim()) return;
     try {
       await createCoach({
         name: newName.trim(),
-        pin: newPin.trim(),
         teamIds: newTeamIds,
         email: newEmail.trim() || undefined,
       });
       setNewName("");
-      setNewPin("");
       setNewEmail("");
       setNewTeamIds([]);
       setStatus("✅ Coach aangemaakt");
@@ -64,7 +59,6 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
       await updateCoach({
         coachId,
         name: editName.trim() || undefined,
-        pin: editPin.trim() || undefined,
         teamIds: editTeamIds,
         email: editEmail.trim() || undefined,
       });
@@ -122,16 +116,9 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                     />
                     <input
                       type="text"
-                      value={editPin}
-                      onChange={(e) => setEditPin(e.target.value)}
-                      placeholder="PIN"
-                      className="w-24 px-2 py-1 border rounded font-mono"
-                    />
-                    <input
-                      type="email"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
-                      placeholder="E-mail (Clerk, optioneel)"
+                      placeholder="E-mail (Clerk)"
                       className="flex-1 min-w-[180px] px-2 py-1 border rounded text-sm"
                     />
                   </div>
@@ -186,9 +173,6 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{coach.name}</span>
-                      <span className="text-sm text-gray-500 font-mono">
-                        PIN: {coach.pin}
-                      </span>
                       {coach.email && (
                         <span className="text-sm text-gray-500">{coach.email}</span>
                       )}
@@ -201,7 +185,6 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                     onClick={() => {
                       setEditingId(coach._id);
                       setEditName(coach.name);
-                      setEditPin(coach.pin);
                       setEditEmail(coach.email ?? "");
                       setEditTeamIds(coach.teamIds);
                     }}
@@ -237,17 +220,10 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
               className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
             <input
-              type="text"
-              value={newPin}
-              onChange={(e) => setNewPin(e.target.value)}
-              placeholder="PIN"
-              className="w-24 px-3 py-2 border rounded-lg font-mono"
-            />
-            <input
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="E-mail (Clerk, optioneel)"
+              placeholder="E-mail (Clerk)"
               className="flex-1 min-w-[180px] px-3 py-2 border rounded-lg text-sm"
             />
           </div>
@@ -274,7 +250,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
           </div>
           <button
             onClick={handleCreate}
-            disabled={!newName.trim() || !newPin.trim()}
+            disabled={!newName.trim()}
             className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
           >
             Toevoegen

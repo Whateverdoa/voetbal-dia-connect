@@ -9,7 +9,7 @@ import { PlayerSelector } from "./PlayerSelector";
 
 interface MatchFormProps {
   teams: { _id: Id<"teams">; name: string }[] | undefined;
-  coaches: { _id: Id<"coaches">; name: string; pin: string }[] | undefined;
+  coaches: { _id: Id<"coaches">; name: string }[] | undefined;
   referees: { id: Id<"referees">; name: string }[] | undefined;
   onCreated: (publicCode: string) => void;
 }
@@ -92,7 +92,7 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
         teamId: teamId as Id<"teams">,
         opponent: opponent.trim(),
         isHome,
-        coachPin: selectedCoach.pin,
+        coachId: selectedCoach._id,
         quarterCount,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
         refereeId: refereeId ? (refereeId as Id<"referees">) : undefined,

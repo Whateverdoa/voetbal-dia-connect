@@ -25,7 +25,7 @@ export const addGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
@@ -101,7 +101,7 @@ export const substitute = mutation({
     if (match.status === "finished") {
       throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
@@ -192,7 +192,7 @@ export const removeLastGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 

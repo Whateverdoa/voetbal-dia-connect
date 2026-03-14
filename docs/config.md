@@ -1,5 +1,11 @@
 # Configuratievariabelen
 
+## Rollen (Clerk)
+
+- **`CLERK_BOOTSTRAP_ADMIN_EMAILS`**  
+  Komma-gescheiden e-mailadressen. Gebruikers met dit e-mailadres krijgen bij het eerste bezoek aan de rol-onboarding automatisch de rollen admin, coach en scheidsrechter (zonder rolkeuze-knoppen).  
+  Zie `docs/roles.md` voor het volledige rollenmodel.
+
 ## Sportlink voorbereiding
 
 Deze variabelen zijn voorbereid, maar worden pas actief gebruikt zodra het bestuur

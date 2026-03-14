@@ -1,6 +1,10 @@
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { verifyCoachTeamMembership, verifyClockPin, verifyIsMatchLead } from "./pinHelpers";
+import {
+  verifyCoachTeamMembership,
+  verifyClockAccess,
+  verifyIsMatchLead,
+} from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 
 type Ctx = MutationCtx | QueryCtx;
@@ -15,12 +19,11 @@ type Ctx = MutationCtx | QueryCtx;
 export async function requireCoachTeamAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin?: string
 ): Promise<Doc<"coaches">> {
   if (!match) {
     throw new Error("Wedstrijd niet gevonden");
   }
-  const coach = await verifyCoachTeamMembership(ctx, match, pin);
+  const coach = await verifyCoachTeamMembership(ctx, match);
   if (!coach) {
     throw new Error("Geen coachtoegang voor deze wedstrijd");
   }
@@ -30,12 +33,11 @@ export async function requireCoachTeamAccess(
 export async function requireMatchLeadAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin?: string
 ): Promise<Doc<"coaches">> {
   if (!match) {
     throw new Error("Wedstrijd niet gevonden");
   }
-  const leadCoach = await verifyIsMatchLead(ctx, match, pin);
+  const leadCoach = await verifyIsMatchLead(ctx, match);
   if (!leadCoach) {
     throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
   }
@@ -45,13 +47,12 @@ export async function requireMatchLeadAccess(
 export async function requireClockControlAccess(
   ctx: Ctx,
   match: Doc<"matches"> | null,
-  pin?: string
 ): Promise<void> {
   if (!match) {
     throw new Error("Wedstrijd niet gevonden");
   }
   const referee = await fetchRefereeForMatch(ctx, match);
-  const allowed = await verifyClockPin(ctx, match, pin, referee);
+  const allowed = await verifyClockAccess(ctx, match, referee);
   if (!allowed) {
     throw new Error("Geen rechten om de klok te bedienen");
   }

@@ -2,7 +2,7 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { QueryCtx } from "./_generated/server";
 
-async function resolveReferee(ctx: QueryCtx, pin?: string) {
+async function resolveReferee(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   const identityEmail = identity?.email?.toLowerCase();
   if (identityEmail) {
@@ -13,14 +13,7 @@ async function resolveReferee(ctx: QueryCtx, pin?: string) {
     if (byEmail && byEmail.active) return byEmail;
   }
 
-  const normalizedPin = (pin ?? "").trim();
-  if (!normalizedPin) return null;
-  const byPin = await ctx.db
-    .query("referees")
-    .withIndex("by_pin", (q) => q.eq("pin", normalizedPin))
-    .first();
-  if (!byPin || !byPin.active) return null;
-  return byPin;
+  return null;
 }
 
 // Get match for referee (verify referee PIN via referees table + assignment)

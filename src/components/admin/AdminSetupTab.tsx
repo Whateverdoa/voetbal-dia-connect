@@ -20,8 +20,8 @@ export function AdminSetupTab() {
           <ul className="list-disc list-inside space-y-0.5 ml-2">
             <li>DIA club met 3 teams (JO11-1, JO12-1, JO13-2)</li>
             <li>14 spelers per team</li>
-            <li>4 coaches (PIN: 1234, 5678, 2468, 1357)</li>
-            <li>4 scheidsrechters (PIN: 7777, 8888, 6666, 5555)</li>
+            <li>4 coaches met e-mailkoppeling</li>
+            <li>4 scheidsrechters met e-mailkoppeling</li>
             <li>3 wedstrijden voor JO12-1 met scheidsrechter toewijzingen</li>
           </ul>
         </div>

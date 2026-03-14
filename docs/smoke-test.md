@@ -99,7 +99,7 @@ Open https://dashboard.convex.dev and select your project.
   - [ ] Opponent: "VV Oranje"
   - [ ] Status: "scheduled"
   - [ ] isHome: true
-  - [ ] coachPin: "1234"
+  - [ ] coachId: geldige coachreferentie
   - [ ] publicCode: 6-char code
 
 #### MatchPlayers table

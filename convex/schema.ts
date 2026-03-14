@@ -23,24 +23,27 @@ export default defineSchema({
   // Coaches can manage one or more teams
   coaches: defineTable({
     name: v.string(),
-    pin: v.string(), // 4-6 digit PIN
+    // Legacy compatibility during pin-free migration rollout.
+    pin: v.optional(v.string()),
     teamIds: v.array(v.id("teams")),
-    email: v.optional(v.string()), // Clerk login by email (no PIN needed when set)
+    email: v.optional(v.string()),
     createdAt: v.number(),
   })
-    .index("by_pin", ["pin"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_pin", ["pin"]),
 
-  // Referees — global records with their own PIN (assigned to matches by admin/coach)
+  // Referees — global records linked by e-mail (assigned to matches by admin/coach)
   referees: defineTable({
     name: v.string(),
-    pin: v.string(), // 4-6 digit PIN
-    email: v.optional(v.string()), // Account-based login by email
+    // Legacy compatibility during pin-free migration rollout.
+    pin: v.optional(v.string()),
+    email: v.optional(v.string()),
     active: v.boolean(),
     createdAt: v.number(),
   })
+    .index("by_email", ["email"])
     .index("by_pin", ["pin"])
-    .index("by_email", ["email"]),
+    .index("by_active", ["active"]),
 
   // Players per team
   players: defineTable({
@@ -57,9 +60,11 @@ export default defineSchema({
   // Matches
   matches: defineTable({
     teamId: v.id("teams"),
+    // Legacy compatibility during pin-free migration rollout.
+    coachId: v.optional(v.id("coaches")),
+    coachPin: v.optional(v.string()),
     publicCode: v.string(), // 6-char code for public access
-    coachPin: v.string(), // PIN to control this match
-    
+
     // Match info
     opponent: v.string(),
     isHome: v.boolean(),

@@ -13,7 +13,7 @@ function refereeError(message: string): never {
 export const createReferee = mutation({
   args: {
     name: v.string(),
-    pin: v.string(),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
@@ -23,31 +23,20 @@ export const createReferee = mutation({
       refereeError("Naam is verplicht");
     }
 
-    const trimmedPin = args.pin.trim();
-    if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-      refereeError("PIN moet 4-6 tekens zijn");
-    }
-
-    // Check PIN uniqueness across referees AND coaches
-    const existingReferee = await ctx.db
-      .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-      .first();
-    if (existingReferee) {
-      refereeError("PIN is al in gebruik door een scheidsrechter");
-    }
-
-    const existingCoach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-      .first();
-    if (existingCoach) {
-      refereeError("PIN is al in gebruik door een coach");
+    const emailNorm = args.email?.trim().toLowerCase();
+    if (emailNorm) {
+      const existingReferee = await ctx.db
+        .query("referees")
+        .withIndex("by_email", (q) => q.eq("email", emailNorm))
+        .first();
+      if (existingReferee) {
+        refereeError("E-mail is al in gebruik door een scheidsrechter");
+      }
     }
 
     return await ctx.db.insert("referees", {
       name: trimmedName,
-      pin: trimmedPin,
+      email: emailNorm ?? undefined,
       active: true,
       createdAt: Date.now(),
     });
@@ -56,6 +45,7 @@ export const createReferee = mutation({
 
 export const listReferees = query({
   handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     return await ctx.db.query("referees").collect();
   },
 });
@@ -64,7 +54,7 @@ export const updateReferee = mutation({
   args: {
     refereeId: v.id("referees"),
     name: v.optional(v.string()),
-    pin: v.optional(v.string()),
+    email: v.optional(v.string()),
     active: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -72,30 +62,18 @@ export const updateReferee = mutation({
 
     const { refereeId, ...updates } = args;
 
-    // Check PIN uniqueness if changing
-    if (updates.pin) {
-      const trimmedPin = updates.pin.trim();
-      if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-        refereeError("PIN moet 4-6 tekens zijn");
+    if (updates.email !== undefined) {
+      const emailNorm = updates.email?.trim().toLowerCase() || undefined;
+      if (emailNorm) {
+        const existingReferee = await ctx.db
+          .query("referees")
+          .withIndex("by_email", (q) => q.eq("email", emailNorm))
+          .first();
+        if (existingReferee && existingReferee._id !== refereeId) {
+          refereeError("E-mail is al in gebruik door een scheidsrechter");
+        }
       }
-
-      const existingReferee = await ctx.db
-        .query("referees")
-        .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-        .first();
-      if (existingReferee && existingReferee._id !== refereeId) {
-        refereeError("PIN is al in gebruik door een scheidsrechter");
-      }
-
-      const existingCoach = await ctx.db
-        .query("coaches")
-        .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-        .first();
-      if (existingCoach) {
-        refereeError("PIN is al in gebruik door een coach");
-      }
-
-      updates.pin = trimmedPin;
+      updates.email = emailNorm;
     }
 
     const filtered = Object.fromEntries(

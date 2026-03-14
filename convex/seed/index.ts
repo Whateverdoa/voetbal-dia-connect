@@ -17,12 +17,6 @@ import {
 import { seedPlayersForTeam } from "./seedPlayers";
 import { seedMatchesForTeam } from "./seedMatches";
 
-/** First coach PIN per team slug (used as match coachPin for seed) */
-function getFirstCoachPinForTeam(teamSlug: string): string {
-  const coach = COACH_CONFIGS.find((c) => c.teamSlugs.includes(teamSlug));
-  return coach?.pin ?? "1234";
-}
-
 /**
  * Idempotent seed action for DIA Live: 4 JO12 teams, coaches, players, full match schedules.
  * Creates: 1 club, 4 teams (JO12-1..4), 13 coaches, 4 referees, all gespeeld + komend matches.
@@ -57,35 +51,45 @@ export const init = action({
       teamSummary.push({ name: cfg.name, players: count });
     }
 
-    const coachSummary: Array<{ name: string; pin: string }> = [];
+    const coachSummary: Array<{ name: string; email?: string }> = [];
     for (const cfg of COACH_CONFIGS) {
       const teamIds = cfg.teamSlugs.map((s) => teamMap[s]).filter(Boolean);
       await ctx.runMutation(api.admin.createCoach, {
         name: cfg.name,
-        pin: cfg.pin,
+        email: cfg.email,
         teamIds,
       });
-      coachSummary.push({ name: cfg.name, pin: cfg.pin });
+      coachSummary.push({ name: cfg.name, email: cfg.email });
     }
 
     const refereeMap: Record<string, Id<"referees">> = {};
-    const refereeSummary: Array<{ name: string; pin: string }> = [];
+    const refereeSummary: Array<{ name: string; email?: string }> = [];
     for (const cfg of REFEREE_CONFIGS) {
       const id = await ctx.runMutation(api.admin.createReferee, {
         name: cfg.name,
-        pin: cfg.pin,
+        email: cfg.email,
       });
       const slug = cfg.name.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-");
       refereeMap[slug] = id;
-      refereeSummary.push({ name: cfg.name, pin: cfg.pin });
+      refereeSummary.push({ name: cfg.name, email: cfg.email });
     }
 
     const allMatchResults: Array<{ team: string; opponent: string; code: string; date: string; result: string | null }> = [];
     for (const cfg of JO12_TEAM_CONFIGS) {
       const teamId = teamMap[cfg.slug];
-      const coachPin = getFirstCoachPinForTeam(cfg.slug);
+      const defaultCoach = await ctx.runQuery(api.admin.listCoaches, {});
+      const coach = defaultCoach.find((c) => c.teamIds.includes(teamId));
+      if (!coach) {
+        throw new Error(`Geen coach gevonden voor team ${cfg.name}`);
+      }
       const schedule = JO12_SCHEDULES[cfg.slug];
-      const results = await seedMatchesForTeam(ctx, teamId, coachPin, refereeMap, schedule);
+      const results = await seedMatchesForTeam(
+        ctx,
+        teamId,
+        coach._id,
+        refereeMap,
+        schedule
+      );
       for (const r of results) {
         allMatchResults.push({ team: cfg.name, ...r });
       }
@@ -102,12 +106,12 @@ export const init = action({
   },
 });
 
-// Internal mutation for creating seed match (not PIN-protected since it's seed data)
+// Internal mutation for creating seed match.
 export const createSeedMatch = internalMutation({
   args: {
     teamId: v.id("teams"),
+    coachId: v.id("coaches"),
     publicCode: v.string(),
-    coachPin: v.string(),
     opponent: v.string(),
     isHome: v.boolean(),
     scheduledAt: v.number(),
@@ -120,8 +124,8 @@ export const createSeedMatch = internalMutation({
     const now = Date.now();
     return await ctx.db.insert("matches", {
       teamId: args.teamId,
+      coachId: args.coachId,
       publicCode: args.publicCode,
-      coachPin: args.coachPin,
       opponent: args.opponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,

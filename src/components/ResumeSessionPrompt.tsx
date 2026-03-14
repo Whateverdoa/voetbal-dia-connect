@@ -3,7 +3,6 @@
 interface CoachSession {
   coachId: string;
   coachName: string;
-  pin: string;
   teams: { id: string; name: string }[];
 }
 

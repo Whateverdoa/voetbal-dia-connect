@@ -18,7 +18,7 @@ export const pauseClock = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, "");
+    await requireClockControlAccess(ctx, match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {
@@ -55,7 +55,7 @@ export const resumeClock = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, "");
+    await requireClockControlAccess(ctx, match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
 
     if (match.status !== "live") {

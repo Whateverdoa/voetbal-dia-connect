@@ -17,7 +17,7 @@ export const togglePlayerOnField = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
@@ -67,7 +67,7 @@ export const toggleKeeper = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
@@ -109,7 +109,7 @@ export const assignPlayerToSlot = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
     const mp = await ctx.db
@@ -156,7 +156,7 @@ export const swapFieldPositions = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
     const mpA = await ctx.db
@@ -194,7 +194,7 @@ export const setMatchFormation = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
     const updates: { formationId?: string; pitchType?: "full" | "half" } = {};

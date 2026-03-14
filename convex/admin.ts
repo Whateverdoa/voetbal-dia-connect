@@ -48,11 +48,16 @@ export {
 } from "./adminReferees";
 
 export {
-  addPlayerToMatch,
   createMatch,
-  createPlayerAndAddToMatch,
-  deleteMatch,
   listAllMatches,
   listTeamPlayersNotInMatch,
   updateMatch,
 } from "./adminMatches";
+
+export { backfillMatchCoachIds, cleanupLegacyPinFields } from "./adminMigrations";
+
+export {
+  addPlayerToMatch,
+  createPlayerAndAddToMatch,
+  deleteMatch,
+} from "./adminMatchPlayers";

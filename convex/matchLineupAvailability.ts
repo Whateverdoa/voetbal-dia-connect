@@ -22,7 +22,7 @@ export const togglePlayerAbsent = mutation({
     if (match.status !== "scheduled" && match.status !== "lineup") {
       throw new Error("Afwezigheid kan alleen vóór de aftrap worden gewijzigd");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 
@@ -55,7 +55,7 @@ export const toggleShowLineup = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, ""))) {
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }
 

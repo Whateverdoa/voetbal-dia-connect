@@ -9,7 +9,6 @@ type LineupView = "veld" | "lijst";
 
 interface FormationSelectorProps {
   matchId: Id<"matches">;
-  pin: string;
   formationId: string | undefined;
   lineupView: LineupView;
   onLineupViewChange: (view: LineupView) => void;
@@ -23,7 +22,6 @@ interface FormationSelectorProps {
  */
 export function FormationSelector({
   matchId,
-  pin,
   formationId,
   lineupView,
   onLineupViewChange,

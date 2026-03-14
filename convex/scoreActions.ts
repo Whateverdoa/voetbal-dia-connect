@@ -16,7 +16,7 @@ import {
 /**
  * Adjust the match score by +1 or -1 for a given team.
  *
- * - Both coach and referee PINs are accepted (verifyClockPin).
+ * - Both coach and assigned referee identities are accepted.
  * - When delta is +1, a lightweight "goal" event is always logged.
  *   If scorerNumber is provided, it is stored in the note so coach can enrich later.
  * - Score is clamped to a minimum of 0.
@@ -32,7 +32,7 @@ export const adjustScore = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match, "");
+    await requireClockControlAccess(ctx, match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,

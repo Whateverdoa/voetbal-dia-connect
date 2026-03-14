@@ -20,7 +20,7 @@ export {
   listActiveReferees,
   listByTeam,
   listTeamPlayersNotInMatch,
-  verifyCoachPin,
+  verifyCoachAccess,
 } from "./coachQueries";
 export { getForReferee, getMatchesForReferee } from "./refereeQueries";
 
@@ -112,14 +112,14 @@ export const getByPublicCode = query({
   },
 });
 
-// Get match for coach (account identity first, PIN fallback)
+// Get match for coach (identity-based)
 export const getForCoach = query({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    const coach = await verifyCoachTeamMembership(ctx, match, "");
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) return null;
 
     const now = Date.now();
@@ -193,9 +193,6 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
-    // Strip coachPin from response — coach already knows it, no need to send over wire
-    const { coachPin: _pin, ...safeMatch } = match;
-
     const isPregame = match.status === "scheduled" || match.status === "lineup";
     const canModifyLineup = match.status !== "finished";
     const capabilities = {
@@ -209,15 +206,15 @@ export const getForCoach = query({
     };
 
     return {
-      ...safeMatch,
+      ...match,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: projectedEvents,
       stagedSubstitutions,
       refereeName: referee?.name ?? null,
-      leadCoachId: safeMatch.leadCoachId ?? null,
+      leadCoachId: match.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
-      hasLead: !!safeMatch.leadCoachId,
+      hasLead: !!match.leadCoachId,
       capabilities,
     };
   },

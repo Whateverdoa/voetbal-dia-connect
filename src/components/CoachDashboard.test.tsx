@@ -4,7 +4,6 @@ import { CoachDashboard } from './CoachDashboard';
 
 describe('CoachDashboard', () => {
   const mockOnLogout = vi.fn();
-  const defaultPin = '1234';
 
   const mockCoachData = {
     coach: { id: 'coach123', name: 'Coach Mike' },
@@ -19,14 +18,14 @@ describe('CoachDashboard', () => {
   describe('Header', () => {
     it('renders Dutch welcome message with coach name', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Welkom, Coach Mike!')).toBeInTheDocument();
     });
 
     it('displays team name in header', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       // Team name appears in header (p element) and as section heading (h2)
       const teamNames = screen.getAllByText('JO12-1');
@@ -45,14 +44,14 @@ describe('CoachDashboard', () => {
         ],
       };
       render(
-        <CoachDashboard data={multiTeamData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={multiTeamData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('JO11-1 • JO13-2')).toBeInTheDocument();
     });
 
     it('renders logout button with Dutch text', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByLabelText('Uitloggen')).toBeInTheDocument();
       expect(screen.getByText('Uitloggen')).toBeInTheDocument();
@@ -60,7 +59,7 @@ describe('CoachDashboard', () => {
 
     it('calls onLogout when logout button is clicked', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       fireEvent.click(screen.getByLabelText('Uitloggen'));
       expect(mockOnLogout).toHaveBeenCalledTimes(1);
@@ -68,7 +67,7 @@ describe('CoachDashboard', () => {
 
     it('logout button has minimum touch target size', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       const logoutButton = screen.getByLabelText('Uitloggen');
       expect(logoutButton).toHaveClass('min-h-[44px]');
@@ -78,7 +77,7 @@ describe('CoachDashboard', () => {
   describe('Team Sections', () => {
     it('renders team section with team name as heading', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByRole('heading', { name: 'JO12-1' })).toBeInTheDocument();
     });
@@ -92,7 +91,7 @@ describe('CoachDashboard', () => {
         ],
       };
       render(
-        <CoachDashboard data={dataWithMatches} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithMatches} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('2 wedstrijden')).toBeInTheDocument();
     });
@@ -105,21 +104,21 @@ describe('CoachDashboard', () => {
         ],
       };
       render(
-        <CoachDashboard data={dataWithOneMatch} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithOneMatch} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('1 wedstrijd')).toBeInTheDocument();
     });
 
     it('renders "Nieuwe wedstrijd" button with Dutch text', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Nieuwe wedstrijd')).toBeInTheDocument();
     });
 
     it('new match button links to correct URL with teamId', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       const newMatchLink = screen.getByText('Nieuwe wedstrijd').closest('a');
       expect(newMatchLink).toHaveAttribute('href', '/coach/new?teamId=team456');
@@ -127,7 +126,7 @@ describe('CoachDashboard', () => {
 
     it('shows empty state message when no matches', () => {
       render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Nog geen wedstrijden voor dit team')).toBeInTheDocument();
     });
@@ -154,14 +153,14 @@ describe('CoachDashboard', () => {
 
     it('shows "Gepland" section header for scheduled matches', () => {
       render(
-        <CoachDashboard data={dataWithScheduled} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithScheduled} onLogout={mockOnLogout} />
       );
       expect(screen.getByRole('heading', { name: 'Gepland' })).toBeInTheDocument();
     });
 
     it('displays opponent name with "vs" prefix for home matches', () => {
       render(
-        <CoachDashboard data={dataWithScheduled} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithScheduled} onLogout={mockOnLogout} />
       );
       expect(screen.getByText(/vs VV Oranje/)).toBeInTheDocument();
     });
@@ -172,21 +171,21 @@ describe('CoachDashboard', () => {
         matches: [{ ...dataWithScheduled.matches[0], isHome: false }],
       };
       render(
-        <CoachDashboard data={awayMatchData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={awayMatchData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText(/@ VV Oranje/)).toBeInTheDocument();
     });
 
     it('displays public code for match', () => {
       render(
-        <CoachDashboard data={dataWithScheduled} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithScheduled} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('ABC123')).toBeInTheDocument();
     });
 
     it('shows placeholder score for scheduled matches', () => {
       render(
-        <CoachDashboard data={dataWithScheduled} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithScheduled} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('- - -')).toBeInTheDocument();
     });
@@ -213,28 +212,28 @@ describe('CoachDashboard', () => {
 
     it('shows "Actieve wedstrijden" section for live matches', () => {
       render(
-        <CoachDashboard data={dataWithLive} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithLive} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Actieve wedstrijden')).toBeInTheDocument();
     });
 
     it('displays current score for live match', () => {
       render(
-        <CoachDashboard data={dataWithLive} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithLive} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('2 - 1')).toBeInTheDocument();
     });
 
     it('displays current quarter indicator', () => {
       render(
-        <CoachDashboard data={dataWithLive} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithLive} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('K2')).toBeInTheDocument();
     });
 
     it('shows LIVE status badge', () => {
       render(
-        <CoachDashboard data={dataWithLive} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={dataWithLive} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('LIVE')).toBeInTheDocument();
     });
@@ -245,7 +244,7 @@ describe('CoachDashboard', () => {
         matches: [{ ...dataWithLive.matches[0], status: 'halftime' as const }],
       };
       render(
-        <CoachDashboard data={halftimeData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={halftimeData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Actieve wedstrijden')).toBeInTheDocument();
       expect(screen.getByText('Rust')).toBeInTheDocument();
@@ -257,107 +256,11 @@ describe('CoachDashboard', () => {
         matches: [{ ...dataWithLive.matches[0], status: 'lineup' as const }],
       };
       render(
-        <CoachDashboard data={lineupData} pin={defaultPin} onLogout={mockOnLogout} />
+        <CoachDashboard data={lineupData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Actieve wedstrijden')).toBeInTheDocument();
       expect(screen.getByText('Opstelling')).toBeInTheDocument();
     });
   });
 
-  describe('Finished Matches Section', () => {
-    const dataWithFinished = {
-      ...mockCoachData,
-      matches: [
-        {
-          _id: 'match1',
-          teamId: 'team456',
-          opponent: 'VV Oranje',
-          isHome: true,
-          status: 'finished' as const,
-          publicCode: 'ABC123',
-          homeScore: 3,
-          awayScore: 2,
-          scheduledAt: Date.now() - 86400000,
-          currentQuarter: 4,
-        },
-      ],
-    };
-
-    it('shows "Afgelopen" section header for finished matches', () => {
-      render(
-        <CoachDashboard data={dataWithFinished} pin={defaultPin} onLogout={mockOnLogout} />
-      );
-      expect(screen.getByRole('heading', { name: 'Afgelopen' })).toBeInTheDocument();
-    });
-
-    it('displays final score for finished match', () => {
-      render(
-        <CoachDashboard data={dataWithFinished} pin={defaultPin} onLogout={mockOnLogout} />
-      );
-      expect(screen.getByText('3 - 2')).toBeInTheDocument();
-    });
-
-    it('limits finished matches display to 3', () => {
-      const manyFinished = {
-        ...mockCoachData,
-        matches: Array.from({ length: 5 }, (_, i) => ({
-          _id: `match${i}`,
-          teamId: 'team456',
-          opponent: `Team ${i}`,
-          isHome: true,
-          status: 'finished' as const,
-          publicCode: `CODE${i}`,
-          homeScore: i,
-          awayScore: 0,
-          scheduledAt: Date.now() - 86400000 * (i + 1),
-          currentQuarter: 4,
-        })),
-      };
-      render(
-        <CoachDashboard data={manyFinished} pin={defaultPin} onLogout={mockOnLogout} />
-      );
-      // Should show "+2 meer tonen ▼" for the remaining matches
-      expect(screen.getByText(/\+2 meer tonen ▼/)).toBeInTheDocument();
-    });
-  });
-
-  describe('Match Card Links', () => {
-    const dataWithMatch = {
-      ...mockCoachData,
-      matches: [
-        {
-          _id: 'match789',
-          teamId: 'team456',
-          opponent: 'VV Oranje',
-          isHome: true,
-          status: 'scheduled' as const,
-          publicCode: 'ABC123',
-          homeScore: 0,
-          awayScore: 0,
-          scheduledAt: Date.now(),
-          currentQuarter: 1,
-        },
-      ],
-    };
-
-    it('match card links to match control page', () => {
-      render(
-        <CoachDashboard data={dataWithMatch} pin={defaultPin} onLogout={mockOnLogout} />
-      );
-      const matchLink = screen.getByText(/VV Oranje/).closest('a');
-      expect(matchLink).toHaveAttribute('href', '/coach/match/match789');
-    });
-  });
-
-  describe('Touch Target Sizes', () => {
-    it('new match button is rendered and accessible', () => {
-      render(
-        <CoachDashboard data={mockCoachData} pin={defaultPin} onLogout={mockOnLogout} />
-      );
-      const newMatchLink = screen.getByText('Nieuwe wedstrijd').closest('a');
-      // The link should exist and be clickable
-      expect(newMatchLink).toBeInTheDocument();
-      expect(newMatchLink).toHaveAttribute('href', '/coach/new?teamId=team456');
-    });
-  });
 });

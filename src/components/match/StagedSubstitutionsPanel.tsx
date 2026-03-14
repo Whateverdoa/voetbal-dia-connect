@@ -8,13 +8,11 @@ import type { StagedSubstitution } from "./types";
 
 interface StagedSubstitutionsPanelProps {
   matchId: Id<"matches">;
-  pin: string;
   stagedSubstitutions: StagedSubstitution[];
 }
 
 export function StagedSubstitutionsPanel({
   matchId,
-  pin,
   stagedSubstitutions,
 }: StagedSubstitutionsPanelProps) {
   const confirm = useMutation(api.matchActions.confirmSubstitution);

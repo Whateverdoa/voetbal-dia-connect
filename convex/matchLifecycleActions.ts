@@ -4,7 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { verifyClockPin, verifyCoachTeamByTeamId } from "./pinHelpers";
+import { verifyClockAccess, verifyCoachTeamByTeamId } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 import {
@@ -13,19 +13,18 @@ import {
   getQuarterEndTimeWithPausedFallback,
 } from "./lib/matchEventGameTime";
 
-// Create a new match
+// Create a new match. Coach is resolved by identity (email).
 export const create = mutation({
   args: {
     teamId: v.id("teams"),
     opponent: v.string(),
     isHome: v.boolean(),
-    coachPin: v.string(),
     quarterCount: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     playerIds: v.array(v.id("players")),
   },
   handler: async (ctx, args) => {
-    const coach = await verifyCoachTeamByTeamId(ctx, args.teamId, args.coachPin);
+    const coach = await verifyCoachTeamByTeamId(ctx, args.teamId);
     if (!coach) {
       throw new Error("Geen coachtoegang voor dit team");
     }
@@ -59,8 +58,8 @@ export const create = mutation({
 
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
+      coachId: coach._id,
       publicCode,
-      coachPin: args.coachPin,
       opponent: trimmedOpponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -94,8 +93,8 @@ export const start = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, "", referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockAccess(ctx, match, referee))) {
+      throw new Error("Geen rechten om de klok te bedienen");
     }
 
     const now = Date.now();
@@ -156,8 +155,8 @@ export const nextQuarter = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, "", referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockAccess(ctx, match, referee))) {
+      throw new Error("Geen rechten om de klok te bedienen");
     }
 
     const now = Date.now();
@@ -225,8 +224,8 @@ export const resumeFromHalftime = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, "", referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockAccess(ctx, match, referee))) {
+      throw new Error("Geen rechten om de klok te bedienen");
     }
 
     const now = Date.now();

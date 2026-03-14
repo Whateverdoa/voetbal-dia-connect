@@ -8,7 +8,6 @@ import type { MatchPlayer } from "./types";
 
 interface PlayerListProps {
   matchId: Id<"matches">;
-  pin: string;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
   playersAbsent?: MatchPlayer[];
@@ -18,7 +17,6 @@ interface PlayerListProps {
 
 export function PlayerList({
   matchId,
-  pin,
   playersOnField,
   playersOnBench,
   playersAbsent = [],

@@ -139,7 +139,7 @@ function MatchCard({ match }: { match: RefereeMatch }) {
 }
 
 /**
- * Shows the referee's assigned matches after PIN login.
+ * Shows the referee's assigned matches after account login.
  * Matches are sorted: live/halftime first, then scheduled, then finished.
  */
 export function RefereeMatchList({

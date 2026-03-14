@@ -27,10 +27,9 @@ type LineupView = "veld" | "lijst";
 
 interface MatchControlPanelProps {
   match: Match;
-  pin?: string;
 }
 
-export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
+export function MatchControlPanel({ match }: MatchControlPanelProps) {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("opstelling");
@@ -132,7 +131,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
       <div className="max-w-2xl mx-auto p-4 space-y-4">
         <MatchControls
           matchId={match._id}
-          pin={pin}
           status={match.status}
           currentQuarter={match.currentQuarter}
           quarterCount={match.quarterCount}
@@ -149,7 +147,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
         {canDoSubstitutions && (
           <StagedSubstitutionsPanel
             matchId={match._id}
-            pin={pin}
             stagedSubstitutions={match.stagedSubstitutions ?? []}
           />
         )}
@@ -157,13 +154,12 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
         {canAssignReferee && (
           <RefereeAssignment
             matchId={match._id}
-            pin={pin}
             currentRefereeId={match.refereeId}
             currentRefereeName={match.refereeName}
           />
         )}
 
-        {canManagePregameSettings && <MatchSettingsEdit match={match} pin={pin} />}
+        {canManagePregameSettings && <MatchSettingsEdit match={match} />}
 
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
           <TabButton
@@ -185,13 +181,11 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
           <>
             <LineupToggle
               matchId={match._id}
-              pin={pin}
               showLineup={match.showLineup}
             />
 
             <FormationSelector
               matchId={match._id}
-              pin={pin}
               formationId={match.formationId}
               lineupView={lineupView}
               onLineupViewChange={setLineupView}
@@ -201,7 +195,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
             {lineupView === "veld" ? (
               <PitchView
                 matchId={match._id}
-                pin={pin}
                 players={match.players}
                 formationId={match.formationId}
                 status={match.status}
@@ -210,7 +203,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
             ) : (
               <PlayerList
                 matchId={match._id}
-                pin={pin}
                 playersOnField={playersOnField}
                 playersOnBench={playersOnBench}
                 playersAbsent={playersAbsent}
@@ -227,7 +219,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
             {canEnrichGoals && (
               <GoalEnrichmentPanel
                 matchId={match._id}
-                pin={pin}
                 events={match.events}
                 players={match.players}
                 teamName={match.teamName}
@@ -240,9 +231,9 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
         {activeTab === "speeltijd" && (
           <>
             {isLive && canDoSubstitutions && (
-              <SubstitutionSuggestions matchId={match._id} pin={pin} />
+              <SubstitutionSuggestions matchId={match._id} />
             )}
-            <PlayingTimePanel matchId={match._id} pin={pin} />
+            <PlayingTimePanel matchId={match._id} />
             <EventTimeline
               events={match.events}
               teamName={match.teamName}
@@ -251,7 +242,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
             {canEnrichGoals && (
               <GoalEnrichmentPanel
                 matchId={match._id}
-                pin={pin}
                 events={match.events}
                 players={match.players}
                 teamName={match.teamName}
@@ -265,7 +255,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
       {showGoalModal && (
         <GoalModal
           matchId={match._id}
-          pin={pin}
           playersOnField={playersOnField}
           onClose={() => setShowGoalModal(false)}
         />
@@ -274,7 +263,6 @@ export function MatchControlPanel({ match, pin = "" }: MatchControlPanelProps) {
       {showSubModal && (
         <SubstitutionPanel
           matchId={match._id}
-          pin={pin}
           playersOnField={playersOnField}
           playersOnBench={playersOnBench}
           canEdit={canDoSubstitutions}

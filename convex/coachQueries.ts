@@ -6,8 +6,10 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { QueryCtx } from "./_generated/server";
+import { hasAdminAccess } from "./adminAuth";
 
-async function resolveCoachByIdentityOrPin(ctx: QueryCtx, pin?: string) {
+/** Resolve coach by Clerk identity (email) only. */
+async function resolveCoachByIdentity(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   const identityEmail = identity?.email?.toLowerCase();
   if (identityEmail) {
@@ -18,21 +20,22 @@ async function resolveCoachByIdentityOrPin(ctx: QueryCtx, pin?: string) {
     if (byEmail) return byEmail;
   }
 
-  const normalizedPin = (pin ?? "").trim();
-  if (!normalizedPin) return null;
-  return await ctx.db
-    .query("coaches")
-    .withIndex("by_pin", (q) => q.eq("pin", normalizedPin))
-    .first();
+  return null;
 }
 
 // List active referees (for coach assignment dropdown)
 export const listActiveReferees = query({
   handler: async (ctx) => {
-    const all = await ctx.db.query("referees").collect();
-    return all
-      .filter((r) => r.active)
-      .map((r) => ({ id: r._id, name: r.name }));
+    const coach = await resolveCoachByIdentity(ctx);
+    const isAdmin = await hasAdminAccess(ctx);
+    if (!coach && !isAdmin) {
+      throw new Error("Geen toegang");
+    }
+    const active = await ctx.db
+      .query("referees")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
+    return active.map((r) => ({ id: r._id, name: r.name }));
   },
 });
 
@@ -40,6 +43,11 @@ export const listActiveReferees = query({
 export const listByTeam = query({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
+    const coach = await resolveCoachByIdentity(ctx);
+    const isAdmin = await hasAdminAccess(ctx);
+    if (!isAdmin && (!coach || !coach.teamIds.includes(args.teamId))) {
+      throw new Error("Geen toegang");
+    }
     return await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
@@ -55,7 +63,7 @@ export const listTeamPlayersNotInMatch = query({
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    const coach = await resolveCoachByIdentityOrPin(ctx, "");
+    const coach = await resolveCoachByIdentity(ctx);
     if (!coach || !coach.teamIds.includes(match.teamId)) return null;
 
     const inMatch = await ctx.db
@@ -75,11 +83,11 @@ export const listTeamPlayersNotInMatch = query({
   },
 });
 
-// Verify coach PIN and get accessible matches
-export const verifyCoachPin = query({
+// Verify coach access and get accessible matches.
+export const verifyCoachAccess = query({
   args: {},
   handler: async (ctx) => {
-    const coach = await resolveCoachByIdentityOrPin(ctx);
+    const coach = await resolveCoachByIdentity(ctx);
 
     if (!coach) return null;
 

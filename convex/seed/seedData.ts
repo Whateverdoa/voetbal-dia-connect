@@ -4,8 +4,6 @@
  * All data is defined here so it can be reviewed and updated in one place.
  */
 
-export const SEED_ADMIN_PIN = "9999"; // Default dev admin PIN
-
 export const CLUB = { name: "DIA", slug: "dia" } as const;
 
 /** All teams (legacy: includes JO11, JO13) */
@@ -26,39 +24,39 @@ export const JO12_TEAM_CONFIGS = [
 /** Coach seed config */
 export interface SeedCoach {
   name: string;
-  pin: string;
+  email?: string;
   teamSlugs: string[];
 }
 
 /** Coaches for all four JO12 teams (from DIA leiders en trainers 25-26) */
 export const COACH_CONFIGS: SeedCoach[] = [
-  { name: "Remco", pin: "0001", teamSlugs: ["jo12-1"] },
-  { name: "Remco Hendriks", pin: "1234", teamSlugs: ["jo12-1"] },
-  { name: "Martin Nieuwenhuizen", pin: "5678", teamSlugs: ["jo12-1"] },
-  { name: "Mike ten Hoonte", pin: "2468", teamSlugs: ["jo12-1"] },
-  { name: "Serdar Sarica", pin: "1357", teamSlugs: ["jo12-1"] },
-  { name: "Marcel Harreman", pin: "2001", teamSlugs: ["jo12-2"] },
-  { name: "Bas Kock", pin: "2002", teamSlugs: ["jo12-2"] },
-  { name: "Kriste Berkhout", pin: "2003", teamSlugs: ["jo12-2"] },
-  { name: "Marc Lauwerys", pin: "3001", teamSlugs: ["jo12-3"] },
-  { name: "Armin Hasanovic", pin: "3002", teamSlugs: ["jo12-3"] },
-  { name: "Emiel Deckers", pin: "3003", teamSlugs: ["jo12-3"] },
-  { name: "Patrick van der Velden", pin: "4001", teamSlugs: ["jo12-4"] },
-  { name: "Jacky Musters", pin: "4002", teamSlugs: ["jo12-4"] },
-  { name: "Tim Gregoor", pin: "4003", teamSlugs: ["jo12-4"] },
+  { name: "Remco", email: "remco@example.com", teamSlugs: ["jo12-1"] },
+  { name: "Remco Hendriks", email: "remco.hendriks@example.com", teamSlugs: ["jo12-1"] },
+  { name: "Martin Nieuwenhuizen", email: "martin.nieuwenhuizen@example.com", teamSlugs: ["jo12-1"] },
+  { name: "Mike ten Hoonte", email: "mike.tenhoonte@example.com", teamSlugs: ["jo12-1"] },
+  { name: "Serdar Sarica", email: "serdar.sarica@example.com", teamSlugs: ["jo12-1"] },
+  { name: "Marcel Harreman", email: "marcel.harreman@example.com", teamSlugs: ["jo12-2"] },
+  { name: "Bas Kock", email: "bas.kock@example.com", teamSlugs: ["jo12-2"] },
+  { name: "Kriste Berkhout", email: "kriste.berkhout@example.com", teamSlugs: ["jo12-2"] },
+  { name: "Marc Lauwerys", email: "marc.lauwerys@example.com", teamSlugs: ["jo12-3"] },
+  { name: "Armin Hasanovic", email: "armin.hasanovic@example.com", teamSlugs: ["jo12-3"] },
+  { name: "Emiel Deckers", email: "emiel.deckers@example.com", teamSlugs: ["jo12-3"] },
+  { name: "Patrick van der Velden", email: "patrick.vandervelden@example.com", teamSlugs: ["jo12-4"] },
+  { name: "Jacky Musters", email: "jacky.musters@example.com", teamSlugs: ["jo12-4"] },
+  { name: "Tim Gregoor", email: "tim.gregoor@example.com", teamSlugs: ["jo12-4"] },
 ];
 
 /** Referee seed config */
 export interface SeedReferee {
   name: string;
-  pin: string;
+  email?: string;
 }
 
 export const REFEREE_CONFIGS: SeedReferee[] = [
-  { name: "Scheidsr. De Vries", pin: "7777" },
-  { name: "Scheidsr. Jansen", pin: "8888" },
-  { name: "Scheidsr. Bakker", pin: "6666" },
-  { name: "Scheidsr. Visser", pin: "5555" },
+  { name: "Scheidsr. De Vries", email: "ref.devries@example.com" },
+  { name: "Scheidsr. Jansen", email: "ref.jansen@example.com" },
+  { name: "Scheidsr. Bakker", email: "ref.bakker@example.com" },
+  { name: "Scheidsr. Visser", email: "ref.visser@example.com" },
 ];
 
 /** Fallback player count (used when no real roster available) */

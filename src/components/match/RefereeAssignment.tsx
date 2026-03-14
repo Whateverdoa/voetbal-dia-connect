@@ -7,7 +7,6 @@ import { Id } from "@/convex/_generated/dataModel";
 
 interface RefereeAssignmentProps {
   matchId: Id<"matches">;
-  pin: string; // Coach PIN
   currentRefereeId?: Id<"referees">;
   currentRefereeName?: string | null;
 }
@@ -18,7 +17,6 @@ interface RefereeAssignmentProps {
  */
 export function RefereeAssignment({
   matchId,
-  pin,
   currentRefereeId,
   currentRefereeName,
 }: RefereeAssignmentProps) {

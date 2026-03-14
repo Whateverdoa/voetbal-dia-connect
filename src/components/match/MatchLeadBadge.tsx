@@ -7,7 +7,6 @@ import { Id } from "@/convex/_generated/dataModel";
 
 interface MatchLeadBadgeProps {
   matchId: Id<"matches">;
-  pin: string;
   hasLead: boolean;
   leadCoachName: string | null;
 }
@@ -19,7 +18,6 @@ interface MatchLeadBadgeProps {
  */
 export function MatchLeadBadge({
   matchId,
-  pin,
   hasLead,
   leadCoachName,
 }: MatchLeadBadgeProps) {

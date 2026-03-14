@@ -92,10 +92,10 @@ This is the **voetbal-dia-connect** repo — Next.js + Convex.
 
 - **clubs** — top-level org (DIA). Fields: `name`, `slug`, `createdAt`. Index: `by_slug`
 - **teams** — JO12-1, JO13-2, etc. Fields: `clubId` (→clubs), `name`, `slug`, `createdAt`. Indexes: `by_club`, `by_slug` (clubId+slug), `by_slug_only`
-- **coaches** — PIN-authenticated, linked to 1+ teams. Fields: `name`, `pin`, `teamIds[]` (→teams), `createdAt`. Index: `by_pin`
-- **referees** — global referee records. Fields: `name`, `pin`, `active`, `createdAt`. Index: `by_pin`
+- **coaches** — identity-linked, linked to 1+ teams. Fields: `name`, `email`, `teamIds[]` (→teams), `createdAt`. Index: `by_email`
+- **referees** — global referee records. Fields: `name`, `email`, `active`, `createdAt`. Index: `by_email`
 - **players** — per team. Fields: `teamId` (→teams), `name`, `number` (shirt), `active`, `positionPrimary` (EN codes: GK/CB/RB/LB/CM/etc.), `positionSecondary`, `createdAt`. Index: `by_team`
-- **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `publicCode` (6-char), `coachPin`, `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `bankedOverrunSeconds` (carry-over for end-of-match extra time), `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
+- **matches** — core entity, status machine (scheduled→lineup→live→halftime→finished). Fields: `teamId` (→teams), `coachId` (→coaches), `publicCode` (6-char), `opponent`, `isHome`, `scheduledAt`, `status`, `currentQuarter`, `quarterCount` (2 or 4), `homeScore`, `awayScore`, `showLineup`, `pausedAt`, `accumulatedPauseTime`, `bankedOverrunSeconds` (carry-over for end-of-match extra time), `refereeId` (→referees), `leadCoachId` (→coaches), `formationId` (e.g. "8v8_3-3-1"), `pitchType` (full/half), `startedAt`, `quarterStartedAt`, `finishedAt`, `createdAt`. Indexes: `by_team`, `by_code`, `by_status`, `by_refereeId`
 - **matchPlayers** — junction: players in a match. Fields: `matchId` (→matches), `playerId` (→players), `isKeeper`, `onField`, `fieldSlotIndex` (pitch position slot), `minutesPlayed`, `lastSubbedInAt`, `createdAt`. Indexes: `by_match`, `by_match_player`, `by_player`
 - **matchEvents** — timeline events. Fields: `matchId` (→matches), `type` (goal/sub_in/sub_out/quarter_start/quarter_end/yellow_card/red_card/substitution_staged/substitution_executed/substitution_cancelled/goal_enrichment), `playerId`, `relatedPlayerId`, `quarter`, `matchMs`, `isOwnGoal`, `isOpponentGoal`, `stagedEventId`, `targetEventId`, `correlationId`, `commandType`, `note`, `timestamp`, `gameSecond`, `displayMinute`, `displayExtraMinute`, `createdAt`. Indexes: `by_match`, `by_match_type`
 - **matchCommandDedupes** — idempotency. Fields: `matchId`, `commandType`, `correlationId`, `createdAt`. Index: `by_match_command_correlation`
@@ -106,13 +106,13 @@ Identity-first via Clerk email login with multi-role metadata:
 
 | Role | Auth method | Verification function |
 |------|-------------|-----------------------|
-| **Coach** | Clerk identity (email) | `verifyCoachTeamMembership()` / `verifyCoachPin()` (identity-first) |
+| **Coach** | Clerk identity (email) | `verifyCoachTeamMembership()` / `verifyCoachAccess()` |
 | **Referee** | Clerk identity (email) | `resolveReferee()` / `getMatchesForReferee()` (identity-first) |
 | **Admin** | Clerk identity (email allowlist) | `requireAdminAccess()` / `verifyAdminAccessQuery()` |
 | **Public** | 6-char code | `getByPublicCode()` (read-only) |
 
 **Key flows:**
-- **Coach login:** account-based (`verifyCoachPin` identity path) → returns coach + teams + matches
+- **Coach login:** account-based (`verifyCoachAccess`) → returns coach + teams + matches
 - **Referee login:** account-based (`getMatchesForReferee` identity path) → assigned matches
 - **Admin login:** account-based (`verifyAdminAccessQuery`) → all admin mutations guarded by `requireAdminAccess`
 - **Public access:** 6-char code in URL → `getByPublicCode` query → match data
@@ -482,9 +482,7 @@ No `CONVEX_DEPLOY_KEY` is needed locally — `convex dev` handles syncing.
 
 Zonder deze twee vars: geen Clerk-UI, alleen fallbacktekst “Inloggen niet actief” op `/sign-in`. Na toevoegen: dev-server herstarten, daarna is de sign-in knop/UI zichtbaar. Op de homepage verschijnt dan ook een link **Account inloggen** → `/sign-in`.
 
-**Coach inloggen zonder PIN (aanbevolen: database):** Zet bij een coach in de **admin** (tab Coaches) het veld **E-mail** (Clerk-e-mail). Dan kan die coach inloggen met alleen Clerk — geen PIN meer. Vereist dat op de **server** (Vercel) en in **Convex** hetzelfde geheim staat: `CONVEX_LINK_SECRET` (willekeurige string). In Convex: `npx convex env set CONVEX_LINK_SECRET <geheim>`. In Vercel: Environment Variables → `CONVEX_LINK_SECRET` = dezelfde waarde. Geen env-lijst meer nodig.
-
-**Optioneel — fallback env-lijst:** `CLERK_COACH_EMAIL_PIN` = lijst `email:pin` (komma-gescheiden), bijv. `mjtenhoonte@gmail.com:2468`. Wordt alleen gebruikt als de coach in de database geen e-mail heeft. Voor schaal: liever e-mail in de database zetten (admin → Coaches → bewerken).
+**Coach inloggen (aanbevolen: database):** Zet bij een coach in de **admin** (tab Coaches) het veld **E-mail** (Clerk-e-mail). Dan kan die coach inloggen met alleen Clerk. Vereist dat op de **server** (Vercel) en in **Convex** hetzelfde geheim staat: `CONVEX_LINK_SECRET` (willekeurige string). In Convex: `npx convex env set CONVEX_LINK_SECRET <geheim>`. In Vercel: Environment Variables → `CONVEX_LINK_SECRET` = dezelfde waarde.
 
 **Keyless mode:** Clerk kan zonder env vars draaien: er worden dan tijdelijke keys gegenereerd en een “Configure your application” prompt getoond om later te claimen. Voor productie of vaste sessies gebruik je de keys uit het Clerk Dashboard.
 

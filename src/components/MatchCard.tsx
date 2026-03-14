@@ -16,7 +16,6 @@ interface MatchCardProps {
     publicCode: string;
     scheduledAt?: number;
   };
-  pin: string;
   compact?: boolean;
 }
 
@@ -37,13 +36,13 @@ function formatTime(timestamp: number): string {
   });
 }
 
-export function MatchCard({ match, pin, compact = false }: MatchCardProps) {
+export function MatchCard({ match, compact = false }: MatchCardProps) {
   const isActive = match.status === "live" || match.status === "halftime" || match.status === "lineup";
   const showScore = match.status !== "scheduled";
 
   return (
     <Link
-      href={`/coach/match/${match._id}?pin=${pin}`}
+      href={`/coach/match/${match._id}`}
       className={clsx(
         "block rounded-xl border-2 transition-all active:scale-[0.98]",
         "min-h-[72px] touch-manipulation",

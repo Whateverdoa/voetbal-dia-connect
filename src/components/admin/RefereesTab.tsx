@@ -15,7 +15,7 @@ function getErrorMessage(err: unknown): string {
 interface Referee {
   _id: Id<"referees">;
   name: string;
-  pin: string;
+  email?: string;
   active: boolean;
 }
 
@@ -26,23 +26,23 @@ export function RefereesTab() {
   const deleteReferee = useMutation(api.admin.deleteReferee);
 
   const [newName, setNewName] = useState("");
-  const [newPin, setNewPin] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [editingId, setEditingId] = useState<Id<"referees"> | null>(null);
   const [editName, setEditName] = useState("");
-  const [editPin, setEditPin] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editActive, setEditActive] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"referees"> | null>(null);
   const [status, setStatus] = useState("");
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newPin.trim()) return;
+    if (!newName.trim()) return;
     try {
       await createReferee({
         name: newName.trim(),
-        pin: newPin.trim(),
+        email: newEmail.trim() || undefined,
       });
       setNewName("");
-      setNewPin("");
+      setNewEmail("");
       setStatus("Scheidsrechter aangemaakt");
     } catch (err) {
       setStatus(`Fout: ${getErrorMessage(err)}`);
@@ -54,7 +54,7 @@ export function RefereesTab() {
       await updateReferee({
         refereeId,
         name: editName.trim() || undefined,
-        pin: editPin.trim() || undefined,
+        email: editEmail.trim() || undefined,
         active: editActive,
       });
       setEditingId(null);
@@ -90,15 +90,15 @@ export function RefereesTab() {
               isEditing={editingId === referee._id}
               isDeleting={deleteConfirm === referee._id}
               editName={editName}
-              editPin={editPin}
+              editEmail={editEmail}
               editActive={editActive}
               onEditNameChange={setEditName}
-              onEditPinChange={setEditPin}
+              onEditEmailChange={setEditEmail}
               onEditActiveChange={setEditActive}
               onStartEdit={() => {
                 setEditingId(referee._id);
                 setEditName(referee.name);
-                setEditPin(referee.pin);
+                setEditEmail(referee.email ?? "");
                 setEditActive(referee.active);
               }}
               onConfirmEdit={() => handleUpdate(referee._id)}
@@ -126,17 +126,16 @@ export function RefereesTab() {
               className="flex-1 px-3 py-2 border rounded-lg"
             />
             <input
-              type="text"
-              value={newPin}
-              onChange={(e) => setNewPin(e.target.value)}
-              placeholder="PIN (4-6)"
-              className="w-28 px-3 py-2 border rounded-lg font-mono"
-              maxLength={6}
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="E-mail (Clerk)"
+              className="flex-1 px-3 py-2 border rounded-lg"
             />
           </div>
           <button
             onClick={handleCreate}
-            disabled={!newName.trim() || !newPin.trim()}
+            disabled={!newName.trim()}
             className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
           >
             Toevoegen
@@ -157,10 +156,10 @@ function RefereeRow({
   isEditing,
   isDeleting,
   editName,
-  editPin,
+  editEmail,
   editActive,
   onEditNameChange,
-  onEditPinChange,
+  onEditEmailChange,
   onEditActiveChange,
   onStartEdit,
   onConfirmEdit,
@@ -173,10 +172,10 @@ function RefereeRow({
   isEditing: boolean;
   isDeleting: boolean;
   editName: string;
-  editPin: string;
+  editEmail: string;
   editActive: boolean;
   onEditNameChange: (v: string) => void;
-  onEditPinChange: (v: string) => void;
+  onEditEmailChange: (v: string) => void;
   onEditActiveChange: (v: boolean) => void;
   onStartEdit: () => void;
   onConfirmEdit: () => void;
@@ -198,12 +197,11 @@ function RefereeRow({
             autoFocus
           />
           <input
-            type="text"
-            value={editPin}
-            onChange={(e) => onEditPinChange(e.target.value)}
-            placeholder="PIN"
-            className="w-24 px-2 py-1 border rounded font-mono"
-            maxLength={6}
+            type="email"
+            value={editEmail}
+            onChange={(e) => onEditEmailChange(e.target.value)}
+            placeholder="E-mail (Clerk)"
+            className="flex-1 px-2 py-1 border rounded"
           />
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -246,7 +244,9 @@ function RefereeRow({
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{referee.name}</span>
-          <span className="text-sm text-gray-500 font-mono">PIN: {referee.pin}</span>
+          {referee.email && (
+            <span className="text-sm text-gray-500">{referee.email}</span>
+          )}
           {!referee.active && (
             <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
               Inactief

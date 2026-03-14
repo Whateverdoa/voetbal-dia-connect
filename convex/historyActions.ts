@@ -6,10 +6,9 @@ import { verifyCoachTeamByTeamId, verifyCoachTeamMembership } from "./pinHelpers
 export const canEditTeamHistory = query({
   args: {
     teamId: v.id("teams"),
-    pin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const coach = await verifyCoachTeamByTeamId(ctx, args.teamId, args.pin);
+    const coach = await verifyCoachTeamByTeamId(ctx, args.teamId);
     return !!coach;
   },
 });
@@ -18,7 +17,6 @@ export const correctMatchPlayerMinutes = mutation({
   args: {
     matchPlayerId: v.id("matchPlayers"),
     minutesPlayed: v.number(),
-    pin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const matchPlayer = await ctx.db.get(args.matchPlayerId);
@@ -35,7 +33,7 @@ export const correctMatchPlayerMinutes = mutation({
       throw new Error("Speeltijd kan alleen aangepast worden bij afgeronde wedstrijden");
     }
 
-    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
       throw new Error("Geen coachtoegang voor deze wedstrijd");
     }

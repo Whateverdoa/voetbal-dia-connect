@@ -10,14 +10,13 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface GoalModalProps {
   matchId: Id<"matches">;
-  pin: string;
   playersOnField: MatchPlayer[];
   onClose: () => void;
 }
 
 type GoalType = "our" | "opponent";
 
-export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalProps) {
+export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) {
   const [goalType, setGoalType] = useState<GoalType | null>(null);
   const [scorer, setScorer] = useState<Id<"players"> | null>(null);
   const [assist, setAssist] = useState<Id<"players"> | null>(null);
@@ -40,7 +39,7 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
     } catch (err) {
       console.error("Failed to add opponent goal:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Invalid match or PIN")) {
+      if (message.includes("Geen rechten")) {
         setError("Sessie verlopen. Sluit dit venster en herlaad de pagina.");
       } else {
         setError(`Fout bij registreren: ${message}`);
@@ -66,7 +65,7 @@ export function GoalModal({ matchId, pin, playersOnField, onClose }: GoalModalPr
     } catch (err) {
       console.error("Failed to add goal:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Invalid match or PIN")) {
+      if (message.includes("Geen rechten")) {
         setError("Sessie verlopen. Sluit dit venster en herlaad de pagina.");
       } else {
         setError(`Fout bij registreren: ${message}`);

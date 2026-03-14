@@ -12,7 +12,6 @@ import {
 
 interface PlayingTimePanelProps {
   matchId: Id<"matches">;
-  pin: string;
 }
 
 /**
@@ -36,7 +35,7 @@ function getFairnessStatus(
   return "critical";
 }
 
-export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
+export function PlayingTimePanel({ matchId }: PlayingTimePanelProps) {
   const playingTimeData = useQuery(api.matches.getPlayingTime, { matchId });
 
   if (playingTimeData === undefined) {

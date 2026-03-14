@@ -1,28 +1,13 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
-import { getLinkedPinForRole } from "@/lib/server/clerkLinkedPinActions";
+import { getLinkedRoleForRole } from "@/lib/server/clerkLinkedPinActions";
 
 type AssignableRole = "admin" | "coach" | "referee";
 
 interface RoleActionResult {
   ok: boolean;
   error?: string;
-}
-
-interface LinkActionResult {
-  ok: boolean;
-  error?: string;
-}
-
-function getConvexClient(): ConvexHttpClient | null {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!convexUrl) {
-    return null;
-  }
-  return new ConvexHttpClient(convexUrl);
 }
 
 function getBootstrapAdminEmails(): Set<string> {
@@ -46,6 +31,44 @@ function getPrimaryEmail(user: {
       (entry) => entry.id === user.primaryEmailAddressId
     ) ?? user.emailAddresses[0];
   return primary?.emailAddress?.toLowerCase() ?? null;
+}
+
+/** If user has no roles and their email is in CLERK_BOOTSTRAP_ADMIN_EMAILS, set roles to admin+coach+referee so they can "just login" without picking a role. */
+export async function bootstrapFullAccessIfEligible(): Promise<{
+  applied: boolean;
+  error?: string;
+}> {
+  const { userId } = await auth();
+  if (!userId) return { applied: false };
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const existingRoles = parseRolesFromMetadata(user.publicMetadata);
+  if (existingRoles.length > 0) return { applied: false };
+
+  const primaryEmail = getPrimaryEmail(user);
+  const bootstrapEmails = getBootstrapAdminEmails();
+  if (!primaryEmail || !bootstrapEmails.has(primaryEmail)) return { applied: false };
+
+  await client.users.updateUserMetadata(userId, {
+    publicMetadata: {
+      ...user.publicMetadata,
+      role: "admin",
+      roles: ["admin", "coach", "referee"],
+    },
+  });
+  return { applied: true };
+}
+
+function parseRolesFromMetadata(metadata: unknown): string[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const src = metadata as { role?: unknown; roles?: unknown };
+  const fromArray = Array.isArray(src.roles)
+    ? src.roles.filter((r): r is string => typeof r === "string")
+    : [];
+  if (fromArray.length > 0) return fromArray;
+  const single = src.role;
+  return typeof single === "string" ? [single] : [];
 }
 
 export async function setUserRole(role: AssignableRole): Promise<RoleActionResult> {
@@ -82,104 +105,8 @@ export async function setUserRole(role: AssignableRole): Promise<RoleActionResul
   return { ok: true };
 }
 
-/** After choosing Coach: if email is in CLERK_COACH_EMAIL_PIN, link automatically (geen PIN nodig). */
+/** After choosing Coach, try automatic e-mail based role linking. */
 export async function tryBootstrapCoach(): Promise<{ linked: boolean }> {
-  const result = await getLinkedPinForRole("coach");
+  const result = await getLinkedRoleForRole("coach");
   return { linked: result.ok };
-}
-
-export async function linkUserRoleWithPin(pin: string): Promise<LinkActionResult> {
-  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    return {
-      ok: false,
-      error: "PIN-koppeling is uitgefaseerd. Toegang gaat nu via e-mailrollen.",
-    };
-  }
-
-  const trimmedPin = pin.trim();
-  if (!/^\d{4,6}$/.test(trimmedPin)) {
-    return { ok: false, error: "Voer een geldige PIN in (4-6 cijfers)." };
-  }
-
-  const { userId } = await auth();
-  if (!userId) {
-    return { ok: false, error: "Je bent niet ingelogd." };
-  }
-
-  const convex = getConvexClient();
-  if (!convex) {
-    return { ok: false, error: "Convex is niet geconfigureerd." };
-  }
-
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const role = user.publicMetadata?.role;
-  if (role !== "admin" && role !== "coach" && role !== "referee") {
-    return { ok: false, error: "Kies eerst een rol." };
-  }
-
-  try {
-    if (role === "coach") {
-      const coachData = await convex.query(api.matches.verifyCoachPin, {});
-      if (!coachData) {
-        return { ok: false, error: "Coach PIN ongeldig." };
-      }
-
-      await client.users.updateUserMetadata(userId, {
-        publicMetadata: {
-          ...user.publicMetadata,
-          linkedCoachId: coachData.coach.id,
-          linkedCoachName: coachData.coach.name,
-          linkedTeamIds: coachData.teams.map((team) => team.id),
-        },
-        privateMetadata: {
-          ...user.privateMetadata,
-          linkedPin: trimmedPin,
-        },
-      });
-      return { ok: true };
-    }
-
-    if (role === "referee") {
-      const refereeData = await convex.query(api.matches.getMatchesForReferee, {});
-      if (!refereeData) {
-        return { ok: false, error: "Scheidsrechter PIN ongeldig." };
-      }
-
-      await client.users.updateUserMetadata(userId, {
-        publicMetadata: {
-          ...user.publicMetadata,
-          linkedRefereeId: refereeData.referee.id,
-          linkedRefereeName: refereeData.referee.name,
-        },
-        privateMetadata: {
-          ...user.privateMetadata,
-          linkedPin: trimmedPin,
-        },
-      });
-      return { ok: true };
-    }
-
-    const adminAccess = await convex.query(api.admin.verifyAdminAccessQuery, {});
-    if (!adminAccess.valid) {
-      return { ok: false, error: "Admin-toegang ontbreekt voor dit account." };
-    }
-
-    await client.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        linkedAdmin: true,
-      },
-      privateMetadata: {
-        ...user.privateMetadata,
-        linkedPin: trimmedPin,
-      },
-    });
-    return { ok: true };
-  } catch {
-    if (role === "admin") {
-      return { ok: false, error: "Admin PIN ongeldig." };
-    }
-    return { ok: false, error: "Koppelen is mislukt. Probeer opnieuw." };
-  }
 }

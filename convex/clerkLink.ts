@@ -1,6 +1,6 @@
 /**
  * Server-only link data for Clerk: coach by email.
- * Used by Next.js server (with CONVEX_LINK_SECRET) to link Clerk user → coach without PIN.
+ * Used by Next.js server (with CONVEX_LINK_SECRET) to link Clerk user → coach by e-mail.
  * Set in Convex dashboard: npx convex env set CONVEX_LINK_SECRET <secret>
  */
 import { query } from "./_generated/server";
@@ -32,16 +32,9 @@ export const getCoachByEmailForLink = query({
       coachId: coach._id,
       coachName: coach.name,
       teamIds: coach.teamIds,
-      pin: coach.pin,
     };
   },
 });
-
-function generateCandidatePin(): string {
-  const min = 100000;
-  const max = 999999;
-  return String(Math.floor(Math.random() * (max - min + 1)) + min);
-}
 
 export const assignEmailRoleLinksForOps = mutation({
   args: {
@@ -100,23 +93,8 @@ export const assignEmailRoleLinksForOps = mutation({
         await ctx.db.patch(referee._id, patch);
       }
     } else {
-      let pin = generateCandidatePin();
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const coachPin = await ctx.db
-          .query("coaches")
-          .withIndex("by_pin", (q) => q.eq("pin", pin))
-          .first();
-        const refereePin = await ctx.db
-          .query("referees")
-          .withIndex("by_pin", (q) => q.eq("pin", pin))
-          .first();
-        if (!coachPin && !refereePin) break;
-        pin = generateCandidatePin();
-      }
-
       const refereeId = await ctx.db.insert("referees", {
         name: refereeName,
-        pin,
         email: emailLower,
         active: true,
         createdAt: Date.now(),

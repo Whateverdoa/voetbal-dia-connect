@@ -8,10 +8,9 @@ import type { Match } from "./types";
 
 interface MatchSettingsEditProps {
   match: Match;
-  pin: string;
 }
 
-export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
+export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [opponent, setOpponent] = useState(match.opponent);
   const [isHome, setIsHome] = useState(match.isHome);

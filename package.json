@@ -11,8 +11,9 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "npm run test:pin-guard && vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:pin-guard": "node scripts/check-no-pin-deps.mjs",
     "predev": "convex dev --until-success",
     "postinstall": "npx convex codegen || true"
   },

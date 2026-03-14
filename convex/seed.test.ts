@@ -121,15 +121,15 @@ describe('Seed Data Configuration', () => {
       expect(COACH_CONFIGS).toHaveLength(14);
     });
 
-    it('PINs are 4 digits', () => {
+    it('emails are present and valid', () => {
       COACH_CONFIGS.forEach((coach) => {
-        expect(coach.pin).toMatch(/^\d{4}$/);
+        expect(coach.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
       });
     });
 
-    it('PINs are unique', () => {
-      const pins = COACH_CONFIGS.map((c) => c.pin);
-      const unique = new Set(pins);
+    it('emails are unique', () => {
+      const emails = COACH_CONFIGS.map((c) => c.email);
+      const unique = new Set(emails);
       expect(unique.size).toBe(COACH_CONFIGS.length);
     });
 
@@ -148,22 +148,22 @@ describe('Seed Data Configuration', () => {
       expect(REFEREE_CONFIGS).toHaveLength(4);
     });
 
-    it('PINs are 4 digits', () => {
+    it('emails are present and valid', () => {
       REFEREE_CONFIGS.forEach((ref) => {
-        expect(ref.pin).toMatch(/^\d{4}$/);
+        expect(ref.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
       });
     });
 
-    it('PINs are unique among referees', () => {
-      const pins = REFEREE_CONFIGS.map((r) => r.pin);
-      const unique = new Set(pins);
+    it('emails are unique among referees', () => {
+      const emails = REFEREE_CONFIGS.map((r) => r.email);
+      const unique = new Set(emails);
       expect(unique.size).toBe(REFEREE_CONFIGS.length);
     });
 
-    it('PINs do not overlap with coach PINs', () => {
-      const coachPins = new Set(COACH_CONFIGS.map((c) => c.pin));
+    it('emails do not overlap with coach emails', () => {
+      const coachEmails = new Set(COACH_CONFIGS.map((c) => c.email));
       REFEREE_CONFIGS.forEach((ref) => {
-        expect(coachPins.has(ref.pin)).toBe(false);
+        expect(coachEmails.has(ref.email)).toBe(false);
       });
     });
   });

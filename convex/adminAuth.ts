@@ -20,13 +20,16 @@ function getAdminEmailAllowlist(): Set<string> {
   );
 }
 
-export async function requireAdminAccess(ctx: AdminCtx): Promise<void> {
+export async function hasAdminAccess(ctx: AdminCtx): Promise<boolean> {
   const identity = await ctx.auth.getUserIdentity();
   const email = identity?.email?.toLowerCase();
-  if (!email) {
-    throw new Error("Niet ingelogd");
-  }
-  if (!getAdminEmailAllowlist().has(email)) {
+  if (!email) return false;
+  return getAdminEmailAllowlist().has(email);
+}
+
+export async function requireAdminAccess(ctx: AdminCtx): Promise<void> {
+  const allowed = await hasAdminAccess(ctx);
+  if (!allowed) {
     throw new Error("Geen admin-toegang");
   }
 }

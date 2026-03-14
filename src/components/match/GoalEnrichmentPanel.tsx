@@ -9,7 +9,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface GoalEnrichmentPanelProps {
   matchId: Id<"matches">;
-  pin: string;
   events: MatchEvent[];
   players: MatchPlayer[];
   teamName: string;
@@ -18,7 +17,6 @@ interface GoalEnrichmentPanelProps {
 
 export function GoalEnrichmentPanel({
   matchId,
-  pin,
   events,
   players,
   teamName,

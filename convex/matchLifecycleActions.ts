@@ -4,16 +4,17 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { verifyClockAccess, verifyCoachTeamByTeamId } from "./pinHelpers";
+import { verifyClockPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
+import { requireCoachForTeam } from "./lib/userAccess";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
-  getQuarterEndTimeWithPausedFallback,
+  getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
 
-// Create a new match. Coach is resolved by identity (email).
+// Create a new match
 export const create = mutation({
   args: {
     teamId: v.id("teams"),
@@ -24,10 +25,7 @@ export const create = mutation({
     playerIds: v.array(v.id("players")),
   },
   handler: async (ctx, args) => {
-    const coach = await verifyCoachTeamByTeamId(ctx, args.teamId);
-    if (!coach) {
-      throw new Error("Geen coachtoegang voor dit team");
-    }
+    const { coach } = await requireCoachForTeam(ctx, args.teamId);
 
     const trimmedOpponent = args.opponent.trim();
     if (!trimmedOpponent) {
@@ -58,8 +56,8 @@ export const create = mutation({
 
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
-      coachId: coach._id,
       publicCode,
+      coachId: coach._id,
       opponent: trimmedOpponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -93,8 +91,8 @@ export const start = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockAccess(ctx, match, referee))) {
-      throw new Error("Geen rechten om de klok te bedienen");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();
@@ -155,13 +153,13 @@ export const nextQuarter = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockAccess(ctx, match, referee))) {
-      throw new Error("Geen rechten om de klok te bedienen");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();
     const nextQ = match.currentQuarter + 1;
-    const effectiveEndTime = getQuarterEndTimeWithPausedFallback(match, now);
+    const effectiveEndTime = getEffectiveEventTime(match, now);
     const quarterOverrunSeconds = computeQuarterOverrunSeconds(
       match,
       effectiveEndTime
@@ -224,8 +222,8 @@ export const resumeFromHalftime = mutation({
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockAccess(ctx, match, referee))) {
-      throw new Error("Geen rechten om de klok te bedienen");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();

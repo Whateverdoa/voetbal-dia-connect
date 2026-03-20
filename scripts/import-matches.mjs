@@ -3,40 +3,47 @@
  * Import matches from a CSV file into Convex.
  *
  * Usage:
- *   node scripts/import-matches.mjs path/to/matches.csv --coach-id <coachId> [--dry-run]
+ *   node scripts/import-matches.mjs path/to/matches.csv [--dry-run] [--ops-secret <secret>] [--coach-email <email>]
  *
  * CSV format (header required):
  *   team_slug,opponent,date,time,is_home,finished,home_score,away_score
- *
- * Example row:
- *   jo12-1,SCO JO12-2,2026-01-24,10:00,true,true,3,2
  */
 import { execSync } from "child_process";
 import { parseMatchesCsv } from "./lib/csv-utils.mjs";
 
 const args = process.argv.slice(2);
-const csvPath = args.find((a) => !a.startsWith("--"));
+const csvPath = args.find((arg) => !arg.startsWith("--"));
 const dryRun = args.includes("--dry-run");
-const coachIdx = args.indexOf("--coach-id");
-const coachId = coachIdx !== -1 ? args[coachIdx + 1] : undefined;
+const opsSecretIndex = args.indexOf("--ops-secret");
+const coachEmailIndex = args.indexOf("--coach-email");
+const opsSecret = opsSecretIndex !== -1 ? args[opsSecretIndex + 1] : process.env.CONVEX_OPS_SECRET;
+const coachEmail = coachEmailIndex !== -1 ? args[coachEmailIndex + 1] : undefined;
 
 if (!csvPath || !coachId) {
   console.error(
-    "Usage: node scripts/import-matches.mjs <csv-path> --coach-id <coachId> [--dry-run]",
+    "Usage: node scripts/import-matches.mjs <csv-path> [--dry-run] [--ops-secret <secret>] [--coach-email <email>]",
   );
   process.exit(1);
 }
 
+if (!opsSecret && !dryRun) {
+  console.error("Missing ops secret. Provide --ops-secret or set CONVEX_OPS_SECRET.");
+  process.exit(1);
+}
+
 console.log(`\n📂 Reading CSV: ${csvPath}`);
-console.log(`🏃 Mode: ${dryRun ? "DRY-RUN (no writes)" : "COMMIT (will write to DB)"}\n`);
+console.log(`🔐 Auth: ${opsSecret ? "ops-secret provided" : "dry-run without auth"}`);
+console.log(`🏃 Mode: ${dryRun ? "DRY-RUN (no writes)" : "COMMIT (will write to DB)"}`);
+if (coachEmail) {
+  console.log(`📧 Coach override: ${coachEmail}`);
+}
+console.log("");
 
 const matches = parseMatchesCsv(csvPath);
-
-// Group by team slug
 const byTeam = {};
-for (const m of matches) {
-  if (!byTeam[m.teamSlug]) byTeam[m.teamSlug] = [];
-  byTeam[m.teamSlug].push(m);
+for (const match of matches) {
+  if (!byTeam[match.teamSlug]) byTeam[match.teamSlug] = [];
+  byTeam[match.teamSlug].push(match);
 }
 
 const teamSlugs = Object.keys(byTeam).sort();
@@ -45,7 +52,7 @@ console.log(`Found ${matches.length} matches across ${teamSlugs.length} teams:\n
 
 for (const slug of teamSlugs) {
   const teamMatches = byTeam[slug];
-  const finished = teamMatches.filter((m) => m.finished).length;
+  const finished = teamMatches.filter((match) => match.finished).length;
   const upcoming = teamMatches.length - finished;
   console.log(`  ${slug.toUpperCase().padEnd(10)} ${teamMatches.length} wedstrijden (${finished} gespeeld, ${upcoming} komend)`);
 }
@@ -56,10 +63,10 @@ if (dryRun) {
   console.log("=== DRY-RUN: showing what would be imported ===\n");
   for (const slug of teamSlugs) {
     console.log(`--- ${slug.toUpperCase()} ---`);
-    for (const m of byTeam[slug]) {
-      const status = m.finished ? `${m.homeScore}-${m.awayScore}` : "gepland";
-      const home = m.isHome ? "(thuis)" : "(uit)";
-      console.log(`  ${m.date.slice(0, 10)} vs ${m.opponent} ${home} ${status}`);
+    for (const match of byTeam[slug]) {
+      const status = match.finished ? `${match.homeScore}-${match.awayScore}` : "gepland";
+      const home = match.isHome ? "(thuis)" : "(uit)";
+      console.log(`  ${match.date.slice(0, 10)} vs ${match.opponent} ${home} ${status}`);
     }
     console.log("");
   }
@@ -70,10 +77,11 @@ if (dryRun) {
 console.log("=== IMPORTING ===\n");
 
 for (const slug of teamSlugs) {
-  const teamMatches = byTeam[slug].map(({ teamSlug: _, ...rest }) => rest);
+  const teamMatches = byTeam[slug].map(({ teamSlug: _teamSlug, ...rest }) => rest);
   const payload = JSON.stringify({
+    opsSecret,
     teamSlug: slug,
-    coachId,
+    coachEmail,
     matches: teamMatches,
     dryRun: false,
   });
@@ -88,12 +96,10 @@ for (const slug of teamSlugs) {
     if (parsed.error) {
       console.log(`  ❌ ${slug.toUpperCase()}: ${parsed.error}`);
     } else {
-      console.log(
-        `  ✅ ${slug.toUpperCase()}: ${parsed.created} created, ${parsed.skipped} skipped`,
-      );
+      console.log(`  ✅ ${slug.toUpperCase()}: ${parsed.created} created, ${parsed.skipped} skipped`);
     }
-  } catch (err) {
-    console.error(`  ❌ ${slug.toUpperCase()}: ${err.message}`);
+  } catch (error) {
+    console.error(`  ❌ ${slug.toUpperCase()}: ${error.message}`);
   }
 }
 

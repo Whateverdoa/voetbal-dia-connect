@@ -26,7 +26,7 @@ export const createPlayerAndAddToMatch = mutation({
       throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const trimmedName = args.name.trim();
@@ -74,7 +74,7 @@ export const addExistingPlayerToMatch = mutation({
       throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const player = await ctx.db.get(args.playerId);
@@ -126,7 +126,7 @@ export const updateMatchMetadata = mutation({
       throw new Error("Wedstrijdgegevens kunnen alleen worden gewijzigd vóór de aftrap");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const patch: { opponent?: string; scheduledAt?: number; isHome?: boolean } = {};
@@ -165,7 +165,7 @@ export const updateStatus = mutation({
     }
     const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     await ctx.db.patch(args.matchId, { status: args.status });

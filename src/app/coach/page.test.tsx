@@ -1,61 +1,110 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { useQuery, useConvexConnectionState } from "convex/react";
-import type { ComponentType } from "react";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-vi.mock("convex/react", () => ({
-  useQuery: vi.fn(),
-  useConvexConnectionState: vi.fn(),
+const mockSignOut = vi.fn();
+const mockUseClerk = vi.fn(() => ({ signOut: mockSignOut }));
+
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: mockUseClerk,
 }));
 
-const mockUseQuery = vi.mocked(useQuery);
-const mockUseConnection = vi.mocked(useConvexConnectionState);
+const originalClerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-let CoachLoginPage: ComponentType;
+async function loadCoachPage(clerkEnabled: boolean) {
+  vi.resetModules();
+  if (clerkEnabled) {
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_coach";
+  } else {
+    delete process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  }
 
-describe("CoachLoginPage (Clerk-only)", () => {
-  beforeEach(async () => {
+  const convex = await import("convex/react");
+  const pageModule = await import("./page");
+
+  return {
+    CoachPage: pageModule.default,
+    mockUseQuery: vi.mocked(convex.useQuery),
+  };
+}
+
+describe("CoachPage", () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    mockUseConnection.mockReturnValue({
-      isWebSocketConnected: true,
-      hasEverConnected: true,
-      isLoading: false,
-    } as never);
+    mockSignOut.mockResolvedValue(undefined);
+    mockUseClerk.mockReturnValue({ signOut: mockSignOut });
+  });
+
+  afterAll(() => {
+    if (originalClerkKey) {
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = originalClerkKey;
+    } else {
+      delete process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    }
+  });
+
+  it("shows Clerk fallback copy when Clerk is disabled", async () => {
+    const { CoachPage } = await loadCoachPage(false);
+
+    render(<CoachPage />);
+
+    expect(screen.getByText("Coach toegang")).toBeInTheDocument();
+    expect(screen.getByText("Inloggen is nog niet actief")).toBeInTheDocument();
+    expect(screen.getByText(/Clerk-login via e-mail en rollen/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Terug naar home" })).toHaveAttribute("href", "/");
+  });
+
+  it("shows loading state while the coach dashboard query is pending", async () => {
+    const { CoachPage, mockUseQuery } = await loadCoachPage(true);
     mockUseQuery.mockReturnValue(undefined);
 
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_xxx";
-    vi.resetModules();
-    const mod = await import("./page");
-    CoachLoginPage = mod.default;
+    render(<CoachPage />);
+
+    expect(screen.getByText("Coachdashboard laden...")).toBeInTheDocument();
   });
 
-  it("shows loading state while access is being checked", async () => {
-    render(<CoachLoginPage />);
-    await waitFor(() => {
-      expect(screen.getByText("Coachrechten controleren...")).toBeInTheDocument();
-    });
-  });
-
-  it("shows no-access message when user has no coach link", async () => {
+  it("shows no-access state when the signed-in user has no coach role", async () => {
+    const { CoachPage, mockUseQuery } = await loadCoachPage(true);
     mockUseQuery.mockReturnValue(null);
-    render(<CoachLoginPage />);
+
+    render(<CoachPage />);
+
+    expect(screen.getByText("Geen coachtoegang")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Naar inloggen" })).toHaveAttribute("href", "/sign-in");
+
+    fireEvent.click(screen.getByRole("button", { name: "Uitloggen" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Geen coachtoegang")).toBeInTheDocument();
+      expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/" });
     });
   });
 
-  it("renders dashboard when coach data is available", async () => {
+  it("renders the coach dashboard for a linked coach account", async () => {
+    const { CoachPage, mockUseQuery } = await loadCoachPage(true);
     mockUseQuery.mockReturnValue({
-      coach: { id: "coach123", name: "Coach Mike" },
-      teams: [{ id: "team456", name: "JO12-1" }],
-      matches: [],
-    } as never);
-
-    render(<CoachLoginPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Welkom, Coach Mike!")).toBeInTheDocument();
+      coach: { id: "coach-1", name: "Coach Mike" },
+      teams: [{ id: "team-1", name: "JO12-1" }],
+      matches: [
+        {
+          _id: "match-1",
+          teamId: "team-1",
+          opponent: "VV Oranje",
+          isHome: true,
+          status: "scheduled",
+          publicCode: "ABC123",
+          homeScore: 0,
+          awayScore: 0,
+          currentQuarter: 1,
+          scheduledAt: Date.now() + 86400000,
+        },
+      ],
     });
+
+    render(<CoachPage />);
+
+    expect(screen.getByText("Welkom, Coach Mike!")).toBeInTheDocument();
+    expect(screen.getAllByText("JO12-1").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Gepland" })).toBeInTheDocument();
+    expect(screen.getByText(/VV Oranje/)).toBeInTheDocument();
   });
 });
+

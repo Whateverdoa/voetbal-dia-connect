@@ -4,7 +4,10 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
-import { requireCoachTeamAccess } from "./authz";
+import {
+  verifyCoachTeamMembership,
+  verifyIsMatchLead,
+} from "./pinHelpers";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -21,14 +24,20 @@ export const substituteFromField = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireCoachTeamAccess(ctx, match);
-    if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status === "finished") {
-      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
+    if (!match) {
+      throw new Error("Wedstrijd niet gevonden");
+    }
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
+    }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
     const now = Date.now();
-    const shouldTrackPlayingTime = match.status === "live";
     const effectiveEventTime = getEffectiveEventTime(match, now);
     const substitutionStamp = buildEventGameTimeStamp(match, effectiveEventTime);
 
@@ -62,7 +71,7 @@ export const substituteFromField = mutation({
     const slotToTransfer = mpOut.fieldSlotIndex;
 
     // Player going OFF — record playing time, clear slot
-    if (shouldTrackPlayingTime && mpOut.lastSubbedInAt) {
+    if (mpOut.lastSubbedInAt) {
       await recordPlayingTime(ctx, mpOut, now);
     }
     await ctx.db.patch(mpOut._id, {
@@ -74,11 +83,11 @@ export const substituteFromField = mutation({
     // Player going ON — take the slot, start playing time
     const mpInUpdates: {
       onField: boolean;
-      lastSubbedInAt?: number;
+      lastSubbedInAt: number;
       fieldSlotIndex?: number;
     } = {
       onField: true,
-      lastSubbedInAt: shouldTrackPlayingTime ? now : undefined,
+      lastSubbedInAt: now,
     };
     if (slotToTransfer !== undefined && slotToTransfer !== null) {
       mpInUpdates.fieldSlotIndex = slotToTransfer;

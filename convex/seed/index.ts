@@ -1,5 +1,5 @@
 /**
- * Modular seed system — orchestrates all seed operations.
+ * Modular seed system - orchestrates all seed operations.
  *
  * Run with: npx convex run seed:init
  */
@@ -9,18 +9,14 @@ import { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import {
   CLUB,
-  JO12_TEAM_CONFIGS,
+  TEAM_CONFIGS,
   COACH_CONFIGS,
   REFEREE_CONFIGS,
-  JO12_SCHEDULES,
 } from "./seedData";
 import { seedPlayersForTeam } from "./seedPlayers";
 import { seedMatchesForTeam } from "./seedMatches";
+import { upsertUserAccess } from "../lib/userAccess";
 
-/**
- * Idempotent seed action for DIA Live: 4 JO12 teams, coaches, players, full match schedules.
- * Creates: 1 club, 4 teams (JO12-1..4), 13 coaches, 4 referees, all gespeeld + komend matches.
- */
 export const init = action({
   handler: async (ctx) => {
     const existingClub = await ctx.runQuery(api.admin.getClubBySlug, { slug: CLUB.slug });
@@ -31,7 +27,7 @@ export const init = action({
       };
     }
 
-    const clubId = await ctx.runMutation(api.admin.createClub, {
+    const clubId = await ctx.runMutation(internal.seed.createSeedClub, {
       name: CLUB.name,
       slug: CLUB.slug,
     });
@@ -40,32 +36,35 @@ export const init = action({
     const teamSummary: Array<{ name: string; players: number }> = [];
     const usedNames = new Set<string>();
 
-    for (const cfg of JO12_TEAM_CONFIGS) {
-      const teamId = await ctx.runMutation(api.admin.createTeam, {
+    for (const cfg of TEAM_CONFIGS) {
+      const teamId = await ctx.runMutation(internal.seed.createSeedTeam, {
         clubId,
         name: cfg.name,
         slug: cfg.slug,
       });
       teamMap[cfg.slug] = teamId;
+
       const count = await seedPlayersForTeam(ctx, teamId, cfg.slug, usedNames);
       teamSummary.push({ name: cfg.name, players: count });
     }
 
-    const coachSummary: Array<{ name: string; email?: string }> = [];
+    const coachMap: Record<string, Id<"coaches">> = {};
+    const coachSummary: Array<{ name: string; email: string }> = [];
     for (const cfg of COACH_CONFIGS) {
-      const teamIds = cfg.teamSlugs.map((s) => teamMap[s]).filter(Boolean);
-      await ctx.runMutation(api.admin.createCoach, {
+      const teamIds = cfg.teamSlugs.map((slug) => teamMap[slug]).filter(Boolean);
+      const id = await ctx.runMutation(internal.seed.createSeedCoach, {
         name: cfg.name,
         email: cfg.email,
         teamIds,
       });
+      coachMap[cfg.email] = id;
       coachSummary.push({ name: cfg.name, email: cfg.email });
     }
 
     const refereeMap: Record<string, Id<"referees">> = {};
-    const refereeSummary: Array<{ name: string; email?: string }> = [];
+    const refereeSummary: Array<{ name: string; email: string }> = [];
     for (const cfg of REFEREE_CONFIGS) {
-      const id = await ctx.runMutation(api.admin.createReferee, {
+      const id = await ctx.runMutation(internal.seed.createSeedReferee, {
         name: cfg.name,
         email: cfg.email,
       });
@@ -74,26 +73,18 @@ export const init = action({
       refereeSummary.push({ name: cfg.name, email: cfg.email });
     }
 
-    const allMatchResults: Array<{ team: string; opponent: string; code: string; date: string; result: string | null }> = [];
-    for (const cfg of JO12_TEAM_CONFIGS) {
-      const teamId = teamMap[cfg.slug];
-      const defaultCoach = await ctx.runQuery(api.admin.listCoaches, {});
-      const coach = defaultCoach.find((c) => c.teamIds.includes(teamId));
-      if (!coach) {
-        throw new Error(`Geen coach gevonden voor team ${cfg.name}`);
-      }
-      const schedule = JO12_SCHEDULES[cfg.slug];
-      const results = await seedMatchesForTeam(
-        ctx,
-        teamId,
-        coach._id,
-        refereeMap,
-        schedule
-      );
-      for (const r of results) {
-        allMatchResults.push({ team: cfg.name, ...r });
-      }
+    const jo12Id = teamMap["jo12-1"];
+    const jo12CoachId = coachMap["remco.hendriks@dia.local"];
+    if (!jo12Id || !jo12CoachId) {
+      throw new Error("JO12 seeddata mist team of hoofdcoach");
     }
+
+    const matchResults = await seedMatchesForTeam(
+      ctx,
+      jo12Id,
+      jo12CoachId,
+      refereeMap,
+    );
 
     return {
       message: "Seed data created successfully!",
@@ -101,17 +92,125 @@ export const init = action({
       teams: teamSummary,
       coaches: coachSummary,
       referees: refereeSummary,
-      matches: allMatchResults,
+      matches: matchResults,
     };
   },
 });
 
-// Internal mutation for creating seed match.
+export const createSeedClub = internalMutation({
+  args: {
+    name: v.string(),
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("clubs", {
+      name: args.name,
+      slug: args.slug.toLowerCase(),
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const createSeedTeam = internalMutation({
+  args: {
+    clubId: v.id("clubs"),
+    name: v.string(),
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("teams", {
+      clubId: args.clubId,
+      name: args.name,
+      slug: args.slug.toLowerCase(),
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const createSeedPlayers = internalMutation({
+  args: {
+    teamId: v.id("teams"),
+    players: v.array(
+      v.object({
+        name: v.string(),
+        number: v.optional(v.number()),
+        positionPrimary: v.optional(v.string()),
+        positionSecondary: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const ids = [];
+    for (const player of args.players) {
+      const id = await ctx.db.insert("players", {
+        teamId: args.teamId,
+        name: player.name,
+        number: player.number,
+        positionPrimary: player.positionPrimary,
+        positionSecondary: player.positionSecondary,
+        active: true,
+        createdAt: Date.now(),
+      });
+      ids.push(id);
+    }
+    return ids;
+  },
+});
+
+export const createSeedCoach = internalMutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    teamIds: v.array(v.id("teams")),
+  },
+  handler: async (ctx, args) => {
+    const coachId = await ctx.db.insert("coaches", {
+      name: args.name,
+      email: args.email.trim().toLowerCase(),
+      teamIds: args.teamIds,
+      createdAt: Date.now(),
+    });
+
+    await upsertUserAccess(ctx, {
+      email: args.email,
+      roles: ["coach"],
+      coachId,
+      source: "admin_manual",
+    });
+
+    return coachId;
+  },
+});
+
+export const createSeedReferee = internalMutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const refereeId = await ctx.db.insert("referees", {
+      name: args.name,
+      email: args.email.trim().toLowerCase(),
+      active: true,
+      createdAt: Date.now(),
+    });
+
+    await upsertUserAccess(ctx, {
+      email: args.email,
+      roles: ["referee"],
+      refereeId,
+      source: "admin_manual",
+    });
+
+    return refereeId;
+  },
+});
+
 export const createSeedMatch = internalMutation({
   args: {
     teamId: v.id("teams"),
-    coachId: v.id("coaches"),
     publicCode: v.string(),
+    coachId: v.id("coaches"),
     opponent: v.string(),
     isHome: v.boolean(),
     scheduledAt: v.number(),
@@ -124,8 +223,8 @@ export const createSeedMatch = internalMutation({
     const now = Date.now();
     return await ctx.db.insert("matches", {
       teamId: args.teamId,
-      coachId: args.coachId,
       publicCode: args.publicCode,
+      coachId: args.coachId,
       opponent: args.opponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -159,7 +258,6 @@ export const addPlayerToMatch = internalMutation({
   },
 });
 
-/** Wipe all data from all tables. Dev-only — run before re-seeding. */
 export const clearAll = mutation({
   handler: async (ctx) => {
     const tableNames = [
@@ -171,6 +269,7 @@ export const clearAll = mutation({
       "referees",
       "teams",
       "clubs",
+      "userAccess",
     ] as const;
 
     let total = 0;
@@ -185,9 +284,6 @@ export const clearAll = mutation({
   },
 });
 
-/** Clear only match-related data: matchEvents, matchPlayers, matches.
- *  Leaves clubs, teams, coaches, players, referees intact.
- *  Safe for production — use before re-importing match schedules. */
 export const clearMatchesOnly = mutation({
   handler: async (ctx) => {
     const tableNames = ["matchEvents", "matchPlayers", "matches"] as const;

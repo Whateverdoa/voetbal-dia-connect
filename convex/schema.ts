@@ -20,30 +20,50 @@ export default defineSchema({
     .index("by_slug", ["clubId", "slug"])
     .index("by_slug_only", ["slug"]), // For getBySlug query
 
+  // Authenticated access by Clerk identity email.
+  userAccess: defineTable({
+    email: v.string(),
+    roles: v.array(v.union(v.literal("admin"), v.literal("coach"), v.literal("referee"))),
+    coachId: v.optional(v.id("coaches")),
+    refereeId: v.optional(v.id("referees")),
+    active: v.boolean(),
+    source: v.union(
+      v.literal("bootstrap_admin"),
+      v.literal("migration_backfill"),
+      v.literal("admin_manual"),
+      v.literal("coach_sync"),
+      v.literal("referee_sync"),
+      v.literal("recovery")
+    ),
+    lastSyncedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_role", ["roles"]),
+
   // Coaches can manage one or more teams
   coaches: defineTable({
     name: v.string(),
-    // Legacy compatibility during pin-free migration rollout.
-    pin: v.optional(v.string()),
-    teamIds: v.array(v.id("teams")),
+    pin: v.optional(v.string()), // Legacy PIN, to be removed after full auth migration
     email: v.optional(v.string()),
+    teamIds: v.array(v.id("teams")),
     createdAt: v.number(),
   })
-    .index("by_email", ["email"])
-    .index("by_pin", ["pin"]),
+    .index("by_pin", ["pin"])
+    .index("by_email", ["email"]),
 
-  // Referees — global records linked by e-mail (assigned to matches by admin/coach)
+  // Referees — global records with their own PIN (assigned to matches by admin/coach)
   referees: defineTable({
     name: v.string(),
-    // Legacy compatibility during pin-free migration rollout.
-    pin: v.optional(v.string()),
+    pin: v.optional(v.string()), // Legacy PIN, to be removed after full auth migration
     email: v.optional(v.string()),
     active: v.boolean(),
+    qualificationTags: v.optional(v.array(v.string())),
     createdAt: v.number(),
   })
-    .index("by_email", ["email"])
     .index("by_pin", ["pin"])
-    .index("by_active", ["active"]),
+    .index("by_email", ["email"]),
 
   // Players per team
   players: defineTable({
@@ -60,11 +80,10 @@ export default defineSchema({
   // Matches
   matches: defineTable({
     teamId: v.id("teams"),
-    // Legacy compatibility during pin-free migration rollout.
-    coachId: v.optional(v.id("coaches")),
-    coachPin: v.optional(v.string()),
     publicCode: v.string(), // 6-char code for public access
-
+    coachPin: v.optional(v.string()), // Legacy PIN to control this match
+    coachId: v.optional(v.id("coaches")),
+    
     // Match info
     opponent: v.string(),
     isHome: v.boolean(),
@@ -182,4 +201,28 @@ export default defineSchema({
   })
     .index("by_match", ["matchId"])
     .index("by_match_type", ["matchId", "type"]),
+
+  // VoetbalAssist kalender/uitslagen (import; niet overschrijven op voetbalassist_id)
+  wedstrijden: defineTable({
+    voetbalassist_id: v.number(),
+    datum: v.string(), // "2025-08-23"
+    tijd: v.string(), // "08:55"
+    datum_ms: v.number(),
+    thuisteam: v.string(),
+    uitteam: v.string(),
+    thuis_goals: v.optional(v.number()),
+    uit_goals: v.optional(v.number()),
+    status: v.string(), // gespeeld | gepland | afgelast
+    type: v.string(), // competitie | beker | vriendschappelijk
+    categorie: v.string(),
+    leeftijd: v.number(),
+    dia_team: v.string(),
+    veld: v.string(),
+    scheidsrechter: v.string(),
+    thuisteamLogo: v.optional(v.string()),
+    uitteamLogo: v.optional(v.string()),
+  })
+    .index("by_voetbalassist_id", ["voetbalassist_id"])
+    .index("by_datum", ["datum_ms"])
+    .index("by_team", ["dia_team"]),
 });

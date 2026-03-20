@@ -1,123 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
 
-const ACCESS_LOAD_TIMEOUT_MS = 6000;
 const hasClerkPublishableKey = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 );
 
 export default function ScheidsrechterPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [connectionTimeout, setConnectionTimeout] = useState(false);
-
-  useEffect(() => {
-    if (!hasClerkPublishableKey || submitted) return;
-    setSubmitted(true);
-  }, [submitted]);
-
-  const data = useQuery(api.matches.getMatchesForReferee, submitted ? {} : "skip");
-
-  useEffect(() => {
-    if (!submitted || data !== undefined) {
-      setConnectionTimeout(false);
-      return;
-    }
-    const timer = setTimeout(() => setConnectionTimeout(true), ACCESS_LOAD_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [submitted, data]);
-
-  const handleLogout = () => {
-    setSubmitted(false);
-    setConnectionTimeout(false);
-  };
-
-  const handleRetryConnection = () => {
-    setConnectionTimeout(false);
-    setSubmitted(false);
-  };
-
   if (!hasClerkPublishableKey) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-3">
-          <h1 className="text-xl font-bold text-dia-green">Clerk vereist</h1>
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm border border-gray-200 text-center space-y-3">
+          <h1 className="text-2xl font-semibold text-gray-900">Scheidsrechter toegang</h1>
           <p className="text-sm text-gray-600">
-            Deze omgeving gebruikt alleen account-login via e-mail en rollen.
+            Deze omgeving verwacht Clerk-login via e-mail en rollen.
           </p>
-          <Link href="/" className="text-sm text-dia-green hover:underline">
-            ← Terug naar start
+          <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white">
+            Terug naar home
           </Link>
         </div>
       </main>
     );
   }
 
-  if (submitted && data) {
-    return (
-      <RefereeMatchList
-        refereeName={data.referee.name}
-        matches={data.matches}
-        onLogout={handleLogout}
-      />
-    );
-  }
+  return <RefereePageWithClerk />;
+}
 
-  if (submitted && data === undefined) {
+function RefereePageWithClerk() {
+  const { signOut } = useClerk();
+  const data = useQuery(api.matches.getMatchesForReferee, {});
+
+  if (data === undefined) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <p className="text-gray-600 font-medium">Scheidsrechterrechten controleren...</p>
+        <p className="text-sm font-medium text-gray-600">Scheidsrechterdashboard laden...</p>
       </main>
     );
   }
 
-  if (submitted && data === null) {
+  if (data === null) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-xl shadow p-6 text-center space-y-3">
-          <h1 className="text-xl font-bold text-dia-green">Geen scheidsrechtertoegang</h1>
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm border border-gray-200 text-center space-y-4">
+          <h1 className="text-2xl font-semibold text-gray-900">Geen scheidsrechtertoegang</h1>
           <p className="text-sm text-gray-600">
-            Dit account heeft nog geen scheidsrechterkoppeling via e-mail.
+            Dit account heeft geen actieve scheidsrechter-rol of is nog niet gekoppeld aan een scheidsrechterrecord.
           </p>
-          <Link href="/" className="text-sm text-dia-green hover:underline">
-            ← Terug naar start
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/sign-in"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white"
+            >
+              Naar inloggen
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                void signOut({ redirectUrl: "/" });
+              }}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700"
+            >
+              Uitloggen
+            </button>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-6 text-center">
-        <h1 className="text-3xl font-bold text-dia-green">Scheidsrechter</h1>
-        <p className="text-gray-600">Toegang verloopt via accountrechten (Clerk).</p>
-
-        {connectionTimeout && (
-          <>
-            <p className="text-amber-600 text-sm font-medium text-center">
-              Geen verbinding. Controleer je internet en probeer opnieuw.
-            </p>
-            <button
-              type="button"
-              onClick={handleRetryConnection}
-              className="w-full py-3 rounded-xl border-2 border-amber-500 text-amber-700 font-medium hover:bg-amber-50 transition-colors"
-            >
-              Opnieuw proberen
-            </button>
-          </>
-        )}
-
-        <div>
-          <Link href="/" className="text-sm text-gray-500 hover:text-dia-green">
-            ← Terug naar startpagina
-          </Link>
-        </div>
-      </div>
-    </main>
+    <RefereeMatchList
+      refereeName={data.referee.name}
+      matches={data.matches}
+      onLogout={() => {
+        void signOut({ redirectUrl: "/" });
+      }}
+    />
   );
 }

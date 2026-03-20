@@ -1,7 +1,7 @@
 /**
  * Public queries — unauthenticated, read-only views for spectators.
  *
- * These queries NEVER return private role-linking fields or other sensitive fields.
+ * These queries never return private referee or coach access fields.
  */
 import { query } from "./_generated/server";
 
@@ -57,3 +57,4 @@ export const listPublicMatches = query({
     return enriched;
   },
 });
+

@@ -91,9 +91,7 @@ export const updatePlayer = mutation({
 });
 
 export const deletePlayer = mutation({
-  args: { 
-    playerId: v.id("players"),
-  },
+  args: { playerId: v.id("players") },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
     await ctx.db.delete(args.playerId);

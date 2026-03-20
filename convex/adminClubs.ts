@@ -35,6 +35,7 @@ export const getClubBySlug = query({
 
 export const listClubs = query({
   handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     return await ctx.db.query("clubs").collect();
   },
 });
@@ -60,9 +61,7 @@ export const updateClub = mutation({
 });
 
 export const deleteClub = mutation({
-  args: { 
-    clubId: v.id("clubs"),
-  },
+  args: { clubId: v.id("clubs") },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
     

@@ -27,6 +27,12 @@ interface CoachDashboardProps {
   onLogout: () => void;
 }
 
+function sortByMostRecentMatch(left: DashboardMatch, right: DashboardMatch) {
+  const leftTimestamp = left.scheduledAt ?? 0;
+  const rightTimestamp = right.scheduledAt ?? 0;
+  return rightTimestamp - leftTimestamp;
+}
+
 export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
   const matchesByTeam = data.teams.map((team) => ({
     team,
@@ -97,7 +103,9 @@ function TeamSection({
 }) {
   const [showAllFinished, setShowAllFinished] = useState(false);
   const scheduledMatches = matches.filter((m) => m.status === "scheduled");
-  const finishedMatches = matches.filter((m) => m.status === "finished");
+  const finishedMatches = matches
+    .filter((m) => m.status === "finished")
+    .sort(sortByMostRecentMatch);
   const visibleFinished = showAllFinished
     ? finishedMatches
     : finishedMatches.slice(0, 3);
@@ -117,10 +125,7 @@ function TeamSection({
       <div className="p-4 space-y-4">
         <Link
           href={`/coach/new?teamId=${team.id}`}
-          className="flex items-center justify-center gap-2 w-full py-4 px-4 
-            bg-dia-green text-white font-semibold rounded-xl text-lg
-            min-h-[56px] active:scale-[0.98] transition-all
-            shadow-sm hover:shadow-md hover:bg-dia-green-light"
+          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-white font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-light"
         >
           <Plus className="w-5 h-5" />
           Nieuwe wedstrijd
@@ -151,12 +156,9 @@ function TeamSection({
               {hiddenCount > 0 && (
                 <button
                   onClick={() => setShowAllFinished(!showAllFinished)}
-                  className="w-full text-sm text-dia-green font-medium text-center py-2
-                             hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
+                  className="w-full text-sm text-dia-green font-medium text-center py-2 hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
                 >
-                  {showAllFinished
-                    ? "Minder tonen ▲"
-                    : `+${hiddenCount} meer tonen ▼`}
+                  {showAllFinished ? "Minder tonen ▲" : `+${hiddenCount} meer tonen ▼`}
                 </button>
               )}
             </div>

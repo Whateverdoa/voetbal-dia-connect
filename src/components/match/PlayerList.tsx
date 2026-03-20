@@ -29,7 +29,6 @@ export function PlayerList({
 
   return (
     <div className="space-y-4">
-      {/* On field */}
       <section className="bg-white rounded-xl shadow-md p-4">
         <h2 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
           <span className="w-3 h-3 bg-green-500 rounded-full"></span>
@@ -60,7 +59,6 @@ export function PlayerList({
         )}
       </section>
 
-      {/* Bench */}
       <section className="bg-white rounded-xl shadow-md p-4">
         <h2 className="font-semibold mb-3 text-gray-600 flex items-center gap-2">
           <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
@@ -97,7 +95,6 @@ export function PlayerList({
         )}
       </section>
 
-      {/* Absent (not physically present, e.g. called in sick) - pregame only */}
       {playersAbsent.length > 0 && (
         <section className="bg-white rounded-xl shadow-md p-4">
           <h2 className="font-semibold mb-3 text-amber-700 flex items-center gap-2">

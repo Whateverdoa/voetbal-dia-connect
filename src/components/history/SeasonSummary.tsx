@@ -11,14 +11,9 @@ interface SeasonSummaryProps {
 }
 
 export function SeasonSummary({ teamId }: SeasonSummaryProps) {
-  const currentSeason = new Date().getFullYear();
   const stats = useQuery(api.teams.getSeasonStats, { teamId: teamId as any });
-  const playingTime = useQuery(api.historyActions.getSeasonPlayingTime, {
-    teamId: teamId as any,
-    season: currentSeason,
-  });
 
-  if (!stats || !playingTime) {
+  if (!stats) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-1/3 mb-4" />
@@ -86,9 +81,6 @@ export function SeasonSummary({ teamId }: SeasonSummaryProps) {
         {stats.topScorers.length > 0 && (
           <TopScorers scorers={stats.topScorers} />
         )}
-        {playingTime.totals.length > 0 && (
-          <SeasonPlayingTime totals={playingTime.totals} />
-        )}
       </div>
     </section>
   );
@@ -128,33 +120,6 @@ function TopScorers({ scorers }: { scorers: Scorer[] }) {
             </span>
             <span className="font-semibold">
               {scorer.goals} {scorer.goals === 1 ? "goal" : "goals"}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-interface SeasonMinutes {
-  playerId: string;
-  playerName: string;
-  minutesPlayed: number;
-}
-
-function SeasonPlayingTime({ totals }: { totals: SeasonMinutes[] }) {
-  return (
-    <div className="pt-3 border-t border-gray-100">
-      <h3 className="text-sm font-medium text-gray-600 mb-2">Speeltijd seizoen</h3>
-      <div className="space-y-1">
-        {totals.slice(0, 6).map((entry) => (
-          <div
-            key={entry.playerId}
-            className="flex items-center justify-between text-sm text-gray-700"
-          >
-            <span>{entry.playerName}</span>
-            <span className="font-semibold tabular-nums">
-              {entry.minutesPlayed} min
             </span>
           </div>
         ))}

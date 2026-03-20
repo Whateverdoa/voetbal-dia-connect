@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Pencil, Trash2, Plus, X, Check } from "lucide-react";
 
 interface Team {
   _id: Id<"teams">;
@@ -15,9 +15,9 @@ interface Team {
 interface Coach {
   _id: Id<"coaches">;
   name: string;
+  email?: string;
   teamIds: Id<"teams">[];
   teams: { id: Id<"teams">; name: string }[];
-  email?: string;
 }
 
 export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
@@ -36,62 +36,65 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"coaches"> | null>(null);
   const [status, setStatus] = useState("");
 
-  const handleCreate = async () => {
-    if (!newName.trim()) return;
+  const toggleTeam = (
+    teamId: Id<"teams">,
+    current: Id<"teams">[],
+    setter: (ids: Id<"teams">[]) => void
+  ) => {
+    if (current.includes(teamId)) {
+      setter(current.filter((id) => id !== teamId));
+      return;
+    }
+    setter([...current, teamId]);
+  };
+
+  async function handleCreate() {
+    if (!newName.trim() || !newEmail.trim()) return;
     try {
       await createCoach({
         name: newName.trim(),
+        email: newEmail.trim(),
         teamIds: newTeamIds,
-        email: newEmail.trim() || undefined,
       });
       setNewName("");
       setNewEmail("");
       setNewTeamIds([]);
-      setStatus("✅ Coach aangemaakt");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Coach aangemaakt");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleUpdate = async (coachId: Id<"coaches">) => {
+  async function handleUpdate(coachId: Id<"coaches">) {
     try {
       await updateCoach({
         coachId,
         name: editName.trim() || undefined,
-        teamIds: editTeamIds,
         email: editEmail.trim() || undefined,
+        teamIds: editTeamIds,
       });
       setEditingId(null);
-      setStatus("✅ Coach bijgewerkt");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Coach bijgewerkt");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleDelete = async (coachId: Id<"coaches">) => {
+  async function handleDelete(coachId: Id<"coaches">) {
     try {
       await deleteCoach({ coachId });
       setDeleteConfirm(null);
-      setStatus("✅ Coach verwijderd");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Coach verwijderd");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
-
-  const toggleTeam = (teamId: Id<"teams">, current: Id<"teams">[], setter: (ids: Id<"teams">[]) => void) => {
-    if (current.includes(teamId)) {
-      setter(current.filter((id) => id !== teamId));
-    } else {
-      setter([...current, teamId]);
-    }
-  };
+  }
 
   return (
     <div className="space-y-4">
-      {/* Coach list */}
       <div className="space-y-2">
         {coaches === undefined ? (
           <p className="text-gray-500">Laden...</p>
@@ -99,38 +102,36 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
           <p className="text-gray-500">Geen coaches.</p>
         ) : (
           coaches.map((coach) => (
-            <div
-              key={coach._id}
-              className="p-3 bg-gray-50 rounded-lg"
-            >
+            <div key={coach._id} className="p-3 bg-gray-50 rounded-lg">
               {editingId === coach._id ? (
-                <div className="space-y-2">
-                  <div className="flex gap-2 flex-wrap">
+                <div className="space-y-3">
+                  <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
                     <input
                       type="text"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      onChange={(event) => setEditName(event.target.value)}
                       placeholder="Naam"
-                      className="flex-1 min-w-[120px] px-2 py-1 border rounded"
+                      className="px-3 py-2 border rounded"
                       autoFocus
                     />
                     <input
-                      type="text"
+                      type="email"
                       value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      placeholder="E-mail (Clerk)"
-                      className="flex-1 min-w-[180px] px-2 py-1 border rounded text-sm"
+                      onChange={(event) => setEditEmail(event.target.value)}
+                      placeholder="E-mailadres"
+                      className="px-3 py-2 border rounded"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {teams?.map((team) => (
                       <button
                         key={team._id}
+                        type="button"
                         onClick={() => toggleTeam(team._id, editTeamIds, setEditTeamIds)}
                         className={`px-2 py-1 text-xs rounded ${
                           editTeamIds.includes(team._id)
                             ? "bg-dia-green text-white"
-                            : "bg-gray-200"
+                            : "bg-gray-200 text-gray-700"
                         }`}
                       >
                         {team.name}
@@ -139,12 +140,14 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <button
+                      type="button"
                       onClick={() => handleUpdate(coach._id)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded"
                     >
                       <Check size={18} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setEditingId(null)}
                       className="p-2 text-gray-500 hover:bg-gray-100 rounded"
                     >
@@ -156,12 +159,14 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                 <div className="flex items-center gap-2">
                   <span className="flex-1 text-red-600">Coach verwijderen?</span>
                   <button
+                    type="button"
                     onClick={() => handleDelete(coach._id)}
                     className="px-3 py-1 bg-red-600 text-white rounded text-sm"
                   >
                     Ja
                   </button>
                   <button
+                    type="button"
                     onClick={() => setDeleteConfirm(null)}
                     className="px-3 py-1 bg-gray-200 rounded text-sm"
                   >
@@ -173,15 +178,14 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{coach.name}</span>
-                      {coach.email && (
-                        <span className="text-sm text-gray-500">{coach.email}</span>
-                      )}
+                      <span className="text-sm text-gray-500">{coach.email ?? "Geen e-mail"}</span>
                     </div>
                     <p className="text-sm text-gray-500">
-                      Teams: {coach.teams.length > 0 ? coach.teams.map((t) => t.name).join(", ") : "Geen"}
+                      Teams: {coach.teams.length > 0 ? coach.teams.map((team) => team.name).join(", ") : "Geen"}
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => {
                       setEditingId(coach._id);
                       setEditName(coach.name);
@@ -193,6 +197,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                     <Pencil size={18} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setDeleteConfirm(coach._id)}
                     className="p-2 text-red-500 hover:bg-red-50 rounded"
                   >
@@ -205,26 +210,25 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         )}
       </div>
 
-      {/* Add new coach */}
       <div className="border-t pt-4">
         <h3 className="font-medium mb-2 flex items-center gap-2">
           <Plus size={18} /> Nieuwe coach
         </h3>
         <div className="space-y-2">
-          <div className="flex gap-2 flex-wrap">
+          <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
             <input
               type="text"
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(event) => setNewName(event.target.value)}
               placeholder="Naam"
-              className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
+              className="px-3 py-2 border rounded-lg"
             />
             <input
               type="email"
               value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="E-mail (Clerk)"
-              className="flex-1 min-w-[180px] px-3 py-2 border rounded-lg text-sm"
+              onChange={(event) => setNewEmail(event.target.value)}
+              placeholder="E-mailadres"
+              className="px-3 py-2 border rounded-lg"
             />
           </div>
           <div>
@@ -233,11 +237,12 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
               {teams?.map((team) => (
                 <button
                   key={team._id}
+                  type="button"
                   onClick={() => toggleTeam(team._id, newTeamIds, setNewTeamIds)}
                   className={`px-2 py-1 text-xs rounded ${
                     newTeamIds.includes(team._id)
                       ? "bg-dia-green text-white"
-                      : "bg-gray-200"
+                      : "bg-gray-200 text-gray-700"
                   }`}
                 >
                   {team.name}
@@ -249,8 +254,9 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
             </div>
           </div>
           <button
+            type="button"
             onClick={handleCreate}
-            disabled={!newName.trim()}
+            disabled={!newName.trim() || !newEmail.trim()}
             className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
           >
             Toevoegen
@@ -258,9 +264,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
         </div>
       </div>
 
-      {status && (
-        <p className="text-sm p-2 bg-gray-100 rounded">{status}</p>
-      )}
+      {status && <p className="text-sm p-2 bg-gray-100 rounded">{status}</p>}
     </div>
   );
 }

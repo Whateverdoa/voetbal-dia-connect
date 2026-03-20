@@ -53,7 +53,6 @@ export function MatchCard({ match, compact = false }: MatchCardProps) {
     >
       <div className={clsx("p-4", compact && "p-3")}>
         <div className="flex items-center justify-between gap-3">
-          {/* Left side: Match info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <StatusBadge status={match.status} size="sm" />
@@ -79,7 +78,6 @@ export function MatchCard({ match, compact = false }: MatchCardProps) {
             </div>
           </div>
 
-          {/* Right side: Score */}
           <div className="text-right flex-shrink-0">
             {showScore ? (
               <div

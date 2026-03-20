@@ -46,18 +46,14 @@ export function SubstitutionPanel({
     } catch (err) {
       console.error("Failed to substitute:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Geen rechten")) {
-        setError("Sessie verlopen. Herlaad de pagina.");
-      } else {
-        setError(`Fout bij klaarzetten: ${message}`);
-      }
+      setError(`Fout bij klaarzetten: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const playerOutData = playersOnField.find((p) => p.playerId === playerOut);
-  const playerInData = playersOnBench.find((p) => p.playerId === playerIn);
+  const playerOutData = playersOnField.find((player) => player.playerId === playerOut);
+  const playerInData = playersOnBench.find((player) => player.playerId === playerIn);
   const selectionDisabled = isSubmitting || showNextPrompt || !canEdit;
 
   const handleCreateAnother = () => {
@@ -77,15 +73,13 @@ export function SubstitutionPanel({
       <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <div className="p-6 flex-1 overflow-y-auto">
           <h2 className="text-xl font-bold mb-4">Wissel</h2>
-          
-          {/* Error message */}
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
               {error}
             </div>
           )}
 
-          {/* Visual summary of substitution */}
           {(playerOut || playerIn) && (
             <div className="mb-4 p-3 bg-gray-100 rounded-xl flex items-center justify-center gap-3">
               <div className={clsx(
@@ -112,34 +106,33 @@ export function SubstitutionPanel({
             </div>
           )}
 
-          {/* Player out selection */}
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-2">
               <span className="w-5 h-5 bg-red-100 rounded flex items-center justify-center text-xs">↓</span>
               Eruit (op het veld)
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {playersOnField.map((p) => (
+              {playersOnField.map((player) => (
                 <button
-                  key={p.playerId}
-                  onClick={() => setPlayerOut(p.playerId)}
+                  key={player.playerId}
+                  onClick={() => setPlayerOut(player.playerId)}
                   disabled={selectionDisabled}
                   className={clsx(
                     "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
-                    playerOut === p.playerId
+                    playerOut === player.playerId
                       ? "border-red-500 bg-red-50 shadow-md"
                       : "border-green-200 bg-green-50 hover:border-green-300",
                     selectionDisabled && "opacity-60 cursor-not-allowed"
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    {p.number && (
+                    {player.number && (
                       <span className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center font-bold text-sm">
-                        {p.number}
+                        {player.number}
                       </span>
                     )}
-                    <span className="font-medium truncate">{p.name}</span>
-                    {p.isKeeper && (
+                    <span className="font-medium truncate">{player.name}</span>
+                    {player.isKeeper && (
                       <span className="text-xs bg-yellow-400 px-1.5 py-0.5 rounded">K</span>
                     )}
                   </div>
@@ -148,7 +141,6 @@ export function SubstitutionPanel({
             </div>
           </div>
 
-          {/* Player in selection */}
           <div>
             <h3 className="text-sm font-semibold text-green-600 mb-2 flex items-center gap-2">
               <span className="w-5 h-5 bg-green-100 rounded flex items-center justify-center text-xs">↑</span>
@@ -160,26 +152,26 @@ export function SubstitutionPanel({
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {playersOnBench.map((p) => (
+                {playersOnBench.map((player) => (
                   <button
-                    key={p.playerId}
-                    onClick={() => setPlayerIn(p.playerId)}
+                    key={player.playerId}
+                    onClick={() => setPlayerIn(player.playerId)}
                     disabled={selectionDisabled}
                     className={clsx(
                       "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
-                      playerIn === p.playerId
+                      playerIn === player.playerId
                         ? "border-green-500 bg-green-50 shadow-md"
                         : "border-gray-200 bg-gray-50 hover:border-gray-300",
                       selectionDisabled && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      {p.number && (
+                      {player.number && (
                         <span className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center font-bold text-sm text-gray-600">
-                          {p.number}
+                          {player.number}
                         </span>
                       )}
-                      <span className="font-medium truncate">{p.name}</span>
+                      <span className="font-medium truncate">{player.name}</span>
                     </div>
                   </button>
                 ))}
@@ -188,7 +180,6 @@ export function SubstitutionPanel({
           </div>
         </div>
 
-        {/* Fixed bottom actions */}
         {showNextPrompt ? (
           <div className="p-4 border-t bg-gray-50 space-y-3">
             <p className="text-sm font-medium text-center text-gray-700">
@@ -220,8 +211,7 @@ export function SubstitutionPanel({
             <button
               onClick={handleSubmit}
               disabled={!canEdit || !playerOut || !playerIn || isSubmitting}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px]
-                         disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Bezig..." : "Wissel klaarzetten"}
             </button>

@@ -1,8 +1,8 @@
 /**
- * Seed players for a team — real rosters preferred, random fallback.
+ * Seed players for a team - real rosters preferred, random fallback.
  */
 import { ActionCtx } from "../_generated/server";
-import { api } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { pickUniqueNames } from "./helpers";
 import { PLAYERS_PER_TEAM } from "./seedData";
@@ -19,11 +19,6 @@ const SAMPLE_POSITIONS: Array<{ positionPrimary: string; positionSecondary?: str
   { positionPrimary: "ST" },
 ];
 
-/**
- * Create players for the given team.
- * Uses real roster from CSV when available; falls back to random Dutch names.
- * Real rosters get NO positions — coaches fill those in via the app.
- */
 export async function seedPlayersForTeam(
   ctx: ActionCtx,
   teamId: Id<"teams">,
@@ -33,9 +28,9 @@ export async function seedPlayersForTeam(
   const roster = REAL_PLAYER_ROSTERS[teamSlug];
 
   if (roster) {
-    const players = roster.map((name, i) => ({ name, number: i + 1 }));
+    const players = roster.map((name, index) => ({ name, number: index + 1 }));
 
-    await ctx.runMutation(api.admin.createPlayers, {
+    await ctx.runMutation(internal.seed.createSeedPlayers, {
       teamId,
       players,
     });
@@ -43,19 +38,19 @@ export async function seedPlayersForTeam(
   }
 
   const names = pickUniqueNames(PLAYERS_PER_TEAM, usedNames);
-  const players = names.map((name, i) => {
-    const pos = SAMPLE_POSITIONS[i];
+  const players = names.map((name, index) => {
+    const position = SAMPLE_POSITIONS[index];
     return {
       name,
-      number: i + 1,
-      ...(pos && {
-        positionPrimary: pos.positionPrimary,
-        ...(pos.positionSecondary && { positionSecondary: pos.positionSecondary }),
+      number: index + 1,
+      ...(position && {
+        positionPrimary: position.positionPrimary,
+        ...(position.positionSecondary && { positionSecondary: position.positionSecondary }),
       }),
     };
   });
 
-  await ctx.runMutation(api.admin.createPlayers, {
+  await ctx.runMutation(internal.seed.createSeedPlayers, {
     teamId,
     players,
   });

@@ -13,6 +13,7 @@ import {
   LineupToggle,
   PlayingTimePanel,
   SubstitutionSuggestions,
+  MatchLeadBadge,
   MatchSettingsEdit,
   RefereeAssignment,
   StagedSubstitutionsPanel,
@@ -66,26 +67,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
   const isLive = match.status === "live" || match.status === "halftime";
   const isPregame = match.status === "scheduled" || match.status === "lineup";
-  const capabilities = match.capabilities ?? {
-    canControlClock: true,
-    canDoSubstitutions: match.status !== "finished",
-    canManageLineup: match.status !== "finished",
-    canManagePregameSettings: isPregame,
-    canAssignReferee: isPregame,
-    canEnrichGoals: true,
-    canAddGoals: true,
-  };
-  const canEditLineup = capabilities.canManageLineup;
-  const canDoSubstitutions = capabilities.canDoSubstitutions;
-  const canControlClock = capabilities.canControlClock;
-  const canManagePregameSettings = capabilities.canManagePregameSettings;
-  const canAssignReferee = capabilities.canAssignReferee;
-  const canEnrichGoals = capabilities.canEnrichGoals;
-  const canAddGoals = capabilities.canAddGoals;
+  const canEditLineup = isPregame || (match.isCurrentCoachLead ?? false);
+  const canDoSubstitutions = match.isCurrentCoachLead ?? false;
+  const canControlClock = match.canControlClock ?? true;
 
   return (
-    <main className="min-h-dvh bg-gray-100 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
+    <main className="min-h-screen bg-gray-100 pb-8">
+      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Link
@@ -98,7 +86,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               href={`/live/${match.publicCode}`}
               className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
             >
-              Toeschouwerweergave
+              Live view
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -139,27 +127,28 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           pausedAt={match.pausedAt}
           canControlClock={canControlClock}
           canDoSubstitutions={canDoSubstitutions}
-          canAddGoals={canAddGoals}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
         />
 
-        {canDoSubstitutions && (
-          <StagedSubstitutionsPanel
-            matchId={match._id}
-            stagedSubstitutions={match.stagedSubstitutions ?? []}
-          />
-        )}
+        <StagedSubstitutionsPanel
+          matchId={match._id}
+          stagedSubstitutions={match.stagedSubstitutions ?? []}
+        />
 
-        {canAssignReferee && (
-          <RefereeAssignment
-            matchId={match._id}
-            currentRefereeId={match.refereeId}
-            currentRefereeName={match.refereeName}
-          />
-        )}
+        <RefereeAssignment
+          matchId={match._id}
+          currentRefereeId={match.refereeId}
+          currentRefereeName={match.refereeName}
+        />
 
-        {canManagePregameSettings && <MatchSettingsEdit match={match} />}
+        {isPregame && <MatchSettingsEdit match={match} />}
+
+        <MatchLeadBadge
+          matchId={match._id}
+          hasLead={match.hasLead ?? false}
+          leadCoachName={match.leadCoachName ?? null}
+        />
 
         <div className="bg-white rounded-xl shadow-md p-1 flex gap-1">
           <TabButton
@@ -216,15 +205,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            {canEnrichGoals && (
-              <GoalEnrichmentPanel
-                matchId={match._id}
-                events={match.events}
-                players={match.players}
-                teamName={match.teamName}
-                opponentName={match.opponent}
-              />
-            )}
+            <GoalEnrichmentPanel
+              matchId={match._id}
+              events={match.events}
+              players={match.players}
+              teamName={match.teamName}
+              opponentName={match.opponent}
+            />
           </>
         )}
 
@@ -239,15 +226,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            {canEnrichGoals && (
-              <GoalEnrichmentPanel
-                matchId={match._id}
-                events={match.events}
-                players={match.players}
-                teamName={match.teamName}
-                opponentName={match.opponent}
-              />
-            )}
+            <GoalEnrichmentPanel
+              matchId={match._id}
+              events={match.events}
+              players={match.players}
+              teamName={match.teamName}
+              opponentName={match.opponent}
+            />
           </>
         )}
       </div>

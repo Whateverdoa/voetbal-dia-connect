@@ -1,23 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { PlayerSelector } from "./PlayerSelector";
 
 interface MatchFormProps {
   teams: { _id: Id<"teams">; name: string }[] | undefined;
-  coaches: { _id: Id<"coaches">; name: string }[] | undefined;
-  referees: { id: Id<"referees">; name: string }[] | undefined;
+  coaches: { _id: Id<"coaches">; name: string; email?: string }[] | undefined;
+  referees:
+    | { id: Id<"referees">; name: string; qualificationTags?: string[] }[]
+    | undefined;
   onCreated: (publicCode: string) => void;
+  mode?: "collapsible" | "embedded";
+  onCancel?: () => void;
 }
 
-export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProps) {
-  const [open, setOpen] = useState(false);
-
-  // Form state
+export function MatchForm({
+  teams,
+  coaches,
+  referees,
+  onCreated,
+  mode = "collapsible",
+  onCancel,
+}: MatchFormProps) {
+  const isEmbedded = mode === "embedded";
+  const [open, setOpen] = useState(isEmbedded);
   const [teamId, setTeamId] = useState<Id<"teams"> | "">("");
   const [opponent, setOpponent] = useState("");
   const [isHome, setIsHome] = useState(true);
@@ -27,33 +37,24 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
   const [refereeId, setRefereeId] = useState<Id<"referees"> | "">("");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<Id<"players">>>(new Set());
   const [playersInitKey, setPlayersInitKey] = useState(0);
-
-  // Submit state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const createMatch = useMutation(api.admin.createMatch);
-
-  // Load players when team is selected
   const players = useQuery(
     api.admin.listPlayersByTeam,
     teamId ? { teamId: teamId as Id<"teams"> } : "skip"
   );
 
-  // Auto-select all active players when player list loads (via useEffect, not render)
   useEffect(() => {
     if (players && players.length > 0) {
-      const activeIds = new Set(
-        players.filter((p) => p.active).map((p) => p._id)
-      );
+      const activeIds = new Set(players.filter((player) => player.active).map((player) => player._id));
       setSelectedPlayerIds(activeIds);
     }
   }, [players, playersInitKey]);
 
-  const selectedCoach = coaches?.find((c) => c._id === coachId);
-
   const canSubmit =
-    !!teamId && !!opponent.trim() && !!selectedCoach && selectedPlayerIds.size > 0 && !submitting;
+    !!teamId && !!opponent.trim() && !!coachId && selectedPlayerIds.size > 0 && !submitting;
 
   function resetForm() {
     setTeamId("");
@@ -64,19 +65,19 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
     setScheduledAt("");
     setRefereeId("");
     setSelectedPlayerIds(new Set());
-    setPlayersInitKey((k) => k + 1);
+    setPlayersInitKey((value) => value + 1);
     setError("");
   }
 
   function handleTeamChange(id: string) {
     setTeamId(id as Id<"teams"> | "");
     setSelectedPlayerIds(new Set());
-    setPlayersInitKey((k) => k + 1);
+    setPlayersInitKey((value) => value + 1);
   }
 
   function togglePlayer(playerId: Id<"players">) {
-    setSelectedPlayerIds((prev) => {
-      const next = new Set(prev);
+    setSelectedPlayerIds((previous) => {
+      const next = new Set(previous);
       if (next.has(playerId)) next.delete(playerId);
       else next.add(playerId);
       return next;
@@ -87,12 +88,13 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
     if (!canSubmit) return;
     setSubmitting(true);
     setError("");
+
     try {
       const result = await createMatch({
         teamId: teamId as Id<"teams">,
         opponent: opponent.trim(),
         isHome,
-        coachId: selectedCoach._id,
+        coachId: coachId as Id<"coaches">,
         quarterCount,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
         refereeId: refereeId ? (refereeId as Id<"referees">) : undefined,
@@ -100,7 +102,9 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
       });
       onCreated(result.publicCode);
       resetForm();
-      setOpen(false);
+      if (!isEmbedded) {
+        setOpen(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Onbekende fout bij aanmaken");
     } finally {
@@ -109,17 +113,132 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
   }
 
   const toggleCls = (active: boolean) =>
-    `flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-      active ? "bg-dia-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    `flex-1 rounded-xl py-2.5 text-sm font-medium transition-colors ${
+      active ? "bg-dia-green text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
     }`;
 
+  const formContent = (
+    <div className="space-y-4">
+      <FieldSelect label="Team *" value={teamId} onChange={handleTeamChange} placeholder="Selecteer team...">
+        {teams?.map((team) => (
+          <option key={team._id} value={team._id}>
+            {team.name}
+          </option>
+        ))}
+      </FieldSelect>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Tegenstander *</label>
+        <input
+          type="text"
+          value={opponent}
+          onChange={(event) => setOpponent(event.target.value)}
+          placeholder="Bijv. FC Groningen JO12-1"
+          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-dia-green"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Thuis / Uit</label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setIsHome(true)} className={toggleCls(isHome)}>
+            Thuis
+          </button>
+          <button type="button" onClick={() => setIsHome(false)} className={toggleCls(!isHome)}>
+            Uit
+          </button>
+        </div>
+      </div>
+
+      <FieldSelect
+        label="Coach *"
+        value={coachId}
+        onChange={(value) => setCoachId(value as Id<"coaches"> | "")}
+        placeholder="Selecteer coach..."
+      >
+        {coaches?.map((coach) => (
+          <option key={coach._id} value={coach._id}>
+            {coach.name}{coach.email ? ` (${coach.email})` : ""}
+          </option>
+        ))}
+      </FieldSelect>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Wedstrijdvorm</label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setQuarterCount(4)} className={toggleCls(quarterCount === 4)}>
+            4 kwarten
+          </button>
+          <button type="button" onClick={() => setQuarterCount(2)} className={toggleCls(quarterCount === 2)}>
+            2 helften
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Datum/tijd</label>
+        <input
+          type="datetime-local"
+          value={scheduledAt}
+          onChange={(event) => setScheduledAt(event.target.value)}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-dia-green"
+        />
+      </div>
+
+      <FieldSelect
+        label="Scheidsrechter"
+        value={refereeId}
+        onChange={(value) => setRefereeId(value as Id<"referees"> | "")}
+        placeholder="Geen scheidsrechter"
+      >
+        {referees?.map((referee) => (
+          <option key={referee.id} value={referee.id}>
+            {referee.name}
+          </option>
+        ))}
+      </FieldSelect>
+
+      {teamId && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Spelers {players && <span className="font-normal text-slate-400">({selectedPlayerIds.size}/{players.length} geselecteerd)</span>}
+          </label>
+          <PlayerSelector players={players} selectedIds={selectedPlayerIds} onToggle={togglePlayer} />
+        </div>
+      )}
+
+      {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+      <div className="flex flex-wrap gap-3 pt-2">
+        {isEmbedded && onCancel && (
+          <button type="button" onClick={onCancel} className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+            Annuleren
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-light disabled:bg-slate-300"
+        >
+          {submitting ? "Aanmaken..." : "Wedstrijd aanmaken"}
+        </button>
+      </div>
+    </div>
+  );
+
+  if (isEmbedded) {
+    return formContent;
+  }
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="rounded-2xl border border-slate-200 bg-white">
       <button
-        onClick={() => setOpen((o) => !o)}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label="Nieuwe wedstrijd formulier"
-        className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-lg hover:bg-gray-50 transition-colors rounded-lg"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-lg font-semibold transition hover:bg-slate-50"
       >
         <span className="flex items-center gap-2">
           <Plus size={20} className="text-dia-green" />
@@ -128,90 +247,32 @@ export function MatchForm({ teams, coaches, referees, onCreated }: MatchFormProp
         {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
       </button>
 
-      {open && (
-        <div className="border-t px-4 pb-4 pt-3 space-y-4">
-          {/* Team */}
-          <FieldSelect label="Team *" value={teamId} onChange={handleTeamChange} placeholder="Selecteer team...">
-            {teams?.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
-          </FieldSelect>
-
-          {/* Opponent */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tegenstander *</label>
-            <input type="text" value={opponent} onChange={(e) => setOpponent(e.target.value)}
-              placeholder="Bijv. FC Groningen JO12-1" className="w-full px-3 py-2 border rounded-lg" />
-          </div>
-
-          {/* Home / Away toggle */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Thuis / Uit</label>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setIsHome(true)} className={toggleCls(isHome)}>Thuis</button>
-              <button type="button" onClick={() => setIsHome(false)} className={toggleCls(!isHome)}>Uit</button>
-            </div>
-          </div>
-
-          {/* Coach */}
-          <FieldSelect label="Coach *" value={coachId} onChange={(v) => setCoachId(v as Id<"coaches"> | "")} placeholder="Selecteer coach...">
-            {coaches?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </FieldSelect>
-
-          {/* Quarter count toggle */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Kwarten</label>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setQuarterCount(4)} className={toggleCls(quarterCount === 4)}>4 kwarten</button>
-              <button type="button" onClick={() => setQuarterCount(2)} className={toggleCls(quarterCount === 2)}>2 helften</button>
-            </div>
-          </div>
-
-          {/* Scheduled at */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Datum/tijd</label>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg" />
-          </div>
-
-          {/* Referee */}
-          <FieldSelect label="Scheidsrechter" value={refereeId} onChange={(v) => setRefereeId(v as Id<"referees"> | "")} placeholder="Geen scheidsrechter">
-            {referees?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </FieldSelect>
-
-          {/* Players */}
-          {teamId && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Spelers{" "}
-                {players && (
-                  <span className="text-gray-400 font-normal">
-                    ({selectedPlayerIds.size}/{players.length} geselecteerd)
-                  </span>
-                )}
-              </label>
-              <PlayerSelector players={players} selectedIds={selectedPlayerIds} onToggle={togglePlayer} />
-            </div>
-          )}
-
-          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-
-          <button onClick={handleSubmit} disabled={!canSubmit}
-            className="w-full py-3 bg-dia-green text-white rounded-lg font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-[0.98] transition-transform">
-            {submitting ? "Aanmaken..." : "Wedstrijd aanmaken"}
-          </button>
-        </div>
-      )}
+      {open && <div className="border-t border-slate-200 px-4 pb-4 pt-3">{formContent}</div>}
     </div>
   );
 }
 
-/** Reusable field-level select wrapper */
-function FieldSelect({ label, value, onChange, placeholder, children }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder: string; children: React.ReactNode;
+function FieldSelect({
+  label,
+  value,
+  onChange,
+  placeholder,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-white">
+      <label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-dia-green"
+      >
         <option value="">{placeholder}</option>
         {children}
       </select>

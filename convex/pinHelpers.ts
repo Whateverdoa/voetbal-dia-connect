@@ -1,110 +1,70 @@
 /**
- * Access verification helpers shared across clock and match mutations.
- *
- * Coach/referee access is identity-based (Clerk email) only.
+ * Legacy helper names kept for backwards compatibility during the
+ * pinless cutover. All access checks are now identity-based via Clerk
+ * and `userAccess`.
  */
-import { Doc } from "./_generated/dataModel";
-import { GenericDatabaseReader, UserIdentity } from "convex/server";
-import { DataModel } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import {
+  getCurrentUserAccess,
+  requireCoachForMatch,
+  requireRefereeForMatch,
+} from "./lib/userAccess";
 
-type DbReader = GenericDatabaseReader<DataModel>;
+type ReaderCtx = QueryCtx | MutationCtx;
 
-/**
- * Returns the coach document on success, or `null` on failure.
- */
 export async function verifyCoachTeamMembership(
-  ctx: {
-    db: DbReader;
-    auth?: { getUserIdentity: () => Promise<UserIdentity | null> };
-  },
+  ctx: ReaderCtx,
   match: Doc<"matches">,
+  _pin?: string,
 ): Promise<Doc<"coaches"> | null> {
-  const identity = await ctx.auth?.getUserIdentity?.();
-  const identityEmail = identity?.email?.toLowerCase();
-  if (identityEmail) {
-    const byEmail = await ctx.db
-      .query("coaches")
-      .withIndex("by_email", (q) => q.eq("email", identityEmail))
-      .first();
-    if (byEmail && byEmail.teamIds.includes(match.teamId)) {
-      return byEmail;
-    }
+  try {
+    return await requireCoachForMatch(ctx, match);
+  } catch {
+    return null;
   }
-  return null;
 }
 
-/**
- * Verify coach access for a team outside of an existing match context.
- * Identity email only.
- */
-export async function verifyCoachTeamByTeamId(
-  ctx: {
-    db: DbReader;
-    auth?: { getUserIdentity: () => Promise<UserIdentity | null> };
-  },
-  teamId: Doc<"teams">["_id"],
-): Promise<Doc<"coaches"> | null> {
-  const identity = await ctx.auth?.getUserIdentity?.();
-  const identityEmail = identity?.email?.toLowerCase();
-  if (identityEmail) {
-    const byEmail = await ctx.db
-      .query("coaches")
-      .withIndex("by_email", (q) => q.eq("email", identityEmail))
-      .first();
-    if (byEmail && byEmail.teamIds.includes(teamId)) {
-      return byEmail;
-    }
-  }
-  return null;
-}
-
-/**
- * Verify identity-based access for clock/match-control actions.
- */
-export async function verifyClockAccess(
-  ctx: {
-    db: DbReader;
-    auth?: { getUserIdentity: () => Promise<UserIdentity | null> };
-  },
+export async function verifyClockPin(
+  ctx: ReaderCtx,
   match: Doc<"matches">,
-  referee?: Doc<"referees"> | null,
+  _pin?: string,
+  _referee?: Doc<"referees"> | null,
 ): Promise<boolean> {
-  const identity = await ctx.auth?.getUserIdentity?.();
-  const identityEmail = identity?.email?.toLowerCase();
+  const access = await getCurrentUserAccess(ctx);
+  if (!access) return false;
 
-  // Identity-first for assigned referee
-  if (identityEmail && match.refereeId) {
-    const byEmail = await ctx.db
-      .query("referees")
-      .withIndex("by_email", (q) => q.eq("email", identityEmail))
-      .first();
-    if (byEmail && byEmail.active && byEmail._id === match.refereeId) {
+  if (access.roles.includes("referee")) {
+    try {
+      await requireRefereeForMatch(ctx, match);
       return true;
+    } catch {
+      // Fall through to coach permissions.
     }
   }
 
-  // Coach: require team membership by identity
+  if (!access.roles.includes("coach")) {
+    return false;
+  }
+
   const coach = await verifyCoachTeamMembership(ctx, match);
   if (!coach) return false;
 
-  // Any team coach may control the clock.
-  // Referee assignment still grants referee access, but no longer restricts coaches.
-  if (match.refereeId) return true;
-  return !!coach;
+  if (match.refereeId) {
+    return true;
+  }
+
+  return match.leadCoachId === coach._id;
 }
 
-/**
- * Verify that the current coach is the match lead (wedstrijdleider).
- * Returns the coach doc if they are the lead, null otherwise.
- */
 export async function verifyIsMatchLead(
-  ctx: {
-    db: DbReader;
-    auth?: { getUserIdentity: () => Promise<UserIdentity | null> };
-  },
+  ctx: ReaderCtx,
   match: Doc<"matches">,
+  _pin?: string,
 ): Promise<Doc<"coaches"> | null> {
   const coach = await verifyCoachTeamMembership(ctx, match);
-  if (!coach || match.leadCoachId !== coach._id) return null;
+  if (!coach || match.leadCoachId !== coach._id) {
+    return null;
+  }
   return coach;
 }

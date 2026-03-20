@@ -4,7 +4,10 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import {
+  verifyCoachTeamMembership,
+  verifyIsMatchLead,
+} from "./pinHelpers";
 
 // Toggle player on/off field
 export const togglePlayerOnField = mutation({
@@ -19,8 +22,15 @@ export const togglePlayerOnField = mutation({
     }
     const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
+    }
+
     const now = Date.now();
 
     const mp = await ctx.db
@@ -69,8 +79,15 @@ export const toggleKeeper = mutation({
     }
     const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag wijzigingen uitvoeren");
+    }
+
     const mp = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -110,8 +127,15 @@ export const assignPlayerToSlot = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag opstelling wijzigen");
+    }
+
     const mp = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -157,8 +181,15 @@ export const swapFieldPositions = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag opstelling wijzigen");
+    }
+
     const mpA = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match_player", (q) =>
@@ -195,7 +226,13 @@ export const setMatchFormation = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
+    }
+    if (
+      (match.status === "live" || match.status === "halftime") &&
+      !(await verifyIsMatchLead(ctx, match))
+    ) {
+      throw new Error("Alleen de wedstrijdleider mag formatie wijzigen");
     }
     const updates: { formationId?: string; pitchType?: "full" | "half" } = {};
     if (args.formationId !== undefined) updates.formationId = args.formationId;

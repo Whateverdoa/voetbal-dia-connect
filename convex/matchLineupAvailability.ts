@@ -23,7 +23,7 @@ export const togglePlayerAbsent = mutation({
       throw new Error("Afwezigheid kan alleen vóór de aftrap worden gewijzigd");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const mp = await ctx.db
@@ -56,7 +56,7 @@ export const toggleShowLineup = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     await ctx.db.patch(args.matchId, { showLineup: !match.showLineup });

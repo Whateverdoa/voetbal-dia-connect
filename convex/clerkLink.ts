@@ -1,11 +1,10 @@
 /**
- * Server-only link data for Clerk: coach by email.
- * Used by Next.js server (with CONVEX_LINK_SECRET) to link Clerk user → coach by e-mail.
- * Set in Convex dashboard: npx convex env set CONVEX_LINK_SECRET <secret>
+ * Server-only link data for Clerk.
+ * Used by Next.js server (with CONVEX_LINK_SECRET) to link Clerk user -> role rows by e-mail.
  */
-import { query } from "./_generated/server";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getUserAccessByEmail, upsertUserAccess } from "./lib/userAccess";
 
 const LINK_SECRET = process.env.CONVEX_LINK_SECRET ?? "";
 
@@ -63,7 +62,7 @@ export const assignEmailRoleLinksForOps = mutation({
 
     if (!coach && coachName) {
       const allCoaches = await ctx.db.query("coaches").collect();
-      coach = allCoaches.find((c) => c.name.toLowerCase() === coachName.toLowerCase()) ?? null;
+      coach = allCoaches.find((entry) => entry.name.toLowerCase() === coachName.toLowerCase()) ?? null;
     }
 
     if (!coach) {
@@ -82,7 +81,7 @@ export const assignEmailRoleLinksForOps = mutation({
     if (!referee) {
       const allReferees = await ctx.db.query("referees").collect();
       referee =
-        allReferees.find((r) => r.name.toLowerCase() === refereeName.toLowerCase()) ?? null;
+        allReferees.find((entry) => entry.name.toLowerCase() === refereeName.toLowerCase()) ?? null;
     }
 
     if (referee) {
@@ -101,6 +100,22 @@ export const assignEmailRoleLinksForOps = mutation({
       });
       referee = await ctx.db.get(refereeId);
     }
+
+    const existingAccess = await getUserAccessByEmail(ctx, emailLower);
+    const roles = new Set(existingAccess?.roles ?? []);
+    roles.add("coach");
+    if (referee) {
+      roles.add("referee");
+    }
+
+    await upsertUserAccess(ctx, {
+      email: emailLower,
+      roles: Array.from(roles).sort() as ("admin" | "coach" | "referee")[],
+      coachId: coach._id,
+      refereeId: referee?._id,
+      active: existingAccess?.active ?? true,
+      source: referee ? "referee_sync" : "coach_sync",
+    });
 
     return {
       email: emailLower,

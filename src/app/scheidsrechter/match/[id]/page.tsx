@@ -2,9 +2,8 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { MatchClock } from "@/components/match/MatchClock";
 import { RefereeClockControls } from "@/components/referee/RefereeClockControls";
@@ -12,46 +11,27 @@ import { RefereeScoreControls } from "@/components/referee/RefereeScoreControls"
 import type { MatchStatus } from "@/components/match/types";
 
 export default function RefereeMatchPage() {
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      <RefereeMatchContent />
-    </Suspense>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center space-y-2">
-        <div className="w-8 h-8 border-4 border-dia-green border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-500">Laden...</p>
-      </div>
-    </main>
-  );
-}
-
-function RefereeMatchContent() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const matchId = params.id as Id<"matches">;
-  const code = searchParams.get("code") || "";
-  const missingParams = !code;
-
+  const matchIdParam = params.id;
+  const matchId =
+    typeof matchIdParam === "string"
+      ? (matchIdParam as Id<"matches">)
+      : null;
   const match = useQuery(
     api.matches.getForReferee,
-    code ? { code } : "skip"
+    matchId ? { matchId } : "skip",
   );
 
-  if (missingParams) {
+  if (!matchId) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-xl shadow-md p-6 max-w-sm w-full text-center space-y-4">
-          <p className="text-red-600 font-medium">Ongeldige link: code ontbreekt</p>
+          <p className="text-red-600 font-medium">Ongeldige wedstrijdlink</p>
           <Link
             href="/scheidsrechter"
             className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
           >
-            Naar scheidsrechter login
+            Terug naar overzicht
           </Link>
         </div>
       </main>
@@ -66,14 +46,12 @@ function RefereeMatchContent() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-xl shadow-md p-6 max-w-sm w-full text-center space-y-4">
-          <p className="text-red-600 font-medium">
-            Wedstrijd niet gevonden of geen scheidsrechtertoegang
-          </p>
+          <p className="text-red-600 font-medium">Wedstrijd niet gevonden of je hebt geen toegang</p>
           <Link
             href="/scheidsrechter"
             className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
           >
-            Opnieuw proberen
+            Terug naar overzicht
           </Link>
         </div>
       </main>
@@ -82,7 +60,6 @@ function RefereeMatchContent() {
 
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
-      {/* Top bar */}
       <nav className="bg-gray-800 text-white px-4 py-2 sticky top-0 z-20">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link
@@ -97,7 +74,6 @@ function RefereeMatchContent() {
         </div>
       </nav>
 
-      {/* Score header */}
       <RefereeScoreHeader
         homeScore={match.homeScore}
         awayScore={match.awayScore}
@@ -112,7 +88,6 @@ function RefereeMatchContent() {
         accumulatedPauseTime={match.accumulatedPauseTime}
       />
 
-      {/* Score controls + Clock controls */}
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <RefereeScoreControls
           matchId={match.id as Id<"matches">}
@@ -135,7 +110,17 @@ function RefereeMatchContent() {
   );
 }
 
-/** Compact score header for the referee view */
+function LoadingScreen() {
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-center space-y-2">
+        <div className="w-8 h-8 border-4 border-dia-green border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-gray-500">Laden...</p>
+      </div>
+    </main>
+  );
+}
+
 function RefereeScoreHeader({
   homeScore,
   awayScore,
@@ -169,7 +154,7 @@ function RefereeScoreHeader({
   const getLabel = () => {
     if (isHalftime) return "Rust";
     if (isFinished) return "Afgelopen";
-    if (isPaused) return `${quarterCount === 2 ? "Helft" : "Kwart"} ${currentQuarter} — Gepauzeerd`;
+    if (isPaused) return `${quarterCount === 2 ? "Helft" : "Kwart"} ${currentQuarter} - gepauzeerd`;
     if (isLive) return quarterCount === 2 ? `Helft ${currentQuarter}` : `Kwart ${currentQuarter}`;
     return "Nog niet begonnen";
   };
@@ -189,7 +174,6 @@ function RefereeScoreHeader({
       }`}
     >
       <div className="max-w-lg mx-auto">
-        {/* Status + Clock */}
         <div className="mb-3">
           <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-2">
             {isLive && <span className="w-2 h-2 bg-white rounded-full animate-pulse" />}
@@ -207,12 +191,10 @@ function RefereeScoreHeader({
           </span>
         </div>
 
-        {/* Score */}
         <div className="text-6xl font-bold tabular-nums tracking-tight">
           {homeScore} - {awayScore}
         </div>
 
-        {/* Teams */}
         <div className="flex justify-between items-center text-sm opacity-90 mt-3 max-w-xs mx-auto">
           <span className="font-medium">{isHome ? teamName : opponent}</span>
           <span className="text-xs opacity-75">vs</span>

@@ -39,11 +39,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
     } catch (err) {
       console.error("Failed to add opponent goal:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Geen rechten")) {
-        setError("Sessie verlopen. Sluit dit venster en herlaad de pagina.");
-      } else {
-        setError(`Fout bij registreren: ${message}`);
-      }
+      setError(`Fout bij registreren: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -65,52 +61,39 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
     } catch (err) {
       console.error("Failed to add goal:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      if (message.includes("Geen rechten")) {
-        setError("Sessie verlopen. Sluit dit venster en herlaad de pagina.");
-      } else {
-        setError(`Fout bij registreren: ${message}`);
-      }
+      setError(`Fout bij registreren: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Step 1: Choose goal type
   if (goalType === null) {
     return (
       <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
         <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl overflow-hidden">
           <div className="p-6">
             <h2 className="text-2xl font-bold text-center mb-6">Doelpunt</h2>
-            
-            {/* Error message */}
+
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
                 {error}
               </div>
             )}
-            
-            {/* Giant goal buttons - 2 taps max! */}
+
             <div className="space-y-4">
               <button
                 onClick={handleOurGoal}
                 disabled={isSubmitting}
-                className="w-full py-6 bg-dia-green text-white text-2xl font-bold rounded-xl 
-                           min-h-[80px] active:scale-[0.98] transition-transform
-                           hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3
-                           disabled:opacity-50"
+                className="w-full py-6 bg-dia-green text-white text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <span className="text-3xl">⚽</span>
                 <span>GOAL!</span>
               </button>
-              
+
               <button
                 onClick={handleOpponentGoal}
                 disabled={isSubmitting}
-                className="w-full py-5 bg-red-600 text-white text-xl font-bold rounded-xl 
-                           min-h-[64px] active:scale-[0.98] transition-transform
-                           hover:bg-red-700 shadow-lg
-                           disabled:opacity-50"
+                className="w-full py-5 bg-red-600 text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-red-700 shadow-lg disabled:opacity-50"
               >
                 Tegendoelpunt
               </button>
@@ -128,21 +111,18 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
     );
   }
 
-  // Step 2: Select scorer (our goal)
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <div className="p-6 flex-1 overflow-y-auto">
           <h2 className="text-xl font-bold mb-4">Wie scoorde?</h2>
-          
-          {/* Error message */}
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
               {error}
             </div>
           )}
 
-          {/* Scorer selection - big touch targets */}
           <div className="grid grid-cols-2 gap-2 mb-6">
             {playersOnField.map((p) => (
               <button
@@ -167,7 +147,6 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
             ))}
           </div>
 
-          {/* Assist selection (optional) - only show if scorer selected */}
           {scorer && (
             <>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">
@@ -213,7 +192,6 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           )}
         </div>
 
-        {/* Fixed bottom actions */}
         <div className="p-4 border-t bg-gray-50 flex gap-3">
           <button
             onClick={() => setGoalType(null)}
@@ -224,8 +202,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           <button
             onClick={handleSubmit}
             disabled={!scorer || isSubmitting}
-            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px]
-                       disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Bezig..." : "Registreren"}
           </button>

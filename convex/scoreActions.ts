@@ -6,7 +6,8 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireClockControlAccess } from "./authz";
+import { verifyClockPin } from "./pinHelpers";
+import { fetchRefereeForMatch } from "./refereeHelpers";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 import {
   buildEventGameTimeStamp,
@@ -16,7 +17,7 @@ import {
 /**
  * Adjust the match score by +1 or -1 for a given team.
  *
- * - Both coach and assigned referee identities are accepted.
+ * - Both coach and referee roles are accepted (verifyClockPin).
  * - When delta is +1, a lightweight "goal" event is always logged.
  *   If scorerNumber is provided, it is stored in the note so coach can enrich later.
  * - Score is clamped to a minimum of 0.
@@ -32,8 +33,13 @@ export const adjustScore = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    await requireClockControlAccess(ctx, match);
-    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (!match) {
+      throw new Error("Wedstrijd niet gevonden");
+    }
+    const referee = await fetchRefereeForMatch(ctx, match);
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
+    }
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,
       commandType: "ADJUST_SCORE",

@@ -1,16 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DUTCH_NAMES, generatePublicCode, pickUniqueNames } from './seed/helpers';
-import {
-  TEAM_CONFIGS,
-  JO12_TEAM_CONFIGS,
-  COACH_CONFIGS,
-  REFEREE_CONFIGS,
-  PLAYERS_PER_TEAM,
-} from './seed/seedData';
-
-// Note: The actual Convex action (seed:init) requires integration testing
-// with a real Convex backend. These tests cover the pure helper functions
-// and verify seed data configuration consistency.
+import { TEAM_CONFIGS, COACH_CONFIGS, REFEREE_CONFIGS, PLAYERS_PER_TEAM } from './seed/seedData';
 
 describe('Seed Helpers', () => {
   describe('pickUniqueNames', () => {
@@ -117,24 +107,24 @@ describe('Seed Data Configuration', () => {
   });
 
   describe('Coach configuration', () => {
-    it('has 14 JO12 coaches', () => {
-      expect(COACH_CONFIGS).toHaveLength(14);
+    it('has 6 coaches', () => {
+      expect(COACH_CONFIGS).toHaveLength(6);
     });
 
-    it('emails are present and valid', () => {
+    it('uses seeded email addresses', () => {
       COACH_CONFIGS.forEach((coach) => {
-        expect(coach.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+        expect(coach.email).toMatch(/@dia\.local$/);
       });
     });
 
-    it('emails are unique', () => {
-      const emails = COACH_CONFIGS.map((c) => c.email);
+    it('coach emails are unique', () => {
+      const emails = COACH_CONFIGS.map((coach) => coach.email);
       const unique = new Set(emails);
       expect(unique.size).toBe(COACH_CONFIGS.length);
     });
 
-    it('all coach teamSlugs reference JO12 teams', () => {
-      const slugs = new Set(JO12_TEAM_CONFIGS.map((t) => t.slug));
+    it('all teamSlugs reference valid teams', () => {
+      const slugs = new Set(TEAM_CONFIGS.map((team) => team.slug));
       COACH_CONFIGS.forEach((coach) => {
         coach.teamSlugs.forEach((slug) => {
           expect(slugs.has(slug)).toBe(true);
@@ -148,22 +138,22 @@ describe('Seed Data Configuration', () => {
       expect(REFEREE_CONFIGS).toHaveLength(4);
     });
 
-    it('emails are present and valid', () => {
-      REFEREE_CONFIGS.forEach((ref) => {
-        expect(ref.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+    it('uses seeded email addresses', () => {
+      REFEREE_CONFIGS.forEach((referee) => {
+        expect(referee.email).toMatch(/@dia\.local$/);
       });
     });
 
-    it('emails are unique among referees', () => {
-      const emails = REFEREE_CONFIGS.map((r) => r.email);
+    it('referee emails are unique', () => {
+      const emails = REFEREE_CONFIGS.map((referee) => referee.email);
       const unique = new Set(emails);
       expect(unique.size).toBe(REFEREE_CONFIGS.length);
     });
 
-    it('emails do not overlap with coach emails', () => {
-      const coachEmails = new Set(COACH_CONFIGS.map((c) => c.email));
-      REFEREE_CONFIGS.forEach((ref) => {
-        expect(coachEmails.has(ref.email)).toBe(false);
+    it('referee emails do not overlap with coach emails', () => {
+      const coachEmails = new Set(COACH_CONFIGS.map((coach) => coach.email));
+      REFEREE_CONFIGS.forEach((referee) => {
+        expect(coachEmails.has(referee.email)).toBe(false);
       });
     });
   });

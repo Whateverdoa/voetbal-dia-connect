@@ -2,18 +2,16 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Target } from "lucide-react";
 import { HistoryMatchCard } from "./HistoryMatchCard";
 
 interface MatchListProps {
-  teamId: string;
+  teamId: Id<"teams">;
 }
 
 export function MatchList({ teamId }: MatchListProps) {
-  const matches = useQuery(api.teams.getMatchHistory, { teamId: teamId as any });
-  const canEditHistory = useQuery(api.historyActions.canEditTeamHistory, {
-    teamId: teamId as any,
-  });
+  const matches = useQuery(api.teams.getMatchHistory, { teamId });
 
   if (!matches) {
     return (
@@ -38,24 +36,19 @@ export function MatchList({ teamId }: MatchListProps) {
     );
   }
 
+  const orderedMatches = [...matches].sort((left, right) => {
+    const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
+    const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
+    return rightTimestamp - leftTimestamp;
+  });
+
   return (
     <section className="space-y-3">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Wedstrijden ({matches.length})
-        </h2>
-        {canEditHistory ? (
-          <span className="self-start text-xs px-2 py-1 rounded-full bg-dia-green/10 text-dia-green">
-            Bewerken actief
-          </span>
-        ) : (
-          <p className="text-xs text-gray-500">
-            Zonder coach-auth zie je alleen de historie in read-only.
-          </p>
-        )}
-      </div>
-      {matches.map((match) => (
-        <HistoryMatchCard key={match.id} match={match} canEdit={!!canEditHistory} />
+      <h2 className="text-lg font-semibold text-gray-900">
+        Wedstrijden ({orderedMatches.length})
+      </h2>
+      {orderedMatches.map((match) => (
+        <HistoryMatchCard key={match.id} match={match} />
       ))}
     </section>
   );

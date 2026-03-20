@@ -11,8 +11,7 @@ import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
-import type { MatchPlayer } from "./types";
-import type { MatchStatus } from "./types";
+import type { MatchPlayer, MatchStatus } from "./types";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
@@ -22,13 +21,7 @@ interface PitchViewProps {
   canEdit?: boolean;
 }
 
-export function PitchView({
-  matchId,
-  players,
-  formationId,
-  status,
-  canEdit = true,
-}: PitchViewProps) {
+export function PitchView({ matchId, players, formationId, status, canEdit = true }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);
@@ -41,32 +34,29 @@ export function PitchView({
   const fieldMode = fieldModeFromFormation(formationId);
   const cfg = FIELDS[fieldMode];
 
-  const onField = players.filter((p) => p.onField);
-  const onBench = players.filter(
-    (p) => !p.onField && !(p.absent ?? false)
-  );
+  const onField = players.filter((player) => player.onField);
+  const onBench = players.filter((player) => !player.onField && !(player.absent ?? false));
   const onFieldUnassigned = onField.filter(
-    (p) => p.fieldSlotIndex === undefined || p.fieldSlotIndex === null
+    (player) => player.fieldSlotIndex === undefined || player.fieldSlotIndex === null
   );
 
   const playerInSlot = (slotId: number): MatchPlayer | undefined =>
-    onField.find((p) => Number(p.fieldSlotIndex) === Number(slotId));
+    onField.find((player) => Number(player.fieldSlotIndex) === Number(slotId));
 
   const findPlayer = (id: Id<"players">): MatchPlayer | undefined =>
-    players.find((p) => p.playerId === id);
+    players.find((player) => player.playerId === id);
 
   const isPlayerOnField = (id: Id<"players">): boolean =>
-    onField.some((p) => p.playerId === id);
+    onField.some((player) => player.playerId === id);
 
   const slotOfPlayer = (id: Id<"players">): number | undefined =>
-    onField.find((mp) => mp.playerId === id)?.fieldSlotIndex ?? undefined;
+    onField.find((player) => player.playerId === id)?.fieldSlotIndex ?? undefined;
 
-  const nameLabel = (p: MatchPlayer): string => {
-    const firstName = p.name.trim().split(/\s+/)[0] || p.name;
+  const nameLabel = (player: MatchPlayer): string => {
+    const firstName = player.name.trim().split(/\s+/)[0] || player.name;
     return firstName.slice(0, 12);
   };
 
-  // --- Click: field player tile ---
   const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
     if (!canEdit) return;
     if (!selectedPlayerId) {
@@ -78,29 +68,27 @@ export function PitchView({
       return;
     }
     if (isPlayerOnField(selectedPlayerId)) {
-      swapPositions({ matchId, playerAId: selectedPlayerId, playerBId: player.playerId });
+      void swapPositions({ matchId, playerAId: selectedPlayerId, playerBId: player.playerId });
     } else if (isLiveOrHalftime) {
-      substituteFromField({
+      void substituteFromField({
         matchId,
         playerOutId: player.playerId,
         playerInId: selectedPlayerId,
         correlationId: createCorrelationId("sub-field"),
       });
     } else {
-      assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
-      toggleOffField({ matchId, playerId: player.playerId });
+      void assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+      void toggleOffField({ matchId, playerId: player.playerId });
     }
     setSelectedPlayerId(null);
   };
 
-  // --- Click: empty slot ---
   const handleEmptySlotClick = (slotId: number) => {
     if (!canEdit || !selectedPlayerId) return;
-    assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
+    void assignToSlot({ matchId, playerId: selectedPlayerId, fieldSlotIndex: slotId });
     setSelectedPlayerId(null);
   };
 
-  // --- Click: bench / unassigned player ---
   const handleBenchPlayerClick = (playerId: Id<"players">) => {
     if (!canEdit) return;
     if (!selectedPlayerId) {
@@ -117,7 +105,7 @@ export function PitchView({
     }
     if (isPlayerOnField(selectedPlayerId)) {
       if (isLiveOrHalftime) {
-        substituteFromField({
+        void substituteFromField({
           matchId,
           playerOutId: selectedPlayerId,
           playerInId: playerId,
@@ -126,23 +114,22 @@ export function PitchView({
       } else {
         const slot = slotOfPlayer(selectedPlayerId);
         if (slot !== undefined) {
-          assignToSlot({ matchId, playerId, fieldSlotIndex: slot });
-          toggleOffField({ matchId, playerId: selectedPlayerId });
+          void assignToSlot({ matchId, playerId, fieldSlotIndex: slot });
+          void toggleOffField({ matchId, playerId: selectedPlayerId });
         }
       }
     }
     setSelectedPlayerId(null);
   };
 
-  // --- Status text ---
   const statusText = (): string => {
     if (!selectedPlayerId) return "Tik op een speler om te wisselen";
-    const sel = findPlayer(selectedPlayerId);
-    if (!sel) return "Tik op een speler om te wisselen";
-    const n = nameLabel(sel);
+    const selectedPlayer = findPlayer(selectedPlayerId);
+    if (!selectedPlayer) return "Tik op een speler om te wisselen";
+    const label = nameLabel(selectedPlayer);
     return isPlayerOnField(selectedPlayerId)
-      ? `${n} geselecteerd — tik wisselspeler of andere positie`
-      : `${n} geselecteerd — tik op een positie op het veld`;
+      ? `${label} geselecteerd - tik wisselspeler of andere positie`
+      : `${label} geselecteerd - tik op een positie op het veld`;
   };
 
   if (!formation) {
@@ -155,7 +142,6 @@ export function PitchView({
 
   return (
     <div className="space-y-1">
-      {/* Selection indicator */}
       <div className="h-5 flex items-center justify-center">
         <span
           className={`text-xs font-bold uppercase tracking-widest ${selectedPlayerId ? "text-yellow-400 animate-pulse" : "text-slate-400"}`}
@@ -164,9 +150,7 @@ export function PitchView({
         </span>
       </div>
 
-      {/* Perspective wrapper — negative margin compensates for rotateX visual gap */}
       <div className="w-full flex justify-center" style={{ perspective: "800px", marginTop: -80 }}>
-        {/* Field container — tilted */}
         <div
           className="relative w-full overflow-hidden border rounded-sm"
           style={{
@@ -179,7 +163,6 @@ export function PitchView({
               "0 -20px 60px -15px rgba(34,197,94,0.12), 0 30px 60px -20px rgba(0,0,0,0.6)",
           }}
         >
-          {/* Gradient overlay */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -187,7 +170,6 @@ export function PitchView({
                 "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
             }}
           />
-          {/* Subtle pitch stripes */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.03]"
             style={{
@@ -199,7 +181,6 @@ export function PitchView({
           <FieldLines cfg={cfg} />
           <FormationLines slots={formation.slots} links={formation.links} />
 
-          {/* Player cards at formation slot positions */}
           {formation.slots.map((slot) => {
             const player = playerInSlot(slot.id);
             const isEmpty = !player;
@@ -226,7 +207,6 @@ export function PitchView({
         </div>
       </div>
 
-      {/* Glow line under field */}
       <div className="w-full flex justify-center" style={{ marginTop: -4 }}>
         <div
           style={{

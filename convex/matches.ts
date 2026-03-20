@@ -11,16 +11,16 @@ import {
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
 } from "./lib/matchEventProjection";
-import { verifyCoachTeamMembership } from "./pinHelpers";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
 export { listPublicMatches } from "./publicQueries";
 export {
   listActiveReferees,
+  getCoachTeamSetup,
   listByTeam,
   listTeamPlayersNotInMatch,
-  verifyCoachAccess,
+  verifyCoachPin,
 } from "./coachQueries";
 export { getForReferee, getMatchesForReferee } from "./refereeQueries";
 
@@ -119,8 +119,15 @@ export const getForCoach = query({
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    const coach = await verifyCoachTeamMembership(ctx, match);
-    if (!coach) return null;
+    const identity = await ctx.auth.getUserIdentity();
+    const email = identity?.email?.trim().toLowerCase();
+    if (!email) return null;
+
+    const coach = await ctx.db
+      .query("coaches")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+    if (!coach || !coach.teamIds.includes(match.teamId)) return null;
 
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);
@@ -193,30 +200,26 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
-    const isPregame = match.status === "scheduled" || match.status === "lineup";
-    const canModifyLineup = match.status !== "finished";
-    const capabilities = {
-      canControlClock: true,
-      canDoSubstitutions: canModifyLineup,
-      canManageLineup: canModifyLineup,
-      canManagePregameSettings: isPregame,
-      canAssignReferee: isPregame,
-      canEnrichGoals: true,
-      canAddGoals: true,
-    };
+    const { coachPin: _legacyCoachPin, ...safeMatch } = match;
+
+    const isCurrentCoachLead = match.leadCoachId === coach._id;
+    const canControlClock = !!match.refereeId || isCurrentCoachLead;
 
     return {
-      ...match,
+      ...safeMatch,
       teamName: team?.name ?? "Team",
       players: players.filter(Boolean),
       events: projectedEvents,
       stagedSubstitutions,
       refereeName: referee?.name ?? null,
-      leadCoachId: match.leadCoachId ?? null,
+      leadCoachId: safeMatch.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
-      hasLead: !!match.leadCoachId,
-      capabilities,
+      hasLead: !!safeMatch.leadCoachId,
+      isCurrentCoachLead,
+      canControlClock,
     };
   },
 });
+
+
 

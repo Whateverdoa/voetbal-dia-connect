@@ -4,7 +4,10 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
-import { verifyCoachTeamMembership } from "./pinHelpers";
+import {
+  verifyCoachTeamMembership,
+  verifyIsMatchLead,
+} from "./pinHelpers";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -26,7 +29,7 @@ export const addGoal = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     // Update score
@@ -85,7 +88,7 @@ export const addGoal = mutation({
   },
 });
 
-// Substitution
+// Substitution — only the lead coach may execute
 export const substitute = mutation({
   args: {
     matchId: v.id("matches"),
@@ -98,15 +101,11 @@ export const substitute = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status === "finished") {
-      throw new Error("Wissels zijn niet toegestaan na het eindsignaal");
-    }
-    if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+    if (!(await verifyIsMatchLead(ctx, match))) {
+      throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
     const now = Date.now();
-    const shouldTrackPlayingTime = match.status === "live";
     const effectiveEventTime = getEffectiveEventTime(match, now);
     const substitutionStamp = buildEventGameTimeStamp(match, effectiveEventTime);
 
@@ -139,17 +138,13 @@ export const substitute = mutation({
     }
 
     // Player going OFF - record their playing time
-    if (shouldTrackPlayingTime && mpOut.lastSubbedInAt) {
+    if (mpOut.lastSubbedInAt) {
       await recordPlayingTime(ctx, mpOut, now);
     }
     await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
 
-    // Player going ON
-    if (shouldTrackPlayingTime) {
-      await startPlayingTime(ctx, mpIn._id, now);
-    } else {
-      await ctx.db.patch(mpIn._id, { onField: true, lastSubbedInAt: undefined });
-    }
+    // Player going ON - start tracking their time
+    await startPlayingTime(ctx, mpIn._id, now);
 
     // Log events
     await ctx.db.insert("matchEvents", {
@@ -193,7 +188,7 @@ export const removeLastGoal = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     // Find most recent goal event for this match, ordered by timestamp desc

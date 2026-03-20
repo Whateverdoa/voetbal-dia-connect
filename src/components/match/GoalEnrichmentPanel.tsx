@@ -112,9 +112,9 @@ export function GoalEnrichmentPanel({
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base"
         >
           <option value="">Scorer (optioneel)</option>
-          {players.map((p) => (
-            <option key={String(p.playerId)} value={String(p.playerId)}>
-              {p.name}
+          {players.map((player) => (
+            <option key={String(player.playerId)} value={String(player.playerId)}>
+              {player.name}
             </option>
           ))}
         </select>
@@ -124,9 +124,9 @@ export function GoalEnrichmentPanel({
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base"
         >
           <option value="">Assist (optioneel)</option>
-          {players.map((p) => (
-            <option key={String(p.playerId)} value={String(p.playerId)}>
-              {p.name}
+          {players.map((player) => (
+            <option key={String(player.playerId)} value={String(player.playerId)}>
+              {player.name}
             </option>
           ))}
         </select>

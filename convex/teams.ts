@@ -143,7 +143,11 @@ export const getMatchHistory = query({
       })
     );
 
-    return enrichedMatches;
+    return enrichedMatches.sort((left, right) => {
+      const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
+      const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
+      return rightTimestamp - leftTimestamp;
+    });
   },
 });
 

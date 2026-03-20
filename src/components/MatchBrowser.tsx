@@ -3,17 +3,16 @@
 import Link from "next/link";
 import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
-import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
+import { filterMatchesForBrowser } from "@/lib/matchBrowserFilters";
 
 const statusGroups = [
   {
     key: "live" as const,
-    label: "Live",
+    label: "LIVE",
     filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
     dotClass: "bg-green-500 animate-pulse",
     labelClass: "text-green-600",
@@ -34,13 +33,7 @@ const statusGroups = [
   },
 ];
 
-function MatchRow({
-  match,
-  showCoachLink,
-}: {
-  match: PublicMatch;
-  showCoachLink: boolean;
-}) {
+function MatchRow({ match }: { match: PublicMatch }) {
   const isLive = match.status === "live" || match.status === "halftime";
   const showScore = match.status !== "scheduled";
 
@@ -49,10 +42,9 @@ function MatchRow({
     : `${match.teamName} @ ${match.opponent}`;
 
   return (
-    <div className="flex flex-col gap-1">
-      <Link
-        href={`/live/${match.publicCode}`}
-        className={clsx(
+    <Link
+      href={`/live/${match.publicCode}`}
+      className={clsx(
         "flex items-center gap-3 rounded-xl border bg-white p-3 min-h-[56px]",
         "transition-all active:scale-[0.98] touch-manipulation",
         isLive
@@ -98,15 +90,6 @@ function MatchRow({
         )}
       </div>
     </Link>
-      {showCoachLink && (
-        <Link
-          href={`/coach/match/${match._id}`}
-          className="text-xs text-dia-green font-medium hover:underline pl-1"
-        >
-          Als coach openen
-        </Link>
-      )}
-    </div>
   );
 }
 
@@ -114,9 +97,8 @@ export function MatchBrowser() {
   const matches = useQuery(api.matches.listPublicMatches);
   const connection = useConvexConnectionState();
   const [showConnectionIssue, setShowConnectionIssue] = useState(false);
-  const { user } = useUser();
-  const roles = parseRolesFromMetadata(user?.publicMetadata);
-  const isCoach = hasRole(roles, "coach");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAllWithoutSearch, setShowAllWithoutSearch] = useState(false);
 
   // If we stay in "loading" (undefined) and the client never connected or keeps retrying, show connection message
   useEffect(() => {
@@ -153,54 +135,114 @@ export function MatchBrowser() {
   }
 
   // Empty state
-  if (matches.length === 0) {
-    return (
-      <div className="mt-8">
-        <Divider />
-        <p className="text-center text-gray-400 py-8 text-sm">
-          Geen wedstrijden gevonden
-        </p>
-      </div>
-    );
-  }
+  const filteredMatches = filterMatchesForBrowser(
+    matches,
+    searchTerm,
+    showAllWithoutSearch
+  );
+  const normalizedSearch = searchTerm.trim();
+  const showWeekendEmptyState = !normalizedSearch && !showAllWithoutSearch;
+  const hasMatches = filteredMatches.length > 0;
 
   return (
     <div className="mt-8">
       <Divider />
 
-      <div className="space-y-5">
-        {statusGroups.map((group) => {
-          const groupMatches = matches.filter(group.filter);
-          if (groupMatches.length === 0) return null;
-
-          return (
-            <section key={group.key}>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={clsx("w-2 h-2 rounded-full", group.dotClass)}
-                />
-                <h3
-                  className={clsx(
-                    "text-sm font-bold uppercase tracking-wide",
-                    group.labelClass
-                  )}
-                >
-                  {group.label}
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {groupMatches.map((match) => (
-                  <MatchRow
-                    key={match._id}
-                    match={match as PublicMatch}
-                    showCoachLink={isCoach}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+      <div className="mb-4">
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+            }}
+            placeholder="Zoek op team..."
+            className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-dia-green focus:outline-none"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              aria-label="Zoekveld wissen"
+            >
+              Wis
+            </button>
+          )}
+        </div>
+        {!normalizedSearch && !showAllWithoutSearch && (
+          <p className="mt-2 text-xs text-gray-500">
+            Je ziet nu alleen live en wedstrijden van komend weekend.
+          </p>
+        )}
+        {!normalizedSearch && showAllWithoutSearch && (
+          <button
+            type="button"
+            onClick={() => setShowAllWithoutSearch(false)}
+            className="mt-2 min-h-[44px] text-xs font-medium text-dia-green hover:text-green-700"
+          >
+            Terug naar komend weekend
+          </button>
+        )}
       </div>
+
+      {hasMatches ? (
+        <div className="space-y-5">
+          {statusGroups.map((group) => {
+            const groupMatches = filteredMatches.filter(group.filter);
+            if (groupMatches.length === 0) return null;
+
+            return (
+              <section key={group.key}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className={clsx("w-2 h-2 rounded-full", group.dotClass)}
+                  />
+                  <h3
+                    className={clsx(
+                      "text-sm font-bold uppercase tracking-wide",
+                      group.labelClass
+                    )}
+                  >
+                    {group.label}
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {groupMatches.map((match) => (
+                    <MatchRow key={match._id} match={match as PublicMatch} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-3 py-8 text-center" aria-live="polite">
+          <p className="text-sm text-gray-500">
+            {normalizedSearch
+              ? `Geen wedstrijden gevonden voor "${normalizedSearch}"`
+              : "Geen wedstrijden dit weekend"}
+          </p>
+          {normalizedSearch ? (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+            >
+              Wis zoekopdracht
+            </button>
+          ) : null}
+          {showWeekendEmptyState && (
+            <button
+              type="button"
+              onClick={() => setShowAllWithoutSearch(true)}
+              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+            >
+              Toon alle wedstrijden
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

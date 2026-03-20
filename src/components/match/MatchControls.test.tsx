@@ -13,8 +13,6 @@ describe('MatchControls', () => {
   const mockOnGoalClick = vi.fn();
   const mockOnSubClick = vi.fn();
   const defaultMatchId = 'match123' as any;
-  const defaultPin = '1234';
-
   beforeEach(() => {
     vi.clearAllMocks();
     // Map mutation references to their mocks by the string key from convex-api mock
@@ -32,7 +30,6 @@ describe('MatchControls', () => {
 
   const defaultProps = {
     matchId: defaultMatchId,
-    pin: defaultPin,
     status: 'live' as const,
     currentQuarter: 1,
     quarterCount: 4,
@@ -225,3 +222,4 @@ describe('MatchControls', () => {
     });
   });
 });
+

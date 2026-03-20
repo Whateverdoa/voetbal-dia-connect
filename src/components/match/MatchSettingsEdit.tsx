@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { formatDateTimeInput } from "@/lib/dateUtils";
 import type { Match } from "./types";
 
 interface MatchSettingsEditProps {
@@ -15,9 +16,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
   const [opponent, setOpponent] = useState(match.opponent);
   const [isHome, setIsHome] = useState(match.isHome);
   const [scheduledAt, setScheduledAt] = useState(
-    match.scheduledAt
-      ? new Date(match.scheduledAt).toISOString().slice(0, 16)
-      : ""
+    formatDateTimeInput(match.scheduledAt)
   );
   const [addPlayerId, setAddPlayerId] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -158,9 +157,9 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
                   className="flex-1 px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="">Bestaande speler...</option>
-                  {playersNotInMatch.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.number ? `${p.number}. ` : ""}{p.name}
+                  {playersNotInMatch.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.number ? `${player.number}. ` : ""}{player.name}
                     </option>
                   ))}
                 </select>

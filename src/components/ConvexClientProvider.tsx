@@ -1,8 +1,8 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { useAuth } from "@clerk/nextjs";
 import { ReactNode } from "react";
 import { ConvexConnectionBanner } from "./ConvexConnectionBanner";
 
@@ -27,8 +27,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-  if (hasClerk) {
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <ConvexConnectionBanner />

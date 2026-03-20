@@ -20,7 +20,7 @@ export const assignReferee = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
-      throw new Error("Geen coachtoegang voor deze wedstrijd");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     if (args.refereeId) {

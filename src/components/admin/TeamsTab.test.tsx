@@ -191,7 +191,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Slug already exists')).toBeInTheDocument();
+        expect(screen.getByText('Fout: Slug already exists')).toBeInTheDocument();
       });
     });
 
@@ -203,7 +203,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team aangemaakt')).toBeInTheDocument();
+        expect(screen.getByText('Team aangemaakt')).toBeInTheDocument();
       });
     });
 
@@ -299,7 +299,7 @@ describe('TeamsTab', () => {
       fireEvent.click(saveButton!);
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team bijgewerkt')).toBeInTheDocument();
+        expect(screen.getByText('Team bijgewerkt')).toBeInTheDocument();
       });
     });
 
@@ -335,7 +335,7 @@ describe('TeamsTab', () => {
       const deleteButton = teamRows[0].querySelector('.text-red-500');
       fireEvent.click(deleteButton!);
 
-      expect(screen.getByText('Verwijderen? Alle spelers worden ook verwijderd!')).toBeInTheDocument();
+      expect(screen.getByText('Verwijderen? Alle spelers worden ook verwijderd.')).toBeInTheDocument();
     });
 
     it('shows "Ja" and "Nee" confirmation buttons', () => {
@@ -376,7 +376,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team verwijderd')).toBeInTheDocument();
+        expect(screen.getByText('Team verwijderd')).toBeInTheDocument();
       });
     });
 
@@ -408,7 +408,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Team has active matches')).toBeInTheDocument();
+        expect(screen.getByText('Fout: Team has active matches')).toBeInTheDocument();
       });
     });
   });
@@ -426,9 +426,11 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        const statusMessage = screen.getByText('✅ Team aangemaakt');
+        const statusMessage = screen.getByText('Team aangemaakt');
         expect(statusMessage).toHaveClass('bg-gray-100');
       });
     });
   });
 });
+
+

@@ -1,11 +1,16 @@
 /**
  * Admin operations - Re-exports from split modules
- * 
- * All admin mutations require identity-based admin verification (server-side).
+ *
+ * Admin operations require authenticated Clerk identity + `userAccess`.
  */
 
-// Admin login verification (server-side only)
 export { verifyAdminAccessQuery } from "./adminAuth";
+
+export {
+  backfillUserAccess,
+  deactivateUserAccessByEmail,
+  listUserAccess,
+} from "./adminAccessManagement";
 
 // Re-export all admin operations
 export {
@@ -48,16 +53,12 @@ export {
 } from "./adminReferees";
 
 export {
+  addPlayerToMatch,
   createMatch,
+  createPlayerAndAddToMatch,
+  deleteMatch,
+  listAssignmentBoard,
   listAllMatches,
   listTeamPlayersNotInMatch,
   updateMatch,
 } from "./adminMatches";
-
-export { backfillMatchCoachIds, cleanupLegacyPinFields } from "./adminMigrations";
-
-export {
-  addPlayerToMatch,
-  createPlayerAndAddToMatch,
-  deleteMatch,
-} from "./adminMatchPlayers";

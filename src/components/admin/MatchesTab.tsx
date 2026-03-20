@@ -1,12 +1,12 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { MatchRow, type AdminMatch } from "./MatchRow";
 import { MatchEditPanel } from "./MatchEditPanel";
 import { MatchForm } from "./MatchForm";
+import { MatchRow, type AdminMatch } from "./MatchRow";
 
 type StatusFilter = "alle" | "scheduled" | "live" | "finished";
 
@@ -26,18 +26,17 @@ export function MatchesTab({ teams }: MatchesTabProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
   const [statusMessage, setStatusMessage] = useState("");
   const [editingId, setEditingId] = useState<Id<"matches"> | null>(null);
-  const [editRefereeId, setEditRefereeId] = useState<string>("");
+  const [editRefereeId, setEditRefereeId] = useState("");
   const [editOpponent, setEditOpponent] = useState("");
   const [editIsHome, setEditIsHome] = useState(true);
   const [editScheduledAt, setEditScheduledAt] = useState("");
-  const [addPlayerId, setAddPlayerId] = useState<string>("");
+  const [addPlayerId, setAddPlayerId] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
 
-  // Apply filters
   let filtered = matches ?? [];
   if (teamFilter !== "alle") {
-    filtered = filtered.filter((m) => m.teamId === teamFilter);
+    filtered = filtered.filter((match) => match.teamId === teamFilter);
   }
   if (statusFilter !== "alle") {
     const statusSet: Record<StatusFilter, string[]> = {
@@ -47,136 +46,102 @@ export function MatchesTab({ teams }: MatchesTabProps) {
       finished: ["finished"],
     };
     const allowed = statusSet[statusFilter];
-    if (allowed.length > 0) {
-      filtered = filtered.filter((m) => allowed.includes(m.status));
-    }
+    filtered = filtered.filter((match) => allowed.includes(match.status));
   }
 
-  const handleCreated = (publicCode: string) => {
-    setStatusMessage(`Wedstrijd aangemaakt! Code: ${publicCode}`);
-  };
+  function handleCreated(publicCode: string) {
+    setStatusMessage(`Wedstrijd aangemaakt. Code: ${publicCode}`);
+  }
 
-  const handleSaveEdit = async (matchId: Id<"matches">) => {
+  async function handleSaveEdit(matchId: Id<"matches">) {
     try {
       await updateMatch({
         matchId,
         opponent: editOpponent.trim() || undefined,
         isHome: editIsHome,
         scheduledAt: editScheduledAt ? new Date(editScheduledAt).getTime() : undefined,
-        refereeId: editRefereeId
-          ? (editRefereeId as Id<"referees">)
-          : null,
+        refereeId: editRefereeId ? (editRefereeId as Id<"referees">) : null,
       });
       setEditingId(null);
       setStatusMessage("Wedstrijd bijgewerkt");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setStatusMessage(`Fout: ${msg}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatusMessage(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleAddPlayer = async (matchId: Id<"matches">) => {
+  async function handleAddPlayer(matchId: Id<"matches">) {
     if (!addPlayerId) return;
     try {
-      await addPlayerToMatch({
-        matchId,
-        playerId: addPlayerId as Id<"players">,
-      });
+      await addPlayerToMatch({ matchId, playerId: addPlayerId as Id<"players"> });
       setAddPlayerId("");
       setStatusMessage("Speler toegevoegd");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setStatusMessage(`Fout: ${msg}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatusMessage(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleCreateAndAddPlayer = async (matchId: Id<"matches">) => {
+  async function handleCreateAndAddPlayer(matchId: Id<"matches">) {
     if (!newPlayerName.trim()) return;
     try {
       await createPlayerAndAddToMatch({
         matchId,
         name: newPlayerName.trim(),
-        number: newPlayerNumber ? parseInt(newPlayerNumber, 10) : undefined,
+        number: newPlayerNumber ? Number.parseInt(newPlayerNumber, 10) : undefined,
       });
       setNewPlayerName("");
       setNewPlayerNumber("");
       setStatusMessage("Speler aangemaakt en toegevoegd");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setStatusMessage(`Fout: ${msg}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatusMessage(`Fout: ${message}`);
     }
-  };
+  }
 
-  const startEdit = (matchId: Id<"matches">) => {
-    const match = matches?.find((m) => m._id === matchId);
+  function startEdit(matchId: Id<"matches">) {
+    const match = matches?.find((entry) => entry._id === matchId);
     setEditRefereeId(match?.refereeId ?? "");
     setEditOpponent(match?.opponent ?? "");
     setEditIsHome(match?.isHome ?? true);
-    setEditScheduledAt(
-      match?.scheduledAt
-        ? new Date(match.scheduledAt).toISOString().slice(0, 16)
-        : ""
-    );
+    setEditScheduledAt(match?.scheduledAt ? new Date(match.scheduledAt).toISOString().slice(0, 16) : "");
     setAddPlayerId("");
     setNewPlayerName("");
     setNewPlayerNumber("");
     setEditingId(matchId);
-  };
+  }
 
   return (
     <div className="space-y-4">
-      {/* Create form */}
-      <MatchForm
-        teams={teams}
-        coaches={coaches}
-        referees={referees}
-        onCreated={handleCreated}
-      />
+      <MatchForm teams={teams} coaches={coaches} referees={referees} onCreated={handleCreated} />
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <select
-          value={teamFilter}
-          onChange={(e) => setTeamFilter(e.target.value)}
-          className="px-3 py-1.5 border rounded-lg bg-white text-sm"
-        >
+        <select value={teamFilter} onChange={(event) => setTeamFilter(event.target.value)} className="px-3 py-1.5 border rounded-lg bg-white text-sm">
           <option value="alle">Alle teams</option>
-          {teams?.map((t) => (
-            <option key={t._id} value={t._id}>{t.name}</option>
+          {teams?.map((team) => (
+            <option key={team._id} value={team._id}>{team.name}</option>
           ))}
         </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className="px-3 py-1.5 border rounded-lg bg-white text-sm"
-        >
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)} className="px-3 py-1.5 border rounded-lg bg-white text-sm">
           <option value="alle">Alle statussen</option>
           <option value="scheduled">Gepland</option>
           <option value="live">Live</option>
           <option value="finished">Afgelopen</option>
         </select>
         {matches && (
-          <span className="text-sm text-gray-400 self-center ml-auto">
-            {filtered.length} / {matches.length} wedstrijden
-          </span>
+          <span className="text-sm text-gray-400 self-center ml-auto">{filtered.length} / {matches.length} wedstrijden</span>
         )}
       </div>
 
-      {/* Status message */}
       {statusMessage && (
         <div className="flex items-center justify-between text-sm p-2 bg-gray-100 rounded-lg">
           <span>{statusMessage}</span>
-          <button
-            onClick={() => setStatusMessage("")}
-            className="text-gray-400 hover:text-gray-600 text-xs"
-            aria-label="Melding sluiten"
-          >
+          <button type="button" onClick={() => setStatusMessage("")} className="text-gray-400 hover:text-gray-600 text-xs" aria-label="Melding sluiten">
             ✕
           </button>
         </div>
       )}
 
-      {/* Match list */}
       {matches === undefined ? (
         <p className="text-gray-500">Laden...</p>
       ) : filtered.length === 0 ? (
@@ -185,12 +150,7 @@ export function MatchesTab({ teams }: MatchesTabProps) {
         <div className="space-y-2">
           {filtered.map((match) => (
             <div key={match._id}>
-              <MatchRow
-                match={match as AdminMatch}
-                onEdit={startEdit}
-                onStatusMessage={setStatusMessage}
-              />
-              {/* Inline edit panel for referee assignment */}
+              <MatchRow match={match as AdminMatch} onEdit={startEdit} onStatusMessage={setStatusMessage} />
               {editingId === match._id && (
                 <MatchEditPanel
                   match={match}

@@ -28,6 +28,7 @@ export const createTeam = mutation({
 export const listTeamsByClub = query({
   args: { clubId: v.id("clubs") },
   handler: async (ctx, args) => {
+    await requireAdminAccess(ctx);
     return await ctx.db
       .query("teams")
       .withIndex("by_club", (q) => q.eq("clubId", args.clubId))
@@ -44,6 +45,7 @@ export const getTeam = query({
 
 export const listAllTeams = query({
   handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     const teams = await ctx.db.query("teams").collect();
     // Enrich with club name
     return await Promise.all(
@@ -79,9 +81,7 @@ export const updateTeam = mutation({
 });
 
 export const deleteTeam = mutation({
-  args: { 
-    teamId: v.id("teams"),
-  },
+  args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
     

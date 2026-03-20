@@ -1,6 +1,15 @@
 /**
- * Seed entry point — re-exports from convex/seed/ module.
+ * Seed entry point - re-exports from convex/seed/ module.
  *
  * Run with: npx convex run seed:init
  */
-export { init, createSeedMatch, addPlayerToMatch } from "./seed/index";
+export {
+  init,
+  createSeedClub,
+  createSeedTeam,
+  createSeedPlayers,
+  createSeedCoach,
+  createSeedReferee,
+  createSeedMatch,
+  addPlayerToMatch,
+} from "./seed/index";

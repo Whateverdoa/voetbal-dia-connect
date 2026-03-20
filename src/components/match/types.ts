@@ -83,6 +83,8 @@ export interface Match {
   leadCoachId?: Id<"coaches"> | null;
   leadCoachName?: string | null;
   hasLead?: boolean;
+  isCurrentCoachLead?: boolean;
+  canControlClock?: boolean;
   capabilities?: {
     canControlClock: boolean;
     canDoSubstitutions: boolean;

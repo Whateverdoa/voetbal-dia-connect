@@ -3,55 +3,64 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
+import { normalizeQualificationTags } from "../src/lib/admin/assignmentBoard";
+import {
+  getUserAccessByEmail,
+  removeRoleFromUserAccess,
+  upsertUserAccess,
+} from "./lib/userAccess";
 
 export const createReferee = mutation({
   args: {
     name: v.string(),
-    pin: v.string(),
-    adminPin: v.string(),
+    email: v.string(),
+    qualificationTags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const trimmedName = args.name.trim();
+    const trimmedEmail = args.email.trim().toLowerCase();
+
     if (!trimmedName) {
       throw new Error("Naam is verplicht");
     }
-
-    const trimmedPin = args.pin.trim();
-    if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-      throw new Error("PIN moet 4-6 tekens zijn");
+    if (!trimmedEmail) {
+      throw new Error("E-mailadres is verplicht");
     }
 
-    // Check PIN uniqueness across referees AND coaches
-    const existingReferee = await ctx.db
+    const existingByEmail = await ctx.db
       .query("referees")
-      .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
+      .withIndex("by_email", (q) => q.eq("email", trimmedEmail))
       .first();
-    if (existingReferee) {
-      throw new Error("PIN is al in gebruik door een scheidsrechter");
+    if (existingByEmail) {
+      throw new Error("E-mailadres is al gekoppeld aan een scheidsrechter");
     }
 
-    const existingCoach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-      .first();
-    if (existingCoach) {
-      throw new Error("PIN is al in gebruik door een coach");
-    }
-
-    return await ctx.db.insert("referees", {
+    const qualificationTags = normalizeQualificationTags(args.qualificationTags);
+    const refereeId = await ctx.db.insert("referees", {
       name: trimmedName,
-      pin: trimmedPin,
+      email: trimmedEmail,
       active: true,
+      ...(qualificationTags.length > 0 ? { qualificationTags } : {}),
       createdAt: Date.now(),
     });
+
+    await upsertUserAccess(ctx, {
+      email: trimmedEmail,
+      roles: ["referee"],
+      refereeId,
+      source: "admin_manual",
+    });
+
+    return refereeId;
   },
 });
 
 export const listReferees = query({
   handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     return await ctx.db.query("referees").collect();
   },
 });
@@ -60,55 +69,103 @@ export const updateReferee = mutation({
   args: {
     refereeId: v.id("referees"),
     name: v.optional(v.string()),
-    pin: v.optional(v.string()),
+    email: v.optional(v.string()),
     active: v.optional(v.boolean()),
-    adminPin: v.string(),
+    qualificationTags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
-    const { refereeId, adminPin: _, ...updates } = args;
-
-    // Check PIN uniqueness if changing
-    if (updates.pin) {
-      const trimmedPin = updates.pin.trim();
-      if (trimmedPin.length < 4 || trimmedPin.length > 6) {
-        throw new Error("PIN moet 4-6 tekens zijn");
-      }
-
-      const existingReferee = await ctx.db
-        .query("referees")
-        .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-        .first();
-      if (existingReferee && existingReferee._id !== refereeId) {
-        throw new Error("PIN is al in gebruik door een scheidsrechter");
-      }
-
-      const existingCoach = await ctx.db
-        .query("coaches")
-        .withIndex("by_pin", (q) => q.eq("pin", trimmedPin))
-        .first();
-      if (existingCoach) {
-        throw new Error("PIN is al in gebruik door een coach");
-      }
-
-      updates.pin = trimmedPin;
+    const currentReferee = await ctx.db.get(args.refereeId);
+    if (!currentReferee) {
+      throw new Error("Scheidsrechter niet gevonden");
     }
 
-    const filtered = Object.fromEntries(
-      Object.entries(updates).filter(([, val]) => val !== undefined)
-    );
-    await ctx.db.patch(refereeId, filtered);
+    const updates: {
+      name?: string;
+      email?: string;
+      active?: boolean;
+      qualificationTags?: string[];
+    } = {};
+
+    if (args.name !== undefined) {
+      const trimmedName = args.name.trim();
+      if (!trimmedName) {
+        throw new Error("Naam is verplicht");
+      }
+      updates.name = trimmedName;
+    }
+
+    if (args.email !== undefined) {
+      const trimmedEmail = args.email.trim().toLowerCase();
+      if (!trimmedEmail) {
+        throw new Error("E-mailadres mag niet leeg zijn");
+      }
+
+      const existingByEmail = await ctx.db
+        .query("referees")
+        .withIndex("by_email", (q) => q.eq("email", trimmedEmail))
+        .first();
+      if (existingByEmail && existingByEmail._id !== args.refereeId) {
+        throw new Error("E-mailadres is al gekoppeld aan een scheidsrechter");
+      }
+
+      updates.email = trimmedEmail;
+    }
+
+    if (args.active !== undefined) {
+      updates.active = args.active;
+    }
+
+    if (args.qualificationTags !== undefined) {
+      updates.qualificationTags = normalizeQualificationTags(args.qualificationTags);
+    }
+
+    await ctx.db.patch(args.refereeId, updates);
+
+    const nextReferee = await ctx.db.get(args.refereeId);
+    if (!nextReferee?.email) {
+      throw new Error("Scheidsrechter mist e-mailadres na update");
+    }
+
+    const existingAccess = await getUserAccessByEmail(ctx, currentReferee.email);
+    const roles = Array.from(
+      new Set([...(existingAccess?.roles ?? []), "referee"])
+    ).sort() as ("admin" | "coach" | "referee")[];
+
+    await upsertUserAccess(ctx, {
+      email: nextReferee.email,
+      roles,
+      coachId: existingAccess?.coachId,
+      refereeId: nextReferee._id,
+      active: nextReferee.active,
+      source: "referee_sync",
+    });
+
+    if (currentReferee.email && currentReferee.email !== nextReferee.email) {
+      await removeRoleFromUserAccess(ctx, {
+        email: currentReferee.email,
+        role: "referee",
+      });
+    }
   },
 });
 
 export const deleteReferee = mutation({
   args: {
     refereeId: v.id("referees"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
+
+    const referee = await ctx.db.get(args.refereeId);
+    if (referee?.email) {
+      await removeRoleFromUserAccess(ctx, {
+        email: referee.email,
+        role: "referee",
+      });
+    }
+
     await ctx.db.delete(args.refereeId);
   },
 });

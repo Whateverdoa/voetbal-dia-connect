@@ -1,15 +1,51 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import { verifyAdminPin } from "./adminAuth";
+import type { Doc, Id } from "./_generated/dataModel";
+import { requireAdminAccess } from "./adminAuth";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
+import {
+  compareAssignmentBoardMatches,
+  deriveMatchQualificationTags,
+  getAssignmentDateKey,
+  getAssignmentDateLabel,
+  getQualificationState,
+  normalizeQualificationTags,
+} from "../src/lib/admin/assignmentBoard";
 
-// --- Queries ---
+type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
+
+type AdminMatchRow = Doc<"matches"> & {
+  teamName: string;
+  clubName: string;
+  refereeName: string | null;
+  coachName: string | null;
+};
+
+type AssignmentBoardRow = Doc<"matches"> & {
+  clubId: string;
+  clubName: string;
+  teamName: string;
+  coachName: string | null;
+  refereeName: string | null;
+  dateKey: string;
+  dateLabel: string;
+  matchQualificationTags: string[];
+  refereeQualificationTags: string[];
+  qualificationState: "geschikt" | "mogelijk" | "onbekend";
+};
+
+async function getCoachForMatch(
+  ctx: QueryCtx,
+  coachId?: Id<"coaches"> | null,
+): Promise<Doc<"coaches"> | null> {
+  if (!coachId) return null;
+  return await ctx.db.get(coachId);
+}
 
 export const listAllMatches = query({
-  args: { adminPin: v.string(), limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args): Promise<AdminMatchRow[]> => {
+    await requireAdminAccess(ctx);
     if (args.limit !== undefined && args.limit <= 0) {
       throw new Error("Limiet moet groter zijn dan 0");
     }
@@ -19,43 +55,27 @@ export const listAllMatches = query({
       .withIndex("by_createdAt")
       .order("desc");
     const matches =
-      args.limit !== undefined ? await matchesQuery.take(args.limit) : await matchesQuery.collect();
+      args.limit !== undefined
+        ? await matchesQuery.take(args.limit)
+        : await matchesQuery.collect();
 
-    // Batch-fetch related data
-    const enriched = await Promise.all(
+    const enriched: AdminMatchRow[] = await Promise.all(
       matches.map(async (match) => {
-        // Team + club
         const team = await ctx.db.get(match.teamId);
         const club = team ? await ctx.db.get(team.clubId) : null;
+        const referee = match.refereeId ? await ctx.db.get(match.refereeId) : null;
+        const coach = await getCoachForMatch(ctx, match.coachId);
 
-        // Referee (optional)
-        let refereeName: string | null = null;
-        if (match.refereeId) {
-          const referee = await ctx.db.get(match.refereeId);
-          refereeName = referee?.name ?? null;
-        }
-
-        // Coach (lookup by coachPin via index)
-        let coachName: string | null = null;
-        const coach = await ctx.db
-          .query("coaches")
-          .withIndex("by_pin", (q) => q.eq("pin", match.coachPin))
-          .first();
-        coachName = coach?.name ?? null;
-
-        // Strip sensitive fields before returning to client
-        const { coachPin: _pin, ...safeMatch } = match;
         return {
-          ...safeMatch,
+          ...match,
           teamName: team?.name ?? "Onbekend team",
           clubName: club?.name ?? "Onbekend club",
-          refereeName,
-          coachName,
+          refereeName: referee?.name ?? null,
+          coachName: coach?.name ?? null,
         };
       })
     );
 
-    // Sort: live/halftime first, then scheduled (by scheduledAt desc), then finished
     const statusOrder: Record<string, number> = {
       live: 0,
       halftime: 0,
@@ -64,25 +84,84 @@ export const listAllMatches = query({
       finished: 3,
     };
 
-    enriched.sort((a, b) => {
-      const orderA = statusOrder[a.status] ?? 9;
-      const orderB = statusOrder[b.status] ?? 9;
-      if (orderA !== orderB) return orderA - orderB;
-      // Within same priority, sort by scheduledAt descending
-      const atA = a.scheduledAt ?? 0;
-      const atB = b.scheduledAt ?? 0;
-      return atB - atA;
+    enriched.sort((left: AdminMatchRow, right: AdminMatchRow) => {
+      const orderLeft = statusOrder[left.status] ?? 9;
+      const orderRight = statusOrder[right.status] ?? 9;
+      if (orderLeft !== orderRight) return orderLeft - orderRight;
+
+      const atLeft = left.scheduledAt ?? 0;
+      const atRight = right.scheduledAt ?? 0;
+      return atRight - atLeft;
     });
 
     return enriched;
   },
 });
 
-// List team players not yet in this match (for pregame add-player in admin)
+export const listAssignmentBoard = query({
+  handler: async (ctx): Promise<AssignmentBoardRow[]> => {
+    await requireAdminAccess(ctx);
+
+    const matches = await ctx.db
+      .query("matches")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .collect();
+
+    const enriched: AssignmentBoardRow[] = await Promise.all(
+      matches.map(async (match) => {
+        const team = await ctx.db.get(match.teamId);
+        const club = team ? await ctx.db.get(team.clubId) : null;
+        const referee = match.refereeId ? await ctx.db.get(match.refereeId) : null;
+        const coach = await getCoachForMatch(ctx, match.coachId);
+
+        const teamName = team?.name ?? "Onbekend team";
+        const refereeQualificationTags = normalizeQualificationTags(
+          referee?.qualificationTags
+        );
+        const matchQualificationTags = deriveMatchQualificationTags(
+          teamName,
+          match.quarterCount
+        );
+
+        return {
+          ...match,
+          clubId: team ? String(team.clubId) : "onbekende-club",
+          clubName: club?.name ?? "Onbekende club",
+          teamName,
+          coachName: coach?.name ?? null,
+          refereeName: referee?.name ?? null,
+          dateKey: getAssignmentDateKey(match.scheduledAt),
+          dateLabel: getAssignmentDateLabel(match.scheduledAt),
+          matchQualificationTags,
+          refereeQualificationTags,
+          qualificationState: getQualificationState(
+            matchQualificationTags,
+            refereeQualificationTags
+          ),
+        };
+      })
+    );
+
+    return enriched.sort((left, right) => {
+      const clubOrder = left.clubName.localeCompare(right.clubName, "nl-NL");
+      if (clubOrder !== 0) return clubOrder;
+
+      if (left.dateKey === "ongepland" && right.dateKey !== "ongepland") return 1;
+      if (left.dateKey !== "ongepland" && right.dateKey === "ongepland") return -1;
+
+      const dateOrder = left.dateKey.localeCompare(right.dateKey, "nl-NL");
+      if (dateOrder !== 0) return dateOrder;
+
+      return compareAssignmentBoardMatches(left, right);
+    });
+  },
+});
+
 export const listTeamPlayersNotInMatch = query({
-  args: { matchId: v.id("matches"), adminPin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
@@ -99,29 +178,29 @@ export const listTeamPlayersNotInMatch = query({
       .collect();
 
     return allTeam
-      .filter((p) => p.active && !inMatchIds.has(p._id))
-      .map((p) => ({ id: p._id, name: p.name, number: p.number }));
+      .filter((player) => player.active && !inMatchIds.has(player._id))
+      .map((player) => ({
+        id: player._id,
+        name: player.name,
+        number: player.number,
+      }));
   },
 });
-
-// --- Mutations ---
 
 export const createMatch = mutation({
   args: {
     teamId: v.id("teams"),
     opponent: v.string(),
     isHome: v.boolean(),
-    coachPin: v.string(),
+    coachId: v.id("coaches"),
     quarterCount: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.id("referees")),
     playerIds: v.array(v.id("players")),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
-    // Validate inputs
     if (!args.opponent.trim()) {
       throw new Error("Tegenstander mag niet leeg zijn");
     }
@@ -129,16 +208,14 @@ export const createMatch = mutation({
       throw new Error("Selecteer minimaal één speler");
     }
 
-    // Verify the coachPin belongs to an existing coach
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.coachPin))
-      .first();
+    const coach = await ctx.db.get(args.coachId);
     if (!coach) {
-      throw new Error("Geen coach gevonden met deze PIN");
+      throw new Error("Coach niet gevonden");
+    }
+    if (!coach.teamIds.includes(args.teamId)) {
+      throw new Error("Coach is niet gekoppeld aan dit team");
     }
 
-    // Generate unique public code
     let code = generatePublicCode();
     let attempts = 0;
     while (
@@ -154,12 +231,10 @@ export const createMatch = mutation({
     }
 
     const quarterCount = args.quarterCount ?? 4;
-
-    // Insert match
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode: code,
-      coachPin: args.coachPin,
+      coachId: coach._id,
       opponent: args.opponent.trim(),
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -173,7 +248,6 @@ export const createMatch = mutation({
       createdAt: Date.now(),
     });
 
-    // Insert matchPlayers
     await Promise.all(
       args.playerIds.map((playerId) =>
         ctx.db.insert("matchPlayers", {
@@ -193,30 +267,27 @@ export const createMatch = mutation({
 export const updateMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    adminPin: v.string(),
     opponent: v.optional(v.string()),
     isHome: v.optional(v.boolean()),
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.union(v.id("referees"), v.null())),
-    coachPin: v.optional(v.string()),
+    coachId: v.optional(v.union(v.id("coaches"), v.null())),
     status: v.optional(v.union(v.literal("scheduled"), v.literal("finished"))),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
 
-    // Build typed patch object with only provided fields
-    type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
     const patch: Partial<{
       opponent: string;
       isHome: boolean;
       scheduledAt: number;
       refereeId: Id<"referees"> | undefined;
-      coachPin: string;
+      coachId: Id<"coaches"> | undefined;
       status: MatchStatus;
       finishedAt: number;
     }> = {};
@@ -237,19 +308,25 @@ export const updateMatch = mutation({
     }
 
     if (args.refereeId !== undefined) {
-      // null means "unassign referee"
       patch.refereeId = args.refereeId === null ? undefined : args.refereeId;
     }
 
-    if (args.coachPin !== undefined) {
-      patch.coachPin = args.coachPin;
+    if (args.coachId !== undefined) {
+      if (args.coachId === null) {
+        patch.coachId = undefined;
+      } else {
+        const coach = await ctx.db.get(args.coachId);
+        if (!coach) {
+          throw new Error("Coach niet gevonden");
+        }
+        patch.coachId = coach._id;
+      }
     }
 
     if (args.status !== undefined) {
-      // Admin can only cancel: scheduled → finished
       if (!(match.status === "scheduled" && args.status === "finished")) {
         throw new Error(
-          `Statuswijziging ${match.status} → ${args.status} is niet toegestaan vanuit admin`
+          `Statuswijziging ${match.status} -> ${args.status} is niet toegestaan vanuit admin`
         );
       }
       patch.status = args.status;
@@ -264,22 +341,18 @@ export const updateMatch = mutation({
   },
 });
 
-/**
- * Add an existing team player to a scheduled match. Admin only.
- */
 export const addPlayerToMatch = mutation({
   args: {
     matchId: v.id("matches"),
     playerId: v.id("players"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
+      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
     }
 
     const player = await ctx.db.get(args.playerId);
@@ -307,9 +380,6 @@ export const addPlayerToMatch = mutation({
   },
 });
 
-/**
- * Create a new player and add to a scheduled match. Admin only.
- */
 export const createPlayerAndAddToMatch = mutation({
   args: {
     matchId: v.id("matches"),
@@ -317,15 +387,14 @@ export const createPlayerAndAddToMatch = mutation({
     number: v.optional(v.number()),
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
+      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
     }
 
     const trimmed = args.name.trim();
@@ -356,40 +425,37 @@ export const createPlayerAndAddToMatch = mutation({
 export const deleteMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
 
-    // Safety: only allow deletion of scheduled or finished matches
     if (!["scheduled", "finished"].includes(match.status)) {
       throw new Error(
         "Kan alleen geplande of afgelopen wedstrijden verwijderen"
       );
     }
 
-    // Cascade delete matchPlayers
     const matchPlayers = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
       .collect();
-    await Promise.all(matchPlayers.map((mp) => ctx.db.delete(mp._id)));
+    await Promise.all(matchPlayers.map((matchPlayer) => ctx.db.delete(matchPlayer._id)));
 
-    // Cascade delete matchEvents
     const matchEvents = await ctx.db
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
       .collect();
-    await Promise.all(matchEvents.map((ev) => ctx.db.delete(ev._id)));
+    await Promise.all(matchEvents.map((event) => ctx.db.delete(event._id)));
 
-    // Delete match
     await ctx.db.delete(args.matchId);
 
     return { deleted: true };
   },
 });
+
+

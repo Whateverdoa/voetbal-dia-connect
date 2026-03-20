@@ -8,8 +8,6 @@ const mockUseQuery = vi.mocked(useQuery);
 
 describe('PlayingTimePanel', () => {
   const defaultMatchId = 'match123' as any;
-  const defaultPin = '1234';
-
   // Mock player data with varying playing times
   const mockPlayingTimeData = {
     players: [
@@ -31,7 +29,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(undefined);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // Check for spinner animation
@@ -44,7 +42,7 @@ describe('PlayingTimePanel', () => {
     it('shows Dutch error message when data is null', () => {
       mockUseQuery.mockReturnValue(null);
 
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       expect(screen.getByText('Kon speeltijd niet laden')).toBeInTheDocument();
     });
@@ -56,42 +54,42 @@ describe('PlayingTimePanel', () => {
     });
 
     it('renders "Speeltijd overzicht" header', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Speeltijd overzicht')).toBeInTheDocument();
     });
 
     it('renders "Gemiddeld" label for average minutes', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Gemiddeld')).toBeInTheDocument();
     });
 
     it('renders "Verschil" label for spread', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Verschil')).toBeInTheDocument();
     });
 
     it('renders "Spelers" label for player count', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Spelers')).toBeInTheDocument();
     });
 
     it('renders "Alle spelers (minst gespeeld eerst)" section', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Alle spelers (minst gespeeld eerst)')).toBeInTheDocument();
     });
 
     it('renders "Op het veld" section header', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText(/Op het veld/)).toBeInTheDocument();
     });
 
     it('renders "Bank" section header', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText(/Bank/)).toBeInTheDocument();
     });
 
     it('renders fairness legend with Dutch labels', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
       expect(screen.getByText('Goed')).toBeInTheDocument();
       expect(screen.getByText('Meer nodig')).toBeInTheDocument();
       expect(screen.getByText('Te weinig')).toBeInTheDocument();
@@ -104,7 +102,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('displays all player names', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       expect(screen.getAllByText('Jan').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Piet').length).toBeGreaterThan(0);
@@ -114,7 +112,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('displays player numbers', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Numbers appear multiple times (in sorted list and on-field/bench sections)
       expect(screen.getAllByText('10').length).toBeGreaterThan(0);
@@ -123,7 +121,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('displays minutes played with "min" suffix', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Check for various minute displays
       expect(screen.getAllByText('5 min').length).toBeGreaterThan(0);
@@ -145,7 +143,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(dataWithGoodTimes);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // Check for green background classes
@@ -166,7 +164,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(dataWithWarning);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // Check for yellow background classes
@@ -186,7 +184,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(dataWithCritical);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // Check for red background classes
@@ -201,7 +199,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('displays player count correctly', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // 5 players in mock data - find within the Spelers section
       const spelersLabel = screen.getByText('Spelers');
@@ -210,7 +208,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('calculates and displays average minutes', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Average of 5+12+15+8+3 = 43/5 = 8.6, rounded to 9
       const gemiddeldLabel = screen.getByText('Gemiddeld');
@@ -229,7 +227,7 @@ describe('PlayingTimePanel', () => {
       };
       mockUseQuery.mockReturnValue(spreadTestData);
 
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Spread = max(10) - min(5) = 5
       const verschilLabel = screen.getByText('Verschil');
@@ -244,14 +242,14 @@ describe('PlayingTimePanel', () => {
     });
 
     it('shows correct count of on-field players', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // 3 players on field in mock data
       expect(screen.getByText(/Op het veld \(3\)/)).toBeInTheDocument();
     });
 
     it('shows correct count of bench players', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // 2 players on bench in mock data
       expect(screen.getByText(/Bank \(2\)/)).toBeInTheDocument();
@@ -264,7 +262,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('shows "K" badge for goalkeeper', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Klaas is the keeper
       const keeperBadges = screen.getAllByText('K');
@@ -278,7 +276,7 @@ describe('PlayingTimePanel', () => {
     });
 
     it('shows "Veld" badge for on-field players in full view', () => {
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       // Players on field should have "Veld" badge in the sorted list
       const veldBadges = screen.getAllByText('Veld');
@@ -296,7 +294,7 @@ describe('PlayingTimePanel', () => {
       };
       mockUseQuery.mockReturnValue(dataNoFieldPlayers);
 
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       expect(screen.getByText('Geen spelers op het veld')).toBeInTheDocument();
     });
@@ -310,7 +308,7 @@ describe('PlayingTimePanel', () => {
       };
       mockUseQuery.mockReturnValue(dataNoBenchPlayers);
 
-      render(<PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />);
+      render(<PlayingTimePanel matchId={defaultMatchId} />);
 
       expect(screen.getByText('Geen spelers op de bank')).toBeInTheDocument();
     });
@@ -321,7 +319,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(mockPlayingTimeData);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // Progress bars should have transition animation class
@@ -343,7 +341,7 @@ describe('PlayingTimePanel', () => {
       mockUseQuery.mockReturnValue(earlyMatchData);
 
       const { container } = render(
-        <PlayingTimePanel matchId={defaultMatchId} pin={defaultPin} />
+        <PlayingTimePanel matchId={defaultMatchId} />
       );
 
       // All players should have green styling (no yellow or red)
@@ -354,3 +352,4 @@ describe('PlayingTimePanel', () => {
     });
   });
 });
+

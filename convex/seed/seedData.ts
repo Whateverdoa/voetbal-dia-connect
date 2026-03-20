@@ -1,10 +1,8 @@
 /**
- * Static seed configuration — coaches, referees, teams, schedule.
+ * Static seed configuration - coaches, referees, teams, schedule.
  *
  * All data is defined here so it can be reviewed and updated in one place.
  */
-
-export const SEED_ADMIN_PIN = "9999"; // Default dev admin PIN
 
 export const CLUB = { name: "DIA", slug: "dia" } as const;
 
@@ -14,40 +12,35 @@ export const TEAM_CONFIGS = [
   { name: "JO13-2", slug: "jo13-2" },
 ];
 
-/** Coach seed config */
 export interface SeedCoach {
   name: string;
-  pin: string;
+  email: string;
   teamSlugs: string[];
 }
 
-/** Real coaches for JO12-1 + placeholder coaches for other teams */
 export const COACH_CONFIGS: SeedCoach[] = [
-  { name: "Remco Hendriks", pin: "1234", teamSlugs: ["jo12-1"] },
-  { name: "Martin Nieuwenhuizen", pin: "5678", teamSlugs: ["jo12-1"] },
-  { name: "Mike ten Hoonte", pin: "2468", teamSlugs: ["jo12-1"] },
-  { name: "Serdar Sarica", pin: "1357", teamSlugs: ["jo12-1"] },
-  { name: "Coach JO11", pin: "3456", teamSlugs: ["jo11-1"] },
-  { name: "Coach JO13", pin: "7890", teamSlugs: ["jo13-2"] },
+  { name: "Remco Hendriks", email: "remco.hendriks@dia.local", teamSlugs: ["jo12-1"] },
+  { name: "Martin Nieuwenhuizen", email: "martin.nieuwenhuizen@dia.local", teamSlugs: ["jo12-1"] },
+  { name: "Mike ten Hoonte", email: "mike.tenhoonte@dia.local", teamSlugs: ["jo12-1"] },
+  { name: "Serdar Sarica", email: "serdar.sarica@dia.local", teamSlugs: ["jo12-1"] },
+  { name: "Coach JO11", email: "coach.jo11@dia.local", teamSlugs: ["jo11-1"] },
+  { name: "Coach JO13", email: "coach.jo13@dia.local", teamSlugs: ["jo13-2"] },
 ];
 
-/** Referee seed config */
 export interface SeedReferee {
   name: string;
-  pin: string;
+  email: string;
 }
 
 export const REFEREE_CONFIGS: SeedReferee[] = [
-  { name: "Scheidsr. De Vries", pin: "7777" },
-  { name: "Scheidsr. Jansen", pin: "8888" },
-  { name: "Scheidsr. Bakker", pin: "6666" },
-  { name: "Scheidsr. Visser", pin: "5555" },
+  { name: "Scheidsr. De Vries", email: "ref.devries@dia.local" },
+  { name: "Scheidsr. Jansen", email: "ref.jansen@dia.local" },
+  { name: "Scheidsr. Bakker", email: "ref.bakker@dia.local" },
+  { name: "Scheidsr. Visser", email: "ref.visser@dia.local" },
 ];
 
-/** Fallback player count (used when no real roster available) */
 export const PLAYERS_PER_TEAM = 14;
 
-/** Single match entry in the seed schedule */
 export interface SeedMatch {
   date: string;
   opponent: string;
@@ -58,9 +51,7 @@ export interface SeedMatch {
   refereeSlug: string;
 }
 
-/** Full match schedule for JO12-1 (voorjaar 2026) — real data */
 export const MATCH_SCHEDULE: SeedMatch[] = [
-  // === Gespeeld ===
   {
     date: "2026-01-24T10:00:00",
     opponent: "SCO JO12-2",
@@ -88,7 +79,6 @@ export const MATCH_SCHEDULE: SeedMatch[] = [
     awayScore: 6,
     refereeSlug: "scheidsr-bakker",
   },
-  // === Komend ===
   {
     date: "2026-02-28T08:30:00",
     opponent: "Oosterhout JO12-2",

@@ -3,7 +3,7 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 
 // ============ PLAYERS ============
 
@@ -14,10 +14,9 @@ export const createPlayer = mutation({
     number: v.optional(v.number()),
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     return await ctx.db.insert("players", {
       teamId: args.teamId,
@@ -40,10 +39,9 @@ export const createPlayers = mutation({
       positionPrimary: v.optional(v.string()),
       positionSecondary: v.optional(v.string()),
     })),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
 
     const ids = [];
     for (const p of args.players) {
@@ -80,12 +78,11 @@ export const updatePlayer = mutation({
     active: v.optional(v.boolean()),
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
-    const { playerId, adminPin: _, ...updates } = args;
+    const { playerId, ...updates } = args;
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
@@ -94,12 +91,9 @@ export const updatePlayer = mutation({
 });
 
 export const deletePlayer = mutation({
-  args: { 
-    playerId: v.id("players"),
-    adminPin: v.string(),
-  },
+  args: { playerId: v.id("players") },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     await ctx.db.delete(args.playerId);
   },
 });

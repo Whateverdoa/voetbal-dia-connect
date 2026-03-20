@@ -1,20 +1,18 @@
 /**
- * Admin seed functions for development/testing
+ * Admin seed functions for development/testing.
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
-
-// ============ SEED DATA ============
+import { upsertUserAccess } from "./lib/userAccess";
+import { requireAdminOrOps } from "./lib/opsAuth";
 
 export const seedDIA = mutation({
   args: {
-    adminPin: v.string(),
+    opsSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
-    
-    // Check if DIA already exists
+    await requireAdminOrOps(ctx, args.opsSecret);
+
     const existing = await ctx.db
       .query("clubs")
       .withIndex("by_slug", (q) => q.eq("slug", "dia"))
@@ -24,14 +22,12 @@ export const seedDIA = mutation({
       return { message: "DIA already exists", clubId: existing._id };
     }
 
-    // Create DIA club
     const clubId = await ctx.db.insert("clubs", {
       name: "DIA",
       slug: "dia",
       createdAt: Date.now(),
     });
 
-    // Create JO12-1 team
     const teamId = await ctx.db.insert("teams", {
       clubId,
       name: "JO12-1",
@@ -39,15 +35,21 @@ export const seedDIA = mutation({
       createdAt: Date.now(),
     });
 
-    // Create coach with PIN 1234
+    const coachEmail = "coach.mike@dia.local";
     const coachId = await ctx.db.insert("coaches", {
       name: "Coach Mike",
-      pin: "1234",
+      email: coachEmail,
       teamIds: [teamId],
       createdAt: Date.now(),
     });
 
-    // JO12-1 spelers (seizoen 2025-2026)
+    await upsertUserAccess(ctx, {
+      email: coachEmail,
+      roles: ["coach"],
+      coachId,
+      source: "admin_manual",
+    });
+
     const samplePlayers = [
       { name: "Lukas", number: 1 },
       { name: "Luc", number: 2 },
@@ -57,17 +59,17 @@ export const seedDIA = mutation({
       { name: "Jip", number: 6 },
       { name: "Bora", number: 7 },
       { name: "Devon", number: 8 },
-      { name: "Maçeo", number: 9 },
+      { name: "Maceo", number: 9 },
       { name: "Oliver", number: 10 },
       { name: "Revi", number: 11 },
     ];
 
     const playerIds = [];
-    for (const p of samplePlayers) {
+    for (const player of samplePlayers) {
       const id = await ctx.db.insert("players", {
         teamId,
-        name: p.name,
-        number: p.number,
+        name: player.name,
+        number: player.number,
         active: true,
         createdAt: Date.now(),
       });
@@ -79,21 +81,19 @@ export const seedDIA = mutation({
       clubId,
       teamId,
       coachId,
+      coachEmail,
       playerCount: playerIds.length,
-      defaultPin: "1234",
     };
   },
 });
 
-// Seed upcoming matches for JO12-1 (voorjaar 2026)
 export const seedMatches = mutation({
   args: {
-    adminPin: v.string(),
+    opsSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
-    
-    // Find JO12-1 team
+    await requireAdminOrOps(ctx, args.opsSecret);
+
     const club = await ctx.db
       .query("clubs")
       .withIndex("by_slug", (q) => q.eq("slug", "dia"))
@@ -112,15 +112,22 @@ export const seedMatches = mutation({
       throw new Error("JO12-1 team not found");
     }
 
-    // Get all players
+    const coach = await ctx.db
+      .query("coaches")
+      .withIndex("by_email", (q) => q.eq("email", "coach.mike@dia.local"))
+      .first();
+
+    if (!coach) {
+      throw new Error("Coach Mike not found");
+    }
+
     const players = await ctx.db
       .query("players")
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
 
-    const playerIds = players.map((p) => p._id);
+    const playerIds = players.map((player) => player._id);
 
-    // Generate unique 6-char codes
     const generateCode = () => {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let code = "";
@@ -130,11 +137,8 @@ export const seedMatches = mutation({
       return code;
     };
 
-    // Match schedule seizoen 2025-2026 (vanaf januari)
     const schedule = [
-      // Gespeeld
       { date: "2026-01-24T10:00:00", opponent: "SCO JO12-2", isHome: true, finished: true, homeScore: 3, awayScore: 2 },
-      // Nog te spelen
       { date: "2026-01-31T08:45:00", opponent: "VOAB JO12-2", isHome: false },
       { date: "2026-02-07T08:30:00", opponent: "Terheijden JO12-1", isHome: true },
       { date: "2026-02-28T08:30:00", opponent: "Oosterhout JO12-2", isHome: false },
@@ -146,7 +150,6 @@ export const seedMatches = mutation({
     const createdMatches = [];
 
     for (const match of schedule) {
-      // Check if match already exists
       const scheduledAt = new Date(match.date).getTime();
       const existingMatches = await ctx.db
         .query("matches")
@@ -154,7 +157,7 @@ export const seedMatches = mutation({
         .collect();
 
       const alreadyExists = existingMatches.some(
-        (m) => m.opponent === match.opponent && m.scheduledAt === scheduledAt
+        (entry) => entry.opponent === match.opponent && entry.scheduledAt === scheduledAt
       );
 
       if (alreadyExists) {
@@ -166,7 +169,7 @@ export const seedMatches = mutation({
       const matchId = await ctx.db.insert("matches", {
         teamId: team._id,
         publicCode,
-        coachPin: "1234",
+        coachId: coach._id,
         opponent: match.opponent,
         isHome: match.isHome,
         scheduledAt,
@@ -177,11 +180,10 @@ export const seedMatches = mutation({
         awayScore: match.awayScore ?? 0,
         showLineup: false,
         startedAt: match.finished ? scheduledAt : undefined,
-        finishedAt: match.finished ? scheduledAt + 3600000 : undefined, // +1 hour
+        finishedAt: match.finished ? scheduledAt + 3600000 : undefined,
         createdAt: Date.now(),
       });
 
-      // Add all players to match
       for (const playerId of playerIds) {
         await ctx.db.insert("matchPlayers", {
           matchId,

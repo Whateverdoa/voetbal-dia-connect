@@ -9,7 +9,6 @@ const mockUseMutation = vi.mocked(useMutation);
 
 describe('SubstitutionSuggestions', () => {
   const defaultMatchId = 'match123' as any;
-  const defaultPin = '1234';
   const mockSubstitute = vi.fn();
 
   // Mock suggestion data
@@ -71,7 +70,7 @@ describe('SubstitutionSuggestions', () => {
       mockUseQuery.mockReturnValue(undefined);
 
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       const spinner = container.querySelector('.animate-spin');
@@ -83,7 +82,7 @@ describe('SubstitutionSuggestions', () => {
     it('shows Dutch error message when data is null', () => {
       mockUseQuery.mockReturnValue(null);
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       expect(screen.getByText('Kon suggesties niet laden')).toBeInTheDocument();
     });
@@ -95,24 +94,24 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('renders "Wissel suggesties" header', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('Wissel suggesties')).toBeInTheDocument();
     });
 
     it('renders "Wissel uitvoeren" button text', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       expect(executeButtons.length).toBeGreaterThan(0);
     });
 
     it('renders footer text about equal playing time', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('Suggesties gebaseerd op gelijke speeltijd')).toBeInTheDocument();
     });
 
     it('shows field and bench counts in Dutch', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('6 op veld, 4 op bank')).toBeInTheDocument();
     });
   });
@@ -123,19 +122,19 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('displays player out name', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('Jan')).toBeInTheDocument();
       expect(screen.getByText('Klaas')).toBeInTheDocument();
     });
 
     it('displays player in name', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('Piet')).toBeInTheDocument();
       expect(screen.getByText('Dirk')).toBeInTheDocument();
     });
 
     it('displays player numbers', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('10')).toBeInTheDocument();
       expect(screen.getByText('11')).toBeInTheDocument();
       expect(screen.getByText('7')).toBeInTheDocument();
@@ -143,7 +142,7 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('displays minutes played for each player', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('18 min')).toBeInTheDocument();
       expect(screen.getByText('5 min')).toBeInTheDocument();
       expect(screen.getByText('15 min')).toBeInTheDocument();
@@ -151,19 +150,19 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('displays Dutch reason text', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('Jan heeft veel meer gespeeld dan Piet')).toBeInTheDocument();
       expect(screen.getByText('Klaas heeft meer gespeeld dan Dirk')).toBeInTheDocument();
     });
 
     it('displays priority badges (1, 2)', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('1')).toBeInTheDocument();
       expect(screen.getByText('2')).toBeInTheDocument();
     });
 
     it('shows arrow between player out and player in', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       
       const arrows = screen.getAllByText('→');
       expect(arrows.length).toBeGreaterThan(0);
@@ -176,7 +175,7 @@ describe('SubstitutionSuggestions', () => {
       mockUseQuery.mockReturnValue(mockSuggestionsData);
 
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       // High urgency should have red border
@@ -189,7 +188,7 @@ describe('SubstitutionSuggestions', () => {
       mockUseQuery.mockReturnValue(mockSuggestionsData);
 
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       // Medium urgency should have yellow border
@@ -208,7 +207,7 @@ describe('SubstitutionSuggestions', () => {
       mockUseQuery.mockReturnValue(lowUrgencyData);
 
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       // Low urgency should have blue border
@@ -226,7 +225,7 @@ describe('SubstitutionSuggestions', () => {
       };
       mockUseQuery.mockReturnValue(emptyData);
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       expect(screen.getByText('Geen suggesties nodig')).toBeInTheDocument();
     });
@@ -239,7 +238,7 @@ describe('SubstitutionSuggestions', () => {
       };
       mockUseQuery.mockReturnValue(emptyData);
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       expect(screen.getByText('Speeltijd is redelijk verdeeld')).toBeInTheDocument();
     });
@@ -252,7 +251,7 @@ describe('SubstitutionSuggestions', () => {
       };
       mockUseQuery.mockReturnValue(noBenchData);
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       expect(screen.getByText('Geen spelers op de bank')).toBeInTheDocument();
     });
@@ -265,7 +264,7 @@ describe('SubstitutionSuggestions', () => {
       };
       mockUseQuery.mockReturnValue(emptyData);
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       expect(screen.getByText('✓')).toBeInTheDocument();
     });
@@ -277,7 +276,7 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('calls substitute mutation with correct parameters on button click', async () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       fireEvent.click(executeButtons[0]);
@@ -285,7 +284,6 @@ describe('SubstitutionSuggestions', () => {
       await waitFor(() => {
         expect(mockSubstitute).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerOutId: 'p1',
           playerInId: 'p2',
           correlationId: expect.any(String),
@@ -296,7 +294,7 @@ describe('SubstitutionSuggestions', () => {
     it('shows "Bezig..." while executing substitution', async () => {
       mockSubstitute.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       fireEvent.click(executeButtons[0]);
@@ -307,7 +305,7 @@ describe('SubstitutionSuggestions', () => {
     it('disables button while executing', async () => {
       mockSubstitute.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       fireEvent.click(executeButtons[0]);
@@ -325,7 +323,7 @@ describe('SubstitutionSuggestions', () => {
     it('shows Dutch error message on failure', async () => {
       mockSubstitute.mockRejectedValue(new Error('Network error'));
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       fireEvent.click(executeButtons[0]);
@@ -335,16 +333,16 @@ describe('SubstitutionSuggestions', () => {
       });
     });
 
-    it('shows session expired message for PIN error', async () => {
+    it('shows the backend error message when substitution fails', async () => {
       mockSubstitute.mockRejectedValue(new Error('Invalid match or PIN'));
 
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
 
       const executeButtons = screen.getAllByText('Wissel uitvoeren');
       fireEvent.click(executeButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByText('Sessie verlopen. Herlaad de pagina.')).toBeInTheDocument();
+        expect(screen.getByText('Wissel mislukt: Invalid match or PIN')).toBeInTheDocument();
       });
     });
   });
@@ -355,28 +353,28 @@ describe('SubstitutionSuggestions', () => {
     });
 
     it('shows down arrow for player out', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       
       const downArrows = screen.getAllByText('↓');
       expect(downArrows.length).toBeGreaterThan(0);
     });
 
     it('shows up arrow for player in', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       
       const upArrows = screen.getAllByText('↑');
       expect(upArrows.length).toBeGreaterThan(0);
     });
 
     it('shows swap emoji in execute button', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       
       const swapEmojis = screen.getAllByText('🔄');
       expect(swapEmojis.length).toBeGreaterThan(0);
     });
 
     it('shows lightbulb emoji in header', () => {
-      render(<SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />);
+      render(<SubstitutionSuggestions matchId={defaultMatchId} />);
       expect(screen.getByText('💡')).toBeInTheDocument();
     });
   });
@@ -388,7 +386,7 @@ describe('SubstitutionSuggestions', () => {
 
     it('shows red background for player out section', () => {
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       const redBgElements = container.querySelectorAll('.bg-red-100');
@@ -397,7 +395,7 @@ describe('SubstitutionSuggestions', () => {
 
     it('shows green background for player in section', () => {
       const { container } = render(
-        <SubstitutionSuggestions matchId={defaultMatchId} pin={defaultPin} />
+        <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
       const greenBgElements = container.querySelectorAll('.bg-green-100');
@@ -405,3 +403,4 @@ describe('SubstitutionSuggestions', () => {
     });
   });
 });
+

@@ -1,12 +1,16 @@
 /**
  * Admin operations - Re-exports from split modules
- * 
- * All admin mutations require adminPin verification (server-side).
- * PIN never leaves the server — set via: npx convex env set ADMIN_PIN your-pin
+ *
+ * Admin operations require authenticated Clerk identity + `userAccess`.
  */
 
-// Admin login verification (server-side only)
-export { verifyAdminPinQuery } from "./adminAuth";
+export { verifyAdminAccessQuery } from "./adminAuth";
+
+export {
+  backfillUserAccess,
+  deactivateUserAccessByEmail,
+  listUserAccess,
+} from "./adminAccessManagement";
 
 // Re-export all admin operations
 export {
@@ -53,6 +57,7 @@ export {
   createMatch,
   createPlayerAndAddToMatch,
   deleteMatch,
+  listAssignmentBoard,
   listAllMatches,
   listTeamPlayersNotInMatch,
   updateMatch,

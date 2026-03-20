@@ -16,15 +16,15 @@ import { fetchRefereeForMatch } from "./refereeHelpers";
  * is never counted towards their playing minutes.
  */
 export const pauseClock = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     if (match.status !== "live") {
@@ -58,15 +58,15 @@ export const pauseClock = mutation({
  * playing-time tracking for on-field players.
  */
 export const resumeClock = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     if (match.status !== "live") {

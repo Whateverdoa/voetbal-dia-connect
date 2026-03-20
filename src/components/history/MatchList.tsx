@@ -2,15 +2,16 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Target } from "lucide-react";
 import { HistoryMatchCard } from "./HistoryMatchCard";
 
 interface MatchListProps {
-  teamId: string;
+  teamId: Id<"teams">;
 }
 
 export function MatchList({ teamId }: MatchListProps) {
-  const matches = useQuery(api.teams.getMatchHistory, { teamId: teamId as any });
+  const matches = useQuery(api.teams.getMatchHistory, { teamId });
 
   if (!matches) {
     return (
@@ -35,12 +36,18 @@ export function MatchList({ teamId }: MatchListProps) {
     );
   }
 
+  const orderedMatches = [...matches].sort((left, right) => {
+    const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
+    const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
+    return rightTimestamp - leftTimestamp;
+  });
+
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold text-gray-900">
-        Wedstrijden ({matches.length})
+        Wedstrijden ({orderedMatches.length})
       </h2>
-      {matches.map((match) => (
+      {orderedMatches.map((match) => (
         <HistoryMatchCard key={match.id} match={match} />
       ))}
     </section>

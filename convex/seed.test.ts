@@ -2,10 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { DUTCH_NAMES, generatePublicCode, pickUniqueNames } from './seed/helpers';
 import { TEAM_CONFIGS, COACH_CONFIGS, REFEREE_CONFIGS, PLAYERS_PER_TEAM } from './seed/seedData';
 
-// Note: The actual Convex action (seed:init) requires integration testing
-// with a real Convex backend. These tests cover the pure helper functions
-// and verify seed data configuration consistency.
-
 describe('Seed Helpers', () => {
   describe('pickUniqueNames', () => {
     it('picks the requested number of names', () => {
@@ -115,20 +111,20 @@ describe('Seed Data Configuration', () => {
       expect(COACH_CONFIGS).toHaveLength(6);
     });
 
-    it('PINs are 4 digits', () => {
+    it('uses seeded email addresses', () => {
       COACH_CONFIGS.forEach((coach) => {
-        expect(coach.pin).toMatch(/^\d{4}$/);
+        expect(coach.email).toMatch(/@dia\.local$/);
       });
     });
 
-    it('PINs are unique', () => {
-      const pins = COACH_CONFIGS.map((c) => c.pin);
-      const unique = new Set(pins);
+    it('coach emails are unique', () => {
+      const emails = COACH_CONFIGS.map((coach) => coach.email);
+      const unique = new Set(emails);
       expect(unique.size).toBe(COACH_CONFIGS.length);
     });
 
     it('all teamSlugs reference valid teams', () => {
-      const slugs = new Set(TEAM_CONFIGS.map((t) => t.slug));
+      const slugs = new Set(TEAM_CONFIGS.map((team) => team.slug));
       COACH_CONFIGS.forEach((coach) => {
         coach.teamSlugs.forEach((slug) => {
           expect(slugs.has(slug)).toBe(true);
@@ -142,22 +138,22 @@ describe('Seed Data Configuration', () => {
       expect(REFEREE_CONFIGS).toHaveLength(4);
     });
 
-    it('PINs are 4 digits', () => {
-      REFEREE_CONFIGS.forEach((ref) => {
-        expect(ref.pin).toMatch(/^\d{4}$/);
+    it('uses seeded email addresses', () => {
+      REFEREE_CONFIGS.forEach((referee) => {
+        expect(referee.email).toMatch(/@dia\.local$/);
       });
     });
 
-    it('PINs are unique among referees', () => {
-      const pins = REFEREE_CONFIGS.map((r) => r.pin);
-      const unique = new Set(pins);
+    it('referee emails are unique', () => {
+      const emails = REFEREE_CONFIGS.map((referee) => referee.email);
+      const unique = new Set(emails);
       expect(unique.size).toBe(REFEREE_CONFIGS.length);
     });
 
-    it('PINs do not overlap with coach PINs', () => {
-      const coachPins = new Set(COACH_CONFIGS.map((c) => c.pin));
-      REFEREE_CONFIGS.forEach((ref) => {
-        expect(coachPins.has(ref.pin)).toBe(false);
+    it('referee emails do not overlap with coach emails', () => {
+      const coachEmails = new Set(COACH_CONFIGS.map((coach) => coach.email));
+      REFEREE_CONFIGS.forEach((referee) => {
+        expect(coachEmails.has(referee.email)).toBe(false);
       });
     });
   });

@@ -3,8 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useQuery, useMutation } from 'convex/react';
 import { TeamsTab } from './TeamsTab';
 
-vi.mock('@/lib/adminSession', () => ({ getAdminPin: () => '9999' }));
-
 // Type the mocks
 const mockUseQuery = vi.mocked(useQuery);
 const mockUseMutation = vi.mocked(useMutation);
@@ -163,7 +161,6 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14-1',
           slug: 'jo14-1',
-          adminPin: '9999',
         });
       });
     });
@@ -180,7 +177,6 @@ describe('TeamsTab', () => {
           clubId: mockClubId,
           name: 'JO14 Team',
           slug: 'jo14-team', // Auto-generated from name
-          adminPin: '9999',
         });
       });
     });
@@ -195,7 +191,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Slug already exists')).toBeInTheDocument();
+        expect(screen.getByText('Fout: Slug already exists')).toBeInTheDocument();
       });
     });
 
@@ -207,7 +203,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team aangemaakt')).toBeInTheDocument();
+        expect(screen.getByText('Team aangemaakt')).toBeInTheDocument();
       });
     });
 
@@ -284,7 +280,6 @@ describe('TeamsTab', () => {
         expect(mockUpdateTeam).toHaveBeenCalledWith({
           teamId: 'team1',
           name: 'JO11-2',
-          adminPin: '9999',
         });
       });
     });
@@ -304,7 +299,7 @@ describe('TeamsTab', () => {
       fireEvent.click(saveButton!);
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team bijgewerkt')).toBeInTheDocument();
+        expect(screen.getByText('Team bijgewerkt')).toBeInTheDocument();
       });
     });
 
@@ -340,7 +335,7 @@ describe('TeamsTab', () => {
       const deleteButton = teamRows[0].querySelector('.text-red-500');
       fireEvent.click(deleteButton!);
 
-      expect(screen.getByText('Verwijderen? Alle spelers worden ook verwijderd!')).toBeInTheDocument();
+      expect(screen.getByText('Verwijderen? Alle spelers worden ook verwijderd.')).toBeInTheDocument();
     });
 
     it('shows "Ja" and "Nee" confirmation buttons', () => {
@@ -367,7 +362,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1', adminPin: '9999' });
+        expect(mockDeleteTeam).toHaveBeenCalledWith({ teamId: 'team1' });
       });
     });
 
@@ -381,7 +376,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(screen.getByText('✅ Team verwijderd')).toBeInTheDocument();
+        expect(screen.getByText('Team verwijderd')).toBeInTheDocument();
       });
     });
 
@@ -413,7 +408,7 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Ja'));
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Team has active matches')).toBeInTheDocument();
+        expect(screen.getByText('Fout: Team has active matches')).toBeInTheDocument();
       });
     });
   });
@@ -431,9 +426,11 @@ describe('TeamsTab', () => {
       fireEvent.click(screen.getByText('Toevoegen'));
 
       await waitFor(() => {
-        const statusMessage = screen.getByText('✅ Team aangemaakt');
+        const statusMessage = screen.getByText('Team aangemaakt');
         expect(statusMessage).toHaveClass('bg-gray-100');
       });
     });
   });
 });
+
+

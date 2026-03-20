@@ -24,11 +24,16 @@ interface CoachDashboardProps {
     teams: { id: string; name: string }[];
     matches: DashboardMatch[];
   };
-  pin: string;
   onLogout: () => void;
 }
 
-export function CoachDashboard({ data, pin, onLogout }: CoachDashboardProps) {
+function sortByMostRecentMatch(left: DashboardMatch, right: DashboardMatch) {
+  const leftTimestamp = left.scheduledAt ?? 0;
+  const rightTimestamp = right.scheduledAt ?? 0;
+  return rightTimestamp - leftTimestamp;
+}
+
+export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
   const matchesByTeam = data.teams.map((team) => ({
     team,
     matches: data.matches.filter((m) => m.teamId === team.id),
@@ -75,14 +80,14 @@ export function CoachDashboard({ data, pin, onLogout }: CoachDashboardProps) {
             </h2>
             <div className="space-y-3">
               {liveMatches.map((match) => (
-                <DashboardMatchCard key={match._id} match={match} pin={pin} />
+                <DashboardMatchCard key={match._id} match={match} />
               ))}
             </div>
           </section>
         )}
 
         {matchesByTeam.map(({ team, matches }) => (
-          <TeamSection key={team.id} team={team} matches={matches} pin={pin} />
+          <TeamSection key={team.id} team={team} matches={matches} />
         ))}
       </div>
     </main>
@@ -92,15 +97,15 @@ export function CoachDashboard({ data, pin, onLogout }: CoachDashboardProps) {
 function TeamSection({
   team,
   matches,
-  pin,
 }: {
   team: { id: string; name: string };
   matches: DashboardMatch[];
-  pin: string;
 }) {
   const [showAllFinished, setShowAllFinished] = useState(false);
   const scheduledMatches = matches.filter((m) => m.status === "scheduled");
-  const finishedMatches = matches.filter((m) => m.status === "finished");
+  const finishedMatches = matches
+    .filter((m) => m.status === "finished")
+    .sort(sortByMostRecentMatch);
   const visibleFinished = showAllFinished
     ? finishedMatches
     : finishedMatches.slice(0, 3);
@@ -119,11 +124,8 @@ function TeamSection({
 
       <div className="p-4 space-y-4">
         <Link
-          href={`/coach/new?pin=${pin}&teamId=${team.id}`}
-          className="flex items-center justify-center gap-2 w-full py-4 px-4 
-            bg-dia-green text-white font-semibold rounded-xl text-lg
-            min-h-[56px] active:scale-[0.98] transition-all
-            shadow-sm hover:shadow-md hover:bg-dia-green-light"
+          href={`/coach/new?teamId=${team.id}`}
+          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-white font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-light"
         >
           <Plus className="w-5 h-5" />
           Nieuwe wedstrijd
@@ -136,7 +138,7 @@ function TeamSection({
             </h3>
             <div className="space-y-2">
               {scheduledMatches.map((match) => (
-                <DashboardMatchCard key={match._id} match={match} pin={pin} compact />
+                <DashboardMatchCard key={match._id} match={match} compact />
               ))}
             </div>
           </div>
@@ -149,17 +151,14 @@ function TeamSection({
             </h3>
             <div className="space-y-2">
               {visibleFinished.map((match) => (
-                <DashboardMatchCard key={match._id} match={match} pin={pin} compact />
+                <DashboardMatchCard key={match._id} match={match} compact />
               ))}
               {hiddenCount > 0 && (
                 <button
                   onClick={() => setShowAllFinished(!showAllFinished)}
-                  className="w-full text-sm text-dia-green font-medium text-center py-2
-                             hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
+                  className="w-full text-sm text-dia-green font-medium text-center py-2 hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
                 >
-                  {showAllFinished
-                    ? "Minder tonen ▲"
-                    : `+${hiddenCount} meer tonen ▼`}
+                  {showAllFinished ? "Minder tonen ▲" : `+${hiddenCount} meer tonen ▼`}
                 </button>
               )}
             </div>
@@ -178,11 +177,9 @@ function TeamSection({
 
 function DashboardMatchCard({
   match,
-  pin,
   compact = false,
 }: {
   match: DashboardMatch;
-  pin: string;
   compact?: boolean;
 }) {
   const isActive =
@@ -208,7 +205,7 @@ function DashboardMatchCard({
 
   return (
     <Link
-      href={`/coach/match/${match._id}?pin=${pin}`}
+      href={`/coach/match/${match._id}`}
       className={`block rounded-xl border-2 transition-all active:scale-[0.98] touch-manipulation ${
         isActive
           ? "border-green-300 bg-green-50 shadow-md hover:shadow-lg"

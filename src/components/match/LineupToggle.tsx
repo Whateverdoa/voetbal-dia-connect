@@ -6,11 +6,10 @@ import { Id } from "@/convex/_generated/dataModel";
 
 interface LineupToggleProps {
   matchId: Id<"matches">;
-  pin: string;
   showLineup: boolean;
 }
 
-export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
+export function LineupToggle({ matchId, showLineup }: LineupToggleProps) {
   const toggleLineup = useMutation(api.matchActions.toggleShowLineup);
 
   return (
@@ -21,7 +20,7 @@ export function LineupToggle({ matchId, pin, showLineup }: LineupToggleProps) {
           <p className="text-sm text-gray-500">Voor publiek op live pagina</p>
         </div>
         <button
-          onClick={() => toggleLineup({ matchId, pin })}
+          onClick={() => toggleLineup({ matchId })}
           className={`relative w-14 h-8 rounded-full transition-colors min-w-[56px] ${
             showLineup ? "bg-dia-green" : "bg-gray-300"
           }`}

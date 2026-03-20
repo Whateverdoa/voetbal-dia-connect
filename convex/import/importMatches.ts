@@ -6,14 +6,14 @@
  */
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "../adminAuth";
 import { generatePublicCode } from "../seed/helpers";
+import { requireAdminOrOps } from "../lib/opsAuth";
 
 export const importMatchBatch = mutation({
   args: {
-    adminPin: v.string(),
+    opsSecret: v.optional(v.string()),
     teamSlug: v.string(),
-    coachPin: v.string(),
+    coachEmail: v.optional(v.string()),
     matches: v.array(
       v.object({
         opponent: v.string(),
@@ -27,7 +27,7 @@ export const importMatchBatch = mutation({
     dryRun: v.boolean(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminOrOps(ctx, args.opsSecret);
 
     const team = await ctx.db
       .query("teams")
@@ -42,43 +42,58 @@ export const importMatchBatch = mutation({
       };
     }
 
+    const coach = args.coachEmail
+      ? await ctx.db
+          .query("coaches")
+          .withIndex("by_email", (q) => q.eq("email", args.coachEmail!.trim().toLowerCase()))
+          .first()
+      : (await ctx.db.query("coaches").collect()).find((entry) => entry.teamIds.includes(team._id));
+
+    if (!coach || !coach.teamIds.includes(team._id)) {
+      return {
+        error: `Geen coach gevonden voor team '${args.teamSlug}'`,
+        created: 0,
+        skipped: 0,
+      };
+    }
+
     const existing = await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
 
     const existingKeys = new Set(
-      existing.map((m) => `${m.opponent}|${m.scheduledAt}`),
+      existing.map((match) => `${match.opponent}|${match.scheduledAt}`),
     );
 
     const details = [];
     let created = 0;
     let skipped = 0;
 
-    for (const m of args.matches) {
-      const scheduledAt = new Date(m.date).getTime();
-      const key = `${m.opponent}|${scheduledAt}`;
+    for (const match of args.matches) {
+      const scheduledAt = new Date(match.date).getTime();
+      const key = `${match.opponent}|${scheduledAt}`;
 
       if (existingKeys.has(key)) {
-        details.push({ opponent: m.opponent, date: m.date, status: "skipped" });
+        details.push({ opponent: match.opponent, date: match.date, status: "skipped" });
         skipped++;
         continue;
       }
 
       if (!args.dryRun) {
-        const isFinished = m.finished ?? false;
+        const isFinished = match.finished ?? false;
         await ctx.db.insert("matches", {
           teamId: team._id,
           publicCode: generatePublicCode(),
-          coachPin: args.coachPin,
-          opponent: m.opponent,
-          isHome: m.isHome,
+          coachId: coach._id,
+          opponent: match.opponent,
+          isHome: match.isHome,
           scheduledAt,
           status: isFinished ? "finished" : "scheduled",
           currentQuarter: isFinished ? 4 : 1,
           quarterCount: 4,
-          homeScore: m.homeScore ?? 0,
-          awayScore: m.awayScore ?? 0,
+          homeScore: match.homeScore ?? 0,
+          awayScore: match.awayScore ?? 0,
           showLineup: false,
           startedAt: isFinished ? scheduledAt : undefined,
           finishedAt: isFinished ? scheduledAt + 3600000 : undefined,
@@ -86,13 +101,14 @@ export const importMatchBatch = mutation({
         });
       }
 
-      details.push({ opponent: m.opponent, date: m.date, status: "created" });
+      details.push({ opponent: match.opponent, date: match.date, status: "created" });
       created++;
     }
 
     return {
       teamSlug: args.teamSlug,
       teamName: team.name,
+      coachEmail: coach.email,
       dryRun: args.dryRun,
       created,
       skipped,

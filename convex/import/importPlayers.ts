@@ -6,11 +6,11 @@
  */
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "../adminAuth";
+import { requireAdminOrOps } from "../lib/opsAuth";
 
 export const upsertTeamPlayers = mutation({
   args: {
-    adminPin: v.string(),
+    opsSecret: v.optional(v.string()),
     teamSlug: v.string(),
     players: v.array(
       v.object({
@@ -21,7 +21,7 @@ export const upsertTeamPlayers = mutation({
     dryRun: v.boolean(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminOrOps(ctx, args.opsSecret);
 
     const team = await ctx.db
       .query("teams")
@@ -42,23 +42,23 @@ export const upsertTeamPlayers = mutation({
       .collect();
 
     const existingNames = new Set(
-      existing.map((p) => p.name.toLowerCase().trim()),
+      existing.map((player) => player.name.toLowerCase().trim()),
     );
 
     const toCreate = args.players.filter(
-      (p) => !existingNames.has(p.name.toLowerCase().trim()),
+      (player) => !existingNames.has(player.name.toLowerCase().trim()),
     );
-    const toSkip = args.players.filter((p) =>
-      existingNames.has(p.name.toLowerCase().trim()),
+    const toSkip = args.players.filter((player) =>
+      existingNames.has(player.name.toLowerCase().trim()),
     );
 
     if (!args.dryRun) {
       const now = Date.now();
-      for (const p of toCreate) {
+      for (const player of toCreate) {
         await ctx.db.insert("players", {
           teamId: team._id,
-          name: p.name,
-          number: p.number,
+          name: player.name,
+          number: player.number,
           active: true,
           createdAt: now,
         });
@@ -71,8 +71,8 @@ export const upsertTeamPlayers = mutation({
       dryRun: args.dryRun,
       created: toCreate.length,
       skipped: toSkip.length,
-      skippedNames: toSkip.map((p) => p.name),
-      createdNames: toCreate.map((p) => p.name),
+      skippedNames: toSkip.map((player) => player.name),
+      createdNames: toCreate.map((player) => player.name),
     };
   },
 });

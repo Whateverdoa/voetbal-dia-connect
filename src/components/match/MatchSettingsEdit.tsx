@@ -4,21 +4,19 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { formatDateTimeInput } from "@/lib/dateUtils";
 import type { Match } from "./types";
 
 interface MatchSettingsEditProps {
   match: Match;
-  pin: string;
 }
 
-export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
+export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [opponent, setOpponent] = useState(match.opponent);
   const [isHome, setIsHome] = useState(match.isHome);
   const [scheduledAt, setScheduledAt] = useState(
-    match.scheduledAt
-      ? new Date(match.scheduledAt).toISOString().slice(0, 16)
-      : ""
+    formatDateTimeInput(match.scheduledAt)
   );
   const [addPlayerId, setAddPlayerId] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -30,7 +28,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
   const createAndAdd = useMutation(api.matchActions.createPlayerAndAddToMatch);
   const playersNotInMatch = useQuery(api.matches.listTeamPlayersNotInMatch, {
     matchId: match._id,
-    pin,
   });
 
   const toggleCls = (active: boolean) =>
@@ -43,7 +40,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await updateMetadata({
         matchId: match._id,
-        pin,
         opponent: opponent.trim() || undefined,
         isHome,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
@@ -59,7 +55,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await addExistingPlayer({
         matchId: match._id,
-        pin,
         playerId: addPlayerId as Id<"players">,
       });
       setAddPlayerId("");
@@ -74,7 +69,6 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
     try {
       await createAndAdd({
         matchId: match._id,
-        pin,
         name: newPlayerName.trim(),
         number: newPlayerNumber ? parseInt(newPlayerNumber, 10) : undefined,
       });
@@ -163,9 +157,9 @@ export function MatchSettingsEdit({ match, pin }: MatchSettingsEditProps) {
                   className="flex-1 px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="">Bestaande speler...</option>
-                  {playersNotInMatch.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.number ? `${p.number}. ` : ""}{p.name}
+                  {playersNotInMatch.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.number ? `${player.number}. ` : ""}{player.name}
                     </option>
                   ))}
                 </select>

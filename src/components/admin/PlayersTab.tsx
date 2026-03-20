@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { Check, Pencil, Plus, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Pencil, Trash2, Plus, X, Check, ToggleLeft, ToggleRight } from "lucide-react";
 import { getPositionLabel } from "@/lib/positions";
 import { PositionSelect } from "./PositionSelect";
 
@@ -14,11 +14,8 @@ interface Team {
   clubName: string;
 }
 
-import { getAdminPin } from "@/lib/adminSession";
-
 export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(null);
-  
   const players = useQuery(
     api.admin.listPlayersByTeam,
     selectedTeamId ? { teamId: selectedTeamId } : "skip"
@@ -34,80 +31,77 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [editingId, setEditingId] = useState<Id<"players"> | null>(null);
   const [editName, setEditName] = useState("");
   const [editNumber, setEditNumber] = useState("");
-  const [editPositionPrimary, setEditPositionPrimary] = useState<string>("");
-  const [editPositionSecondary, setEditPositionSecondary] = useState<string>("");
+  const [editPositionPrimary, setEditPositionPrimary] = useState("");
+  const [editPositionSecondary, setEditPositionSecondary] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"players"> | null>(null);
   const [status, setStatus] = useState("");
 
-  const handleCreate = async () => {
+  async function handleCreate() {
     if (!selectedTeamId || !newName.trim()) return;
     try {
       await createPlayer({
         teamId: selectedTeamId,
         name: newName.trim(),
-        number: newNumber ? parseInt(newNumber) : undefined,
+        number: newNumber ? Number.parseInt(newNumber, 10) : undefined,
         positionPrimary: newPositionPrimary || undefined,
         positionSecondary: newPositionSecondary || undefined,
-        adminPin: getAdminPin(),
       });
       setNewName("");
       setNewNumber("");
       setNewPositionPrimary("");
       setNewPositionSecondary("");
-      setStatus("✅ Speler toegevoegd");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Speler toegevoegd");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleUpdate = async (playerId: Id<"players">) => {
+  async function handleUpdate(playerId: Id<"players">) {
     try {
       await updatePlayer({
         playerId,
         name: editName.trim() || undefined,
-        number: editNumber ? parseInt(editNumber) : undefined,
+        number: editNumber ? Number.parseInt(editNumber, 10) : undefined,
         positionPrimary: editPositionPrimary || undefined,
         positionSecondary: editPositionSecondary || undefined,
-        adminPin: getAdminPin(),
       });
       setEditingId(null);
-      setStatus("✅ Speler bijgewerkt");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Speler bijgewerkt");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleToggleActive = async (playerId: Id<"players">, currentActive: boolean) => {
+  async function handleToggleActive(playerId: Id<"players">, currentActive: boolean) {
     try {
-      await updatePlayer({ playerId, active: !currentActive, adminPin: getAdminPin() });
-      setStatus(currentActive ? "⚪ Speler inactief" : "🟢 Speler actief");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      await updatePlayer({ playerId, active: !currentActive });
+      setStatus(currentActive ? "Speler inactief" : "Speler actief");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
-  const handleDelete = async (playerId: Id<"players">) => {
+  async function handleDelete(playerId: Id<"players">) {
     try {
-      await deletePlayer({ playerId, adminPin: getAdminPin() });
+      await deletePlayer({ playerId });
       setDeleteConfirm(null);
-      setStatus("✅ Speler verwijderd");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Onbekende fout";
-      setStatus(`❌ ${message}`);
+      setStatus("Speler verwijderd");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
     }
-  };
+  }
 
   return (
     <div className="space-y-4">
-      {/* Team selector */}
       <div>
         <label className="block text-sm font-medium mb-1">Team</label>
         <select
           value={selectedTeamId || ""}
-          onChange={(e) => setSelectedTeamId(e.target.value as Id<"teams"> || null)}
+          onChange={(event) => setSelectedTeamId((event.target.value as Id<"teams">) || null)}
           className="w-full px-3 py-2 border rounded-lg"
         >
           <option value="">Selecteer team...</option>
@@ -119,7 +113,6 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         </select>
       </div>
 
-      {/* Player list */}
       {selectedTeamId && (
         <div className="space-y-2">
           {players === undefined ? (
@@ -139,45 +132,33 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                     <input
                       type="number"
                       value={editNumber}
-                      onChange={(e) => setEditNumber(e.target.value)}
+                      onChange={(event) => setEditNumber(event.target.value)}
                       placeholder="#"
                       className="w-16 px-2 py-1 border rounded"
                     />
                     <input
                       type="text"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      onChange={(event) => setEditName(event.target.value)}
                       className="flex-1 min-w-0 px-2 py-1 border rounded"
                       autoFocus
                     />
                     <PositionSelect value={editPositionPrimary} onChange={setEditPositionPrimary} placeholder="—" title="Positie 1" className="w-32 px-2 py-1 border rounded text-sm" />
                     <PositionSelect value={editPositionSecondary} onChange={setEditPositionSecondary} placeholder="—" title="Positie 2" className="w-32 px-2 py-1 border rounded text-sm" />
-                    <button
-                      onClick={() => handleUpdate(player._id)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded"
-                    >
+                    <button type="button" onClick={() => handleUpdate(player._id)} className="p-2 text-green-600 hover:bg-green-50 rounded">
                       <Check size={18} />
                     </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded"
-                    >
+                    <button type="button" onClick={() => setEditingId(null)} className="p-2 text-gray-500 hover:bg-gray-100 rounded">
                       <X size={18} />
                     </button>
                   </>
                 ) : deleteConfirm === player._id ? (
                   <>
                     <span className="flex-1 text-red-600">Verwijderen?</span>
-                    <button
-                      onClick={() => handleDelete(player._id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm"
-                    >
+                    <button type="button" onClick={() => handleDelete(player._id)} className="px-3 py-1 bg-red-600 text-white rounded text-sm">
                       Ja
                     </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1 bg-gray-200 rounded text-sm"
-                    >
+                    <button type="button" onClick={() => setDeleteConfirm(null)} className="px-3 py-1 bg-gray-200 rounded text-sm">
                       Nee
                     </button>
                   </>
@@ -196,33 +177,31 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
                         : ""}
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleToggleActive(player._id, player.active)}
                       className={`p-2 rounded ${
                         player.active
                           ? "text-green-600 hover:bg-green-50"
                           : "text-gray-400 hover:bg-gray-100"
                       }`}
-                      title={player.active ? "Actief - klik om inactief te maken" : "Inactief - klik om actief te maken"}
                     >
                       {player.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingId(player._id);
                         setEditName(player.name);
                         setEditNumber(player.number?.toString() || "");
-                        setEditPositionPrimary(
-                          (player as { positionPrimary?: string }).positionPrimary ?? ""
-                        );
-                        setEditPositionSecondary(
-                          (player as { positionSecondary?: string }).positionSecondary ?? ""
-                        );
+                        setEditPositionPrimary((player as { positionPrimary?: string }).positionPrimary ?? "");
+                        setEditPositionSecondary((player as { positionSecondary?: string }).positionSecondary ?? "");
                       }}
                       className="p-2 text-gray-500 hover:bg-gray-100 rounded"
                     >
                       <Pencil size={18} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setDeleteConfirm(player._id)}
                       className="p-2 text-red-500 hover:bg-red-50 rounded"
                     >
@@ -236,7 +215,6 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         </div>
       )}
 
-      {/* Add new player */}
       {selectedTeamId && (
         <div className="border-t pt-4">
           <h3 className="font-medium mb-2 flex items-center gap-2">
@@ -246,20 +224,21 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
             <input
               type="number"
               value={newNumber}
-              onChange={(e) => setNewNumber(e.target.value)}
+              onChange={(event) => setNewNumber(event.target.value)}
               placeholder="#"
               className="w-20 px-3 py-2 border rounded-lg"
             />
             <input
               type="text"
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(event) => setNewName(event.target.value)}
               placeholder="Naam"
               className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
             <PositionSelect value={newPositionPrimary} onChange={setNewPositionPrimary} placeholder="Positie 1" title="Positie 1" className="px-3 py-2 border rounded-lg text-sm" />
             <PositionSelect value={newPositionSecondary} onChange={setNewPositionSecondary} placeholder="Positie 2" title="Positie 2" className="px-3 py-2 border rounded-lg text-sm" />
             <button
+              type="button"
               onClick={handleCreate}
               disabled={!newName.trim()}
               className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
@@ -270,9 +249,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
         </div>
       )}
 
-      {status && (
-        <p className="text-sm p-2 bg-gray-100 rounded">{status}</p>
-      )}
+      {status && <p className="text-sm p-2 bg-gray-100 rounded">{status}</p>}
     </div>
   );
 }

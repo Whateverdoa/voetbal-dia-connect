@@ -9,7 +9,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface GoalEnrichmentPanelProps {
   matchId: Id<"matches">;
-  pin: string;
   events: MatchEvent[];
   players: MatchPlayer[];
   teamName: string;
@@ -18,7 +17,6 @@ interface GoalEnrichmentPanelProps {
 
 export function GoalEnrichmentPanel({
   matchId,
-  pin,
   events,
   players,
   teamName,
@@ -61,7 +59,6 @@ export function GoalEnrichmentPanel({
     try {
       await enrichGoal({
         matchId,
-        pin,
         eventId: targetId,
         scorerId: scorerId || undefined,
         assistId: assistId || undefined,
@@ -115,9 +112,9 @@ export function GoalEnrichmentPanel({
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base"
         >
           <option value="">Scorer (optioneel)</option>
-          {players.map((p) => (
-            <option key={String(p.playerId)} value={String(p.playerId)}>
-              {p.name}
+          {players.map((player) => (
+            <option key={String(player.playerId)} value={String(player.playerId)}>
+              {player.name}
             </option>
           ))}
         </select>
@@ -127,9 +124,9 @@ export function GoalEnrichmentPanel({
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base"
         >
           <option value="">Assist (optioneel)</option>
-          {players.map((p) => (
-            <option key={String(p.playerId)} value={String(p.playerId)}>
-              {p.name}
+          {players.map((player) => (
+            <option key={String(player.playerId)} value={String(player.playerId)}>
+              {player.name}
             </option>
           ))}
         </select>

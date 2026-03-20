@@ -8,7 +8,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeScoreControlsProps {
   matchId: Id<"matches">;
-  pin: string;
   homeScore: number;
   awayScore: number;
   homeName: string;
@@ -26,7 +25,6 @@ type PendingTeam = "home" | "away" | null;
 
 export function RefereeScoreControls({
   matchId,
-  pin,
   homeScore,
   awayScore,
   homeName,
@@ -38,8 +36,6 @@ export function RefereeScoreControls({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // State for the optional shirt number prompt
   const [pendingTeam, setPendingTeam] = useState<PendingTeam>(null);
   const [shirtNumber, setShirtNumber] = useState("");
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(
@@ -48,18 +44,16 @@ export function RefereeScoreControls({
 
   const handleError = (err: unknown) => {
     const msg = err instanceof Error ? err.message : "Onbekende fout";
-    setError(msg.includes("Invalid match or PIN") ? "Ongeldige PIN" : `Fout: ${msg}`);
+    setError(`Fout: ${msg}`);
     setTimeout(() => setError(null), 5000);
   };
 
-  /** Decrement: immediate, no prompt */
   const handleDecrement = async (team: "home" | "away") => {
     setIsLoading(true);
     setError(null);
     try {
       await adjustScore({
         matchId,
-        pin,
         team,
         delta: -1,
         correlationId: createCorrelationId("adjust-score"),
@@ -71,14 +65,12 @@ export function RefereeScoreControls({
     }
   };
 
-  /** Increment: open the optional shirt number prompt */
   const handleIncrementStart = (team: "home" | "away") => {
     setPendingTeam(team);
     setShirtNumber("");
     setSelectedPlayerId(null);
   };
 
-  /** Confirm increment with optional shirt number */
   const handleIncrementConfirm = async (skip: boolean) => {
     if (!pendingTeam) return;
     setIsLoading(true);
@@ -99,7 +91,6 @@ export function RefereeScoreControls({
 
       await adjustScore({
         matchId,
-        pin,
         team: pendingTeam,
         delta: 1,
         scorerNumber,
@@ -134,7 +125,6 @@ export function RefereeScoreControls({
         </div>
       )}
 
-      {/* Score columns */}
       <div className="grid grid-cols-2 gap-3">
         <ScoreColumn
           teamName={homeName}
@@ -154,7 +144,6 @@ export function RefereeScoreControls({
         />
       </div>
 
-      {/* Shirt number prompt overlay */}
       {pendingTeam && (
         <>
           {pendingTeam === diaTeamSide ? (
@@ -268,7 +257,6 @@ function DiaScorerPrompt({
   );
 }
 
-/** Single team score column with +/- buttons */
 function ScoreColumn({
   teamName,
   score,
@@ -294,9 +282,7 @@ function ScoreColumn({
         <button
           onClick={() => onDecrement(team)}
           disabled={isLoading || score === 0}
-          className="flex-1 py-3 bg-gray-200 text-gray-700 text-xl font-bold rounded-lg
-                     min-h-[48px] active:scale-[0.96] transition-transform
-                     hover:bg-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 py-3 bg-gray-200 text-gray-700 text-xl font-bold rounded-lg min-h-[48px] active:scale-[0.96] transition-transform hover:bg-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label={`${teamName} score -1`}
         >
           −
@@ -304,9 +290,7 @@ function ScoreColumn({
         <button
           onClick={() => onIncrement(team)}
           disabled={isLoading}
-          className="flex-1 py-3 bg-dia-green text-white text-xl font-bold rounded-lg
-                     min-h-[48px] active:scale-[0.96] transition-transform
-                     hover:bg-dia-green-light disabled:opacity-50"
+          className="flex-1 py-3 bg-dia-green text-white text-xl font-bold rounded-lg min-h-[48px] active:scale-[0.96] transition-transform hover:bg-dia-green-light disabled:opacity-50"
           aria-label={`${teamName} score +1`}
         >
           +
@@ -316,7 +300,6 @@ function ScoreColumn({
   );
 }
 
-/** Inline prompt for optional shirt number entry */
 function ShirtNumberPrompt({
   teamName,
   shirtNumber,
@@ -351,9 +334,7 @@ function ShirtNumberPrompt({
         value={shirtNumber}
         onChange={(e) => onShirtNumberChange(e.target.value)}
         placeholder="bijv. 7"
-        className="w-full text-center text-2xl font-bold py-3 border-2 border-gray-300
-                   rounded-xl focus:border-dia-green focus:outline-none
-                   placeholder:text-gray-300 placeholder:font-normal placeholder:text-lg"
+        className="w-full text-center text-2xl font-bold py-3 border-2 border-gray-300 rounded-xl focus:border-dia-green focus:outline-none placeholder:text-gray-300 placeholder:font-normal placeholder:text-lg"
         autoFocus
         disabled={isLoading}
       />
@@ -361,24 +342,21 @@ function ShirtNumberPrompt({
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="flex-1 py-3 border border-gray-300 text-gray-500 text-sm font-medium
-                     rounded-lg hover:bg-gray-100 disabled:opacity-50"
+          className="flex-1 py-3 border border-gray-300 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 disabled:opacity-50"
         >
           Annuleer
         </button>
         <button
           onClick={onSkip}
           disabled={isLoading}
-          className="flex-1 py-3 bg-gray-200 text-gray-700 text-sm font-medium
-                     rounded-lg hover:bg-gray-300 disabled:opacity-50"
+          className="flex-1 py-3 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Sla over"}
         </button>
         <button
           onClick={onConfirm}
           disabled={isLoading || !shirtNumber}
-          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium
-                     rounded-lg hover:bg-dia-green-light disabled:opacity-50"
+          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium rounded-lg hover:bg-dia-green-light disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Opslaan"}
         </button>

@@ -11,7 +11,6 @@ function toMatchMs(gameSecond?: number): number | undefined {
 export const enrichGoal = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     eventId: v.id("matchEvents"),
     scorerId: v.optional(v.id("players")),
     assistId: v.optional(v.id("players")),
@@ -19,8 +18,8 @@ export const enrichGoal = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || !(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const accepted = await consumeCommandIdempotency(ctx, {

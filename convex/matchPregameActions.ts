@@ -12,7 +12,6 @@ import { verifyCoachTeamMembership } from "./pinHelpers";
 export const createPlayerAndAddToMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     name: v.string(),
     number: v.optional(v.number()),
     positionPrimary: v.optional(v.string()),
@@ -26,8 +25,8 @@ export const createPlayerAndAddToMatch = mutation({
     if (match.status !== "scheduled") {
       throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const trimmedName = args.name.trim();
@@ -64,7 +63,6 @@ export const createPlayerAndAddToMatch = mutation({
 export const addExistingPlayerToMatch = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerId: v.id("players"),
   },
   handler: async (ctx, args) => {
@@ -75,8 +73,8 @@ export const addExistingPlayerToMatch = mutation({
     if (match.status !== "scheduled") {
       throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const player = await ctx.db.get(args.playerId);
@@ -115,7 +113,6 @@ export const addExistingPlayerToMatch = mutation({
 export const updateMatchMetadata = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     opponent: v.optional(v.string()),
     scheduledAt: v.optional(v.number()),
     isHome: v.optional(v.boolean()),
@@ -128,8 +125,8 @@ export const updateMatchMetadata = mutation({
     if (match.status !== "scheduled") {
       throw new Error("Wedstrijdgegevens kunnen alleen worden gewijzigd vóór de aftrap");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const patch: { opponent?: string; scheduledAt?: number; isHome?: boolean } = {};
@@ -153,7 +150,6 @@ export const updateMatchMetadata = mutation({
 export const updateStatus = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     status: v.union(
       v.literal("scheduled"),
       v.literal("lineup"),
@@ -165,11 +161,11 @@ export const updateStatus = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    const coach = await verifyCoachTeamMembership(ctx, match, args.pin);
+    const coach = await verifyCoachTeamMembership(ctx, match);
     if (!coach) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     await ctx.db.patch(args.matchId, { status: args.status });

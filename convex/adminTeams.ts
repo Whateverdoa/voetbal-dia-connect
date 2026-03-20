@@ -3,7 +3,7 @@
  */
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { verifyAdminPin } from "./adminAuth";
+import { requireAdminAccess } from "./adminAuth";
 
 // ============ TEAMS ============
 
@@ -12,10 +12,9 @@ export const createTeam = mutation({
     clubId: v.id("clubs"), 
     name: v.string(), 
     slug: v.string(),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
     return await ctx.db.insert("teams", {
       clubId: args.clubId,
@@ -29,6 +28,7 @@ export const createTeam = mutation({
 export const listTeamsByClub = query({
   args: { clubId: v.id("clubs") },
   handler: async (ctx, args) => {
+    await requireAdminAccess(ctx);
     return await ctx.db
       .query("teams")
       .withIndex("by_club", (q) => q.eq("clubId", args.clubId))
@@ -45,6 +45,7 @@ export const getTeam = query({
 
 export const listAllTeams = query({
   handler: async (ctx) => {
+    await requireAdminAccess(ctx);
     const teams = await ctx.db.query("teams").collect();
     // Enrich with club name
     return await Promise.all(
@@ -64,12 +65,11 @@ export const updateTeam = mutation({
     teamId: v.id("teams"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
-    adminPin: v.string(),
   },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
-    const { teamId, adminPin: _, ...updates } = args;
+    const { teamId, ...updates } = args;
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
@@ -81,12 +81,9 @@ export const updateTeam = mutation({
 });
 
 export const deleteTeam = mutation({
-  args: { 
-    teamId: v.id("teams"),
-    adminPin: v.string(),
-  },
+  args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
-    verifyAdminPin(args.adminPin);
+    await requireAdminAccess(ctx);
     
     // Delete all players in team
     const players = await ctx.db

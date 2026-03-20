@@ -1,73 +1,70 @@
 /**
- * PIN verification helpers shared across clock and match mutations.
- *
- * Coach access is now based on **team membership**: any coach whose
- * `teamIds` includes the match's `teamId` is authorised.  The old
- * single-owner `match.coachPin === pin` check is replaced everywhere.
+ * Legacy helper names kept for backwards compatibility during the
+ * pinless cutover. All access checks are now identity-based via Clerk
+ * and `userAccess`.
  */
-import { Doc } from "./_generated/dataModel";
-import { GenericDatabaseReader } from "convex/server";
-import { DataModel } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import {
+  getCurrentUserAccess,
+  requireCoachForMatch,
+  requireRefereeForMatch,
+} from "./lib/userAccess";
 
-type DbReader = GenericDatabaseReader<DataModel>;
+type ReaderCtx = QueryCtx | MutationCtx;
 
-/**
- * Verify that the given PIN belongs to a coach who is assigned to
- * the same team as the match.
- *
- * Returns the coach document on success, or `null` on failure.
- */
 export async function verifyCoachTeamMembership(
-  ctx: { db: DbReader },
+  ctx: ReaderCtx,
   match: Doc<"matches">,
-  pin: string,
+  _pin?: string,
 ): Promise<Doc<"coaches"> | null> {
-  const coach = await ctx.db
-    .query("coaches")
-    .withIndex("by_pin", (q) => q.eq("pin", pin))
-    .first();
-  if (!coach) return null;
-  if (!coach.teamIds.includes(match.teamId)) return null;
-  return coach;
+  try {
+    return await requireCoachForMatch(ctx, match);
+  } catch {
+    return null;
+  }
 }
 
-/**
- * Verify that the given PIN is valid for clock/match-control actions.
- * Referee-first: when a referee is assigned, referee keeps full access.
- * When no referee is assigned, only the lead coach may control the clock.
- */
 export async function verifyClockPin(
-  ctx: { db: DbReader },
+  ctx: ReaderCtx,
   match: Doc<"matches">,
-  pin: string,
-  referee?: Doc<"referees"> | null,
+  _pin?: string,
+  _referee?: Doc<"referees"> | null,
 ): Promise<boolean> {
-  // Referee PIN: always allow when match has this referee assigned
-  if (referee && match.refereeId && referee._id === match.refereeId) {
-    if (referee.pin === pin) return true;
+  const access = await getCurrentUserAccess(ctx);
+  if (!access) return false;
+
+  if (access.roles.includes("referee")) {
+    try {
+      await requireRefereeForMatch(ctx, match);
+      return true;
+    } catch {
+      // Fall through to coach permissions.
+    }
   }
 
-  // Coach: require team membership
-  const coach = await verifyCoachTeamMembership(ctx, match, pin);
+  if (!access.roles.includes("coach")) {
+    return false;
+  }
+
+  const coach = await verifyCoachTeamMembership(ctx, match);
   if (!coach) return false;
 
-  // When referee is assigned: allow any team coach (backward compat)
-  if (match.refereeId) return true;
+  if (match.refereeId) {
+    return true;
+  }
 
-  // When no referee: only lead coach may control clock
   return match.leadCoachId === coach._id;
 }
 
-/**
- * Verify that the given PIN belongs to the match lead (wedstrijdleider).
- * Returns the coach doc if they are the lead, null otherwise.
- */
 export async function verifyIsMatchLead(
-  ctx: { db: DbReader },
+  ctx: ReaderCtx,
   match: Doc<"matches">,
-  pin: string,
+  _pin?: string,
 ): Promise<Doc<"coaches"> | null> {
-  const coach = await verifyCoachTeamMembership(ctx, match, pin);
-  if (!coach || match.leadCoachId !== coach._id) return null;
+  const coach = await verifyCoachTeamMembership(ctx, match);
+  if (!coach || match.leadCoachId !== coach._id) {
+    return null;
+  }
   return coach;
 }

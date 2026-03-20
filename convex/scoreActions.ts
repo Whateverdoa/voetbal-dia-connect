@@ -17,7 +17,7 @@ import {
 /**
  * Adjust the match score by +1 or -1 for a given team.
  *
- * - Both coach and referee PINs are accepted (verifyClockPin).
+ * - Both coach and referee roles are accepted (verifyClockPin).
  * - When delta is +1, a lightweight "goal" event is always logged.
  *   If scorerNumber is provided, it is stored in the note so coach can enrich later.
  * - Score is clamped to a minimum of 0.
@@ -25,7 +25,6 @@ import {
 export const adjustScore = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     team: v.union(v.literal("home"), v.literal("away")),
     delta: v.union(v.literal(1), v.literal(-1)),
     scorerNumber: v.optional(v.number()),
@@ -38,8 +37,8 @@ export const adjustScore = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
     const accepted = await consumeCommandIdempotency(ctx, {
       matchId: args.matchId,

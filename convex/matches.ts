@@ -17,6 +17,7 @@ export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
 export { listPublicMatches } from "./publicQueries";
 export {
   listActiveReferees,
+  getCoachTeamSetup,
   listByTeam,
   listTeamPlayersNotInMatch,
   verifyCoachPin,
@@ -111,17 +112,20 @@ export const getByPublicCode = query({
   },
 });
 
-// Get match for coach (with PIN auth)
+// Get match for coach (identity-based)
 export const getForCoach = query({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    // Verify coach belongs to the match's team
+    const identity = await ctx.auth.getUserIdentity();
+    const email = identity?.email?.trim().toLowerCase();
+    if (!email) return null;
+
     const coach = await ctx.db
       .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.pin))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     if (!coach || !coach.teamIds.includes(match.teamId)) return null;
 
@@ -196,12 +200,10 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
-    // Strip coachPin from response — coach already knows it, no need to send over wire
-    const { coachPin: _pin, ...safeMatch } = match;
+    const { coachPin: _legacyCoachPin, ...safeMatch } = match;
 
     const isCurrentCoachLead = match.leadCoachId === coach._id;
-    const canControlClock =
-      !!match.refereeId || isCurrentCoachLead;
+    const canControlClock = !!match.refereeId || isCurrentCoachLead;
 
     return {
       ...safeMatch,
@@ -218,4 +220,6 @@ export const getForCoach = query({
     };
   },
 });
+
+
 

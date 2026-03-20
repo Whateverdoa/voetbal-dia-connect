@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getAdminPin } from "@/lib/adminSession";
 import { formatMatchDate } from "@/types/publicMatch";
 
 export interface AdminMatch {
@@ -43,17 +42,17 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
   const [confirming, setConfirming] = useState(false);
   const deleteMatch = useMutation(api.admin.deleteMatch);
 
-  const handleDelete = async () => {
+  async function handleDelete() {
     try {
-      await deleteMatch({ matchId: match._id, adminPin: getAdminPin() });
+      await deleteMatch({ matchId: match._id });
       onStatusMessage("Wedstrijd verwijderd");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Onbekende fout";
-      onStatusMessage(`Fout: ${msg}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      onStatusMessage(`Fout: ${message}`);
     } finally {
       setConfirming(false);
     }
-  };
+  }
 
   if (confirming) {
     return (
@@ -62,16 +61,10 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
         <span className="flex-1 text-sm text-red-700">
           Wedstrijd verwijderen? Spelers en events worden ook verwijderd.
         </span>
-        <button
-          onClick={handleDelete}
-          className="px-3 py-1 bg-red-600 text-white rounded text-sm font-medium"
-        >
+        <button type="button" onClick={handleDelete} className="px-3 py-1 bg-red-600 text-white rounded text-sm font-medium">
           Ja
         </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm font-medium"
-        >
+        <button type="button" onClick={() => setConfirming(false)} className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm font-medium">
           Nee
         </button>
       </div>
@@ -85,65 +78,37 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
 
   return (
     <div className="p-3 bg-gray-50 rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1">
-      {/* Team names */}
       <span className="font-semibold text-sm">{teamLabel}</span>
-
-      {/* Status badge */}
       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
         {badge.label}
       </span>
 
-      {/* Referee indicator */}
       {match.refereeName ? (
-        <span className="text-xs text-green-700">
-          Scheidsrechter: {match.refereeName}
-        </span>
+        <span className="text-xs text-green-700">Scheidsrechter: {match.refereeName}</span>
       ) : (
         <span className="text-xs text-amber-600 flex items-center gap-1">
           <AlertTriangle size={12} /> Geen scheidsrechter
         </span>
       )}
 
-      {/* Coach name */}
-      {match.coachName && (
-        <span className="text-xs text-gray-400">Coach: {match.coachName}</span>
-      )}
+      {match.coachName && <span className="text-xs text-gray-400">Coach: {match.coachName}</span>}
 
-      {/* Public code */}
       <span className="text-xs font-mono bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
         {match.publicCode}
       </span>
 
-      {/* Date */}
-      {match.scheduledAt && (
-        <span className="text-xs text-gray-500">
-          {formatMatchDate(match.scheduledAt)}
-        </span>
-      )}
+      {match.scheduledAt && <span className="text-xs text-gray-500">{formatMatchDate(match.scheduledAt)}</span>}
 
-      {/* Score */}
       {showScore.has(match.status) && (
-        <span className="text-sm font-bold tabular-nums">
-          {match.homeScore} – {match.awayScore}
-        </span>
+        <span className="text-sm font-bold tabular-nums">{match.homeScore} – {match.awayScore}</span>
       )}
 
-      {/* Spacer */}
       <span className="flex-1" />
 
-      {/* Actions */}
-      <button
-        onClick={() => onEdit(match._id)}
-        className="p-2 text-gray-500 hover:bg-gray-200 rounded"
-        aria-label="Bewerken"
-      >
+      <button type="button" onClick={() => onEdit(match._id)} className="p-2 text-gray-500 hover:bg-gray-200 rounded" aria-label="Bewerken">
         <Pencil size={16} />
       </button>
-      <button
-        onClick={() => setConfirming(true)}
-        className="p-2 text-red-500 hover:bg-red-50 rounded"
-        aria-label="Verwijderen"
-      >
+      <button type="button" onClick={() => setConfirming(true)} className="p-2 text-red-500 hover:bg-red-50 rounded" aria-label="Verwijderen">
         <Trash2 size={16} />
       </button>
     </div>

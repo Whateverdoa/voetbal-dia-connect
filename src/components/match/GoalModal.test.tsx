@@ -11,8 +11,6 @@ describe('GoalModal', () => {
   const mockOnClose = vi.fn();
   const mockAddGoal = vi.fn();
   const defaultMatchId = 'match123' as any;
-  const defaultPin = '1234';
-
   const mockPlayersOnField: MatchPlayer[] = [
     { matchPlayerId: 'mp1' as any, playerId: 'p1' as any, name: 'Jan', number: 10, onField: true, isKeeper: false },
     { matchPlayerId: 'mp2' as any, playerId: 'p2' as any, name: 'Piet', number: 7, onField: true, isKeeper: false },
@@ -31,7 +29,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -43,7 +41,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -55,7 +53,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -67,7 +65,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -79,7 +77,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -92,7 +90,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -105,7 +103,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -120,7 +118,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -131,7 +129,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           isOpponentGoal: true,
           correlationId: expect.any(String),
         });
@@ -142,7 +139,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -162,7 +159,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -181,7 +178,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -196,7 +193,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -214,7 +211,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -231,7 +228,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -246,7 +243,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -264,7 +261,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -279,7 +276,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -295,7 +292,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -314,7 +311,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -330,7 +327,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -346,7 +343,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -374,7 +371,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -401,7 +398,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -414,7 +411,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerId: 'p1',
           assistPlayerId: undefined,
           isOpponentGoal: false,
@@ -427,7 +423,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -450,7 +446,6 @@ describe('GoalModal', () => {
       await waitFor(() => {
         expect(mockAddGoal).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerId: 'p1',
           assistPlayerId: 'p2',
           isOpponentGoal: false,
@@ -463,7 +458,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -484,7 +479,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -503,7 +498,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -522,7 +517,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -538,7 +533,7 @@ describe('GoalModal', () => {
       render(
         <GoalModal
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           onClose={mockOnClose}
         />
@@ -551,3 +546,4 @@ describe('GoalModal', () => {
     });
   });
 });
+

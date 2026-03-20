@@ -12,15 +12,8 @@ import {
 
 interface PlayingTimePanelProps {
   matchId: Id<"matches">;
-  pin: string;
 }
 
-/**
- * Get fairness status based on playing time relative to average
- * Green: within 3 min of average (fair)
- * Yellow: 3-6 min below average (needs more time)
- * Red: >6 min below average (barely played)
- */
 function getFairnessStatus(
   minutes: number,
   averageMinutes: number,
@@ -28,16 +21,14 @@ function getFairnessStatus(
 ): FairnessStatus {
   const difference = averageMinutes - minutes;
 
-  // If match just started, everyone is "good"
   if (maxMinutes < 2) return "good";
-
   if (difference <= 3) return "good";
   if (difference <= 6) return "warning";
   return "critical";
 }
 
-export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
-  const playingTimeData = useQuery(api.matches.getPlayingTime, { matchId, pin });
+export function PlayingTimePanel({ matchId }: PlayingTimePanelProps) {
+  const playingTimeData = useQuery(api.matches.getPlayingTime, { matchId });
 
   if (playingTimeData === undefined) {
     return (
@@ -58,32 +49,27 @@ export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
   }
 
   const { players } = playingTimeData;
-
-  // Calculate stats for fairness indicators
-  const totalMinutes = players.reduce((sum, p) => sum + p.minutesPlayed, 0);
+  const totalMinutes = players.reduce((sum, player) => sum + player.minutesPlayed, 0);
   const averageMinutes = players.length > 0 ? totalMinutes / players.length : 0;
   const maxMinutes = players.length > 0
-    ? Math.max(...players.map((p) => p.minutesPlayed))
+    ? Math.max(...players.map((player) => player.minutesPlayed))
     : 0;
   const minMinutes = players.length > 0
-    ? Math.min(...players.map((p) => p.minutesPlayed))
+    ? Math.min(...players.map((player) => player.minutesPlayed))
     : 0;
   const spread = maxMinutes - minMinutes;
 
-  // Separate on-field and bench players for display
-  const onFieldPlayers = players.filter((p) => p.onField);
-  const benchPlayers = players.filter((p) => !p.onField);
+  const onFieldPlayers = players.filter((player) => player.onField);
+  const benchPlayers = players.filter((player) => !player.onField);
 
   return (
     <div className="space-y-4">
-      {/* Summary stats */}
       <PlayingTimeSummary
         averageMinutes={averageMinutes}
         spread={spread}
         playerCount={players.length}
       />
 
-      {/* All players sorted by least played */}
       <PlayerListSection
         title="Alle spelers (minst gespeeld eerst)"
         icon="📊"
@@ -93,7 +79,6 @@ export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
         showRank
       />
 
-      {/* On-field players */}
       <PlayerListSection
         title={`Op het veld (${onFieldPlayers.length})`}
         icon={<span className="w-3 h-3 bg-green-500 rounded-full" />}
@@ -105,7 +90,6 @@ export function PlayingTimePanel({ matchId, pin }: PlayingTimePanelProps) {
         emptyMessage="Geen spelers op het veld"
       />
 
-      {/* Bench players */}
       <PlayerListSection
         title={`Bank (${benchPlayers.length})`}
         icon={<span className="w-3 h-3 bg-gray-400 rounded-full" />}

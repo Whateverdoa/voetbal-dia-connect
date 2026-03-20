@@ -30,7 +30,6 @@ function LoadingScreen() {
 
 function NewMatchContent() {
   const searchParams = useSearchParams();
-  const pin = searchParams.get("pin") || "";
   const teamId = searchParams.get("teamId") as Id<"teams"> | null;
 
   const [opponent, setOpponent] = useState("");
@@ -44,12 +43,14 @@ function NewMatchContent() {
     publicCode: string;
   } | null>(null);
 
-  const players = useQuery(
-    api.admin.listPlayersByTeam,
+  const teamSetup = useQuery(
+    api.matches.getCoachTeamSetup,
     teamId ? { teamId } : "skip"
   );
-  const team = useQuery(api.admin.getTeam, teamId ? { teamId } : "skip");
   const createMatch = useMutation(api.matchActions.create);
+
+  const players = teamSetup?.players;
+  const team = teamSetup?.team;
 
   const handleTogglePlayer = (playerId: string) => {
     const newSet = new Set(selectedPlayers);
@@ -73,7 +74,6 @@ function NewMatchContent() {
   };
 
   const handleCreate = async () => {
-    // Client-side validation
     const trimmedOpponent = opponent.trim();
     if (!teamId) {
       setError("Geen team geselecteerd");
@@ -95,7 +95,6 @@ function NewMatchContent() {
         teamId,
         opponent: trimmedOpponent,
         isHome,
-        coachPin: pin,
         quarterCount,
         playerIds: Array.from(selectedPlayers) as Id<"players">[],
       });
@@ -105,15 +104,9 @@ function NewMatchContent() {
         publicCode: result.publicCode,
       });
     } catch (err) {
-      console.error("Failed to create match:", err);
       const message = err instanceof Error ? err.message : "Onbekende fout";
-      // Translate common errors to Dutch
       if (message.includes("unieke wedstrijdcode")) {
         setError("Kon geen unieke wedstrijdcode genereren. Probeer het opnieuw.");
-      } else if (message.includes("Tegenstander")) {
-        setError(message);
-      } else if (message.includes("speler")) {
-        setError(message);
       } else {
         setError(`Fout bij aanmaken: ${message}`);
       }
@@ -127,7 +120,6 @@ function NewMatchContent() {
         publicCode={createdMatch.publicCode}
         matchId={createdMatch.matchId}
         opponent={opponent}
-        pin={pin}
       />
     );
   }
@@ -145,12 +137,29 @@ function NewMatchContent() {
     );
   }
 
+  if (teamSetup === undefined) {
+    return <LoadingScreen />;
+  }
+
+  if (teamSetup === null) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-sm border border-gray-200">
+          <p className="text-red-600 font-medium">Je hebt geen toegang tot dit team.</p>
+          <Link href="/coach" className="mt-4 inline-flex text-dia-green hover:underline">
+            ← Terug naar dashboard
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen pb-32">
       <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto">
           <Link
-            href={`/coach?pin=${pin}`}
+            href="/coach"
             className="text-sm opacity-75 hover:opacity-100 min-h-[44px] inline-flex items-center"
           >
             ← Terug
@@ -229,6 +238,7 @@ function MatchDetailsForm({
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setIsHome(true)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 isHome
@@ -239,6 +249,7 @@ function MatchDetailsForm({
               🏠 Thuis
             </button>
             <button
+              type="button"
               onClick={() => setIsHome(false)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 !isHome
@@ -257,6 +268,7 @@ function MatchDetailsForm({
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setQuarterCount(4)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 quarterCount === 4
@@ -267,6 +279,7 @@ function MatchDetailsForm({
               4 kwarten
             </button>
             <button
+              type="button"
               onClick={() => setQuarterCount(2)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 quarterCount === 2
@@ -301,7 +314,6 @@ function CreateMatchFooter({
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-pb">
       <div className="max-w-2xl mx-auto">
-        {/* Error message */}
         {error && (
           <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium text-center">
             {error}

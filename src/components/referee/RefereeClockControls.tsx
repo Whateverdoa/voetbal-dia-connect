@@ -9,7 +9,6 @@ import { createCorrelationId } from "@/lib/correlationId";
 
 interface RefereeClockControlsProps {
   matchId: Id<"matches">;
-  pin: string;
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
@@ -18,7 +17,6 @@ interface RefereeClockControlsProps {
 
 export function RefereeClockControls({
   matchId,
-  pin,
   status,
   currentQuarter,
   quarterCount,
@@ -39,14 +37,14 @@ export function RefereeClockControls({
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
 
-  const handleAction = async (action: () => Promise<unknown>, label: string) => {
+  const handleAction = async (action: () => Promise<unknown>) => {
     setIsLoading(true);
     setError(null);
     try {
       await action();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Onbekende fout";
-      setError(msg.includes("Invalid match or PIN") ? "Ongeldige PIN" : `Fout: ${msg}`);
+      setError(`Fout: ${msg}`);
       setTimeout(() => setError(null), 5000);
     } finally {
       setIsLoading(false);
@@ -67,42 +65,32 @@ export function RefereeClockControls({
         </div>
       )}
 
-      {/* Pre-match: Start */}
       {isScheduled && (
         <button
-          onClick={() => handleAction(() => startMatch({ matchId, pin }), "Start")}
+          onClick={() => handleAction(() => startMatch({ matchId }))}
           disabled={isLoading}
-          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
-                     min-h-[64px] active:scale-[0.98] transition-transform
-                     hover:bg-dia-green-light shadow-lg disabled:opacity-50"
+          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
       )}
 
-      {/* Live: Pause/Resume + End quarter */}
       {isLive && (
         <>
           {isPaused ? (
             <button
-              onClick={() => handleAction(() => resumeClockMut({ matchId, pin }), "Hervat")}
+              onClick={() => handleAction(() => resumeClockMut({ matchId }))}
               disabled={isLoading}
-              className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
-                         min-h-[64px] active:scale-[0.98] transition-transform
-                         hover:bg-dia-green-light shadow-lg disabled:opacity-50
-                         flex items-center justify-center gap-3"
+              className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
             >
               <span className="text-2xl">▶</span>
               {isLoading ? "Bezig..." : "Hervat klok"}
             </button>
           ) : (
             <button
-              onClick={() => handleAction(() => pauseClockMut({ matchId, pin }), "Pauzeer")}
+              onClick={() => handleAction(() => pauseClockMut({ matchId }))}
               disabled={isLoading}
-              className="w-full py-5 bg-orange-500 text-white text-xl font-bold rounded-xl
-                         min-h-[64px] active:scale-[0.98] transition-transform
-                         hover:bg-orange-600 shadow-lg disabled:opacity-50
-                         flex items-center justify-center gap-3"
+              className="w-full py-5 bg-orange-500 text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-orange-600 shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
             >
               <span className="text-2xl">⏸</span>
               {isLoading ? "Bezig..." : "Pauzeer klok"}
@@ -111,20 +99,15 @@ export function RefereeClockControls({
 
           <button
             onClick={() =>
-              handleAction(
-                () =>
-                  nextQuarter({
-                    matchId,
-                    pin,
-                    correlationId: createCorrelationId("next-quarter"),
-                  }),
-                "Einde kwart"
+              handleAction(() =>
+                nextQuarter({
+                  matchId,
+                  correlationId: createCorrelationId("next-quarter"),
+                })
               )
             }
             disabled={isLoading}
-            className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold
-                       rounded-xl min-h-[56px] active:scale-[0.98] transition-transform
-                       hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50"
+            className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50"
           >
             {isLoading
               ? "Bezig..."
@@ -135,22 +118,16 @@ export function RefereeClockControls({
         </>
       )}
 
-      {/* Halftime: Resume */}
       {isHalftime && (
         <button
-          onClick={() => handleAction(() => resumeHalftime({ matchId, pin }), "Hervatten")}
+          onClick={() => handleAction(() => resumeHalftime({ matchId }))}
           disabled={isLoading}
-          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl
-                     min-h-[64px] active:scale-[0.98] transition-transform
-                     hover:bg-dia-green-light shadow-lg disabled:opacity-50"
+          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
         >
-          {isLoading
-            ? "Bezig..."
-            : `Start ${quarterLabel} ${currentQuarter}`}
+          {isLoading ? "Bezig..." : `Start ${quarterLabel} ${currentQuarter}`}
         </button>
       )}
 
-      {/* Finished */}
       {isFinished && (
         <div className="text-center py-4">
           <p className="text-gray-500 font-medium">Wedstrijd is afgelopen</p>

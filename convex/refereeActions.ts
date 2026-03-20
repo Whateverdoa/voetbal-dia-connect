@@ -12,16 +12,15 @@ import { verifyCoachTeamMembership } from "./pinHelpers";
 export const assignReferee = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(), // Coach PIN for auth
     refereeId: v.optional(v.id("referees")),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     if (args.refereeId) {

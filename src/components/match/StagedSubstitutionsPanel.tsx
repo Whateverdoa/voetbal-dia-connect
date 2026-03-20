@@ -8,13 +8,11 @@ import type { StagedSubstitution } from "./types";
 
 interface StagedSubstitutionsPanelProps {
   matchId: Id<"matches">;
-  pin: string;
   stagedSubstitutions: StagedSubstitution[];
 }
 
 export function StagedSubstitutionsPanel({
   matchId,
-  pin,
   stagedSubstitutions,
 }: StagedSubstitutionsPanelProps) {
   const confirm = useMutation(api.matchActions.confirmSubstitution);
@@ -32,7 +30,6 @@ export function StagedSubstitutionsPanel({
     try {
       await confirm({
         matchId,
-        pin,
         stagedEventId,
         correlationId: `confirm-sub-${String(stagedEventId)}`,
       });
@@ -49,7 +46,6 @@ export function StagedSubstitutionsPanel({
     try {
       await cancel({
         matchId,
-        pin,
         stagedEventId,
         correlationId: `cancel-sub-${String(stagedEventId)}`,
       });
@@ -75,27 +71,27 @@ export function StagedSubstitutionsPanel({
         {stagedSubstitutions
           .slice()
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map((sub) => {
-            const isBusy = busyId === String(sub.stagedEventId);
+          .map((substitution) => {
+            const isBusy = busyId === String(substitution.stagedEventId);
             return (
               <div
-                key={String(sub.stagedEventId)}
+                key={String(substitution.stagedEventId)}
                 className="border border-gray-200 rounded-xl p-3"
               >
                 <p className="font-medium text-sm">
-                  {sub.outName ?? "Speler eruit"} → {sub.inName ?? "Speler erin"}
+                  {substitution.outName ?? "Speler eruit"} → {substitution.inName ?? "Speler erin"}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">Kwart {sub.quarter}</p>
+                <p className="text-xs text-gray-600 mt-1">Kwart {substitution.quarter}</p>
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() => onCancel(sub.stagedEventId)}
+                    onClick={() => onCancel(substitution.stagedEventId)}
                     disabled={isBusy}
                     className="flex-1 py-3 min-h-[48px] border border-gray-300 rounded-lg text-base font-medium disabled:opacity-50"
                   >
                     Annuleren
                   </button>
                   <button
-                    onClick={() => onConfirm(sub.stagedEventId)}
+                    onClick={() => onConfirm(substitution.stagedEventId)}
                     disabled={isBusy}
                     className="flex-1 py-3 min-h-[48px] bg-dia-green text-white rounded-lg text-base font-medium disabled:opacity-50"
                   >

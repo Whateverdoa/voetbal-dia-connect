@@ -12,15 +12,14 @@ function toMatchMs(gameSecond?: number): number | undefined {
 export const stageSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || !(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const accepted = await consumeCommandIdempotency(ctx, {
@@ -96,14 +95,13 @@ export const stageSubstitution = mutation({
 export const confirmSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     stagedEventId: v.id("matchEvents"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || !(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const accepted = await consumeCommandIdempotency(ctx, {
@@ -230,14 +228,13 @@ export const confirmSubstitution = mutation({
 export const cancelStagedSubstitution = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     stagedEventId: v.id("matchEvents"),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match || !(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const accepted = await consumeCommandIdempotency(ctx, {

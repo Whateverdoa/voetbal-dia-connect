@@ -7,6 +7,7 @@ import { recordPlayingTime } from "./playingTimeHelpers";
 import { verifyClockPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
+import { requireCoachForTeam } from "./lib/userAccess";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
@@ -19,22 +20,12 @@ export const create = mutation({
     teamId: v.id("teams"),
     opponent: v.string(),
     isHome: v.boolean(),
-    coachPin: v.string(),
     quarterCount: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     playerIds: v.array(v.id("players")),
   },
   handler: async (ctx, args) => {
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_pin", (q) => q.eq("pin", args.coachPin))
-      .first();
-    if (!coach) {
-      throw new Error("Ongeldige PIN");
-    }
-    if (!coach.teamIds.includes(args.teamId)) {
-      throw new Error("Coach is niet gekoppeld aan dit team");
-    }
+    const { coach } = await requireCoachForTeam(ctx, args.teamId);
 
     const trimmedOpponent = args.opponent.trim();
     if (!trimmedOpponent) {
@@ -66,7 +57,7 @@ export const create = mutation({
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode,
-      coachPin: args.coachPin,
+      coachId: coach._id,
       opponent: trimmedOpponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -95,13 +86,13 @@ export const create = mutation({
 
 // Start the match
 export const start = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();
@@ -156,15 +147,14 @@ export const start = mutation({
 export const nextQuarter = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     correlationId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();
@@ -227,13 +217,13 @@ export const nextQuarter = mutation({
 
 // Resume from halftime
 export const resumeFromHalftime = mutation({
-  args: { matchId: v.id("matches"), pin: v.string() },
+  args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
-    if (!(await verifyClockPin(ctx, match, args.pin, referee))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyClockPin(ctx, match, undefined, referee))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
 
     const now = Date.now();

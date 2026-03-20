@@ -14,17 +14,12 @@ interface MatchResult {
   result: string | null;
 }
 
-/**
- * Create seed matches for the given team.
- * Assigns referees from `refereeMap` based on refereeSlug in the schedule.
- */
 export async function seedMatchesForTeam(
   ctx: ActionCtx,
   teamId: Id<"teams">,
-  coachPin: string,
+  coachId: Id<"coaches">,
   refereeMap: Record<string, Id<"referees">>,
 ): Promise<MatchResult[]> {
-  // Get all players for this team
   const players = await ctx.runQuery(api.admin.listPlayersByTeam, { teamId });
   const results: MatchResult[] = [];
 
@@ -35,7 +30,7 @@ export async function seedMatchesForTeam(
     const matchId = await ctx.runMutation(internal.seed.createSeedMatch, {
       teamId,
       publicCode,
-      coachPin,
+      coachId,
       opponent: entry.opponent,
       isHome: entry.isHome,
       scheduledAt,
@@ -45,7 +40,6 @@ export async function seedMatchesForTeam(
       refereeId: entry.refereeSlug ? (refereeMap[entry.refereeSlug] ?? undefined) : undefined,
     });
 
-    // Add all players to match
     for (const player of players) {
       await ctx.runMutation(internal.seed.addPlayerToMatch, {
         matchId,

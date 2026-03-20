@@ -18,7 +18,6 @@ import {
 export const substituteFromField = mutation({
   args: {
     matchId: v.id("matches"),
-    pin: v.string(),
     correlationId: v.optional(v.string()),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
@@ -26,14 +25,14 @@ export const substituteFromField = mutation({
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
-      throw new Error("Invalid match or PIN");
+      throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match, args.pin))) {
-      throw new Error("Invalid match or PIN");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang tot deze wedstrijd");
     }
     if (
       (match.status === "live" || match.status === "halftime") &&
-      !(await verifyIsMatchLead(ctx, match, args.pin))
+      !(await verifyIsMatchLead(ctx, match))
     ) {
       throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }

@@ -1,5 +1,5 @@
 /**
- * Modular seed system — orchestrates all seed operations.
+ * Modular seed system - orchestrates all seed operations.
  *
  * Run with: npx convex run seed:init
  */
@@ -12,19 +12,13 @@ import {
   TEAM_CONFIGS,
   COACH_CONFIGS,
   REFEREE_CONFIGS,
-  SEED_ADMIN_PIN,
 } from "./seedData";
 import { seedPlayersForTeam } from "./seedPlayers";
 import { seedMatchesForTeam } from "./seedMatches";
+import { upsertUserAccess } from "../lib/userAccess";
 
-/**
- * Idempotent seed action for DIA Live development data.
- * Creates: 1 club, 3 teams (real rosters), 6 coaches,
- *          4 referees, 7 matches with referee assignments.
- */
 export const init = action({
   handler: async (ctx) => {
-    // Idempotency check
     const existingClub = await ctx.runQuery(api.admin.getClubBySlug, { slug: CLUB.slug });
     if (existingClub) {
       return {
@@ -33,24 +27,20 @@ export const init = action({
       };
     }
 
-    // ========= CLUB =========
-    const clubId = await ctx.runMutation(api.admin.createClub, {
+    const clubId = await ctx.runMutation(internal.seed.createSeedClub, {
       name: CLUB.name,
       slug: CLUB.slug,
-      adminPin: SEED_ADMIN_PIN,
     });
 
-    // ========= TEAMS + PLAYERS =========
     const teamMap: Record<string, Id<"teams">> = {};
     const teamSummary: Array<{ name: string; players: number }> = [];
     const usedNames = new Set<string>();
 
     for (const cfg of TEAM_CONFIGS) {
-      const teamId = await ctx.runMutation(api.admin.createTeam, {
+      const teamId = await ctx.runMutation(internal.seed.createSeedTeam, {
         clubId,
         name: cfg.name,
         slug: cfg.slug,
-        adminPin: SEED_ADMIN_PIN,
       });
       teamMap[cfg.slug] = teamId;
 
@@ -58,40 +48,41 @@ export const init = action({
       teamSummary.push({ name: cfg.name, players: count });
     }
 
-    // ========= COACHES =========
-    const coachSummary: Array<{ name: string; pin: string }> = [];
+    const coachMap: Record<string, Id<"coaches">> = {};
+    const coachSummary: Array<{ name: string; email: string }> = [];
     for (const cfg of COACH_CONFIGS) {
-      const teamIds = cfg.teamSlugs.map((s) => teamMap[s]).filter(Boolean);
-      await ctx.runMutation(api.admin.createCoach, {
+      const teamIds = cfg.teamSlugs.map((slug) => teamMap[slug]).filter(Boolean);
+      const id = await ctx.runMutation(internal.seed.createSeedCoach, {
         name: cfg.name,
-        pin: cfg.pin,
+        email: cfg.email,
         teamIds,
-        adminPin: SEED_ADMIN_PIN,
       });
-      coachSummary.push({ name: cfg.name, pin: cfg.pin });
+      coachMap[cfg.email] = id;
+      coachSummary.push({ name: cfg.name, email: cfg.email });
     }
 
-    // ========= REFEREES =========
     const refereeMap: Record<string, Id<"referees">> = {};
-    const refereeSummary: Array<{ name: string; pin: string }> = [];
+    const refereeSummary: Array<{ name: string; email: string }> = [];
     for (const cfg of REFEREE_CONFIGS) {
-      const id = await ctx.runMutation(api.admin.createReferee, {
+      const id = await ctx.runMutation(internal.seed.createSeedReferee, {
         name: cfg.name,
-        pin: cfg.pin,
-        adminPin: SEED_ADMIN_PIN,
+        email: cfg.email,
       });
-      // Create a slug from the name for referral in match schedule
       const slug = cfg.name.toLowerCase().replace(/[^a-z]/g, "-").replace(/-+/g, "-");
       refereeMap[slug] = id;
-      refereeSummary.push({ name: cfg.name, pin: cfg.pin });
+      refereeSummary.push({ name: cfg.name, email: cfg.email });
     }
 
-    // ========= MATCHES =========
     const jo12Id = teamMap["jo12-1"];
+    const jo12CoachId = coachMap["remco.hendriks@dia.local"];
+    if (!jo12Id || !jo12CoachId) {
+      throw new Error("JO12 seeddata mist team of hoofdcoach");
+    }
+
     const matchResults = await seedMatchesForTeam(
       ctx,
       jo12Id,
-      "1234", // Remco Hendriks' PIN
+      jo12CoachId,
       refereeMap,
     );
 
@@ -106,12 +97,120 @@ export const init = action({
   },
 });
 
-// Internal mutation for creating seed match (not PIN-protected since it's seed data)
+export const createSeedClub = internalMutation({
+  args: {
+    name: v.string(),
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("clubs", {
+      name: args.name,
+      slug: args.slug.toLowerCase(),
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const createSeedTeam = internalMutation({
+  args: {
+    clubId: v.id("clubs"),
+    name: v.string(),
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("teams", {
+      clubId: args.clubId,
+      name: args.name,
+      slug: args.slug.toLowerCase(),
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const createSeedPlayers = internalMutation({
+  args: {
+    teamId: v.id("teams"),
+    players: v.array(
+      v.object({
+        name: v.string(),
+        number: v.optional(v.number()),
+        positionPrimary: v.optional(v.string()),
+        positionSecondary: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const ids = [];
+    for (const player of args.players) {
+      const id = await ctx.db.insert("players", {
+        teamId: args.teamId,
+        name: player.name,
+        number: player.number,
+        positionPrimary: player.positionPrimary,
+        positionSecondary: player.positionSecondary,
+        active: true,
+        createdAt: Date.now(),
+      });
+      ids.push(id);
+    }
+    return ids;
+  },
+});
+
+export const createSeedCoach = internalMutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    teamIds: v.array(v.id("teams")),
+  },
+  handler: async (ctx, args) => {
+    const coachId = await ctx.db.insert("coaches", {
+      name: args.name,
+      email: args.email.trim().toLowerCase(),
+      teamIds: args.teamIds,
+      createdAt: Date.now(),
+    });
+
+    await upsertUserAccess(ctx, {
+      email: args.email,
+      roles: ["coach"],
+      coachId,
+      source: "admin_manual",
+    });
+
+    return coachId;
+  },
+});
+
+export const createSeedReferee = internalMutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const refereeId = await ctx.db.insert("referees", {
+      name: args.name,
+      email: args.email.trim().toLowerCase(),
+      active: true,
+      createdAt: Date.now(),
+    });
+
+    await upsertUserAccess(ctx, {
+      email: args.email,
+      roles: ["referee"],
+      refereeId,
+      source: "admin_manual",
+    });
+
+    return refereeId;
+  },
+});
+
 export const createSeedMatch = internalMutation({
   args: {
     teamId: v.id("teams"),
     publicCode: v.string(),
-    coachPin: v.string(),
+    coachId: v.id("coaches"),
     opponent: v.string(),
     isHome: v.boolean(),
     scheduledAt: v.number(),
@@ -125,7 +224,7 @@ export const createSeedMatch = internalMutation({
     return await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode: args.publicCode,
-      coachPin: args.coachPin,
+      coachId: args.coachId,
       opponent: args.opponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
@@ -159,7 +258,6 @@ export const addPlayerToMatch = internalMutation({
   },
 });
 
-/** Wipe all data from all tables. Dev-only — run before re-seeding. */
 export const clearAll = mutation({
   handler: async (ctx) => {
     const tableNames = [
@@ -171,6 +269,7 @@ export const clearAll = mutation({
       "referees",
       "teams",
       "clubs",
+      "userAccess",
     ] as const;
 
     let total = 0;
@@ -185,9 +284,6 @@ export const clearAll = mutation({
   },
 });
 
-/** Clear only match-related data: matchEvents, matchPlayers, matches.
- *  Leaves clubs, teams, coaches, players, referees intact.
- *  Safe for production — use before re-importing match schedules. */
 export const clearMatchesOnly = mutation({
   handler: async (ctx) => {
     const tableNames = ["matchEvents", "matchPlayers", "matches"] as const;

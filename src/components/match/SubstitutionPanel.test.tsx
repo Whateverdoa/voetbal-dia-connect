@@ -11,8 +11,6 @@ describe('SubstitutionPanel', () => {
   const mockOnClose = vi.fn();
   const mockSubstitute = vi.fn();
   const defaultMatchId = 'match123' as any;
-  const defaultPin = '1234';
-
   const mockPlayersOnField: MatchPlayer[] = [
     { matchPlayerId: 'mp1' as any, playerId: 'p1' as any, name: 'Jan', number: 10, onField: true, isKeeper: false },
     { matchPlayerId: 'mp2' as any, playerId: 'p2' as any, name: 'Piet', number: 7, onField: true, isKeeper: false },
@@ -37,7 +35,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -50,7 +48,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -63,7 +61,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -77,7 +75,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -92,7 +90,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -105,7 +103,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -121,7 +119,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -137,7 +135,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -150,7 +148,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -170,7 +168,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -187,7 +185,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -200,7 +198,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -215,7 +213,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -230,7 +228,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -251,7 +249,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={[]}
           onClose={mockOnClose}
@@ -266,7 +264,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -281,7 +279,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -298,7 +296,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -318,7 +316,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -336,7 +334,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -350,7 +348,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -366,7 +364,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -382,7 +380,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -401,7 +399,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -415,7 +413,6 @@ describe('SubstitutionPanel', () => {
       await waitFor(() => {
         expect(mockSubstitute).toHaveBeenCalledWith({
           matchId: defaultMatchId,
-          pin: defaultPin,
           playerOutId: 'p1',
           playerInId: 'p5',
           correlationId: expect.any(String),
@@ -427,7 +424,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -448,7 +445,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -470,7 +467,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -496,7 +493,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -516,7 +513,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -536,7 +533,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -563,7 +560,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -593,7 +590,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -611,7 +608,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -628,7 +625,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -642,7 +639,7 @@ describe('SubstitutionPanel', () => {
       render(
         <SubstitutionPanel
           matchId={defaultMatchId}
-          pin={defaultPin}
+         
           playersOnField={mockPlayersOnField}
           playersOnBench={mockPlayersOnBench}
           onClose={mockOnClose}
@@ -654,3 +651,4 @@ describe('SubstitutionPanel', () => {
     });
   });
 });
+

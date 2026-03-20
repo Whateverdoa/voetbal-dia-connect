@@ -21,9 +21,7 @@ beforeAll(() => {
 });
 
 describe("PitchView", () => {
-  const matchId = "match123" as any;
-  const pin = "1234";
-  const formationId = "8v8_1-3-3-1";
+  const matchId = "match123" as any;  const formationId = "8v8_1-3-3-1";
 
   const playerOnField1: MatchPlayer = {
     matchPlayerId: "mp1" as any,
@@ -90,7 +88,7 @@ describe("PitchView", () => {
     return render(
       <PitchView
         matchId={matchId}
-        pin={pin}
+       
         players={players}
         formationId={formationId}
         status={status}
@@ -113,7 +111,6 @@ describe("PitchView", () => {
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
-        pin,
         playerOutId: "p1",
         playerInId: "p3",
         correlationId: expect.any(String),
@@ -130,7 +127,6 @@ describe("PitchView", () => {
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
-        pin,
         playerOutId: "p1",
         playerInId: "p3",
         correlationId: expect.any(String),
@@ -149,7 +145,6 @@ describe("PitchView", () => {
 
       expect(mockSwap).toHaveBeenCalledWith({
         matchId,
-        pin,
         playerAId: "p1",
         playerBId: "p2",
       });
@@ -166,16 +161,15 @@ describe("PitchView", () => {
 
       expect(mockAssign).toHaveBeenCalledWith({
         matchId,
-        pin,
         playerId: "p3",
         fieldSlotIndex: 1,
       });
       expect(mockToggle).toHaveBeenCalledWith({
         matchId,
-        pin,
         playerId: "p1",
       });
       expect(mockSubstituteFromField).not.toHaveBeenCalled();
     });
   });
 });
+

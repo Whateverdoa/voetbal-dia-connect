@@ -13,6 +13,12 @@
   --dia-green: #1B5E20;
 }
 
+html,
+body {
+  min-height: 100dvh;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   @apply bg-gray-50 min-h-screen;
 }
@@ -27,7 +33,7 @@ body {
   animation: pulse-score 0.3s ease-in-out;
 }
 
-/* Shake animation for invalid PIN */
+/* Shake animation for invalid input */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }

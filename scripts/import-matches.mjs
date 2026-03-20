@@ -19,7 +19,7 @@ const coachEmailIndex = args.indexOf("--coach-email");
 const opsSecret = opsSecretIndex !== -1 ? args[opsSecretIndex + 1] : process.env.CONVEX_OPS_SECRET;
 const coachEmail = coachEmailIndex !== -1 ? args[coachEmailIndex + 1] : undefined;
 
-if (!csvPath) {
+if (!csvPath || !coachId) {
   console.error(
     "Usage: node scripts/import-matches.mjs <csv-path> [--dry-run] [--ops-secret <secret>] [--coach-email <email>]",
   );

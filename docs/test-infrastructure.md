@@ -257,10 +257,10 @@ npm install -D convex-test
 
 Once infrastructure is set up, create these tests in order:
 
-1. **`src/app/coach/page.test.tsx`** - Coach PIN login
-   - Valid PIN shows dashboard
-   - Invalid PIN shows "Ongeldige PIN code"
-   - Short PIN disables button
+1. **`src/app/coach/page.test.tsx`** - Coach account login
+   - Gekoppeld coachaccount toont dashboard
+   - Niet-gekoppeld account toont geen-toegang flow
+   - Loading state werkt correct
 
 2. **`src/app/live/[code]/page.test.tsx`** - Public match view
    - Valid code shows match
@@ -272,7 +272,7 @@ Once infrastructure is set up, create these tests in order:
    - Idempotency works
 
 4. **`convex/matches.test.ts`** - Query functions
-   - `verifyCoachPin` returns null for invalid PIN
+   - `verifyCoachAccess` returns null for accounts zonder coachkoppeling
    - `getByPublicCode` returns match data
 
 ---

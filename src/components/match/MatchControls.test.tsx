@@ -116,6 +116,45 @@ describe('MatchControls', () => {
       expect(screen.getByText('Wissel')).toBeInTheDocument();
     });
 
+    it('hides GOAL button when scoring capability is disabled', () => {
+      render(
+        <MatchControls
+          {...defaultProps}
+          status="live"
+          canAddGoals={false}
+          canDoSubstitutions
+        />
+      );
+      expect(screen.queryByText('GOAL!')).not.toBeInTheDocument();
+      expect(screen.getByText('Wissel')).toBeInTheDocument();
+    });
+
+    it('hides Wissel button when substitution capability is disabled', () => {
+      render(
+        <MatchControls
+          {...defaultProps}
+          status="live"
+          canAddGoals
+          canDoSubstitutions={false}
+        />
+      );
+      expect(screen.getByText('GOAL!')).toBeInTheDocument();
+      expect(screen.queryByText('Wissel')).not.toBeInTheDocument();
+    });
+
+    it('hides primary action row when both capabilities are disabled', () => {
+      render(
+        <MatchControls
+          {...defaultProps}
+          status="live"
+          canAddGoals={false}
+          canDoSubstitutions={false}
+        />
+      );
+      expect(screen.queryByText('GOAL!')).not.toBeInTheDocument();
+      expect(screen.queryByText('Wissel')).not.toBeInTheDocument();
+    });
+
     it('calls onGoalClick when GOAL button is clicked', () => {
       render(<MatchControls {...defaultProps} status="live" />);
       fireEvent.click(screen.getByText('GOAL!'));

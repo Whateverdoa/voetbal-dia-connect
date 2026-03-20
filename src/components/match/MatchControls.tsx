@@ -15,6 +15,7 @@ interface MatchControlsProps {
   homeScore: number;
   awayScore: number;
   pausedAt?: number;
+  canAddGoals?: boolean;
   canControlClock?: boolean;
   canDoSubstitutions?: boolean;
   onGoalClick: () => void;
@@ -29,6 +30,7 @@ export function MatchControls({
   homeScore,
   awayScore,
   pausedAt,
+  canAddGoals = true,
   canControlClock = true,
   canDoSubstitutions = true,
   onGoalClick,
@@ -111,26 +113,30 @@ export function MatchControls({
 
       {isLive && (
         <div className="space-y-3">
-          <div className={`grid gap-3 ${canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"}`}>
-            <button
-              onClick={onGoalClick}
-              disabled={isLoading}
-              className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="text-2xl">⚽</span>
-              <span>GOAL!</span>
-            </button>
-            {canDoSubstitutions && (
-              <button
-                onClick={onSubClick}
-                disabled={isLoading}
-                className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="text-2xl">🔄</span>
-                <span>Wissel</span>
-              </button>
-            )}
-          </div>
+          {(canAddGoals || canDoSubstitutions) && (
+            <div className={`grid gap-3 ${canAddGoals && canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"}`}>
+              {canAddGoals && (
+                <button
+                  onClick={onGoalClick}
+                  disabled={isLoading}
+                  className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="text-2xl">⚽</span>
+                  <span>GOAL!</span>
+                </button>
+              )}
+              {canDoSubstitutions && (
+                <button
+                  onClick={onSubClick}
+                  disabled={isLoading}
+                  className="py-5 bg-blue-600 text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="text-2xl">🔄</span>
+                  <span>Wissel</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {canControlClock && (isPaused ? (
             <button

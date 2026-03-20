@@ -19,6 +19,10 @@ function getQuarterDurationSeconds(quarterCount: number): number {
   return Math.max(1, Math.floor((REGULATION_MINUTES * 60) / quarterCount));
 }
 
+export function getQuarterDurationMs(quarterCount: number): number {
+  return getQuarterDurationSeconds(quarterCount) * 1000;
+}
+
 /**
  * If the clock is paused, events should use the pause moment as effective time.
  */
@@ -27,6 +31,27 @@ export function getEffectiveEventTime(
   now: number
 ): number {
   return match.pausedAt ?? now;
+}
+
+/**
+ * Safety fallback for coach error:
+ * if a quarter is ended while paused, treat the quarter as fully played.
+ */
+export function getQuarterEndTimeWithPausedFallback(
+  match: MatchClockSnapshot,
+  now: number
+): number {
+  const effectiveTime = getEffectiveEventTime(match, now);
+  if (match.pausedAt == null || !match.quarterStartedAt) {
+    return effectiveTime;
+  }
+
+  const expectedQuarterEndAt =
+    match.quarterStartedAt +
+    (match.accumulatedPauseTime ?? 0) +
+    getQuarterDurationMs(match.quarterCount);
+
+  return Math.max(effectiveTime, expectedQuarterEndAt);
 }
 
 function getElapsedQuarterSeconds(

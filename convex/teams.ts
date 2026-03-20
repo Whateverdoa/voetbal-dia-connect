@@ -1,5 +1,5 @@
 import { query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 // Get team by slug (public query)
@@ -50,11 +50,22 @@ export const getMatchHistory = query({
           )
           .collect();
 
+        const matchPlayers = await ctx.db
+          .query("matchPlayers")
+          .withIndex("by_match", (q) => q.eq("matchId", match._id))
+          .collect();
+
         // Get player names for goal scorers (only our team's goals)
         const ourGoals = events.filter(
           (e) => !e.isOpponentGoal && !e.isOwnGoal
         );
-        const playerIds = [...new Set(ourGoals.map((e) => e.playerId).filter(Boolean))];
+        const playerIds = [
+          ...new Set(
+            events
+              .flatMap((event) => [event.playerId, event.relatedPlayerId])
+              .filter(Boolean)
+          ),
+        ];
 
         const players = await Promise.all(
           playerIds.map((id) => ctx.db.get(id as Id<"players">))
@@ -79,6 +90,44 @@ export const getMatchHistory = query({
           s.count > 1 ? `${s.name} (${s.count}x)` : s.name
         );
 
+        const matchPlayerIds = [
+          ...new Set(matchPlayers.map((matchPlayer) => matchPlayer.playerId)),
+        ];
+        const matchPlayerDocs = await Promise.all(
+          matchPlayerIds.map((playerId) => ctx.db.get(playerId))
+        );
+        const matchPlayerMap = Object.fromEntries(
+          matchPlayerDocs
+            .filter((player): player is Doc<"players"> => player !== null)
+            .map((player) => [player._id, player.name])
+        );
+
+        const playingTime = matchPlayers
+          .map((matchPlayer) => ({
+            matchPlayerId: matchPlayer._id,
+            playerId: matchPlayer.playerId,
+            playerName: matchPlayerMap[matchPlayer.playerId] ?? "Onbekend",
+            minutesPlayed: Math.round((matchPlayer.minutesPlayed ?? 0) * 10) / 10,
+          }))
+          .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
+
+        const goalEvents = events
+          .map((event) => ({
+            eventId: event._id,
+            playerId: event.playerId ?? null,
+            relatedPlayerId: event.relatedPlayerId ?? null,
+            playerName: event.playerId ? playerMap[event.playerId] ?? null : null,
+            relatedPlayerName: event.relatedPlayerId
+              ? playerMap[event.relatedPlayerId] ?? null
+              : null,
+            quarter: event.quarter,
+            displayMinute: event.displayMinute ?? null,
+            isOpponentGoal: event.isOpponentGoal ?? false,
+            isOwnGoal: event.isOwnGoal ?? false,
+            timestamp: event.timestamp,
+          }))
+          .sort((a, b) => a.timestamp - b.timestamp);
+
         return {
           id: match._id,
           opponent: match.opponent,
@@ -88,6 +137,8 @@ export const getMatchHistory = query({
           scheduledAt: match.scheduledAt,
           finishedAt: match.finishedAt,
           scorers,
+          playingTime,
+          goalEvents,
         };
       })
     );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   LiveConnectionIndicator,
   GoalCelebration,
@@ -16,6 +17,7 @@ import { LineupSection } from "./LineupSection";
 import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
 import type { MatchData, MatchEvent, LineupPlayer } from "./types";
+import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
 
 interface LiveMatchProps {
   match: MatchData;
@@ -24,6 +26,11 @@ interface LiveMatchProps {
 }
 
 export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
+  const { user } = useUser();
+  const roles = parseRolesFromMetadata(user?.publicMetadata);
+  const canCoach = hasRole(roles, "coach");
+  const canReferee = hasRole(roles, "referee");
+  const canAdmin = hasRole(roles, "admin");
   const isLive = match.status === "live";
   const isPaused = isLive && match.pausedAt != null;
   const isHalftime = match.status === "halftime";
@@ -222,6 +229,31 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
               </>
             )}
           </div>
+          {(canCoach || canReferee || canAdmin) && (
+            <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
+              {canCoach && (
+                <Link
+                  href={`/coach/match/${match.id}`}
+                  className="text-dia-green hover:underline"
+                >
+                  Naar coachweergave
+                </Link>
+              )}
+              {canReferee && (
+                <Link
+                  href={`/scheidsrechter/match/${match.id}?code=${encodeURIComponent(code)}`}
+                  className="text-dia-green hover:underline"
+                >
+                  Naar scheidsrechterweergave
+                </Link>
+              )}
+              {canAdmin && (
+                <Link href="/admin" className="text-dia-green hover:underline">
+                  Naar admin
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>

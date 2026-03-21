@@ -12,6 +12,7 @@ export const createTeam = mutation({
     clubId: v.id("clubs"), 
     name: v.string(), 
     slug: v.string(),
+    logoUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
@@ -20,6 +21,7 @@ export const createTeam = mutation({
       clubId: args.clubId,
       name: args.name,
       slug: args.slug.toLowerCase(),
+      logoUrl: args.logoUrl,
       createdAt: Date.now(),
     });
   },
@@ -65,6 +67,7 @@ export const updateTeam = mutation({
     teamId: v.id("teams"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);

@@ -35,6 +35,9 @@ export const listPublicMatches = query({
           scheduledAt: m.scheduledAt,
           teamName: team?.name ?? "Team",
           clubName: club?.name ?? "Club",
+          teamLogoUrl: team?.logoUrl ?? null,
+          clubLogoUrl: club?.logoUrl ?? null,
+          opponentLogoUrl: m.opponentLogoUrl ?? null,
         };
       }),
     );

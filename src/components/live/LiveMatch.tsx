@@ -18,6 +18,8 @@ import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
 import type { MatchData, MatchEvent, LineupPlayer } from "./types";
 import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
+import { TeamLogo } from "@/components/TeamLogo";
+import { resolveLogoUrl } from "@/lib/logos";
 
 interface LiveMatchProps {
   match: MatchData;
@@ -149,7 +151,15 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
 
           {/* Teams and score */}
           <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
+            <div className="text-center flex-1 flex flex-col items-center gap-1">
+              <TeamLogo
+                logoUrl={match.isHome
+                  ? resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl)
+                  : (match.opponentLogoUrl ?? null)}
+                teamName={match.isHome ? match.teamName : match.opponent}
+                size="lg"
+                className="ring-2 ring-white/30"
+              />
               <p className="text-lg font-bold">
                 {match.isHome ? match.teamName : match.opponent}
               </p>
@@ -165,7 +175,15 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
               />
             </div>
 
-            <div className="text-center flex-1">
+            <div className="text-center flex-1 flex flex-col items-center gap-1">
+              <TeamLogo
+                logoUrl={match.isHome
+                  ? (match.opponentLogoUrl ?? null)
+                  : resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl)}
+                teamName={match.isHome ? match.opponent : match.teamName}
+                size="lg"
+                className="ring-2 ring-white/30"
+              />
               <p className="text-lg font-bold">
                 {match.isHome ? match.opponent : match.teamName}
               </p>

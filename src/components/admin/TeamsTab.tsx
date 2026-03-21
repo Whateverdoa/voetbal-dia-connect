@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, ImageIcon, Pencil, Plus, Trash2, X } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { TeamLogo } from "@/components/TeamLogo";
 
 export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   const teams = useQuery(api.admin.listTeamsByClub, clubId ? { clubId } : "skip");
@@ -16,6 +17,8 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   const [newSlug, setNewSlug] = useState("");
   const [editingId, setEditingId] = useState<Id<"teams"> | null>(null);
   const [editName, setEditName] = useState("");
+  const [logoEditId, setLogoEditId] = useState<Id<"teams"> | null>(null);
+  const [editLogoUrl, setEditLogoUrl] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"teams"> | null>(null);
   const [status, setStatus] = useState("");
 
@@ -47,6 +50,18 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
       await updateTeam({ teamId, name: editName.trim() });
       setEditingId(null);
       setStatus("Team bijgewerkt");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Onbekende fout";
+      setStatus(`Fout: ${message}`);
+    }
+  }
+
+  async function handleLogoSave(teamId: Id<"teams">) {
+    try {
+      const url = editLogoUrl.trim() || undefined;
+      await updateTeam({ teamId, logoUrl: url });
+      setLogoEditId(null);
+      setStatus("Logo bijgewerkt");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Onbekende fout";
       setStatus(`Fout: ${message}`);
@@ -118,10 +133,48 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
                     Nee
                   </button>
                 </>
+              ) : logoEditId === team._id ? (
+                <>
+                  <TeamLogo logoUrl={editLogoUrl || null} teamName={team.name} size="sm" />
+                  <input
+                    type="url"
+                    value={editLogoUrl}
+                    onChange={(event) => setEditLogoUrl(event.target.value)}
+                    placeholder="Logo URL (https://...)"
+                    className="flex-1 px-2 py-1 border rounded text-sm"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleLogoSave(team._id)}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded"
+                  >
+                    <Check size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoEditId(null)}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded"
+                  >
+                    <X size={18} />
+                  </button>
+                </>
               ) : (
                 <>
+                  <TeamLogo logoUrl={team.logoUrl} teamName={team.name} size="sm" />
                   <span className="flex-1 font-medium">{team.name}</span>
                   <span className="text-sm text-gray-500 font-mono">{team.slug}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLogoEditId(team._id);
+                      setEditLogoUrl(team.logoUrl ?? "");
+                    }}
+                    className="p-2 text-gray-400 hover:bg-gray-100 rounded"
+                    title="Logo bewerken"
+                  >
+                    <ImageIcon size={18} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

@@ -6,6 +6,7 @@ export default defineSchema({
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"
+    logoUrl: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_slug", ["slug"]),
 
@@ -14,6 +15,7 @@ export default defineSchema({
     clubId: v.id("clubs"),
     name: v.string(), // "JO12-1"
     slug: v.string(), // "jo12-1"
+    logoUrl: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_club", ["clubId"])
@@ -86,6 +88,7 @@ export default defineSchema({
     
     // Match info
     opponent: v.string(),
+    opponentLogoUrl: v.optional(v.string()),
     isHome: v.boolean(),
     scheduledAt: v.optional(v.number()),
     

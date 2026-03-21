@@ -20,6 +20,9 @@ export interface PublicMatch {
   scheduledAt?: number;
   teamName: string;
   clubName: string;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
 }
 
 /**

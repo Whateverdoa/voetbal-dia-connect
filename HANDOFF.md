@@ -31,6 +31,19 @@ Repo: Next.js 16 + Convex + Clerk.
 - `/scheidsrechter/match/[id]`: scheidsrechter controls
 - `/admin`: admin workspace met assignment board + beheer
 
+### Admin-werkplek (desktop)
+- De layout gebruikt een **brede container** (ongeveer tot **1600px**) op groot scherm, zodat toewijzingstabel en filters meer horizontale ruimte hebben (Airtable-achtig). Op mobiel blijft het volle breedte met scroll waar nodig.
+
+## Communicatie: coaches (eerste inlog)
+
+**In deze repo:** er is **geen** automatische welkomstmail vanuit de app; dat regelt de **club/TC** (bijv. via eigen mail of WhatsApp).
+
+**Aanbevolen om klaar te zetten richting coaches:**
+- Korte stappen: open de **productie-URL** -> **Inloggen** (globale balk) -> het **zelfde e-mailadres** gebruiken als in het coach-/teamoverzicht bij DIA.
+- Eerste keer: na Clerk-login kan **`/onboarding/rol`** verschijnen -- doorlopen tot het **Coach**-dashboard bereikbaar is (via `ClerkNav`: Coach).
+- Geen toegang: admin/TC controleert of het adres in Convex staat als coach met `userAccess` (rol `coach` + `coachId`); bootstrap-admins via `CLERK_BOOTSTRAP_ADMIN_EMAILS` zijn alleen voor admins.
+- Optioneel in de mail: directe link naar `/sign-in` of alleen home (nav heeft altijd Inloggen).
+
 ## Auth Model
 Runtime-auth is nu `Clerk + userAccess`.
 
@@ -50,7 +63,7 @@ Runtime-auth is nu `Clerk + userAccess`.
 - `admin` mag bestaan zonder `coachId` of `refereeId`
 - `coach` vereist `coachId`
 - `referee` vereist `refereeId`
-- één e-mailadres heeft exact één access-record
+- een e-mailadres heeft exact een access-record
 - `source` en `lastSyncedAt` zijn auditvelden, niet leidend voor runtime-auth
 
 ### Runtime checks
@@ -147,7 +160,7 @@ node scripts/import-matches.mjs path/to/matches.csv --ops-secret <CONVEX_OPS_SEC
 ### 1. Preflight
 - Clerk keys staan correct in omgeving
 - alle coaches en scheidsrechters hebben een uniek e-mailadres
-- minimaal één admin-email staat in `userAccess` of in `CLERK_BOOTSTRAP_ADMIN_EMAILS`
+- minimaal een admin-email staat in `userAccess` of in `CLERK_BOOTSTRAP_ADMIN_EMAILS`
 - `CONVEX_OPS_SECRET` is beschikbaar voor seed/import/noodherstel
 - snapshot/backup van productie is gemaakt
 
@@ -197,3 +210,25 @@ Als planning en schaal belangrijker worden, pas dan dit model toe:
   - `by_team_and_startsAt` (`teamId`, `scheduledAt`)
 - Houd `scheduledAt` als bron van waarheid en gebruik `playWeek*`/`dayKey` voor query-performance en consistente week-UI.
 - Overweeg een aparte assignments-collectie alleen als audit/history van toewijzingen nodig is; anders blijft embedded op `matches` voldoende.
+
+## Club-/teamlogo's (geimplementeerd)
+
+**Schema:** `clubs.logoUrl` en `teams.logoUrl` -- optioneel `string`, backwards-compatible.
+
+**Resolve-volgorde:** `team.logoUrl ?? club.logoUrl ?? null` -- via `src/lib/logos.ts`.
+
+**Opslag:** externe URL's (geen upload/storage). Fallback: initialen-cirkel bij ontbrekende of broken URL.
+
+**Admin:** TeamsTab toont logo-preview en een inline URL-editor (knop met image-icoon).
+
+**Publiek:** logo's zichtbaar in:
+- `MatchBrowser` (MatchRow) -- links van teamnaam
+- Live header (`LiveMatch.tsx`) -- boven het DIA-team
+
+**Component:** `src/components/TeamLogo.tsx` -- `<img>` met `onError` fallback naar initialen, 3 maten (sm/md/lg).
+
+**Nog open (aparte branch/PR):**
+- Backfill-script: uit `wedstrijden.thuisteamLogo` -> `teams.logoUrl` via naam-matching
+- Import-uitbreiding: nieuwe wedstrijden optioneel `teams` patchen
+- Tegenstander-logo: alleen eigen DIA-team heeft nu logo; externe clubs nog niet
+- Upload naar Convex storage: als hotlinked URL's onbetrouwbaar worden

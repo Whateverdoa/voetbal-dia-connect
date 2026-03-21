@@ -19,10 +19,12 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center p-4 pt-12">
-      <div className="max-w-md w-full space-y-6">
+      <div className="w-full max-w-5xl space-y-6">
         {/* Logo/Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-dia-green">DIA Live</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-dia-green">
+            DIA Wedstrijduitslagen Live
+          </h1>
           <p className="mt-2 text-gray-600">Volg de wedstrijd live</p>
         </div>
 

@@ -213,7 +213,7 @@ export function MatchBrowser() {
                     {group.label}
                   </h3>
                 </div>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                   {groupMatches.map((match) => (
                     <MatchRow key={match._id} match={match as PublicMatch} />
                   ))}

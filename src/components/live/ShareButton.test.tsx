@@ -181,7 +181,7 @@ describe('ShareButton', () => {
 
       expect(shareMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: 'JO12-1 vs VV Oranje - DIA Live',
+          title: 'JO12-1 vs VV Oranje - DIA Wedstrijduitslagen Live',
           text: 'Volg de wedstrijd JO12-1 vs VV Oranje live! Code: ABC123',
         })
       );

@@ -1,7 +1,7 @@
 {
-  "name": "DIA Live",
-  "short_name": "DIA",
-  "description": "Live wedstrijden volgen van voetbalclub DIA",
+  "name": "DIA Wedstrijduitslagen Live",
+  "short_name": "DIA Uitslagen",
+  "description": "Live wedstrijduitslagen volgen van voetbalclub DIA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

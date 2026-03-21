@@ -20,7 +20,7 @@ export function ShareButton({
   const [copied, setCopied] = useState(false);
 
   const shareData = {
-    title: `${teamName} vs ${opponent} - DIA Live`,
+    title: `${teamName} vs ${opponent} - DIA Wedstrijduitslagen Live`,
     text: `Volg de wedstrijd ${teamName} vs ${opponent} live! Code: ${code}`,
     url: typeof window !== "undefined" ? window.location.href : "",
   };

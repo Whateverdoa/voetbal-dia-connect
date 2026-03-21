@@ -18,6 +18,13 @@ Repo: Next.js 16 + Convex + Clerk.
 - Tailwind CSS 4
 - Vitest + RTL
 
+## Deployment (Vercel + Convex)
+
+**Standaardworkflow:** wijzigingen op een **feature branch** → **Pull Request** op GitHub → review/CI → **merge naar `main`**.  
+Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). Geen structurele directe pushes naar `main` zonder PR (alleen afgesproken hotfixes).
+
+**Technische details** (build script, `CONVEX_DEPLOY_KEY` alleen Production, preview vs production, env-vars): zie **`.cursor/agents/vercel-deployer.md`**. Daar ook gebruiken vóór release of bij mislukte builds.
+
 ## Routes
 - `/`: homepage / publieke ingang
 - `/live/[code]`: publieke live-weergave

@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
 import { filterMatchesForBrowser } from "@/lib/matchBrowserFilters";
+import { TeamLogo } from "@/components/TeamLogo";
+import { resolveLogoUrl } from "@/lib/logos";
 
 const statusGroups = [
   {
@@ -36,10 +38,12 @@ const statusGroups = [
 function MatchRow({ match }: { match: PublicMatch }) {
   const isLive = match.status === "live" || match.status === "halftime";
   const showScore = match.status !== "scheduled";
+  const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
 
-  const matchup = match.isHome
-    ? `${match.teamName} vs ${match.opponent}`
-    : `${match.teamName} @ ${match.opponent}`;
+  const homeName = match.isHome ? match.teamName : match.opponent;
+  const awayName = match.isHome ? match.opponent : match.teamName;
+  const homeLogo = match.isHome ? diaLogo : (match.opponentLogoUrl ?? null);
+  const awayLogo = match.isHome ? (match.opponentLogoUrl ?? null) : diaLogo;
 
   return (
     <Link
@@ -52,10 +56,11 @@ function MatchRow({ match }: { match: PublicMatch }) {
           : "border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
       )}
     >
-      {/* Match info */}
+      <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
+
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 truncate text-[15px] leading-tight">
-          {matchup}
+          {homeName} vs {awayName}
         </p>
         <div className="flex items-center gap-2 mt-1">
           {isLive && (
@@ -74,7 +79,6 @@ function MatchRow({ match }: { match: PublicMatch }) {
         </div>
       </div>
 
-      {/* Score */}
       <div className="flex-shrink-0 text-right">
         {showScore ? (
           <span
@@ -89,6 +93,8 @@ function MatchRow({ match }: { match: PublicMatch }) {
           <span className="text-lg text-gray-300 font-medium">– – –</span>
         )}
       </div>
+
+      <TeamLogo logoUrl={awayLogo} teamName={awayName} size="sm" className="flex-shrink-0" />
     </Link>
   );
 }

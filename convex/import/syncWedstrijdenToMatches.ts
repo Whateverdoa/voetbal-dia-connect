@@ -9,37 +9,48 @@ import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { generatePublicCode } from "../seed/helpers";
+import { findLocalLogo } from "../lib/localLogos";
 
 type SyncExtraction = {
   teamSlug: string;
   opponent: string;
   isHome: boolean;
+  opponentLogoUrl?: string;
 };
 
 function cleanTeamName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
-function extractDiaMatch(thuisteam: string, uitteam: string): SyncExtraction | null {
+function extractDiaMatch(
+  thuisteam: string,
+  uitteam: string,
+  thuisteamLogo?: string,
+  uitteamLogo?: string,
+): SyncExtraction | null {
   const home = cleanTeamName(thuisteam);
   const away = cleanTeamName(uitteam);
   const prefix = "DIA ";
 
   if (home.toUpperCase().startsWith(prefix)) {
     const diaTeam = home.slice(prefix.length).trim();
+    const opponent = away;
     return {
       teamSlug: diaTeam.toLowerCase(),
-      opponent: away,
+      opponent,
       isHome: true,
+      opponentLogoUrl: findLocalLogo(opponent) ?? uitteamLogo ?? undefined,
     };
   }
 
   if (away.toUpperCase().startsWith(prefix)) {
     const diaTeam = away.slice(prefix.length).trim();
+    const opponent = home;
     return {
       teamSlug: diaTeam.toLowerCase(),
-      opponent: home,
+      opponent,
       isHome: false,
+      opponentLogoUrl: findLocalLogo(opponent) ?? thuisteamLogo ?? undefined,
     };
   }
 
@@ -112,7 +123,12 @@ export const syncAll = mutation({
         continue;
       }
 
-      const extracted = extractDiaMatch(wedstrijd.thuisteam, wedstrijd.uitteam);
+      const extracted = extractDiaMatch(
+        wedstrijd.thuisteam,
+        wedstrijd.uitteam,
+        wedstrijd.thuisteamLogo,
+        wedstrijd.uitteamLogo,
+      );
       if (!extracted) {
         skippedNoDiaTeam++;
         continue;
@@ -168,6 +184,7 @@ export const syncAll = mutation({
           publicCode: code,
           ...(coachId ? { coachId } : {}),
           opponent,
+          ...(extracted.opponentLogoUrl ? { opponentLogoUrl: extracted.opponentLogoUrl } : {}),
           isHome: extracted.isHome,
           scheduledAt: wedstrijd.datum_ms,
           status: isFinished ? "finished" : "scheduled",

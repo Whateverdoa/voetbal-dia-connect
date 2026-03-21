@@ -24,6 +24,7 @@ import type * as clerkLink from "../clerkLink.js";
 import type * as clockActions from "../clockActions.js";
 import type * as coachQueries from "../coachQueries.js";
 import type * as helpers from "../helpers.js";
+import type * as import_backfillLogos from "../import/backfillLogos.js";
 import type * as import_importAllTeams from "../import/importAllTeams.js";
 import type * as import_importMatches from "../import/importMatches.js";
 import type * as import_importPlayers from "../import/importPlayers.js";
@@ -32,6 +33,7 @@ import type * as import_syncWedstrijdenToMatches from "../import/syncWedstrijden
 import type * as import_wedstrijdenMapper from "../import/wedstrijdenMapper.js";
 import type * as lib_adminAccess from "../lib/adminAccess.js";
 import type * as lib_commandIdempotency from "../lib/commandIdempotency.js";
+import type * as lib_localLogos from "../lib/localLogos.js";
 import type * as lib_matchEventGameTime from "../lib/matchEventGameTime.js";
 import type * as lib_matchEventProjection from "../lib/matchEventProjection.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
@@ -106,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   clockActions: typeof clockActions;
   coachQueries: typeof coachQueries;
   helpers: typeof helpers;
+  "import/backfillLogos": typeof import_backfillLogos;
   "import/importAllTeams": typeof import_importAllTeams;
   "import/importMatches": typeof import_importMatches;
   "import/importPlayers": typeof import_importPlayers;
@@ -114,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   "import/wedstrijdenMapper": typeof import_wedstrijdenMapper;
   "lib/adminAccess": typeof lib_adminAccess;
   "lib/commandIdempotency": typeof lib_commandIdempotency;
+  "lib/localLogos": typeof lib_localLogos;
   "lib/matchEventGameTime": typeof lib_matchEventGameTime;
   "lib/matchEventProjection": typeof lib_matchEventProjection;
   "lib/opsAuth": typeof lib_opsAuth;

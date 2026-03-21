@@ -106,6 +106,9 @@ export const getByPublicCode = query({
       teamName: team?.name ?? "Team",
       teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",
+      teamLogoUrl: team?.logoUrl ?? null,
+      clubLogoUrl: club?.logoUrl ?? null,
+      opponentLogoUrl: match.opponentLogoUrl ?? null,
       events: projectedEvents,
       lineup,
     };

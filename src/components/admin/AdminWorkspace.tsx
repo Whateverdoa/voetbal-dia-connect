@@ -15,6 +15,10 @@ import { TeamsTab } from "./TeamsTab";
 type AdminView = "toewijzing" | "beheer";
 type ManagementTab = "teams" | "spelers" | "coaches" | "scheidsrechters" | "setup";
 
+/** Horizontal shell: wider than `max-w-7xl` for desktop spreadsheet-style admin. */
+const ADMIN_PAGE_SHELL =
+  "mx-auto w-full max-w-[min(100%,100rem)] px-4 md:px-6";
+
 function WorkspaceToggle({
   active,
   label,
@@ -76,7 +80,7 @@ export function AdminWorkspace({ onLogout }: { onLogout: () => void }) {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f4f8f4_0%,#f8fafc_32%,#eef4f8_100%)]">
       <header className="sticky top-0 z-30 border-b border-white/70 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-6">
+        <div className={`flex items-center justify-between gap-4 py-4 ${ADMIN_PAGE_SHELL}`}>
           <div>
             <Link href="/" className="text-sm text-slate-500 transition hover:text-slate-700">
               ← Home
@@ -93,7 +97,7 @@ export function AdminWorkspace({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+      <div className={`py-6 ${ADMIN_PAGE_SHELL}`}>
         <section className="rounded-[32px] border border-white/60 bg-white/75 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>

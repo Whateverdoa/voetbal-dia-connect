@@ -17,6 +17,9 @@ export interface MatchData {
   teamName: string;
   teamSlug: string;
   clubName: string;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
   events: MatchEvent[];
   lineup: (LineupPlayer | null)[] | null;
 }

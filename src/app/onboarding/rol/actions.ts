@@ -1,7 +1,10 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { getLinkedRoleForRole } from "@/lib/server/clerkLinkedPinActions";
+import {
+  bootstrapKnownRolesByEmail,
+  getLinkedRoleForRole,
+} from "@/lib/server/clerkLinkedPinActions";
 
 type AssignableRole = "admin" | "coach" | "referee";
 
@@ -109,4 +112,16 @@ export async function setUserRole(role: AssignableRole): Promise<RoleActionResul
 export async function tryBootstrapCoach(): Promise<{ linked: boolean }> {
   const result = await getLinkedRoleForRole("coach");
   return { linked: result.ok };
+}
+
+/** Auto-assign coach/referee by known e-mail links (no manual role pick). */
+export async function bootstrapRoleLinksFromEmail(): Promise<{
+  applied: boolean;
+  assignedRoles: Array<"admin" | "coach" | "referee">;
+}> {
+  const { userId } = await auth();
+  if (!userId) return { applied: false, assignedRoles: [] };
+
+  const result = await bootstrapKnownRolesByEmail();
+  return { applied: result.ok, assignedRoles: result.assignedRoles };
 }

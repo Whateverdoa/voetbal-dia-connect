@@ -39,36 +39,6 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Secondary navigation — stacked so labels (e.g. Scheidsrechter) don’t overflow on small screens */}
-        <div className="flex flex-col gap-3">
-          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && (
-            <Link
-              href="/sign-in"
-              className="py-2.5 px-4 text-center border-2 border-slate-500 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Account inloggen
-            </Link>
-          )}
-          <Link
-            href="/coach"
-            className="py-2.5 px-4 text-center border-2 border-dia-green text-dia-green text-sm font-semibold rounded-lg hover:bg-green-50 transition-colors"
-          >
-            Coach login
-          </Link>
-          <Link
-            href="/scheidsrechter"
-            className="py-2.5 px-4 text-center border-2 border-gray-400 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Scheidsrechter
-          </Link>
-          <Link
-            href="/admin"
-            className="py-2.5 px-4 text-center border-2 border-amber-500 text-amber-700 text-sm font-semibold rounded-lg hover:bg-amber-50 transition-colors"
-          >
-            Admin
-          </Link>
-        </div>
-
         {/* Collapsible code input for edge cases */}
         <div className="text-center">
           {!showCodeInput ? (

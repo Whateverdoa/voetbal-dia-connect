@@ -100,3 +100,108 @@ export async function getLinkedRoleForRole(
 
   return { ok: false };
 }
+
+interface AutoBootstrapResult {
+  ok: boolean;
+  assignedRoles: LinkedRole[];
+}
+
+/**
+ * Auto-bootstrap roles from known e-mail links in Convex.
+ * - If e-mail matches a coach, grant coach role and ensure referee link too (club policy).
+ * - If e-mail matches only an active referee, grant referee role.
+ */
+export async function bootstrapKnownRolesByEmail(): Promise<AutoBootstrapResult> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { ok: false, assignedRoles: [] };
+  }
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const primaryEmail = getPrimaryEmail(user);
+  if (!primaryEmail) {
+    return { ok: false, assignedRoles: [] };
+  }
+
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const linkSecret = process.env.CONVEX_LINK_SECRET;
+  if (!convexUrl || !linkSecret) {
+    return { ok: false, assignedRoles: [] };
+  }
+
+  const convex = new ConvexHttpClient(convexUrl);
+  const assignedRoles = new Set<LinkedRole>(parseRolesFromMetadata(user.publicMetadata));
+  let updated = false;
+  let linkedCoachId: string | undefined;
+  let linkedCoachName: string | undefined;
+  let linkedTeamIds: string[] | undefined;
+  let linkedRefereeId: string | undefined;
+  let linkedRefereeName: string | undefined;
+
+  const coachLink = await convex.query(api.clerkLink.getCoachByEmailForLink, {
+    email: primaryEmail,
+    linkSecret,
+  });
+
+  if (coachLink) {
+    const roleSync = await convex.mutation(api.clerkLink.assignEmailRoleLinksForOps, {
+      email: primaryEmail,
+      linkSecret,
+      coachName: coachLink.coachName,
+    });
+    assignedRoles.add("coach");
+    assignedRoles.add("referee");
+    linkedCoachId = roleSync.coach.id;
+    linkedCoachName = roleSync.coach.name;
+    linkedTeamIds = roleSync.coach.teamIds;
+    linkedRefereeId = roleSync.referee?.id;
+    linkedRefereeName = roleSync.referee?.name;
+    updated = true;
+  } else {
+    const refereeLink = await convex.query(api.clerkLink.getRefereeByEmailForLink, {
+      email: primaryEmail,
+      linkSecret,
+    });
+    if (refereeLink) {
+      assignedRoles.add("referee");
+      linkedRefereeId = refereeLink.refereeId;
+      linkedRefereeName = refereeLink.refereeName;
+      updated = true;
+    }
+  }
+
+  if (!updated) {
+    return { ok: false, assignedRoles: [] };
+  }
+
+  const nextRoles = Array.from(assignedRoles);
+  const nextPrimaryRole: LinkedRole = nextRoles.includes("coach")
+    ? "coach"
+    : nextRoles.includes("referee")
+      ? "referee"
+      : "admin";
+
+  await client.users.updateUserMetadata(userId, {
+    publicMetadata: {
+      ...user.publicMetadata,
+      roles: nextRoles,
+      role: nextPrimaryRole,
+      ...(linkedCoachId
+        ? {
+            linkedCoachId,
+            linkedCoachName,
+            linkedTeamIds,
+          }
+        : {}),
+      ...(linkedRefereeId
+        ? {
+            linkedRefereeId,
+            linkedRefereeName,
+          }
+        : {}),
+    },
+  });
+
+  return { ok: true, assignedRoles: nextRoles };
+}

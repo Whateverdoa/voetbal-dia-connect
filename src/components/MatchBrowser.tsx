@@ -35,7 +35,7 @@ const statusGroups = [
   },
 ];
 
-function MatchRow({ match }: { match: PublicMatch }) {
+function MatchCard({ match }: { match: PublicMatch }) {
   const isLive = match.status === "live" || match.status === "halftime";
   const showScore = match.status !== "scheduled";
   const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
@@ -49,37 +49,23 @@ function MatchRow({ match }: { match: PublicMatch }) {
     <Link
       href={`/live/${match.publicCode}`}
       className={clsx(
-        "flex items-center gap-3 rounded-xl border bg-white p-3 min-h-[56px]",
+        "flex flex-col items-center rounded-xl border bg-white px-3 py-4 gap-2",
         "transition-all active:scale-[0.98] touch-manipulation",
         isLive
           ? "border-green-200 shadow-md hover:shadow-lg"
           : "border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
       )}
     >
-      <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
-
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 truncate text-[15px] leading-tight">
-          {homeName} vs {awayName}
-        </p>
-        <div className="flex items-center gap-2 mt-1">
-          {isLive && (
-            <span className="text-xs font-medium text-green-600">
-              {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
-            </span>
-          )}
-          {match.status === "scheduled" && match.scheduledAt && (
-            <span className="text-xs text-gray-500">
-              {formatMatchDate(match.scheduledAt)}
-            </span>
-          )}
-          <span className="font-mono text-[11px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
-            {match.publicCode}
-          </span>
-        </div>
+      {/* Home team */}
+      <div className="flex items-center gap-2 w-full justify-center min-w-0">
+        <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
+        <span className="font-semibold text-gray-900 text-sm leading-tight text-center">
+          {homeName}
+        </span>
       </div>
 
-      <div className="flex-shrink-0 text-right">
+      {/* Score / status */}
+      <div className="flex flex-col items-center">
         {showScore ? (
           <span
             className={clsx(
@@ -90,11 +76,27 @@ function MatchRow({ match }: { match: PublicMatch }) {
             {match.homeScore} - {match.awayScore}
           </span>
         ) : (
-          <span className="text-lg text-gray-300 font-medium">– – –</span>
+          <span className="text-base text-gray-300 font-medium">vs</span>
+        )}
+        {isLive && (
+          <span className="text-xs font-medium text-green-600">
+            {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
+          </span>
+        )}
+        {match.status === "scheduled" && match.scheduledAt && (
+          <span className="text-xs text-gray-500">
+            {formatMatchDate(match.scheduledAt)}
+          </span>
         )}
       </div>
 
-      <TeamLogo logoUrl={awayLogo} teamName={awayName} size="sm" className="flex-shrink-0" />
+      {/* Away team */}
+      <div className="flex items-center gap-2 w-full justify-center min-w-0">
+        <TeamLogo logoUrl={awayLogo} teamName={awayName} size="sm" className="flex-shrink-0" />
+        <span className="font-semibold text-gray-900 text-sm leading-tight text-center">
+          {awayName}
+        </span>
+      </div>
     </Link>
   );
 }
@@ -213,9 +215,9 @@ export function MatchBrowser() {
                     {group.label}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {groupMatches.map((match) => (
-                    <MatchRow key={match._id} match={match as PublicMatch} />
+                    <MatchCard key={match._id} match={match as PublicMatch} />
                   ))}
                 </div>
               </section>

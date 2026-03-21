@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center p-4 pt-12">
-      <div className="w-full max-w-5xl space-y-6">
+      <div className="w-full max-w-4xl space-y-6">
         {/* Logo/Header */}
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-dia-green">

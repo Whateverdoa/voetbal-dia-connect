@@ -183,7 +183,7 @@ export default function StandenPage() {
     <main className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-8">
-          DIA Live <span className="text-dia-green">Standen</span>
+          DIA Wedstrijduitslagen <span className="text-dia-green">Live</span>
         </h1>
 
         <Suspense fallback={<p className="text-center text-gray-400 py-16 text-lg">Laden...</p>}>

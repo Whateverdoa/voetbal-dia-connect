@@ -35,7 +35,7 @@ const statusGroups = [
   },
 ];
 
-function MatchRow({ match }: { match: PublicMatch }) {
+function MatchCard({ match }: { match: PublicMatch }) {
   const isLive = match.status === "live" || match.status === "halftime";
   const showScore = match.status !== "scheduled";
   const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
@@ -45,56 +45,84 @@ function MatchRow({ match }: { match: PublicMatch }) {
   const homeLogo = match.isHome ? diaLogo : (match.opponentLogoUrl ?? null);
   const awayLogo = match.isHome ? (match.opponentLogoUrl ?? null) : diaLogo;
 
+  const scoreBlock = (
+    <div className="flex flex-col items-center shrink-0 px-1">
+      {showScore ? (
+        <span
+          className={clsx(
+            "font-bold tabular-nums max-sm:text-xl sm:text-2xl",
+            isLive ? "text-green-600" : "text-gray-800"
+          )}
+        >
+          {match.homeScore} - {match.awayScore}
+        </span>
+      ) : (
+        <span className="text-sm text-gray-300 font-medium sm:text-base">vs</span>
+      )}
+      {isLive && (
+        <span className="text-[11px] sm:text-xs font-medium text-green-600">
+          {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
+        </span>
+      )}
+      {match.status === "scheduled" && match.scheduledAt && (
+        <span className="text-[10px] sm:text-xs text-gray-500 text-center leading-tight">
+          {formatMatchDate(match.scheduledAt)}
+        </span>
+      )}
+      <span className="font-mono text-[9px] sm:text-[11px] bg-gray-100 text-gray-500 px-1 py-0.5 rounded mt-0.5">
+        {match.publicCode}
+      </span>
+    </div>
+  );
+
   return (
     <Link
       href={`/live/${match.publicCode}`}
       className={clsx(
-        "flex items-center gap-3 rounded-xl border bg-white p-3 min-h-[56px]",
-        "transition-all active:scale-[0.98] touch-manipulation",
+        "flex rounded-xl border bg-white touch-manipulation",
+        "transition-all active:scale-[0.98]",
+        /* 1 kolom (mobiel): horizontale strip over volle breedte */
+        "flex-row items-center gap-2 p-3 min-h-[56px]",
+        /* sm+: grid met 2–3 kolommen → verticaal kaartje */
+        "sm:flex-col sm:items-center sm:gap-2 sm:py-4 sm:px-3 sm:min-h-0",
         isLive
           ? "border-green-200 shadow-md hover:shadow-lg"
           : "border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
       )}
     >
-      <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
-
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 truncate text-[15px] leading-tight">
-          {homeName} vs {awayName}
-        </p>
-        <div className="flex items-center gap-2 mt-1">
-          {isLive && (
-            <span className="text-xs font-medium text-green-600">
-              {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
-            </span>
-          )}
-          {match.status === "scheduled" && match.scheduledAt && (
-            <span className="text-xs text-gray-500">
-              {formatMatchDate(match.scheduledAt)}
-            </span>
-          )}
-          <span className="font-mono text-[11px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
-            {match.publicCode}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex-shrink-0 text-right">
-        {showScore ? (
-          <span
-            className={clsx(
-              "text-2xl font-bold tabular-nums",
-              isLive ? "text-green-600" : "text-gray-800"
-            )}
-          >
-            {match.homeScore} - {match.awayScore}
-          </span>
-        ) : (
-          <span className="text-lg text-gray-300 font-medium">– – –</span>
+      {/* Thuisteam */}
+      <div
+        className={clsx(
+          "flex items-center gap-2 min-w-0",
+          "flex-1 justify-start",
+          "sm:flex-none sm:w-full sm:justify-center"
         )}
+      >
+        <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
+        <span className="font-semibold text-gray-900 text-sm leading-tight break-words sm:text-center">
+          {homeName}
+        </span>
       </div>
 
-      <TeamLogo logoUrl={awayLogo} teamName={awayName} size="sm" className="flex-shrink-0" />
+      {scoreBlock}
+
+      {/* Uitteam: mobiel naam–logo rechts; sm+ zelfde volgorde als thuis (logo–naam) */}
+      <div
+        className={clsx(
+          "flex items-center gap-2 min-w-0 flex-1 justify-end",
+          "sm:flex-none sm:w-full sm:justify-center"
+        )}
+      >
+        <span className="font-semibold text-gray-900 text-sm leading-tight break-words text-right order-1 sm:order-2 sm:text-center">
+          {awayName}
+        </span>
+        <TeamLogo
+          logoUrl={awayLogo}
+          teamName={awayName}
+          size="sm"
+          className="flex-shrink-0 order-2 sm:order-1"
+        />
+      </div>
     </Link>
   );
 }
@@ -213,9 +241,9 @@ export function MatchBrowser() {
                     {group.label}
                   </h3>
                 </div>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {groupMatches.map((match) => (
-                    <MatchRow key={match._id} match={match as PublicMatch} />
+                    <MatchCard key={match._id} match={match as PublicMatch} />
                   ))}
                 </div>
               </section>

@@ -24,7 +24,7 @@ export default function CoachPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold">DIA Live</h1>
+              <h1 className="text-xl font-bold">DIA Wedstrijduitslagen Live</h1>
               <p className="text-sm text-white/80">Coach toegang</p>
             </div>
           </div>
@@ -72,7 +72,7 @@ function CoachPageWithClerk() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold">DIA Live</h1>
+              <h1 className="text-xl font-bold">DIA Wedstrijduitslagen Live</h1>
               <p className="text-sm text-white/80">Coach toegang</p>
             </div>
           </div>

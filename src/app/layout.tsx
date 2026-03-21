@@ -10,13 +10,13 @@ const hasClerkPublishableKey = Boolean(
 );
 
 export const metadata: Metadata = {
-  title: "DIA Live - Wedstrijd Tracker",
-  description: "Live wedstrijd tracking voor DIA jeugdteams",
+  title: "DIA Wedstrijduitslagen Live",
+  description: "Live wedstrijduitslagen voor DIA jeugdteams",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "DIA Live",
+    title: "DIA Uitslagen",
   },
   icons: {
     icon: "/icon.svg",

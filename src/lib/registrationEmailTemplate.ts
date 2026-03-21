@@ -22,11 +22,11 @@ export function buildRegistrationEmailTemplate(
   const appUrl = input.appUrl.replace(/\/+$/, "");
   const role = roleLabel(input.rol);
 
-  const subject = `DIA Live toegang activeren als ${role}`;
+  const subject = `DIA Wedstrijduitslagen Live – toegang activeren als ${role}`;
   const body = [
     `Beste ${input.naam},`,
     "",
-    `Je bent door DIA toegevoegd als ${role} in DIA Live.`,
+    `Je bent door DIA toegevoegd als ${role} in DIA Wedstrijduitslagen Live.`,
     "",
     "Volg deze stappen:",
     `1. Maak een account aan met dit e-mailadres: ${input.email}`,
@@ -37,7 +37,7 @@ export function buildRegistrationEmailTemplate(
     "Lukt dit niet? Reageer op deze e-mail of neem contact op met het team.",
     "",
     "Groet,",
-    "DIA Live",
+    "DIA Wedstrijduitslagen Live",
   ].join("\n");
 
   return { subject, body };

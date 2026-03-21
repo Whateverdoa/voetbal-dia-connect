@@ -41,7 +41,7 @@ export function MatchCreatedSuccess({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "DIA Live - Wedstrijd volgen",
+          title: "DIA Wedstrijduitslagen Live",
           text: shareText,
           url: shareUrl,
         });
@@ -123,7 +123,7 @@ export function MatchCreatedSuccess({
         <section className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <h3 className="font-semibold text-blue-800 mb-2">Hoe werkt het?</h3>
           <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-            <li>Ouders gaan naar de DIA Live website</li>
+            <li>Ouders gaan naar de DIA Wedstrijduitslagen website</li>
             <li>
               Ze voeren de code <span className="font-mono font-bold">{publicCode}</span> in
             </li>

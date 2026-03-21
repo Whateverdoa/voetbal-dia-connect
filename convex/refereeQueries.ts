@@ -11,6 +11,7 @@ export const getForReferee = query({
 
       const referee = await requireRefereeForMatch(ctx, match);
       const team = await ctx.db.get(match.teamId);
+      const club = team ? await ctx.db.get(team.clubId) : null;
       const matchPlayers = await ctx.db
         .query("matchPlayers")
         .withIndex("by_match", (q) => q.eq("matchId", match._id))
@@ -44,6 +45,9 @@ export const getForReferee = query({
         pausedAt: match.pausedAt,
         accumulatedPauseTime: match.accumulatedPauseTime,
         teamName: team?.name ?? "Team",
+        teamLogoUrl: team?.logoUrl,
+        clubLogoUrl: club?.logoUrl,
+        opponentLogoUrl: match.opponentLogoUrl,
         refereeName: referee.name,
         diaPlayers,
       };
@@ -66,6 +70,7 @@ export const getMatchesForReferee = query({
       const enriched = await Promise.all(
         matches.map(async (match) => {
           const team = await ctx.db.get(match.teamId);
+          const club = team ? await ctx.db.get(team.clubId) : null;
           return {
             id: match._id,
             publicCode: match.publicCode,
@@ -80,6 +85,9 @@ export const getMatchesForReferee = query({
             startedAt: match.startedAt,
             finishedAt: match.finishedAt,
             teamName: team?.name ?? "Team",
+            teamLogoUrl: team?.logoUrl,
+            clubLogoUrl: club?.logoUrl,
+            opponentLogoUrl: match.opponentLogoUrl,
           };
         })
       );

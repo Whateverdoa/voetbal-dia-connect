@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { LogOut, Plus, Users } from "lucide-react";
 import { StatusBadge, MatchStatus } from "./StatusBadge";
+import { MatchVersusLogos } from "@/components/MatchVersusLogos";
 
 interface DashboardMatch {
   _id: string;
@@ -16,6 +17,10 @@ interface DashboardMatch {
   awayScore: number;
   publicCode: string;
   scheduledAt?: number;
+  teamName?: string;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
 }
 
 interface CoachDashboardProps {
@@ -80,7 +85,11 @@ export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
             </h2>
             <div className="space-y-3">
               {liveMatches.map((match) => (
-                <DashboardMatchCard key={match._id} match={match} />
+                <DashboardMatchCard
+                  key={match._id}
+                  match={match}
+                  diaTeamName={data.teams.find((t) => t.id === match.teamId)?.name}
+                />
               ))}
             </div>
           </section>
@@ -138,7 +147,12 @@ function TeamSection({
             </h3>
             <div className="space-y-2">
               {scheduledMatches.map((match) => (
-                <DashboardMatchCard key={match._id} match={match} compact />
+                <DashboardMatchCard
+                  key={match._id}
+                  match={match}
+                  compact
+                  diaTeamName={team.name}
+                />
               ))}
             </div>
           </div>
@@ -178,10 +192,13 @@ function TeamSection({
 function DashboardMatchCard({
   match,
   compact = false,
+  diaTeamName,
 }: {
   match: DashboardMatch;
   compact?: boolean;
+  diaTeamName?: string;
 }) {
+  const diaLabel = diaTeamName ?? match.teamName ?? "Team";
   const isActive =
     match.status === "live" || match.status === "halftime" || match.status === "lineup";
   const showScore = match.status !== "scheduled";
@@ -214,6 +231,17 @@ function DashboardMatchCard({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
+          <div className="mb-2">
+            <MatchVersusLogos
+              isHome={match.isHome}
+              teamName={diaLabel}
+              opponent={match.opponent}
+              teamLogoUrl={match.teamLogoUrl}
+              clubLogoUrl={match.clubLogoUrl}
+              opponentLogoUrl={match.opponentLogoUrl}
+              size="sm"
+            />
+          </div>
           <div className="flex items-center gap-2 mb-1">
             <StatusBadge status={match.status as MatchStatus} size="sm" />
             {isActive && match.status === "live" && (

@@ -9,6 +9,7 @@ import {
   requireCoachForMatch,
   requireCoachForTeam,
 } from "./lib/userAccess";
+import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 
 export const listActiveReferees = query({
   handler: async (ctx) => {
@@ -113,12 +114,26 @@ export const verifyCoachPin = query({
         )
       );
 
+      const flat = matches.flat();
+      const enriched = await Promise.all(
+        flat.map(async (m) => {
+          const teamDoc = await ctx.db.get(m.teamId);
+          const club = teamDoc ? await ctx.db.get(teamDoc.clubId) : null;
+          const { coachPin: _omit, ...rest } = m;
+          return {
+            ...rest,
+            teamName: teamDoc?.name ?? "Team",
+            ...logoFieldsForMatchWithTeamClub(m, teamDoc, club),
+          };
+        })
+      );
+
       return {
         coach: { id: coach._id, name: coach.name },
         teams: teams
           .filter((team): team is NonNullable<typeof team> => team !== null)
           .map((team) => ({ id: team._id, name: team.name })),
-        matches: matches.flat(),
+        matches: enriched,
       };
     } catch {
       return null;

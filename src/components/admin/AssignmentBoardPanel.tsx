@@ -10,6 +10,7 @@ import { getQualificationState } from "@/lib/admin/assignmentBoard";
 import { formatDateTimeInput } from "@/lib/dateUtils";
 import { formatMatchDate } from "@/types/publicMatch";
 import type { ActiveRefereeOption, AssignmentBoardMatch } from "./types";
+import { MatchVersusLogos } from "@/components/MatchVersusLogos";
 
 const qualificationStyles = {
   geschikt: "bg-emerald-100 text-emerald-700",
@@ -141,9 +142,20 @@ export function AssignmentBoardPanel({
       <div className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} />
       <aside className="fixed inset-x-0 bottom-0 z-50 max-h-[88vh] overflow-hidden rounded-t-[28px] border border-slate-200 bg-white shadow-2xl md:inset-y-4 md:right-4 md:left-auto md:w-[460px] md:max-h-none md:rounded-[28px]">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <div>
+          <div className="min-w-0 flex-1 pr-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-green">Wedstrijdpaneel</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900">{match.teamName}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <MatchVersusLogos
+                isHome={match.isHome}
+                teamName={match.teamName}
+                opponent={match.opponent}
+                teamLogoUrl={match.teamLogoUrl}
+                clubLogoUrl={match.clubLogoUrl}
+                opponentLogoUrl={match.opponentLogoUrl}
+                size="md"
+              />
+              <h2 className="text-lg font-semibold text-slate-900">{match.teamName}</h2>
+            </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100" aria-label="Paneel sluiten">
             <X size={18} />

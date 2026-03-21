@@ -96,6 +96,9 @@ export interface Match {
   };
   finishedAt?: number;
   teamName: string;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
   players: MatchPlayer[];
   events: MatchEvent[];
   stagedSubstitutions?: StagedSubstitution[];

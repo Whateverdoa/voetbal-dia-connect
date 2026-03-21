@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusBadge } from "@/components/StatusBadge";
+import { TeamLogo } from "@/components/TeamLogo";
 import { MatchClock } from "./MatchClock";
 import type { MatchStatus } from "./types";
 
@@ -17,6 +18,8 @@ interface ScoreDisplayProps {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   publicCode: string;
+  homeLogoUrl?: string | null;
+  awayLogoUrl?: string | null;
 }
 
 export function ScoreDisplay({
@@ -32,6 +35,8 @@ export function ScoreDisplay({
   pausedAt,
   accumulatedPauseTime,
   publicCode,
+  homeLogoUrl,
+  awayLogoUrl,
 }: ScoreDisplayProps) {
   const isLive = status === "live";
   const isPaused = isLive && pausedAt != null;
@@ -90,15 +95,27 @@ export function ScoreDisplay({
           )}
         </div>
 
-        {/* Team names */}
-        <div className="flex justify-between items-center text-sm sm:text-base opacity-90">
-          <div className="text-left">
-            <p className="font-medium">{isHome ? teamName : opponent}</p>
+        {/* Team names + logos */}
+        <div className="flex justify-between items-center text-sm sm:text-base opacity-90 gap-2">
+          <div className="text-left flex flex-col items-start gap-1 min-w-0 flex-1">
+            <TeamLogo
+              logoUrl={homeLogoUrl ?? null}
+              teamName={isHome ? teamName : opponent}
+              size="md"
+              className="ring-2 ring-white/30"
+            />
+            <p className="font-medium truncate w-full">{isHome ? teamName : opponent}</p>
             <p className="text-xs opacity-75">{isHome ? "Thuis" : "Uit"}</p>
           </div>
-          <div className="text-center text-xs opacity-75">vs</div>
-          <div className="text-right">
-            <p className="font-medium">{isHome ? opponent : teamName}</p>
+          <div className="text-center text-xs opacity-75 shrink-0 pt-6">vs</div>
+          <div className="text-right flex flex-col items-end gap-1 min-w-0 flex-1">
+            <TeamLogo
+              logoUrl={awayLogoUrl ?? null}
+              teamName={isHome ? opponent : teamName}
+              size="md"
+              className="ring-2 ring-white/30"
+            />
+            <p className="font-medium truncate w-full">{isHome ? opponent : teamName}</p>
             <p className="text-xs opacity-75">{isHome ? "Uit" : "Thuis"}</p>
           </div>
         </div>

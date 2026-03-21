@@ -6,6 +6,7 @@ import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { formatMatchDate } from "@/types/publicMatch";
+import { MatchVersusLogos } from "@/components/MatchVersusLogos";
 
 export interface AdminMatch {
   _id: Id<"matches">;
@@ -20,6 +21,9 @@ export interface AdminMatch {
   refereeName: string | null;
   coachName: string | null;
   refereeId?: Id<"referees">;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
 }
 
 interface MatchRowProps {
@@ -77,7 +81,16 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
     : `${match.teamName} @ ${match.opponent}`;
 
   return (
-    <div className="p-3 bg-gray-50 rounded-lg flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="p-3 bg-gray-50 rounded-lg flex flex-wrap items-center gap-x-3 gap-y-2">
+      <MatchVersusLogos
+        isHome={match.isHome}
+        teamName={match.teamName}
+        opponent={match.opponent}
+        teamLogoUrl={match.teamLogoUrl}
+        clubLogoUrl={match.clubLogoUrl}
+        opponentLogoUrl={match.opponentLogoUrl}
+        size="sm"
+      />
       <span className="font-semibold text-sm">{teamLabel}</span>
       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
         {badge.label}

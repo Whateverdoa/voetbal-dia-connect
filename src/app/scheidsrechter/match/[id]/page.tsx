@@ -9,6 +9,8 @@ import { MatchClock } from "@/components/match/MatchClock";
 import { RefereeClockControls } from "@/components/referee/RefereeClockControls";
 import { RefereeScoreControls } from "@/components/referee/RefereeScoreControls";
 import type { MatchStatus } from "@/components/match/types";
+import { resolveLogoUrl } from "@/lib/logos";
+import { TeamLogo } from "@/components/TeamLogo";
 
 export default function RefereeMatchPage() {
   const params = useParams();
@@ -58,6 +60,11 @@ export default function RefereeMatchPage() {
     );
   }
 
+  const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
+  const oppLogo = match.opponentLogoUrl ?? null;
+  const homeLogoUrl = match.isHome ? diaLogo : oppLogo;
+  const awayLogoUrl = match.isHome ? oppLogo : diaLogo;
+
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
       <nav className="bg-gray-800 text-white px-4 py-2 sticky top-0 z-20">
@@ -86,6 +93,8 @@ export default function RefereeMatchPage() {
         quarterStartedAt={match.quarterStartedAt}
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
+        homeLogoUrl={homeLogoUrl}
+        awayLogoUrl={awayLogoUrl}
       />
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
@@ -133,6 +142,8 @@ function RefereeScoreHeader({
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
+  homeLogoUrl,
+  awayLogoUrl,
 }: {
   homeScore: number;
   awayScore: number;
@@ -145,6 +156,8 @@ function RefereeScoreHeader({
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  homeLogoUrl: string | null;
+  awayLogoUrl: string | null;
 }) {
   const isLive = status === "live";
   const isPaused = isLive && pausedAt != null;
@@ -195,10 +208,30 @@ function RefereeScoreHeader({
           {homeScore} - {awayScore}
         </div>
 
-        <div className="flex justify-between items-center text-sm opacity-90 mt-3 max-w-xs mx-auto">
-          <span className="font-medium">{isHome ? teamName : opponent}</span>
-          <span className="text-xs opacity-75">vs</span>
-          <span className="font-medium">{isHome ? opponent : teamName}</span>
+        <div className="flex justify-between items-start gap-2 text-sm opacity-90 mt-3 max-w-md mx-auto">
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <TeamLogo
+              logoUrl={homeLogoUrl}
+              teamName={isHome ? teamName : opponent}
+              size="md"
+              className="ring-2 ring-white/30"
+            />
+            <span className="font-medium text-center leading-tight">
+              {isHome ? teamName : opponent}
+            </span>
+          </div>
+          <span className="text-xs opacity-75 shrink-0 pt-6">vs</span>
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <TeamLogo
+              logoUrl={awayLogoUrl}
+              teamName={isHome ? opponent : teamName}
+              size="md"
+              className="ring-2 ring-white/30"
+            />
+            <span className="font-medium text-center leading-tight">
+              {isHome ? opponent : teamName}
+            </span>
+          </div>
         </div>
       </div>
     </header>

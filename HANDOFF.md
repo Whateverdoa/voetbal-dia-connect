@@ -229,13 +229,15 @@ Als planning en schaal belangrijker worden, pas dan dit model toe:
 **Admin:** TeamsTab toont logo-preview en een inline URL-editor (knop met image-icoon).
 
 **Publiek:** logo's zichtbaar in:
-- `MatchBrowser` (MatchRow) -- links van teamnaam
-- Live header (`LiveMatch.tsx`) -- boven het DIA-team
+- `MatchBrowser` -- thuis/uit met `teamLogoUrl` / `clubLogoUrl` / `opponentLogoUrl`
+- Live header (`LiveMatch.tsx`) -- beide teams
 
-**Component:** `src/components/TeamLogo.tsx` -- `<img>` met `onError` fallback naar initialen, 3 maten (sm/md/lg).
+**Component:** `src/components/TeamLogo.tsx` -- `<img>` met `onError` fallback naar initialen; vierkant met afgeronde hoeken (`rounded-md`, `object-contain`).
 
-**Nog open (aparte branch/PR):**
-- Backfill-script: uit `wedstrijden.thuisteamLogo` -> `teams.logoUrl` via naam-matching
-- Import-uitbreiding: nieuwe wedstrijden optioneel `teams` patchen
-- Tegenstander-logo: alleen eigen DIA-team heeft nu logo; externe clubs nog niet
-- Upload naar Convex storage: als hotlinked URL's onbetrouwbaar worden
+**Lokale logo's:** `public/logos/*.png` + mapping in `convex/lib/localLogos.ts` en `src/lib/logos.ts`; `matches.opponentLogoUrl` kan naar `/logos/...` wijzen.
+
+**Coach / scheidsrechter / admin:** logo's via dezelfde velden (`teamLogoUrl`, `clubLogoUrl`, `opponentLogoUrl`). Convex: `convex/lib/matchLogoFields.ts` + verrijking in `verifyCoachPin`, `getForCoach`, `getForReferee`, `getMatchesForReferee`, `listAllMatches`, `listAssignmentBoard`. UI: o.a. `MatchVersusLogos`, `ScoreDisplay` (coach), `RefereeMatchList` + scheidsrechter match-header, admin `AssignmentBoardTable` / `AssignmentBoardPanel` / `MatchRow`.
+
+Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
+
+**Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.

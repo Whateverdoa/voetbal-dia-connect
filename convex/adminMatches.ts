@@ -11,6 +11,7 @@ import {
   getQualificationState,
   normalizeQualificationTags,
 } from "../src/lib/admin/assignmentBoard";
+import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 
 type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
 
@@ -72,6 +73,7 @@ export const listAllMatches = query({
           clubName: club?.name ?? "Onbekend club",
           refereeName: referee?.name ?? null,
           coachName: coach?.name ?? null,
+          ...logoFieldsForMatchWithTeamClub(match, team, club),
         };
       })
     );
@@ -139,6 +141,7 @@ export const listAssignmentBoard = query({
             matchQualificationTags,
             refereeQualificationTags
           ),
+          ...logoFieldsForMatchWithTeamClub(match, team, club),
         };
       })
     );

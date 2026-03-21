@@ -24,6 +24,9 @@ export interface AssignmentBoardMatch {
   matchQualificationTags: string[];
   refereeQualificationTags: string[];
   qualificationState: QualificationState;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
 }
 
 export interface ActiveRefereeOption {

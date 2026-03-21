@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { TeamLogo } from "@/components/TeamLogo";
+import { resolveLogoUrl } from "@/lib/logos";
 
 interface RefereeMatch {
   id: string;
@@ -16,6 +18,9 @@ interface RefereeMatch {
   startedAt?: number;
   finishedAt?: number;
   teamName: string;
+  teamLogoUrl?: string | null;
+  clubLogoUrl?: string | null;
+  opponentLogoUrl?: string | null;
 }
 
 interface RefereeMatchListProps {
@@ -60,6 +65,10 @@ function MatchCard({ match }: { match: RefereeMatch }) {
   const isFinished = match.status === "finished";
   const homeName = match.isHome ? match.teamName : match.opponent;
   const awayName = match.isHome ? match.opponent : match.teamName;
+  const dia = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
+  const opp = match.opponentLogoUrl ?? null;
+  const homeLogo = match.isHome ? dia : opp;
+  const awayLogo = match.isHome ? opp : dia;
   const href = `/scheidsrechter/match/${match.id}`;
 
   return (
@@ -99,14 +108,15 @@ function MatchCard({ match }: { match: RefereeMatch }) {
       </div>
 
       <div className="px-4 py-4 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 text-left">
-            <p className="font-semibold text-gray-800 text-sm leading-tight">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-2 justify-start">
+            <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
+            <p className="font-semibold text-gray-800 text-sm leading-tight truncate">
               {homeName}
             </p>
           </div>
 
-          <div className="px-4 text-center min-w-[80px]">
+          <div className="px-2 text-center min-w-[72px] shrink-0">
             {match.startedAt || isFinished ? (
               <p className="text-2xl font-bold tabular-nums text-gray-900">
                 {match.homeScore} - {match.awayScore}
@@ -116,10 +126,11 @@ function MatchCard({ match }: { match: RefereeMatch }) {
             )}
           </div>
 
-          <div className="flex-1 text-right">
-            <p className="font-semibold text-gray-800 text-sm leading-tight">
+          <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+            <p className="font-semibold text-gray-800 text-sm leading-tight truncate text-right order-1 sm:order-2">
               {awayName}
             </p>
+            <TeamLogo logoUrl={awayLogo} teamName={awayName} size="sm" className="flex-shrink-0 order-2 sm:order-1" />
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
 } from "./lib/matchEventProjection";
+import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -134,7 +135,8 @@ export const getForCoach = query({
 
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);
-    
+    const club = team ? await ctx.db.get(team.clubId) : null;
+
     const matchPlayers = await ctx.db
       .query("matchPlayers")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
@@ -211,6 +213,7 @@ export const getForCoach = query({
     return {
       ...safeMatch,
       teamName: team?.name ?? "Team",
+      ...logoFieldsForMatchWithTeamClub(match, team, club),
       players: players.filter(Boolean),
       events: projectedEvents,
       stagedSubstitutions,

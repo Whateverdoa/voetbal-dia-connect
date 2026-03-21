@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { AlertTriangle, ChevronRight } from "lucide-react";
 import { formatMatchDate } from "@/types/publicMatch";
 import type { AssignmentBoardMatch } from "./types";
+import { MatchVersusLogos } from "@/components/MatchVersusLogos";
 
 const statusBadges: Record<
   AssignmentBoardMatch["status"],
@@ -93,6 +94,17 @@ export function AssignmentBoardTable({
                     {match.scheduledAt ? formatMatchDate(match.scheduledAt) : "Ongepland"}
                   </td>
                   <td className="border-t border-slate-100 px-4 py-3">
+                    <div className="mb-2 flex justify-start">
+                      <MatchVersusLogos
+                        isHome={match.isHome}
+                        teamName={match.teamName}
+                        opponent={match.opponent}
+                        teamLogoUrl={match.teamLogoUrl}
+                        clubLogoUrl={match.clubLogoUrl}
+                        opponentLogoUrl={match.opponentLogoUrl}
+                        size="sm"
+                      />
+                    </div>
                     <div className="font-semibold text-slate-900">{getMatchLabel(match)}</div>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
                       {match.matchQualificationTags.map((tag) => (

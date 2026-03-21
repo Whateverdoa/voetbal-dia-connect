@@ -40,58 +40,40 @@ function unauthorizedRedirect(req: NextRequest): NextResponse {
   return NextResponse.redirect(deniedUrl);
 }
 
-function roleOnboardingRedirect(req: NextRequest): NextResponse {
-  const onboardingUrl = new URL("/onboarding/rol", req.url);
-  onboardingUrl.searchParams.set("from", req.nextUrl.pathname);
-  return NextResponse.redirect(onboardingUrl);
-}
-
-const clerkHandler = (() => {
-  if (!hasClerkEnv) return null;
-  try {
-    return clerkMiddleware(async (auth, req) => {
-      try {
-        if (isRoleOnboardingRoute(req)) {
-          await auth.protect();
-          const authResult = await auth();
-          const roles = getRolesFromClaims(authResult);
-          if (roles.length > 0) return NextResponse.redirect(new URL("/", req.url));
-          return NextResponse.next();
-        }
-        if (isProtectedRoute(req)) {
-          await auth.protect();
-          const authResult = await auth();
-          const roles = getRolesFromClaims(authResult);
-          if (roles.length > 0 && !isRoleAllowedForRoute(req, roles)) {
-            return unauthorizedRedirect(req);
-          }
-          // Allow through if no role (e.g. claims not synced yet): page shows PIN form or link-PIN
-        }
-        return NextResponse.next();
-      } catch {
+const clerkHandler = hasClerkEnv
+  ? clerkMiddleware(async (auth, req) => {
+      if (isRoleOnboardingRoute(req)) {
+        await auth.protect();
+        const authResult = await auth();
+        const roles = getRolesFromClaims(authResult);
+        if (roles.length > 0) return NextResponse.redirect(new URL("/", req.url));
         return NextResponse.next();
       }
-    });
-  } catch {
-    return null;
-  }
-})();
 
-export default async function middleware(
-  req: NextRequest,
-  event: NextFetchEvent
-) {
+      if (isProtectedRoute(req)) {
+        await auth.protect();
+        const authResult = await auth();
+        const roles = getRolesFromClaims(authResult);
+
+        // Allow through if no role (e.g. claims not synced yet): page shows PIN form or link-PIN.
+        if (roles.length > 0 && !isRoleAllowedForRoute(req, roles)) {
+          return unauthorizedRedirect(req);
+        }
+      }
+
+      return NextResponse.next();
+    })
+  : null;
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (!clerkHandler) {
     if (isRoleOnboardingRoute(req)) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }
-  try {
-    return await clerkHandler(req, event);
-  } catch {
-    return NextResponse.next();
-  }
+
+  return clerkHandler(req, event);
 }
 
 export const config = {

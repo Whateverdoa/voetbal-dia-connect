@@ -32,7 +32,10 @@ export default function SignUpPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <SignUp fallbackRedirectUrl="/" />
+      <SignUp
+        fallbackRedirectUrl="/onboarding/rol"
+        forceRedirectUrl="/onboarding/rol"
+      />
     </main>
   );
 }

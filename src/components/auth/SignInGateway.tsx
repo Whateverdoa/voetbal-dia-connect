@@ -64,7 +64,10 @@ export function SignInGateway({
         </section>
 
         <section className="rounded-[32px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur">
-          <SignIn fallbackRedirectUrl="/admin" />
+          <SignIn
+            fallbackRedirectUrl="/onboarding/rol"
+            forceRedirectUrl="/onboarding/rol"
+          />
         </section>
       </div>
     </main>

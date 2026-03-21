@@ -35,6 +35,33 @@ export const getCoachByEmailForLink = query({
   },
 });
 
+export const getRefereeByEmailForLink = query({
+  args: {
+    email: v.string(),
+    linkSecret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!LINK_SECRET || args.linkSecret !== LINK_SECRET) {
+      return null;
+    }
+    const emailLower = args.email.trim().toLowerCase();
+    if (!emailLower) return null;
+
+    const referee = await ctx.db
+      .query("referees")
+      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .first();
+
+    if (!referee || !referee.active) return null;
+
+    return {
+      refereeId: referee._id,
+      refereeName: referee.name,
+      active: referee.active,
+    };
+  },
+});
+
 export const assignEmailRoleLinksForOps = mutation({
   args: {
     email: v.string(),

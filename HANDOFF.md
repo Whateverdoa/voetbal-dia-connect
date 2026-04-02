@@ -108,7 +108,9 @@ Simple PIN-based (no user accounts), **team-membership authorization**:
 
 ## What Needs Work
 
-- **Mobile UX polish** — coach interface works on phone but could benefit from UX audit
+- ~~**Mobile UX polish** — coach interface works on phone but could benefit from UX audit~~
+  - iOS orientation-change zoom fix ✅ (viewport `maximumScale: 1`, `userScalable: false` in `layout.tsx`)
+  - Further UX audit still pending
 - **PWA** — offline resilience, installable on home screen
 - **Match history / stats** — post-match summaries, player stat aggregation
 - **Testing** — Convex function tests, component tests, smoke test automation

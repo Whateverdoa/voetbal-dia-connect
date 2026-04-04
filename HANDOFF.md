@@ -123,7 +123,9 @@ Simple PIN-based (no user accounts), **team-membership authorization**:
 |------|-------------|--------|
 | **CSV Match Import** | Admin uploads a CSV file to bulk-create matches for the season. Approach TBD — options: (A) client-side CSV parse + call createMatch per row, (B) Convex action that accepts parsed rows in one call, (C) dedicated upload endpoint. CSV columns likely: team name, opponent, home/away, date/time, coach name/PIN, referee name (optional). Should validate rows, show preview before import, report errors per row. UI: new section in the Wedstrijden tab or a separate import modal. | ❌ Not started |
 | **Coach Match Delete** | Allow coaches to delete their own scheduled (not started) matches | ❌ Not started |
-| **Wedstrijdleider Phase 2** | Enforce match lead permissions — only the wedstrijdleider can enter goals/subs/lineup changes. See detailed plan below. | ❌ Not started |
+| **Match Settings Edit** | Coaches need to edit match settings (quarter count, quarter duration, opponent, home/away, scheduled time) after a match is created — currently you have to delete and recreate the match to change these. Should be available from the coach match view for matches that haven't started yet (`status === "scheduled"` or `"lineup"`). Critical for fixing mistakes like wrong quarter count. | ❌ Not started |
+| **Quarter/Half Presets & Duration** | Support both 4-quarter and 2-half formats with configurable duration per quarter/half. Current schema has `quarterCount` (2 or 4) but no `quarterDuration` field. Needed presets: (A) 4 quarters × 15 min (JO12 and younger), (B) 2 halves × 30 min (JO13+), (C) 2 halves × 45 min (seniors/adults). Add `quarterDuration` field to matches schema, show preset selector on match creation, and use it for clock warnings. | ❌ Not started |
+| **Wedstrijdleider Phase 2** | Enforce match lead permissions — only the wedstrijdleider can enter goals/subs/lineup changes. See detailed plan below. | ✅ Implemented |
 
 ### 🟡 Wedstrijdleider Phase 2 — Detailed Plan
 

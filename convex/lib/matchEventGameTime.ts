@@ -1,8 +1,9 @@
-const REGULATION_MINUTES = 60;
+import { resolveRegulationMinutes } from "./matchTiming";
 
 type MatchClockSnapshot = {
   currentQuarter: number;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
@@ -15,17 +16,15 @@ export type EventGameTimeStamp = {
   displayExtraMinute?: number;
 };
 
-function getQuarterDurationSeconds(quarterCount: number): number {
-  return Math.max(1, Math.floor((REGULATION_MINUTES * 60) / quarterCount));
+function getQuarterDurationSeconds(match: MatchClockSnapshot): number {
+  const regulation = resolveRegulationMinutes(match);
+  return Math.max(1, Math.floor((regulation * 60) / match.quarterCount));
 }
 
-export function getQuarterDurationMs(quarterCount: number): number {
-  return getQuarterDurationSeconds(quarterCount) * 1000;
+function getQuarterDurationMs(match: MatchClockSnapshot): number {
+  return getQuarterDurationSeconds(match) * 1000;
 }
 
-/**
- * If the clock is paused, events should use the pause moment as effective time.
- */
 export function getEffectiveEventTime(
   match: MatchClockSnapshot,
   now: number
@@ -33,10 +32,6 @@ export function getEffectiveEventTime(
   return match.pausedAt ?? now;
 }
 
-/**
- * Safety fallback for coach error:
- * if a quarter is ended while paused, treat the quarter as fully played.
- */
 export function getQuarterEndTimeWithPausedFallback(
   match: MatchClockSnapshot,
   now: number
@@ -49,7 +44,7 @@ export function getQuarterEndTimeWithPausedFallback(
   const expectedQuarterEndAt =
     match.quarterStartedAt +
     (match.accumulatedPauseTime ?? 0) +
-    getQuarterDurationMs(match.quarterCount);
+    getQuarterDurationMs(match);
 
   return Math.max(effectiveTime, expectedQuarterEndAt);
 }
@@ -75,23 +70,16 @@ export function computeQuarterOverrunSeconds(
   effectiveTime: number
 ): number {
   const elapsedQuarterSeconds = getElapsedQuarterSeconds(match, effectiveTime);
-  const quarterDurationSeconds = getQuarterDurationSeconds(match.quarterCount);
+  const quarterDurationSeconds = getQuarterDurationSeconds(match);
   return Math.max(0, elapsedQuarterSeconds - quarterDurationSeconds);
 }
 
-/**
- * Returns football-style event timing fields.
- *
- * displayMinute is zero-based by design:
- * - 0 means 0'
- * - 10 means 10'
- */
 export function buildEventGameTimeStamp(
   match: MatchClockSnapshot,
   effectiveTime: number
 ): EventGameTimeStamp {
-  const quarterDurationSeconds = getQuarterDurationSeconds(match.quarterCount);
-  const regulationSeconds = REGULATION_MINUTES * 60;
+  const quarterDurationSeconds = getQuarterDurationSeconds(match);
+  const regulationSeconds = resolveRegulationMinutes(match) * 60;
   const quarterOffsetSeconds =
     Math.max(0, match.currentQuarter - 1) * quarterDurationSeconds;
   const elapsedQuarterSeconds = getElapsedQuarterSeconds(match, effectiveTime);

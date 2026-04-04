@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -30,6 +30,19 @@ export function RefereeClockControls({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [endMatchConfirm, setEndMatchConfirm] = useState(false);
+
+  const isFinalSegment = currentQuarter >= quarterCount;
+
+  useEffect(() => {
+    setEndMatchConfirm(false);
+  }, [currentQuarter, status]);
+
+  useEffect(() => {
+    if (!endMatchConfirm) return;
+    const timer = setTimeout(() => setEndMatchConfirm(false), 5000);
+    return () => clearTimeout(timer);
+  }, [endMatchConfirm]);
 
   const isLive = status === "live";
   const isPaused = isLive && pausedAt != null;
@@ -97,24 +110,66 @@ export function RefereeClockControls({
             </button>
           )}
 
-          <button
-            onClick={() =>
-              handleAction(() =>
-                nextQuarter({
-                  matchId,
-                  correlationId: createCorrelationId("next-quarter"),
-                })
-              )
-            }
-            disabled={isLoading}
-            className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50"
-          >
-            {isLoading
-              ? "Bezig..."
-              : currentQuarter >= quarterCount
-                ? "Einde wedstrijd"
-                : `Einde ${quarterLabel} ${currentQuarter}`}
-          </button>
+          {isFinalSegment ? (
+            endMatchConfirm ? (
+              <div className="space-y-2">
+                <p className="text-sm text-center text-gray-800 font-medium px-1">
+                  Is de wedstrijd echt afgelopen?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEndMatchConfirm(false)}
+                    disabled={isLoading}
+                    className="flex-1 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEndMatchConfirm(false);
+                      handleAction(() =>
+                        nextQuarter({
+                          matchId,
+                          correlationId: createCorrelationId("next-quarter"),
+                        })
+                      );
+                    }}
+                    disabled={isLoading}
+                    className="flex-1 py-4 bg-red-600 text-white font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Bezig..." : "Ja, beëindigen"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEndMatchConfirm(true)}
+                disabled={isLoading}
+                className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Einde wedstrijd
+              </button>
+            )
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                handleAction(() =>
+                  nextQuarter({
+                    matchId,
+                    correlationId: createCorrelationId("next-quarter"),
+                  })
+                )
+              }
+              disabled={isLoading}
+              className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Bezig..." : `Einde ${quarterLabel} ${currentQuarter}`}
+            </button>
+          )}
         </>
       )}
 

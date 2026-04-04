@@ -12,6 +12,7 @@ import {
   normalizeQualificationTags,
 } from "../src/lib/admin/assignmentBoard";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
+import { assertValidMatchTiming } from "./lib/matchTiming";
 
 type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
 
@@ -197,6 +198,7 @@ export const createMatch = mutation({
     isHome: v.boolean(),
     coachId: v.id("coaches"),
     quarterCount: v.optional(v.number()),
+    regulationDurationMinutes: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.id("referees")),
     playerIds: v.array(v.id("players")),
@@ -234,6 +236,8 @@ export const createMatch = mutation({
     }
 
     const quarterCount = args.quarterCount ?? 4;
+    const regulationMinutes = args.regulationDurationMinutes ?? 60;
+    assertValidMatchTiming(quarterCount, regulationMinutes);
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode: code,
@@ -244,6 +248,9 @@ export const createMatch = mutation({
       status: "scheduled",
       currentQuarter: 1,
       quarterCount,
+      ...(regulationMinutes !== 60
+        ? { regulationDurationMinutes: regulationMinutes }
+        : {}),
       homeScore: 0,
       awayScore: 0,
       showLineup: false,
@@ -275,6 +282,8 @@ export const updateMatch = mutation({
     scheduledAt: v.optional(v.number()),
     refereeId: v.optional(v.union(v.id("referees"), v.null())),
     coachId: v.optional(v.union(v.id("coaches"), v.null())),
+    quarterCount: v.optional(v.number()),
+    regulationDurationMinutes: v.optional(v.number()),
     status: v.optional(v.union(v.literal("scheduled"), v.literal("finished"))),
   },
   handler: async (ctx, args) => {
@@ -285,12 +294,25 @@ export const updateMatch = mutation({
       throw new Error("Wedstrijd niet gevonden");
     }
 
+    if (match.status !== "scheduled") {
+      if (
+        args.quarterCount !== undefined ||
+        args.regulationDurationMinutes !== undefined
+      ) {
+        throw new Error(
+          "Wedstrijdvorm kan alleen worden gewijzigd bij status gepland"
+        );
+      }
+    }
+
     const patch: Partial<{
       opponent: string;
       isHome: boolean;
       scheduledAt: number;
       refereeId: Id<"referees"> | undefined;
       coachId: Id<"coaches"> | undefined;
+      quarterCount: number;
+      regulationDurationMinutes: number | undefined;
       status: MatchStatus;
       finishedAt: number;
     }> = {};
@@ -323,6 +345,20 @@ export const updateMatch = mutation({
           throw new Error("Coach niet gevonden");
         }
         patch.coachId = coach._id;
+      }
+    }
+
+    if (match.status === "scheduled") {
+      const nextQuarter = args.quarterCount ?? match.quarterCount;
+      const nextReg =
+        args.regulationDurationMinutes ??
+        match.regulationDurationMinutes ??
+        60;
+      if (args.quarterCount !== undefined || args.regulationDurationMinutes !== undefined) {
+        assertValidMatchTiming(nextQuarter, nextReg);
+        patch.quarterCount = nextQuarter;
+        patch.regulationDurationMinutes =
+          nextReg === 60 ? undefined : nextReg;
       }
     }
 
@@ -460,5 +496,6 @@ export const deleteMatch = mutation({
     return { deleted: true };
   },
 });
+
 
 

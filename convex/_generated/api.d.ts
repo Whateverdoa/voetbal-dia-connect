@@ -37,6 +37,7 @@ import type * as lib_localLogos from "../lib/localLogos.js";
 import type * as lib_matchEventGameTime from "../lib/matchEventGameTime.js";
 import type * as lib_matchEventProjection from "../lib/matchEventProjection.js";
 import type * as lib_matchLogoFields from "../lib/matchLogoFields.js";
+import type * as lib_matchTiming from "../lib/matchTiming.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
 import type * as lib_positionZones from "../lib/positionZones.js";
 import type * as lib_timezone from "../lib/timezone.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "lib/matchEventGameTime": typeof lib_matchEventGameTime;
   "lib/matchEventProjection": typeof lib_matchEventProjection;
   "lib/matchLogoFields": typeof lib_matchLogoFields;
+  "lib/matchTiming": typeof lib_matchTiming;
   "lib/opsAuth": typeof lib_opsAuth;
   "lib/positionZones": typeof lib_positionZones;
   "lib/timezone": typeof lib_timezone;

@@ -6,6 +6,11 @@ import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { PlayerSelector } from "./PlayerSelector";
+import { MatchTimingPresetPicker } from "@/components/match/MatchTimingPresetPicker";
+import {
+  MATCH_TIMING_PRESETS,
+  type MatchTimingPresetId,
+} from "@/lib/matchTimingPresets";
 
 interface MatchFormProps {
   teams: { _id: Id<"teams">; name: string }[] | undefined;
@@ -32,7 +37,7 @@ export function MatchForm({
   const [opponent, setOpponent] = useState("");
   const [isHome, setIsHome] = useState(true);
   const [coachId, setCoachId] = useState<Id<"coaches"> | "">("");
-  const [quarterCount, setQuarterCount] = useState<4 | 2>(4);
+  const [timingPreset, setTimingPreset] = useState<MatchTimingPresetId>("q4_15");
   const [scheduledAt, setScheduledAt] = useState("");
   const [refereeId, setRefereeId] = useState<Id<"referees"> | "">("");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<Id<"players">>>(new Set());
@@ -61,7 +66,7 @@ export function MatchForm({
     setOpponent("");
     setIsHome(true);
     setCoachId("");
-    setQuarterCount(4);
+    setTimingPreset("q4_15");
     setScheduledAt("");
     setRefereeId("");
     setSelectedPlayerIds(new Set());
@@ -90,12 +95,14 @@ export function MatchForm({
     setError("");
 
     try {
+      const timing = MATCH_TIMING_PRESETS[timingPreset];
       const result = await createMatch({
         teamId: teamId as Id<"teams">,
         opponent: opponent.trim(),
         isHome,
         coachId: coachId as Id<"coaches">,
-        quarterCount,
+        quarterCount: timing.quarterCount,
+        regulationDurationMinutes: timing.regulationDurationMinutes,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
         refereeId: refereeId ? (refereeId as Id<"referees">) : undefined,
         playerIds: Array.from(selectedPlayerIds),
@@ -163,17 +170,7 @@ export function MatchForm({
         ))}
       </FieldSelect>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Wedstrijdvorm</label>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setQuarterCount(4)} className={toggleCls(quarterCount === 4)}>
-            4 kwarten
-          </button>
-          <button type="button" onClick={() => setQuarterCount(2)} className={toggleCls(quarterCount === 2)}>
-            2 helften
-          </button>
-        </div>
-      </div>
+      <MatchTimingPresetPicker value={timingPreset} onChange={setTimingPreset} />
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Datum/tijd</label>

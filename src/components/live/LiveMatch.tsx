@@ -101,6 +101,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                   <MatchClock
                     currentQuarter={match.currentQuarter}
                     quarterCount={match.quarterCount}
+                    regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
                     quarterStartedAt={match.quarterStartedAt}
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}
@@ -115,6 +116,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                   <MatchClock
                     currentQuarter={match.currentQuarter}
                     quarterCount={match.quarterCount}
+                    regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
                     quarterStartedAt={match.quarterStartedAt}
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}

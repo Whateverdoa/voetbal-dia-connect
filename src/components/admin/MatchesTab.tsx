@@ -7,6 +7,11 @@ import { Id } from "@/convex/_generated/dataModel";
 import { MatchEditPanel } from "./MatchEditPanel";
 import { MatchForm } from "./MatchForm";
 import { MatchRow, type AdminMatch } from "./MatchRow";
+import {
+  inferTimingPresetId,
+  MATCH_TIMING_PRESETS,
+  type MatchTimingPresetId,
+} from "@/lib/matchTimingPresets";
 
 type StatusFilter = "alle" | "scheduled" | "live" | "finished";
 
@@ -30,6 +35,7 @@ export function MatchesTab({ teams }: MatchesTabProps) {
   const [editOpponent, setEditOpponent] = useState("");
   const [editIsHome, setEditIsHome] = useState(true);
   const [editScheduledAt, setEditScheduledAt] = useState("");
+  const [editTimingPreset, setEditTimingPreset] = useState<MatchTimingPresetId>("q4_15");
   const [addPlayerId, setAddPlayerId] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
@@ -55,12 +61,23 @@ export function MatchesTab({ teams }: MatchesTabProps) {
 
   async function handleSaveEdit(matchId: Id<"matches">) {
     try {
+      const row = matches?.find((entry) => entry._id === matchId);
+      const timing =
+        row?.status === "scheduled"
+          ? MATCH_TIMING_PRESETS[editTimingPreset]
+          : null;
       await updateMatch({
         matchId,
         opponent: editOpponent.trim() || undefined,
         isHome: editIsHome,
         scheduledAt: editScheduledAt ? new Date(editScheduledAt).getTime() : undefined,
         refereeId: editRefereeId ? (editRefereeId as Id<"referees">) : null,
+        ...(timing
+          ? {
+              quarterCount: timing.quarterCount,
+              regulationDurationMinutes: timing.regulationDurationMinutes,
+            }
+          : {}),
       });
       setEditingId(null);
       setStatusMessage("Wedstrijd bijgewerkt");
@@ -105,6 +122,12 @@ export function MatchesTab({ teams }: MatchesTabProps) {
     setEditOpponent(match?.opponent ?? "");
     setEditIsHome(match?.isHome ?? true);
     setEditScheduledAt(match?.scheduledAt ? new Date(match.scheduledAt).toISOString().slice(0, 16) : "");
+    setEditTimingPreset(
+      inferTimingPresetId(
+        match?.quarterCount ?? 4,
+        match?.regulationDurationMinutes
+      ) ?? "q4_15"
+    );
     setAddPlayerId("");
     setNewPlayerName("");
     setNewPlayerNumber("");
@@ -162,6 +185,8 @@ export function MatchesTab({ teams }: MatchesTabProps) {
                   setEditScheduledAt={setEditScheduledAt}
                   editRefereeId={editRefereeId}
                   setEditRefereeId={setEditRefereeId}
+                  editTimingPreset={editTimingPreset}
+                  setEditTimingPreset={setEditTimingPreset}
                   addPlayerId={addPlayerId}
                   setAddPlayerId={setAddPlayerId}
                   newPlayerName={newPlayerName}

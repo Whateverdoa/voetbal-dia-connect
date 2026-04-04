@@ -71,6 +71,7 @@ export interface Match {
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   homeScore: number;
   awayScore: number;
   showLineup: boolean;

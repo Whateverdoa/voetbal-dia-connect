@@ -102,7 +102,9 @@ export default defineSchema({
     ),
     currentQuarter: v.number(), // 1-4 (or 1-2 for halves)
     quarterCount: v.number(), // 2 or 4
-    
+    /** Total regulation playing minutes (excl. halftime). Omit => 60. Must divide by quarterCount. */
+    regulationDurationMinutes: v.optional(v.number()),
+
     // Score
     homeScore: v.number(),
     awayScore: v.number(),

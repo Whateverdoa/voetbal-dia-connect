@@ -4,6 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyCoachTeamMembership } from "./pinHelpers";
+import { assertValidMatchTiming } from "./lib/matchTiming";
 
 /**
  * Create a new player in the team roster and add them to a scheduled match.
@@ -116,20 +117,28 @@ export const updateMatchMetadata = mutation({
     opponent: v.optional(v.string()),
     scheduledAt: v.optional(v.number()),
     isHome: v.optional(v.boolean()),
+    quarterCount: v.optional(v.number()),
+    regulationDurationMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status !== "scheduled") {
+    if (match.status !== "scheduled" && match.status !== "lineup") {
       throw new Error("Wedstrijdgegevens kunnen alleen worden gewijzigd vóór de aftrap");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
 
-    const patch: { opponent?: string; scheduledAt?: number; isHome?: boolean } = {};
+    const patch: {
+      opponent?: string;
+      scheduledAt?: number;
+      isHome?: boolean;
+      quarterCount?: number;
+      regulationDurationMinutes?: number | undefined;
+    } = {};
     if (args.opponent !== undefined) {
       const trimmed = args.opponent.trim();
       if (!trimmed) throw new Error("Tegenstander mag niet leeg zijn");
@@ -137,6 +146,17 @@ export const updateMatchMetadata = mutation({
     }
     if (args.scheduledAt !== undefined) patch.scheduledAt = args.scheduledAt;
     if (args.isHome !== undefined) patch.isHome = args.isHome;
+
+    const nextQuarter = args.quarterCount ?? match.quarterCount;
+    const nextReg =
+      args.regulationDurationMinutes ??
+      match.regulationDurationMinutes ??
+      60;
+    if (args.quarterCount !== undefined || args.regulationDurationMinutes !== undefined) {
+      assertValidMatchTiming(nextQuarter, nextReg);
+      patch.quarterCount = nextQuarter;
+      patch.regulationDurationMinutes = nextReg === 60 ? undefined : nextReg;
+    }
 
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(args.matchId, patch);

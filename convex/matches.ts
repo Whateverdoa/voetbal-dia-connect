@@ -97,6 +97,7 @@ export const getByPublicCode = query({
       status: match.status,
       currentQuarter: match.currentQuarter,
       quarterCount: match.quarterCount,
+      regulationDurationMinutes: match.regulationDurationMinutes,
       homeScore: match.homeScore,
       awayScore: match.awayScore,
       showLineup: match.showLineup,

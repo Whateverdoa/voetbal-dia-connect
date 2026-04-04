@@ -8,6 +8,11 @@ import { useState, Suspense } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { MatchCreatedSuccess } from "@/components/MatchCreatedSuccess";
 import { PlayerSelectionGrid } from "@/components/PlayerSelectionGrid";
+import { MatchTimingPresetPicker } from "@/components/match/MatchTimingPresetPicker";
+import {
+  MATCH_TIMING_PRESETS,
+  type MatchTimingPresetId,
+} from "@/lib/matchTimingPresets";
 
 export default function NewMatchPage() {
   return (
@@ -34,7 +39,7 @@ function NewMatchContent() {
 
   const [opponent, setOpponent] = useState("");
   const [isHome, setIsHome] = useState(true);
-  const [quarterCount, setQuarterCount] = useState(4);
+  const [timingPreset, setTimingPreset] = useState<MatchTimingPresetId>("q4_15");
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,11 +96,13 @@ function NewMatchContent() {
     setIsCreating(true);
     setError(null);
     try {
+      const timing = MATCH_TIMING_PRESETS[timingPreset];
       const result = await createMatch({
         teamId,
         opponent: trimmedOpponent,
         isHome,
-        quarterCount,
+        quarterCount: timing.quarterCount,
+        regulationDurationMinutes: timing.regulationDurationMinutes,
         playerIds: Array.from(selectedPlayers) as Id<"players">[],
       });
 
@@ -175,8 +182,8 @@ function NewMatchContent() {
           setOpponent={setOpponent}
           isHome={isHome}
           setIsHome={setIsHome}
-          quarterCount={quarterCount}
-          setQuarterCount={setQuarterCount}
+          timingPreset={timingPreset}
+          setTimingPreset={setTimingPreset}
         />
 
         <PlayerSelectionGrid
@@ -204,15 +211,15 @@ function MatchDetailsForm({
   setOpponent,
   isHome,
   setIsHome,
-  quarterCount,
-  setQuarterCount,
+  timingPreset,
+  setTimingPreset,
 }: {
   opponent: string;
   setOpponent: (value: string) => void;
   isHome: boolean;
   setIsHome: (value: boolean) => void;
-  quarterCount: number;
-  setQuarterCount: (value: number) => void;
+  timingPreset: MatchTimingPresetId;
+  setTimingPreset: (value: MatchTimingPresetId) => void;
 }) {
   return (
     <section className="bg-white rounded-xl shadow p-5">
@@ -263,33 +270,7 @@ function MatchDetailsForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Speelwijze
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setQuarterCount(4)}
-              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
-                quarterCount === 4
-                  ? "border-dia-green bg-green-50 text-dia-green"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              4 kwarten
-            </button>
-            <button
-              type="button"
-              onClick={() => setQuarterCount(2)}
-              className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
-                quarterCount === 2
-                  ? "border-dia-green bg-green-50 text-dia-green"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              2 helften
-            </button>
-          </div>
+          <MatchTimingPresetPicker value={timingPreset} onChange={setTimingPreset} compact />
         </div>
       </div>
     </section>

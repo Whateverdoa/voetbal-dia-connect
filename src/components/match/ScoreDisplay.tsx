@@ -14,6 +14,7 @@ interface ScoreDisplayProps {
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
@@ -31,6 +32,7 @@ export function ScoreDisplay({
   status,
   currentQuarter,
   quarterCount,
+  regulationDurationMinutes = 60,
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
@@ -85,6 +87,7 @@ export function ScoreDisplay({
                 <MatchClock
                   currentQuarter={currentQuarter}
                   quarterCount={quarterCount}
+                  regulationDurationMinutes={regulationDurationMinutes}
                   quarterStartedAt={quarterStartedAt}
                   pausedAt={pausedAt}
                   accumulatedPauseTime={accumulatedPauseTime}

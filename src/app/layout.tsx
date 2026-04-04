@@ -24,9 +24,13 @@ export const metadata: Metadata = {
   },
 };
 
+// Tighter viewport reduces layout jump and unintended zoom on rotate (pitch-side phones).
+// Trade-off: userScalable false limits pinch-zoom (WCAG); intentional for stable match UI.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: "#1B5E20",
 };

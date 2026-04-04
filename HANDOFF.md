@@ -25,6 +25,12 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 **Technische details** (build script, `CONVEX_DEPLOY_KEY` alleen Production, preview vs production, env-vars): zie **`.cursor/agents/vercel-deployer.md`**. Daar ook gebruiken vóór release of bij mislukte builds.
 
+### Afstemming main ↔ Vercel (controle)
+
+- **Frontend (Vercel)** volgt doorgaans de **tip van `main`** na merge/push. Laatste **Production**-deployment in GitHub is gekoppeld aan commit **`adec0d2`** (merge o.a. PR #31: speeltijd-presets, einde-wedstrijd-bevestiging, sync-`requireAdminOrOps`, HANDOFF-backlog). Controleer actuele production status in het Vercel-dashboard of bijv. `gh api repos/Whateverdoa/voetbal-dia-connect/deployments`.
+- **Convex-backend (productie)** is **niet** hetzelfde als een Vercel-build: schema/mutaties gaan naar het Convex-project via `npx convex deploy` (of CI) naar de juiste deployment. Na schema-wijzigingen: verifiëren dat **productie-Convex** dezelfde versie draait als de code verwacht.
+- **Lokale repo:** als er nog **niet-gecommitte** wijzigingen staan (bijv. import team-slug mapping in `syncWedstrijdenToMatches.ts`), staan die **niet** op `main` en dus **niet** op Vercel tot commit + push + nieuwe deploy.
+
 ## Routes
 - `/`: homepage / publieke ingang
 - `/live/[code]`: publieke live-weergave
@@ -94,7 +100,7 @@ Belangrijkste tabellen:
 - `coaches`
 - `referees`
 - `players`
-- `matches`
+- `matches` (o.a. optioneel **`regulationDurationMinutes`** voor speelduur per wedstrijdvorm; validatie in `convex/lib/matchTiming.ts`)
 - `matchPlayers`
 - `matchEvents`
 - `matchCommandDedupes`
@@ -135,11 +141,16 @@ Deze velden zijn niet meer bedoeld als runtime-auth pad. Ze bestaan nog om besta
 - `SignInGateway` stuurt naar `/admin`.
 - Admin heeft een assignment board met team-tabs, speeldag-tabs en side panel.
 - Oude keypad/PIN session UI is verwijderd uit `src/components` en `src/lib`.
+- **Wedstrijdvorm / speeltijd:** presets (4×15, 2×30, 2×45) in coach- en adminflows; klok gebruikt `regulationDurationMinutes` (default 60). **Einde wedstrijd:** tweestapsbevestiging in coach- en scheidsrechterklok (`MatchControls`, `RefereeClockControls`). **Wedstrijdgegevens:** korte “opgeslagen”-feedback in `MatchSettingsEdit`.
 
 ## Verificatie
-Gevalideerd op 14 maart 2026:
-- `npx convex codegen` ✅
-- `npm run test:run` ✅ `393/393`
+Laatste beknopte check **april 2026** (lokaal):
+
+- `npm run build` — gebruikelijk voor release-candidate.
+- `npx vitest run` — **412** tests totaal; **408 geslaagd**, **4 gefaald** (o.a. `SignInGateway.test.tsx`, `TeamsTab.test.tsx` — nader herstellen of mocks bijwerken). Geen vaste garantie dat CI groen is zonder deze fixes.
+- `npm run test:run` — voert ook **pin-guard** uit; die kan in deze repo falen op verwijzingen naar legacy PIN in code (`check-no-pin-deps`). Gebruik `npx vitest run` als je alleen testlogica wilt draaien.
+
+`npx convex codegen` na schema-wijzigingen blijven verplicht voor type-sync.
 
 ## Dev Commands
 ```bash
@@ -189,6 +200,8 @@ Adminflow:
 Importflow voor VoetbalAssist/KNVB:
 - `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist
 - `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
+- de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `JO13-2JM -> jo13-2`, `G Team -> g-team`
+- bewust niet automatisch gemapt: ambigue bronvarianten zoals kale `JO10` of `JO12`; die vragen handmatige teamkeuze of extra mapping
 - nieuwe niet-gespeelde wedstrijden krijgen tijdens de sync automatisch `matchPlayers` voor alle actieve teamspelers
 - bestaande wedstrijden zonder `matchPlayers` kunnen tijdens dezelfde sync een roster-backfill krijgen zolang ze nog niet gespeeld zijn
 - een geïmporteerde uitslag mag een bestaande wedstrijd alleen naar `finished` zetten als er lokaal nog geen uitslag/stand is vastgelegd
@@ -232,6 +245,22 @@ Concreet nog aanwezig:
 - compat-strip van `coachPin` in `convex/matches.ts`
 
 Als de data volledig gemigreerd is, kunnen die bridge-paden verwijderd worden in een laatste cleanup-branch.
+
+## Issues & operationele backlog
+
+Open punten uit gebruik / data (geen volledige specs; vastgelegd voor opvolging).
+
+### Issue: wedstrijd-bank en spelers die “een keer” meespeelden
+
+**Symptoom:** Wie bij **aftrap** op de **bank** staat, zit al in **`matchPlayers`** (create/sync-backfill/pregame). Gasten of eenmaligen met **`active: true`** op het team kunnen via brede selectie of sync weer in elke nieuwe wedstrijd terechtkomen.
+
+**Richting:** **`active: false`** voor wie niet wekelijks in de selectie hoort; optioneel latere productregels (shirtnummer, kern-vlag). Zie ook *Wedstrijden klaarzetten* hierboven.
+
+### Issue: admin mobiel — naamveld spelers (portret)
+
+**Symptoom:** Bij spelers beheren in **`/admin`**: na tik op een speler wordt het **naamveld** in **portret** onbruikbaar klein; in **landschap** lijkt het OK.
+
+**Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device.
 
 ## Future To-Do's (product)
 

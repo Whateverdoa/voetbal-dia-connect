@@ -102,6 +102,15 @@ Belangrijkste tabellen:
 ### Match ownership
 Wedstrijden horen nu functioneel bij een coach via `matches.coachId`.
 
+### Wedstrijdleiding (wedstrijdleider)
+Als er **meerdere coaches** bij hetzelfde team op een wedstrijd kunnen, bepaalt **`matches.leadCoachId`** wie de **wedstrijdleider** is voor die wedstrijd.
+
+- **Claim / release:** **`convex/matchLeadActions.ts`** — `claimMatchLead`, `releaseMatchLead` (alleen coaches van het team).
+- **Rechten:** de wedstrijdleider krijgt o.a. **wissels uitvoeren** (server check: `verifyIsMatchLead` in **`convex/pinHelpers.ts`**, gebruikt o.a. in **`convex/matchEvents.ts`**). Zonder toegewezen scheidsrechter kan de wedstrijdleider ook de **klok** bedienen (zie `getForCoach`: `canControlClock`).
+- **UI:** o.a. **`MatchLeadBadge`** (`src/components/match/MatchLeadBadge.tsx`); coach-matchdata bevat `leadCoachId`, `leadCoachName`, `hasLead`, `isCurrentCoachLead` (zie **`convex/matches.ts`** `getForCoach`).
+
+Geen aparte rol in `userAccess`: het blijft **coach**, met per-wedstrijd **lead** op de match-doc.
+
 ### Tijdelijke migratiebrug
 De schema-definitie bevat nog legacy velden voor cutover/backfill:
 - `coaches.pin`
@@ -163,6 +172,28 @@ node scripts/import-matches.mjs path/to/matches.csv --dry-run
 node scripts/import-matches.mjs path/to/matches.csv --ops-secret <CONVEX_OPS_SECRET> --coach-email coach@dia.nl
 ```
 
+### Wedstrijden klaarzetten voor de club
+Belangrijk onderscheid:
+- `players` per team = vaste teamlijst van de club
+- `matchPlayers` = selectie voor die ene wedstrijd
+
+Gevolg:
+- spelers die alleen in `players` staan zijn nog niet automatisch zichtbaar in een coach-wedstrijd
+- een coach ziet in een wedstrijd alleen spelers die aan `matchPlayers` voor die wedstrijd gekoppeld zijn
+
+Adminflow:
+- bij handmatig aanmaken van een wedstrijd moet de wedstrijdselectie expliciet worden aangevinkt
+- in de regel: alle actieve teamspelers aanvinken, tenzij bewust een kleinere wedstrijdselectie wordt gekozen
+- niet aannemen dat `op teamlijst staan` genoeg is; ze moeten in de wedstrijdselectie zitten
+
+Importflow voor VoetbalAssist/KNVB:
+- `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist
+- `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
+- nieuwe niet-gespeelde wedstrijden krijgen tijdens de sync automatisch `matchPlayers` voor alle actieve teamspelers
+- bestaande wedstrijden zonder `matchPlayers` kunnen tijdens dezelfde sync een roster-backfill krijgen zolang ze nog niet gespeeld zijn
+- een geïmporteerde uitslag mag een bestaande wedstrijd alleen naar `finished` zetten als er lokaal nog geen uitslag/stand is vastgelegd
+- als er lokaal al een score of afgeronde uitslag bestaat, wordt die match overgeslagen (`skippedExistingWithResult`)
+
 ## Cutover Checklist
 ### 1. Preflight
 - Clerk keys staan correct in omgeving
@@ -201,6 +232,13 @@ Concreet nog aanwezig:
 - compat-strip van `coachPin` in `convex/matches.ts`
 
 Als de data volledig gemigreerd is, kunnen die bridge-paden verwijderd worden in een laatste cleanup-branch.
+
+## Future To-Do's (product)
+
+Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring):
+
+- **Opstellingenlijst op de website** — De lineup-/opstellingsweergave verder uitbreiden op de site (coach en/of publiek): rijkere weergave, evt. print of vaste formats, afstemming met `matchPlayers` en beschikbare posities.
+- **Live veldsituatie** — In **`/live/[code]`** de **opstelling op het veld** tonen (visueel veld + spelersposities), zodat toeschouwers de actuele veldsituatie herkennen. Sluit aan bij bestaande data zoals `matches.formationId`, `pitchType`, `matchPlayers.fieldSlotIndex` en positievelden op spelers.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.
@@ -241,3 +279,5 @@ Als planning en schaal belangrijker worden, pas dan dit model toe:
 Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
 
 **Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.
+
+

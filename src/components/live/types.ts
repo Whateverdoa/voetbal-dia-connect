@@ -7,6 +7,7 @@ export interface MatchData {
   status: "scheduled" | "lineup" | "live" | "halftime" | "finished";
   currentQuarter: number;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   homeScore: number;
   awayScore: number;
   showLineup: boolean;

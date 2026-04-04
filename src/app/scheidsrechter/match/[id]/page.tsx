@@ -90,6 +90,7 @@ export default function RefereeMatchPage() {
         status={match.status as MatchStatus}
         currentQuarter={match.currentQuarter}
         quarterCount={match.quarterCount}
+        regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
         quarterStartedAt={match.quarterStartedAt}
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
@@ -139,6 +140,7 @@ function RefereeScoreHeader({
   status,
   currentQuarter,
   quarterCount,
+  regulationDurationMinutes = 60,
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
@@ -153,6 +155,7 @@ function RefereeScoreHeader({
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
@@ -195,6 +198,7 @@ function RefereeScoreHeader({
               <MatchClock
                 currentQuarter={currentQuarter}
                 quarterCount={quarterCount}
+                regulationDurationMinutes={regulationDurationMinutes}
                 quarterStartedAt={quarterStartedAt}
                 pausedAt={pausedAt}
                 accumulatedPauseTime={accumulatedPauseTime}

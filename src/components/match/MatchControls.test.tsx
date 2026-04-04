@@ -26,6 +26,7 @@ describe('MatchControls', () => {
       return mutationMap[ref as string] ?? vi.fn();
     });
     mockRemoveLastGoal.mockResolvedValue({ removedGoal: {} });
+    mockNextQuarter.mockResolvedValue(undefined);
   });
 
   const defaultProps = {
@@ -197,6 +198,35 @@ describe('MatchControls', () => {
     it('shows "Einde wedstrijd" for half 2 of 2', () => {
       render(<MatchControls {...defaultProps} currentQuarter={2} quarterCount={2} />);
       expect(screen.getByText('Einde wedstrijd')).toBeInTheDocument();
+    });
+  });
+
+  describe('Einde wedstrijd — twee stappen', () => {
+    it('toont bevestiging na eerste tik op Einde wedstrijd', () => {
+      render(<MatchControls {...defaultProps} currentQuarter={4} quarterCount={4} />);
+      fireEvent.click(screen.getByText('Einde wedstrijd'));
+      expect(screen.getByText('Is de wedstrijd echt afgelopen?')).toBeInTheDocument();
+      expect(screen.getByText('Ja, beëindigen')).toBeInTheDocument();
+      expect(mockNextQuarter).not.toHaveBeenCalled();
+    });
+
+    it('roept nextQuarter pas aan na Ja, beëindigen', async () => {
+      render(<MatchControls {...defaultProps} currentQuarter={4} quarterCount={4} />);
+      fireEvent.click(screen.getByText('Einde wedstrijd'));
+      fireEvent.click(screen.getByText('Ja, beëindigen'));
+      await waitFor(() => {
+        expect(mockNextQuarter).toHaveBeenCalledTimes(1);
+      });
+      expect(mockNextQuarter.mock.calls[0][0].matchId).toBe(defaultMatchId);
+    });
+
+    it('Einde kwart blijft één tik (geen bevestiging)', async () => {
+      render(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={4} />);
+      fireEvent.click(screen.getByText('Einde kwart 1'));
+      await waitFor(() => {
+        expect(mockNextQuarter).toHaveBeenCalledTimes(1);
+      });
+      expect(screen.queryByText('Is de wedstrijd echt afgelopen?')).not.toBeInTheDocument();
     });
   });
 

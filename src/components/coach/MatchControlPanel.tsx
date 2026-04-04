@@ -116,6 +116,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         status={match.status}
         currentQuarter={match.currentQuarter}
         quarterCount={match.quarterCount}
+        regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
         quarterStartedAt={match.quarterStartedAt}
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}

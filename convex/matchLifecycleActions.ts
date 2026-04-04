@@ -8,6 +8,7 @@ import { verifyClockPin } from "./pinHelpers";
 import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 import { requireCoachForTeam } from "./lib/userAccess";
+import { assertValidMatchTiming } from "./lib/matchTiming";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
@@ -21,6 +22,7 @@ export const create = mutation({
     opponent: v.string(),
     isHome: v.boolean(),
     quarterCount: v.optional(v.number()),
+    regulationDurationMinutes: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     playerIds: v.array(v.id("players")),
   },
@@ -54,6 +56,9 @@ export const create = mutation({
         .first();
     }
 
+    const quarterCount = args.quarterCount ?? 4;
+    const regulationMinutes = args.regulationDurationMinutes ?? 60;
+    assertValidMatchTiming(quarterCount, regulationMinutes);
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode,
@@ -63,7 +68,10 @@ export const create = mutation({
       scheduledAt: args.scheduledAt,
       status: "scheduled",
       currentQuarter: 1,
-      quarterCount: args.quarterCount ?? 4,
+      quarterCount,
+      ...(regulationMinutes !== 60
+        ? { regulationDurationMinutes: regulationMinutes }
+        : {}),
       homeScore: 0,
       awayScore: 0,
       showLineup: false,

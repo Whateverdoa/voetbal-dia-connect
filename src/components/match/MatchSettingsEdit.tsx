@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { formatDateTimeInput } from "@/lib/dateUtils";
 import type { Match } from "./types";
+import { MatchTimingPresetPicker } from "./MatchTimingPresetPicker";
+import {
+  inferTimingPresetId,
+  MATCH_TIMING_PRESETS,
+  type MatchTimingPresetId,
+} from "@/lib/matchTimingPresets";
 
 interface MatchSettingsEditProps {
   match: Match;
@@ -18,14 +24,35 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
   const [scheduledAt, setScheduledAt] = useState(
     formatDateTimeInput(match.scheduledAt)
   );
+  const [timingPreset, setTimingPreset] = useState<MatchTimingPresetId>(
+    () =>
+      inferTimingPresetId(match.quarterCount, match.regulationDurationMinutes) ??
+      "q4_15"
+  );
   const [addPlayerId, setAddPlayerId] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [savingMetadata, setSavingMetadata] = useState(false);
+  const [saveAcknowledged, setSaveAcknowledged] = useState(false);
 
   const updateMetadata = useMutation(api.matchActions.updateMatchMetadata);
   const addExistingPlayer = useMutation(api.matchActions.addExistingPlayerToMatch);
   const createAndAdd = useMutation(api.matchActions.createPlayerAndAddToMatch);
+  useEffect(() => {
+    const id = inferTimingPresetId(
+      match.quarterCount,
+      match.regulationDurationMinutes
+    );
+    setTimingPreset(id ?? "q4_15");
+  }, [match._id, match.quarterCount, match.regulationDurationMinutes]);
+
+  useEffect(() => {
+    if (!saveAcknowledged) return;
+    const timer = window.setTimeout(() => setSaveAcknowledged(false), 3500);
+    return () => window.clearTimeout(timer);
+  }, [saveAcknowledged]);
+
   const playersNotInMatch = useQuery(api.matches.listTeamPlayersNotInMatch, {
     matchId: match._id,
   });
@@ -37,15 +64,23 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
 
   const handleSaveMetadata = async () => {
     setError(null);
+    setSaveAcknowledged(false);
+    setSavingMetadata(true);
     try {
+      const timing = MATCH_TIMING_PRESETS[timingPreset];
       await updateMetadata({
         matchId: match._id,
         opponent: opponent.trim() || undefined,
         isHome,
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
+        quarterCount: timing.quarterCount,
+        regulationDurationMinutes: timing.regulationDurationMinutes,
       });
+      setSaveAcknowledged(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Onbekende fout");
+    } finally {
+      setSavingMetadata(false);
     }
   };
 
@@ -82,6 +117,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
   return (
     <section className="bg-white rounded-xl shadow-md overflow-hidden">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors min-h-[48px]"
       >
@@ -137,12 +173,29 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
             />
           </div>
 
+          <MatchTimingPresetPicker
+            value={timingPreset}
+            onChange={setTimingPreset}
+            compact
+          />
+
           <button
+            type="button"
             onClick={handleSaveMetadata}
-            className="w-full py-2 bg-dia-green text-white font-medium rounded-xl text-sm"
+            disabled={savingMetadata}
+            className="w-full py-2 bg-dia-green text-white font-medium rounded-xl text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Wijzigingen opslaan
+            {savingMetadata ? "Bezig met opslaan…" : "Wijzigingen opslaan"}
           </button>
+
+          {saveAcknowledged && (
+            <p
+              className="text-sm text-green-800 bg-green-50 border border-green-200 px-3 py-2 rounded-lg"
+              role="status"
+            >
+              Opgeslagen. Wijzigingen zijn bijgewerkt.
+            </p>
+          )}
 
           <div className="border-t border-gray-100 pt-4">
             <h4 className="text-sm font-semibold text-gray-800 mb-2">
@@ -164,7 +217,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
                   ))}
                 </select>
                 <button
-                  onClick={handleAddExisting}
+                  type="button" onClick={handleAddExisting}
                   disabled={!addPlayerId}
                   className="px-4 py-2 bg-dia-green text-white rounded-lg text-sm font-medium disabled:bg-gray-300"
                 >
@@ -191,7 +244,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
                 max={99}
               />
               <button
-                onClick={handleCreateNew}
+                type="button" onClick={handleCreateNew}
                 disabled={!newPlayerName.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:bg-gray-300"
               >

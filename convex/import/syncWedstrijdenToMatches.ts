@@ -1,15 +1,16 @@
 /**
  * Sync imported VoetbalAssist `wedstrijden` docs into `matches`.
  *
- * Usage:
- *   npx convex run import/syncWedstrijdenToMatches:syncAll
+ * Usage (admin dashboard mutation, or CLI with ops secret):
+ *   npx convex run import/syncWedstrijdenToMatches:syncAll '{"opsSecret":"<CONVEX_OPS_SECRET>","dryRun":true}'
  */
-import { mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { generatePublicCode } from "../seed/helpers";
 import { findLocalLogo } from "../lib/localLogos";
+import { requireAdminOrOps } from "../lib/opsAuth";
 
 type SyncExtraction = {
   teamSlug: string;
@@ -57,6 +58,16 @@ function extractDiaMatch(
   return null;
 }
 
+export function hasManualResult(
+  match: Pick<Doc<"matches">, "status" | "homeScore" | "awayScore" | "finishedAt">
+) {
+  if (match.status === "finished") {
+    return true;
+  }
+
+  return Boolean(match.finishedAt) || match.homeScore !== 0 || match.awayScore !== 0;
+}
+
 async function generateUniqueCode(ctx: MutationCtx) {
   let attempts = 0;
   let code = generatePublicCode();
@@ -75,15 +86,107 @@ async function generateUniqueCode(ctx: MutationCtx) {
   return code;
 }
 
+async function seedMatchPlayersForRoster(
+  ctx: MutationCtx,
+  args: {
+    matchId: Id<"matches">;
+    playerIds: Id<"players">[];
+    dryRun: boolean;
+  }
+) {
+  if (args.playerIds.length === 0) {
+    return 0;
+  }
+
+  if (!args.dryRun) {
+    const now = Date.now();
+    await Promise.all(
+      args.playerIds.map((playerId) =>
+        ctx.db.insert("matchPlayers", {
+          matchId: args.matchId,
+          playerId,
+          isKeeper: false,
+          onField: false,
+          createdAt: now,
+        })
+      )
+    );
+  }
+
+  return args.playerIds.length;
+}
+
+export const listUnknownTeams = query({
+  args: {
+    opsSecret: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminOrOps(ctx, args.opsSecret);
+
+    const wedstrijden = await ctx.db.query("wedstrijden").collect();
+    const teams = await ctx.db.query("teams").collect();
+    const teamsBySlug = new Set(teams.map((team) => team.slug));
+    const unknown = new Map<
+      string,
+      {
+        teamSlug: string;
+        count: number;
+        diaTeams: Set<string>;
+        examples: Set<string>;
+      }
+    >();
+
+    for (const wedstrijd of wedstrijden) {
+      if (wedstrijd.status === "afgelast") continue;
+      const extracted = extractDiaMatch(
+        wedstrijd.thuisteam,
+        wedstrijd.uitteam,
+        wedstrijd.thuisteamLogo,
+        wedstrijd.uitteamLogo,
+      );
+      if (!extracted) continue;
+      if (teamsBySlug.has(extracted.teamSlug)) continue;
+
+      const current = unknown.get(extracted.teamSlug) ?? {
+        teamSlug: extracted.teamSlug,
+        count: 0,
+        diaTeams: new Set<string>(),
+        examples: new Set<string>(),
+      };
+      current.count += 1;
+      if (wedstrijd.dia_team) {
+        current.diaTeams.add(wedstrijd.dia_team);
+      }
+      if (current.examples.size < 3) {
+        current.examples.add(`${wedstrijd.thuisteam} - ${wedstrijd.uitteam}`);
+      }
+      unknown.set(extracted.teamSlug, current);
+    }
+
+    return Array.from(unknown.values())
+      .map((entry) => ({
+        teamSlug: entry.teamSlug,
+        count: entry.count,
+        diaTeams: Array.from(entry.diaTeams).sort((a, b) => a.localeCompare(b, "nl-NL")),
+        examples: Array.from(entry.examples),
+      }))
+      .sort((left, right) => right.count - left.count || left.teamSlug.localeCompare(right.teamSlug, "nl-NL"));
+  },
+});
+
 export const syncAll = mutation({
   args: {
     dryRun: v.optional(v.boolean()),
+    opsSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdminOrOps(ctx, args.opsSecret);
     const dryRun = args.dryRun ?? false;
     const wedstrijden = await ctx.db.query("wedstrijden").collect();
     const teams = await ctx.db.query("teams").collect();
     const coaches = await ctx.db.query("coaches").collect();
+    const players = await ctx.db.query("players").collect();
+    const matchPlayers = await ctx.db.query("matchPlayers").collect();
 
     const teamsBySlug = new Map(teams.map((team) => [team.slug, team]));
     const coachByTeamId = new Map<Id<"teams">, Id<"coaches">>();
@@ -93,6 +196,22 @@ export const syncAll = mutation({
           coachByTeamId.set(teamId, coach._id);
         }
       }
+    }
+
+    const activePlayerIdsByTeamId = new Map<Id<"teams">, Id<"players">[]>();
+    for (const player of players) {
+      if (!player.active) continue;
+      const current = activePlayerIdsByTeamId.get(player.teamId) ?? [];
+      current.push(player._id);
+      activePlayerIdsByTeamId.set(player.teamId, current);
+    }
+
+    const matchPlayerCountByMatchId = new Map<Id<"matches">, number>();
+    for (const matchPlayer of matchPlayers) {
+      matchPlayerCountByMatchId.set(
+        matchPlayer.matchId,
+        (matchPlayerCountByMatchId.get(matchPlayer.matchId) ?? 0) + 1,
+      );
     }
 
     const existingMatches = await ctx.db.query("matches").collect();
@@ -110,7 +229,10 @@ export const syncAll = mutation({
     );
 
     let created = 0;
+    let createdMatchPlayers = 0;
+    let backfilledMatchRosters = 0;
     let skippedExisting = 0;
+    let skippedExistingWithResult = 0;
     let skippedNoDiaTeam = 0;
     let skippedUnknownTeam = 0;
     let skippedCancelled = 0;
@@ -150,18 +272,37 @@ export const syncAll = mutation({
       const isFinished = wedstrijd.status === "gespeeld";
       const homeGoals = wedstrijd.thuis_goals ?? 0;
       const awayGoals = wedstrijd.uit_goals ?? 0;
+      const activePlayerIds = activePlayerIdsByTeamId.get(team._id) ?? [];
 
       if (existingKeys.has(key)) {
         const existingMatch = existingByKey.get(key);
+        if (existingMatch) {
+          const matchPlayerCount = matchPlayerCountByMatchId.get(existingMatch._id) ?? 0;
+          if (!isFinished && matchPlayerCount === 0 && activePlayerIds.length > 0) {
+            createdMatchPlayers += await seedMatchPlayersForRoster(ctx, {
+              matchId: existingMatch._id,
+              playerIds: activePlayerIds,
+              dryRun,
+            });
+            backfilledMatchRosters++;
+            matchPlayerCountByMatchId.set(existingMatch._id, activePlayerIds.length);
+          }
+        }
+
         if (
           existingMatch &&
           existingMatch.status === "scheduled" &&
           isFinished
         ) {
+          if (hasManualResult(existingMatch)) {
+            skippedExistingWithResult++;
+            continue;
+          }
+
           if (!dryRun) {
             await ctx.db.patch(existingMatch._id, {
               status: "finished",
-              currentQuarter: 4,
+              currentQuarter: existingMatch.quarterCount,
               homeScore: homeGoals,
               awayScore: awayGoals,
               startedAt: existingMatch.startedAt ?? wedstrijd.datum_ms,
@@ -179,7 +320,7 @@ export const syncAll = mutation({
 
       if (!dryRun) {
         const code = await generateUniqueCode(ctx);
-        await ctx.db.insert("matches", {
+        const matchId = await ctx.db.insert("matches", {
           teamId: team._id,
           publicCode: code,
           ...(coachId ? { coachId } : {}),
@@ -197,6 +338,16 @@ export const syncAll = mutation({
           finishedAt: isFinished ? wedstrijd.datum_ms + 3600000 : undefined,
           createdAt: Date.now(),
         });
+
+        if (!isFinished && activePlayerIds.length > 0) {
+          createdMatchPlayers += await seedMatchPlayersForRoster(ctx, {
+            matchId,
+            playerIds: activePlayerIds,
+            dryRun,
+          });
+        }
+      } else if (!isFinished && activePlayerIds.length > 0) {
+        createdMatchPlayers += activePlayerIds.length;
       }
 
       existingKeys.add(key);
@@ -207,8 +358,11 @@ export const syncAll = mutation({
       totalWedstrijden: wedstrijden.length,
       dryRun,
       created,
+      createdMatchPlayers,
+      backfilledMatchRosters,
       updatedFinished,
       skippedExisting,
+      skippedExistingWithResult,
       skippedNoDiaTeam,
       skippedUnknownTeam,
       skippedCancelled,
@@ -216,4 +370,3 @@ export const syncAll = mutation({
     };
   },
 });
-

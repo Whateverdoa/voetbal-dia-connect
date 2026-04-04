@@ -28,6 +28,7 @@ export { RefereeAssignment } from "./RefereeAssignment";
 export { MatchLeadBadge } from "./MatchLeadBadge";
 
 // Pregame settings edit
+export { MatchTimingPresetPicker } from "./MatchTimingPresetPicker";
 export { MatchSettingsEdit } from "./MatchSettingsEdit";
 
 // Loading/Error screens

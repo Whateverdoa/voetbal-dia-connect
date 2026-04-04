@@ -24,6 +24,8 @@ export interface AdminMatch {
   teamLogoUrl?: string | null;
   clubLogoUrl?: string | null;
   opponentLogoUrl?: string | null;
+  quarterCount?: number;
+  regulationDurationMinutes?: number;
 }
 
 interface MatchRowProps {

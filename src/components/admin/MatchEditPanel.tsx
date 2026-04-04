@@ -4,6 +4,8 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { AdminMatch } from "./MatchRow";
+import { MatchTimingPresetPicker } from "@/components/match/MatchTimingPresetPicker";
+import type { MatchTimingPresetId } from "@/lib/matchTimingPresets";
 
 interface MatchEditPanelProps {
   match: AdminMatch;
@@ -15,6 +17,8 @@ interface MatchEditPanelProps {
   setEditScheduledAt: (v: string) => void;
   editRefereeId: string;
   setEditRefereeId: (v: string) => void;
+  editTimingPreset: MatchTimingPresetId;
+  setEditTimingPreset: (v: MatchTimingPresetId) => void;
   addPlayerId: string;
   setAddPlayerId: (v: string) => void;
   newPlayerName: string;
@@ -38,6 +42,8 @@ export function MatchEditPanel({
   setEditScheduledAt,
   editRefereeId,
   setEditRefereeId,
+  editTimingPreset,
+  setEditTimingPreset,
   addPlayerId,
   setAddPlayerId,
   newPlayerName,
@@ -84,6 +90,13 @@ export function MatchEditPanel({
           </button>
         </div>
       </div>
+
+      {match.status === "scheduled" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Wedstrijdvorm</label>
+          <MatchTimingPresetPicker value={editTimingPreset} onChange={setEditTimingPreset} />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Datum/tijd</label>

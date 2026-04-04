@@ -6,6 +6,8 @@ import type { MatchStatus } from "./types";
 interface MatchClockProps {
   currentQuarter: number;
   quarterCount: number;
+  /** Total regulation minutes (excl. halftime). Default 60. */
+  regulationDurationMinutes?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
@@ -29,8 +31,8 @@ export function formatElapsed(ms: number): string {
  * - Q1 starts at 00:00
  * - Q2 starts at 15:00 (for 4 quarters)
  * - Q3 starts at 30:00
- * - Q4 starts at 45:00
- * For 2 halves, anchors are 00:00 and 30:00.
+ * - Q4 starts at 45:00 (for 60-minute regulation / 4 periods)
+ * For 2 halves of 30', anchors are 00:00 and 30:00; for 2×45', anchors are 00:00 and 45:00.
  *
  * Accounts for pauses via pausedAt + accumulatedPauseTime.
  * - Running:  elapsed = quarterBase + (now - quarterStartedAt - accumulatedPauseTime)
@@ -40,6 +42,7 @@ export function formatElapsed(ms: number): string {
 export function MatchClock({
   currentQuarter,
   quarterCount,
+  regulationDurationMinutes = 60,
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime = 0,
@@ -49,7 +52,8 @@ export function MatchClock({
   const isPaused = isLive && pausedAt != null;
   const shouldTick = isLive && quarterStartedAt != null && !isPaused;
 
-  const quarterDurationMs = (60 * 60 * 1000) / Math.max(1, quarterCount);
+  const quarterDurationMs =
+    (regulationDurationMinutes * 60 * 1000) / Math.max(1, quarterCount);
   const quarterBaseMs = Math.max(0, currentQuarter - 1) * quarterDurationMs;
   const calcElapsed = (refTime: number) => {
     if (quarterStartedAt == null) {
@@ -97,6 +101,9 @@ export function MatchClock({
     pausedAt,
     accumulatedPauseTime,
     quarterBaseMs,
+    regulationDurationMinutes,
+    quarterCount,
+    currentQuarter,
   ]);
 
   const isActive = shouldTick || isPaused;

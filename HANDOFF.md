@@ -235,10 +235,19 @@ Als de data volledig gemigreerd is, kunnen die bridge-paden verwijderd worden in
 
 ## Future To-Do's (product)
 
-Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring):
+Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring). *Status: backlog — nog niet geprioriteerd of ingepland tenzij anders vermeld.*
+
+### Bestaande bullets (behouden)
 
 - **Opstellingenlijst op de website** — De lineup-/opstellingsweergave verder uitbreiden op de site (coach en/of publiek): rijkere weergave, evt. print of vaste formats, afstemming met `matchPlayers` en beschikbare posities.
 - **Live veldsituatie** — In **`/live/[code]`** de **opstelling op het veld** tonen (visueel veld + spelersposities), zodat toeschouwers de actuele veldsituatie herkennen. Sluit aan bij bestaande data zoals `matches.formationId`, `pitchType`, `matchPlayers.fieldSlotIndex` en positievelden op spelers.
+
+### Aanvulling (backlog voice note → gestructureerd)
+
+1. **Spelersschilden met foto’s** — Spelerscards kunnen een foto tonen (avatar/schild-stijl). Prioriteit: **foto uploaden per speler (admin-flow)**; tonen op **veldoverzicht en bank**; **fallback** initialen of rugnummer (vergelijkbaar patroon als `TeamLogo` / initialen nu al voor logo’s).
+2. **Veldlayout — plat bovenaanzicht** — Het veld is nu **perspectivisch**; gewenst: terug naar een **plat, vlak bovenaanzicht** (traditioneel tactiekbord). *Dit is een UI-designbeslissing, geen datawijziging.* **Volgende stap:** afstemmen met Roel over de gewenste layout vóór implementatie (sluit aan bij “live veldsituatie” hierboven, maar specificeert de weergave-richting).
+3. **Wedstrijdplan vooraf (pre-match planning)** — Nu vooral wissels **tijdens** de wedstrijd. Gewenst: **vooraf** een vollediger plan: **opstelling per kwart**, **geplande wissels** (uit/in, moment/timing), bewerkbaar **tijdens** de wedstrijd; plan = **startpunt**, geen dwangbuis. **Technisch (richting):** een **draft**-volgorde die **los staat** van de **append-only** `matchEvents` tot de coach een geplande actie **bevestigt**; uitgevoerde acties blijven gewone events. *Complex — verdient een apart **WAT+HOE**-document vóór bouwen.*
+4. **Backlog beheer (meta)** — Groeiende losse to-do’s: overweeg **`BACKLOG.md`** in de repo en/of koppeling aan een bestaand backlog-systeem (GitHub Projects, Linear, …) zodat HANDOFF compact blijft.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.

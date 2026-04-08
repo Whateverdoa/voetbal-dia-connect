@@ -11,6 +11,7 @@ export interface MatchData {
   homeScore: number;
   awayScore: number;
   showLineup: boolean;
+  scheduledAt?: number;
   startedAt?: number;
   quarterStartedAt?: number;
   pausedAt?: number;

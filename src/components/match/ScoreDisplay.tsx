@@ -2,6 +2,7 @@
 
 import { StatusBadge } from "@/components/StatusBadge";
 import { TeamLogo } from "@/components/TeamLogo";
+import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
 import { MatchClock } from "./MatchClock";
 import type { MatchStatus } from "./types";
 
@@ -19,6 +20,7 @@ interface ScoreDisplayProps {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   publicCode: string;
+  scheduledAt?: number;
   homeLogoUrl?: string | null;
   awayLogoUrl?: string | null;
 }
@@ -37,6 +39,7 @@ export function ScoreDisplay({
   pausedAt,
   accumulatedPauseTime,
   publicCode,
+  scheduledAt,
   homeLogoUrl,
   awayLogoUrl,
 }: ScoreDisplayProps) {
@@ -74,6 +77,14 @@ export function ScoreDisplay({
           </span>
           <StatusBadge status={status} size="md" />
         </div>
+
+        {scheduledAt != null && (
+          <p className="text-center text-sm text-white/90 tabular-nums mb-3">
+            <time dateTime={new Date(scheduledAt).toISOString()}>
+              {formatMatchDateNl(scheduledAt)} · {formatMatchTimeNl(scheduledAt)}
+            </time>
+          </p>
+        )}
 
         {/* Score - HUGE and centered */}
         <div className="text-center py-4">

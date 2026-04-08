@@ -41,6 +41,7 @@ export const getForReferee = query({
         regulationDurationMinutes: match.regulationDurationMinutes,
         homeScore: match.homeScore,
         awayScore: match.awayScore,
+        scheduledAt: match.scheduledAt,
         startedAt: match.startedAt,
         quarterStartedAt: match.quarterStartedAt,
         pausedAt: match.pausedAt,

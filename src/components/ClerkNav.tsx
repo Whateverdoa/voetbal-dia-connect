@@ -7,17 +7,23 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { useClerk, useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import Link from "next/link";
-import { parseRolesFromMetadata } from "@/lib/auth/roles";
+import { api } from "@/convex/_generated/api";
 
 /**
  * Global auth nav: Sign In / Sign Up when signed out, UserButton when signed in.
  * Rendered only when Clerk is configured (inside ClerkProvider in AppProviders).
+ *
+ * Roles are resolved from Convex (userAccess table + coaches/referees by email)
+ * rather than Clerk publicMetadata, so tabs appear even when the onboarding
+ * step was skipped.
  */
 export function ClerkNav() {
   const { signOut } = useClerk();
   const { user } = useUser();
-  const roles = parseRolesFromMetadata(user?.publicMetadata);
+  const access = useQuery(api.userQueries.getMyRoles);
+  const roles = access?.roles ?? [];
   const isAdmin = roles.includes("admin");
   const isCoach = roles.includes("coach");
   const isReferee = roles.includes("referee");

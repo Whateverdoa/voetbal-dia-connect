@@ -20,6 +20,7 @@ import type { MatchData, MatchEvent, LineupPlayer } from "./types";
 import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
 import { TeamLogo } from "@/components/TeamLogo";
 import { resolveLogoUrl } from "@/lib/logos";
+import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
 
 interface LiveMatchProps {
   match: MatchData;
@@ -140,6 +141,15 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 </span>
               )}
             </div>
+
+            {match.scheduledAt != null && (
+              <p className="text-sm text-white/90 text-center tabular-nums">
+                <time dateTime={new Date(match.scheduledAt).toISOString()}>
+                  {formatMatchDateNl(match.scheduledAt)} ·{" "}
+                  {formatMatchTimeNl(match.scheduledAt)}
+                </time>
+              </p>
+            )}
 
             {/* Quarter progress indicator */}
             {!isScheduled && (

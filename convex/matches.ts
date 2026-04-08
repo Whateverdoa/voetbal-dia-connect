@@ -101,6 +101,7 @@ export const getByPublicCode = query({
       homeScore: match.homeScore,
       awayScore: match.awayScore,
       showLineup: match.showLineup,
+      scheduledAt: match.scheduledAt,
       startedAt: match.startedAt,
       quarterStartedAt: match.quarterStartedAt,
       pausedAt: match.pausedAt,

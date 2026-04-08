@@ -10,6 +10,7 @@ import { RefereeClockControls } from "@/components/referee/RefereeClockControls"
 import { RefereeScoreControls } from "@/components/referee/RefereeScoreControls";
 import type { MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
+import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
 import { TeamLogo } from "@/components/TeamLogo";
 
 export default function RefereeMatchPage() {
@@ -94,6 +95,7 @@ export default function RefereeMatchPage() {
         quarterStartedAt={match.quarterStartedAt}
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
+        scheduledAt={match.scheduledAt}
         homeLogoUrl={homeLogoUrl}
         awayLogoUrl={awayLogoUrl}
       />
@@ -144,6 +146,7 @@ function RefereeScoreHeader({
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
+  scheduledAt,
   homeLogoUrl,
   awayLogoUrl,
 }: {
@@ -159,6 +162,7 @@ function RefereeScoreHeader({
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  scheduledAt?: number;
   homeLogoUrl: string | null;
   awayLogoUrl: string | null;
 }) {
@@ -207,6 +211,14 @@ function RefereeScoreHeader({
             )}
           </span>
         </div>
+
+        {scheduledAt != null && (
+          <p className="text-sm text-white/90 tabular-nums mb-2">
+            <time dateTime={new Date(scheduledAt).toISOString()}>
+              {formatMatchDateNl(scheduledAt)} · {formatMatchTimeNl(scheduledAt)}
+            </time>
+          </p>
+        )}
 
         <div className="text-6xl font-bold tabular-nums tracking-tight">
           {homeScore} - {awayScore}

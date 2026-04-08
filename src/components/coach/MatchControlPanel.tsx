@@ -121,6 +121,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
         publicCode={match.publicCode}
+        scheduledAt={match.scheduledAt}
         homeLogoUrl={homeLogoUrl}
         awayLogoUrl={awayLogoUrl}
       />

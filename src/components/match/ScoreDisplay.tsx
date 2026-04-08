@@ -119,7 +119,7 @@ export function ScoreDisplay({
               className="ring-2 ring-white/30"
             />
             <p className="font-medium truncate w-full">{isHome ? teamName : opponent}</p>
-            <p className="text-xs opacity-75">{isHome ? "Thuis" : "Uit"}</p>
+            <p className="text-xs opacity-75">Thuis</p>
           </div>
           <div className="text-center text-xs opacity-75 shrink-0 pt-6">vs</div>
           <div className="text-right flex flex-col items-end gap-1 min-w-0 flex-1">
@@ -130,7 +130,7 @@ export function ScoreDisplay({
               className="ring-2 ring-white/30"
             />
             <p className="font-medium truncate w-full">{isHome ? opponent : teamName}</p>
-            <p className="text-xs opacity-75">{isHome ? "Uit" : "Thuis"}</p>
+            <p className="text-xs opacity-75">Uit</p>
           </div>
         </div>
       </div>

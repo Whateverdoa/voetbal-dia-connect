@@ -84,12 +84,20 @@ export function MatchBrowserCard({ match }: Props) {
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500">
           <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{match.publicCode}</span>
           {match.refereeAssigned === true && (
-            <span title="Wedstrijdbegeleider toegewezen (geen naam op dit scherm)">
-              Begeleider toegewezen
+            <span
+              title={
+                match.refereePublicName
+                  ? `Scheidsrechter: ${match.refereePublicName}`
+                  : "Scheidsrechter toegewezen (naam alleen als diegene dat zelf wil)"
+              }
+            >
+              {match.refereePublicName
+                ? `Scheidsrechter: ${match.refereePublicName}`
+                : "Scheidsrechter toegewezen"}
             </span>
           )}
           {match.refereeAssigned === false && (
-            <span className="text-amber-700/90">Geen begeleider</span>
+            <span className="text-amber-700/90">Geen scheidsrechter</span>
           )}
         </div>
       </div>

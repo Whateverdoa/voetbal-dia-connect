@@ -61,6 +61,8 @@ export default defineSchema({
     pin: v.optional(v.string()), // Legacy PIN, to be removed after full auth migration
     email: v.optional(v.string()),
     active: v.boolean(),
+    /** When true, public live views may show this referee's name; default is hidden. */
+    showPublicName: v.optional(v.boolean()),
     qualificationTags: v.optional(v.array(v.string())),
     createdAt: v.number(),
   })

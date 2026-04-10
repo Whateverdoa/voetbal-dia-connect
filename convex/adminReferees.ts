@@ -16,6 +16,7 @@ export const createReferee = mutation({
     name: v.string(),
     email: v.string(),
     qualificationTags: v.optional(v.array(v.string())),
+    showPublicName: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
@@ -44,6 +45,7 @@ export const createReferee = mutation({
       email: trimmedEmail,
       active: true,
       ...(qualificationTags.length > 0 ? { qualificationTags } : {}),
+      ...(args.showPublicName === true ? { showPublicName: true } : {}),
       createdAt: Date.now(),
     });
 
@@ -72,6 +74,7 @@ export const updateReferee = mutation({
     email: v.optional(v.string()),
     active: v.optional(v.boolean()),
     qualificationTags: v.optional(v.array(v.string())),
+    showPublicName: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
@@ -86,6 +89,7 @@ export const updateReferee = mutation({
       email?: string;
       active?: boolean;
       qualificationTags?: string[];
+      showPublicName?: boolean;
     } = {};
 
     if (args.name !== undefined) {
@@ -119,6 +123,10 @@ export const updateReferee = mutation({
 
     if (args.qualificationTags !== undefined) {
       updates.qualificationTags = normalizeQualificationTags(args.qualificationTags);
+    }
+
+    if (args.showPublicName !== undefined) {
+      updates.showPublicName = args.showPublicName;
     }
 
     await ctx.db.patch(args.refereeId, updates);

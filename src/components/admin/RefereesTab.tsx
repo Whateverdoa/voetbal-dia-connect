@@ -9,12 +9,14 @@ import {
   REFEREE_QUALIFICATION_PRESETS,
   normalizeQualificationTags,
 } from "@/lib/admin/assignmentBoard";
+import { RefereeShowPublicNameField } from "./RefereeShowPublicNameField";
 
 interface Referee {
   _id: Id<"referees">;
   name: string;
   email?: string;
   active: boolean;
+  showPublicName?: boolean;
   qualificationTags?: string[];
 }
 
@@ -27,12 +29,14 @@ export function RefereesTab() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newQualificationTags, setNewQualificationTags] = useState<string[]>([]);
+  const [newShowPublicName, setNewShowPublicName] = useState(false);
   const [newCustomTag, setNewCustomTag] = useState("");
   const [editingId, setEditingId] = useState<Id<"referees"> | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editActive, setEditActive] = useState(true);
   const [editQualificationTags, setEditQualificationTags] = useState<string[]>([]);
+  const [editShowPublicName, setEditShowPublicName] = useState(false);
   const [editCustomTag, setEditCustomTag] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"referees"> | null>(null);
   const [status, setStatus] = useState("");
@@ -52,10 +56,12 @@ export function RefereesTab() {
         name: newName.trim(),
         email: newEmail.trim(),
         qualificationTags: normalizeQualificationTags(newQualificationTags),
+        ...(newShowPublicName ? { showPublicName: true } : {}),
       });
       setNewName("");
       setNewEmail("");
       setNewQualificationTags([]);
+      setNewShowPublicName(false);
       setNewCustomTag("");
       setStatus("Scheidsrechter aangemaakt");
     } catch (error) {
@@ -72,6 +78,7 @@ export function RefereesTab() {
         email: editEmail.trim() || undefined,
         active: editActive,
         qualificationTags: normalizeQualificationTags(editQualificationTags),
+        showPublicName: editShowPublicName,
       });
       setEditingId(null);
       setEditCustomTag("");
@@ -135,6 +142,12 @@ export function RefereesTab() {
                     Actief
                   </label>
 
+                  <RefereeShowPublicNameField
+                    className="mt-3"
+                    checked={editShowPublicName}
+                    onChange={setEditShowPublicName}
+                  />
+
                   <div className="mt-4">
                     <QualificationTagPicker
                       title="Kwalificaties"
@@ -194,6 +207,11 @@ export function RefereesTab() {
                           Inactief
                         </span>
                       )}
+                      {referee.showPublicName === true && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                          Naam op live
+                        </span>
+                      )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {tags.length > 0 ? (
@@ -215,6 +233,7 @@ export function RefereesTab() {
                         setEditName(referee.name);
                         setEditEmail(referee.email ?? "");
                         setEditActive(referee.active);
+                        setEditShowPublicName(referee.showPublicName === true);
                         setEditQualificationTags(tags);
                         setEditCustomTag("");
                       }}
@@ -274,6 +293,8 @@ export function RefereesTab() {
               setNewCustomTag("");
             }}
           />
+
+          <RefereeShowPublicNameField checked={newShowPublicName} onChange={setNewShowPublicName} />
 
           <button
             type="button"

@@ -234,7 +234,7 @@ export const helpClubRollenPage: HelpPageDef = {
       bullets: [
         "Vaak een ouder of vrijwilliger die klok en score bedient — niet per se een officiële KNVB-scheidsrechter.",
         "Je ziet alleen wedstrijden waaraan de club je heeft toegewezen.",
-        "Op de openbare site (meekijken zonder login) wordt geen naam van de begeleider getoond; alleen of er iemand is toegewezen.",
+        "Op de openbare site wordt standaard geen naam getoond. Alleen als de scheidsrechter dat zelf wil, kan de club in Admin ‘naam op live-pagina’ aanzetten.",
       ],
     },
     {

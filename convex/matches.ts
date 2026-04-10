@@ -12,6 +12,7 @@ import {
   isCoachOnlyEvent,
 } from "./lib/matchEventProjection";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
+import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -90,6 +91,8 @@ export const getByPublicCode = query({
       lineup = lineupPlayers.filter(Boolean);
     }
 
+    const refFields = await getPublicRefereeFields(ctx, match.refereeId);
+
     return {
       id: match._id,
       opponent: match.opponent,
@@ -112,8 +115,8 @@ export const getByPublicCode = query({
       teamLogoUrl: team?.logoUrl ?? null,
       clubLogoUrl: club?.logoUrl ?? null,
       opponentLogoUrl: match.opponentLogoUrl ?? null,
-      /** True if a match official is assigned; never exposes their name publicly. */
-      refereeAssigned: match.refereeId != null,
+      refereeAssigned: refFields.refereeAssigned,
+      refereePublicName: refFields.refereePublicName,
       events: projectedEvents,
       lineup,
     };

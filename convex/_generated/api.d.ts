@@ -40,6 +40,7 @@ import type * as lib_matchLogoFields from "../lib/matchLogoFields.js";
 import type * as lib_matchTiming from "../lib/matchTiming.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
 import type * as lib_positionZones from "../lib/positionZones.js";
+import type * as lib_publicRefereeDisplay from "../lib/publicRefereeDisplay.js";
 import type * as lib_timezone from "../lib/timezone.js";
 import type * as lib_userAccess from "../lib/userAccess.js";
 import type * as matchActions from "../matchActions.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "lib/matchTiming": typeof lib_matchTiming;
   "lib/opsAuth": typeof lib_opsAuth;
   "lib/positionZones": typeof lib_positionZones;
+  "lib/publicRefereeDisplay": typeof lib_publicRefereeDisplay;
   "lib/timezone": typeof lib_timezone;
   "lib/userAccess": typeof lib_userAccess;
   matchActions: typeof matchActions;

@@ -22,8 +22,10 @@ export interface MatchData {
   teamLogoUrl?: string | null;
   clubLogoUrl?: string | null;
   opponentLogoUrl?: string | null;
-  /** True if club assigned a match official; no name is exposed on public views. */
+  /** True if club assigned a match official. */
   refereeAssigned?: boolean;
+  /** Set only if the referee opted in to show their name on public pages. */
+  refereePublicName?: string | null;
   events: MatchEvent[];
   lineup: (LineupPlayer | null)[] | null;
 }

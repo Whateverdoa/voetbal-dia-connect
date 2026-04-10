@@ -34,7 +34,7 @@ The club does not “assign roles inside the login UI”; they maintain **correc
 ## Public / privacy
 
 - **No account** for spectators. Queries in [`convex/publicQueries.ts`](../convex/publicQueries.ts) and [`getByPublicCode` in `convex/matches.ts`](../convex/matches.ts) must not expose internal names for assigned officials unless product explicitly allows it.
-- **`refereeAssigned`**: boolean derived from `matches.refereeId != null` — indicates a match official is assigned **without** exposing the `referees.name` field on public payloads.
+- **`refereeAssigned` / `refereePublicName`**: derived from `matches.refereeId` and optional `referees.showPublicName`. The name is only included in public payloads when the referee opted in; otherwise spectators see that a scheidsrechter is assigned without a name.
 
 ## External data (Sportlink / imports)
 

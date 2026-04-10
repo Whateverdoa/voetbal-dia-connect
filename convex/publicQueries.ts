@@ -1,9 +1,10 @@
 /**
  * Public queries — unauthenticated, read-only views for spectators.
  *
- * These queries never return private referee or coach access fields.
+ * Referee names are only included when referees.showPublicName is true; coach identity is never exposed.
  */
 import { query } from "./_generated/server";
+import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 
 // List all publicly visible matches, enriched with team/club names.
 export const listPublicMatches = query({
@@ -21,6 +22,7 @@ export const listPublicMatches = query({
       matches.map(async (m) => {
         const team = await ctx.db.get(m.teamId);
         const club = team ? await ctx.db.get(team.clubId) : null;
+        const refFields = await getPublicRefereeFields(ctx, m.refereeId);
 
         return {
           _id: m._id,
@@ -38,8 +40,8 @@ export const listPublicMatches = query({
           teamLogoUrl: team?.logoUrl ?? null,
           clubLogoUrl: club?.logoUrl ?? null,
           opponentLogoUrl: m.opponentLogoUrl ?? null,
-          /** True if a match official is assigned; never exposes their name publicly. */
-          refereeAssigned: m.refereeId != null,
+          refereeAssigned: refFields.refereeAssigned,
+          refereePublicName: refFields.refereePublicName,
         };
       }),
     );

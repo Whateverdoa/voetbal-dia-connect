@@ -21,11 +21,22 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center p-4 pt-12">
       <div className="w-full max-w-4xl space-y-6">
         {/* Logo/Header */}
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <h1 className="text-3xl sm:text-4xl font-bold text-dia-green">
             DIA Wedstrijduitslagen Live
           </h1>
-          <p className="mt-2 text-gray-600">Volg de wedstrijd live</p>
+          <p className="text-gray-600">Volg de wedstrijd live</p>
+          <div>
+            <Link
+              href="/help"
+              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-dia-green hover:text-green-700 underline underline-offset-4"
+            >
+              Hoe werkt het?
+            </Link>
+            <span className="text-xs text-gray-500 block mt-1">
+              Meekijken kan zonder account; uitleg ook voor coaches, wedstrijdbegeleiders en club.
+            </span>
+          </div>
         </div>
 
         {/* Match browser — primary element */}

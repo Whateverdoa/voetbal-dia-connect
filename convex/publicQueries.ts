@@ -38,6 +38,8 @@ export const listPublicMatches = query({
           teamLogoUrl: team?.logoUrl ?? null,
           clubLogoUrl: club?.logoUrl ?? null,
           opponentLogoUrl: m.opponentLogoUrl ?? null,
+          /** True if a match official is assigned; never exposes their name publicly. */
+          refereeAssigned: m.refereeId != null,
         };
       }),
     );

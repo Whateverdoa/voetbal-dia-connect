@@ -72,6 +72,19 @@ function MatchCard({ match }: { match: PublicMatch }) {
       <span className="font-mono text-[9px] sm:text-[11px] bg-gray-100 text-gray-500 px-1 py-0.5 rounded mt-0.5">
         {match.publicCode}
       </span>
+      {match.refereeAssigned === true && (
+        <span
+          className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 text-center leading-tight max-w-[4.5rem]"
+          title="Wedstrijdbegeleider toegewezen (geen naam)"
+        >
+          Begeleider
+        </span>
+      )}
+      {match.refereeAssigned === false && (
+        <span className="text-[9px] sm:text-[10px] text-amber-700/90 mt-0.5 text-center leading-tight max-w-[4.5rem]">
+          Geen begeleider
+        </span>
+      )}
     </div>
   );
 

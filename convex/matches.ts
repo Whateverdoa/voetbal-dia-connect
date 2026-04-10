@@ -112,6 +112,8 @@ export const getByPublicCode = query({
       teamLogoUrl: team?.logoUrl ?? null,
       clubLogoUrl: club?.logoUrl ?? null,
       opponentLogoUrl: match.opponentLogoUrl ?? null,
+      /** True if a match official is assigned; never exposes their name publicly. */
+      refereeAssigned: match.refereeId != null,
       events: projectedEvents,
       lineup,
     };

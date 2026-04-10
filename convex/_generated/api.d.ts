@@ -86,6 +86,7 @@ import type * as seed_seedMatches from "../seed/seedMatches.js";
 import type * as seed_seedPlayers from "../seed/seedPlayers.js";
 import type * as stats from "../stats.js";
 import type * as teams from "../teams.js";
+import type * as userQueries from "../userQueries.js";
 
 import type {
   ApiFromModules,
@@ -172,6 +173,7 @@ declare const fullApi: ApiFromModules<{
   "seed/seedPlayers": typeof seed_seedPlayers;
   stats: typeof stats;
   teams: typeof teams;
+  userQueries: typeof userQueries;
 }>;
 
 /**

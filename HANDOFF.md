@@ -33,6 +33,7 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 ## Routes
 - `/`: homepage / publieke ingang
+- `/help`, `/help/coach`, `/help/scheidsrechter`, `/help/admin`, `/help/publiek`, `/help/club-en-rollen`: publieke uitleg (geen login)
 - `/live/[code]`: publieke live-weergave
 - `/standen`: scoreboard
 - `/team/[slug]/history`: teamhistorie
@@ -46,6 +47,7 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 ### Admin-werkplek (desktop)
 - De layout gebruikt een **brede container** (ongeveer tot **1600px**) op groot scherm, zodat toewijzingstabel en filters meer horizontale ruimte hebben (Airtable-achtig). Op mobiel blijft het volle breedte met scroll waar nodig.
+- **UX / demo:** er zitten nog **vreemde hoekjes** vooral rond **filters** en gerelateerde flows (ontdekbaarheid, defaults, feedback). *Prioriteit:* **polish vóór demo’s** aan mensen buiten het kernteam. Uitgewerkt stappenplan en overige open punten staan in **`docs/plans/product-backlog.md`**.
 
 ## Communicatie: coaches (eerste inlog)
 
@@ -59,6 +61,8 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 ## Auth Model
 Runtime-auth is nu `Clerk + userAccess`.
+
+Uitgebreid overzicht voor ontwikkelaars (actoren, merge-gedrag, publieke privacy): **`docs/actors-and-access.md`**. Clerk-metadata bepaalt routes; Convex **`resolveRuntimeUserAccess`** (`convex/lib/userAccess.ts`) merge’t het `userAccess`-document met **afgeleide** rollen uit `coaches` / `referees` (zelfde e-mail als Clerk) en bootstrap-adminlijst — niet alleen de snapshot-tabel.
 
 ### Bron van waarheid
 `convex/schema.ts` bevat `userAccess` met:
@@ -256,11 +260,17 @@ Open punten uit gebruik / data (geen volledige specs; vastgelegd voor opvolging)
 
 **Richting:** **`active: false`** voor wie niet wekelijks in de selectie hoort; optioneel latere productregels (shirtnummer, kern-vlag). Zie ook *Wedstrijden klaarzetten* hierboven.
 
+### Issue: admin werkplek — filters en overige UX-frictie
+
+**Symptoom:** Filter- en zoekgedrag (en aanverwante kleine interacties) voelt op sommige plekken nog niet **intuïtief**; dat hindert vooral als je **`/admin`** aan iemand wilt **laten zien**.
+
+**Status:** hoog **prioriteit demo**; concrete acties in **`docs/plans/product-backlog.md`** (§ Admin UX).
+
 ### Issue: admin mobiel — naamveld spelers (portret)
 
 **Symptoom:** Bij spelers beheren in **`/admin`**: na tik op een speler wordt het **naamveld** in **portret** onbruikbaar klein; in **landschap** lijkt het OK.
 
-**Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device.
+**Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device. Zie ook **`docs/plans/product-backlog.md`**.
 
 ## Future To-Do's (product)
 
@@ -270,13 +280,14 @@ Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring).
 
 - **Opstellingenlijst op de website** — De lineup-/opstellingsweergave verder uitbreiden op de site (coach en/of publiek): rijkere weergave, evt. print of vaste formats, afstemming met `matchPlayers` en beschikbare posities.
 - **Live veldsituatie** — In **`/live/[code]`** de **opstelling op het veld** tonen (visueel veld + spelersposities), zodat toeschouwers de actuele veldsituatie herkennen. Sluit aan bij bestaande data zoals `matches.formationId`, `pitchType`, `matchPlayers.fieldSlotIndex` en positievelden op spelers.
+- **Meer tactische opstellingen (formatie-templates)** — Het aanbod **vaste formaties** in de coach- (en evt. admin-)UI uitbreiden: keuzelijst / templates (bijv. extra systemen naast wat er nu is), consistent met `matches.formationId` en het kiezen/plaatsen van spelers op het veld. *Niet* hetzelfde als alleen “lijst op de website tonen”; dit gaat om **keuze en beschikbaarheid** van formaties in de app.
 
 ### Aanvulling (backlog voice note → gestructureerd)
 
 1. **Spelersschilden met foto’s** — Spelerscards kunnen een foto tonen (avatar/schild-stijl). Prioriteit: **foto uploaden per speler (admin-flow)**; tonen op **veldoverzicht en bank**; **fallback** initialen of rugnummer (vergelijkbaar patroon als `TeamLogo` / initialen nu al voor logo’s).
 2. **Veldlayout — plat bovenaanzicht** — Het veld is nu **perspectivisch**; gewenst: terug naar een **plat, vlak bovenaanzicht** (traditioneel tactiekbord). *Dit is een UI-designbeslissing, geen datawijziging.* **Volgende stap:** afstemmen met Roel over de gewenste layout vóór implementatie (sluit aan bij “live veldsituatie” hierboven, maar specificeert de weergave-richting).
 3. **Wedstrijdplan vooraf (pre-match planning)** — Nu vooral wissels **tijdens** de wedstrijd. Gewenst: **vooraf** een vollediger plan: **opstelling per kwart**, **geplande wissels** (uit/in, moment/timing), bewerkbaar **tijdens** de wedstrijd; plan = **startpunt**, geen dwangbuis. **Technisch (richting):** een **draft**-volgorde die **los staat** van de **append-only** `matchEvents` tot de coach een geplande actie **bevestigt**; uitgevoerde acties blijven gewone events. *Complex — verdient een apart **WAT+HOE**-document vóór bouwen.*
-4. **Backlog beheer (meta)** — Groeiende losse to-do’s: overweeg **`BACKLOG.md`** in de repo en/of koppeling aan een bestaand backlog-systeem (GitHub Projects, Linear, …) zodat HANDOFF compact blijft.
+4. **Backlog & planning** — Volledige uitwerking van open punten staat in **`docs/plans/product-backlog.md`**. Optioneel later: koppeling aan GitHub Projects, Linear, enz. zodat dit document vooral “wat en waarom” blijft en tickets de status bijhouden.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.

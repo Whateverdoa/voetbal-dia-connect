@@ -22,6 +22,8 @@ export interface MatchData {
   teamLogoUrl?: string | null;
   clubLogoUrl?: string | null;
   opponentLogoUrl?: string | null;
+  /** True if club assigned a match official; no name is exposed on public views. */
+  refereeAssigned?: boolean;
   events: MatchEvent[];
   lineup: (LineupPlayer | null)[] | null;
 }

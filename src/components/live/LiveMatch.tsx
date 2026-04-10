@@ -222,6 +222,18 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
           <SoundToggle />
         </div>
 
+        {match.refereeAssigned === true && (
+          <p className="text-center text-xs text-gray-500 px-1">
+            De club heeft een wedstrijdbegeleider toegewezen voor klok en score. Er wordt geen naam
+            op dit scherm getoond.
+          </p>
+        )}
+        {match.refereeAssigned === false && (
+          <p className="text-center text-xs text-amber-700/90 px-1">
+            Nog geen wedstrijdbegeleider toegewezen voor deze wedstrijd.
+          </p>
+        )}
+
         {/* Lineup section */}
         {match.showLineup && match.lineup && (
           <LineupSection lineup={match.lineup.filter((p): p is LineupPlayer => p !== null)} teamName={match.teamName} />

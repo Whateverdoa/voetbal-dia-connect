@@ -64,3 +64,7 @@ De knoppen op **/onboarding/rol** zijn voor gebruikers die **geen** bootstrap-ad
 - Koppeling verloopt via e-mail op coach/scheidsrechter-records.
 
 Bootstrap-admins slaan deze stap over: zij krijgen bij het eerste bezoek aan /onboarding/rol automatisch alle drie de rollen en worden doorgestuurd.
+
+## Zie ook
+
+- [`docs/actors-and-access.md`](actors-and-access.md) — actoren, Clerk vs Convex-merge (`resolveRuntimeUserAccess`), publieke privacy (geen officiersnamen op publieke queries tenzij expliciet).

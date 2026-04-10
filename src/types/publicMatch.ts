@@ -23,6 +23,8 @@ export interface PublicMatch {
   teamLogoUrl?: string | null;
   clubLogoUrl?: string | null;
   opponentLogoUrl?: string | null;
+  /** True if a match official is assigned; never exposes their name. */
+  refereeAssigned?: boolean;
 }
 
 /**

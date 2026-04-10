@@ -1,15 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery, useConvexConnectionState } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
-import { formatMatchDate } from "@/types/publicMatch";
-import { filterMatchesForBrowser } from "@/lib/matchBrowserFilters";
-import { TeamLogo } from "@/components/TeamLogo";
-import { resolveLogoUrl } from "@/lib/logos";
+import {
+  filterMatchesForBrowser,
+  type TimeFilter,
+  type VenueFilter,
+} from "@/lib/matchBrowserFilters";
+import { MatchBrowserCard } from "@/components/MatchBrowserCard";
 
 const statusGroups = [
   {
@@ -35,109 +36,39 @@ const statusGroups = [
   },
 ];
 
-function MatchCard({ match }: { match: PublicMatch }) {
-  const isLive = match.status === "live" || match.status === "halftime";
-  const showScore = match.status !== "scheduled";
-  const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
+const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
+  weekend: "Komend weekend",
+  today: "Vandaag",
+  week: "Deze week",
+  all: "Alle wedstrijden",
+};
 
-  const homeName = match.isHome ? match.teamName : match.opponent;
-  const awayName = match.isHome ? match.opponent : match.teamName;
-  const homeLogo = match.isHome ? diaLogo : (match.opponentLogoUrl ?? null);
-  const awayLogo = match.isHome ? (match.opponentLogoUrl ?? null) : diaLogo;
+const TIME_FILTER_HELP: Record<TimeFilter, string> = {
+  weekend:
+    "Live wedstrijden plus geplande en afgelopen wedstrijden in het komende weekendvenster (vrij–zon).",
+  today: "Live wedstrijden plus wedstrijden met een aanvang vandaag (lokale tijd).",
+  week: "Live wedstrijden plus wedstrijden in de huidige kalenderweek (ma–zo).",
+  all: "Alle zichtbare wedstrijden in de app.",
+};
 
-  const scoreBlock = (
-    <div className="flex flex-col items-center shrink-0 px-1">
-      {showScore ? (
-        <span
-          className={clsx(
-            "font-bold tabular-nums max-sm:text-xl sm:text-2xl",
-            isLive ? "text-green-600" : "text-gray-800"
-          )}
-        >
-          {match.homeScore} - {match.awayScore}
-        </span>
-      ) : (
-        <span className="text-sm text-gray-300 font-medium sm:text-base">vs</span>
-      )}
-      {isLive && (
-        <span className="text-[11px] sm:text-xs font-medium text-green-600">
-          {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
-        </span>
-      )}
-      {match.status === "scheduled" && match.scheduledAt && (
-        <span className="text-[10px] sm:text-xs text-gray-500 text-center leading-tight">
-          {formatMatchDate(match.scheduledAt)}
-        </span>
-      )}
-      <span className="font-mono text-[9px] sm:text-[11px] bg-gray-100 text-gray-500 px-1 py-0.5 rounded mt-0.5">
-        {match.publicCode}
-      </span>
-      {match.refereeAssigned === true && (
-        <span
-          className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 text-center leading-tight max-w-[4.5rem]"
-          title="Wedstrijdbegeleider toegewezen (geen naam)"
-        >
-          Begeleider
-        </span>
-      )}
-      {match.refereeAssigned === false && (
-        <span className="text-[9px] sm:text-[10px] text-amber-700/90 mt-0.5 text-center leading-tight max-w-[4.5rem]">
-          Geen begeleider
-        </span>
-      )}
-    </div>
-  );
+const VENUE_FILTER_LABELS: Record<VenueFilter, string> = {
+  all: "Thuis én uit",
+  home: "Alleen thuis",
+  away: "Alleen uit",
+};
 
-  return (
-    <Link
-      href={`/live/${match.publicCode}`}
-      className={clsx(
-        "flex rounded-xl border bg-white touch-manipulation",
-        "transition-all active:scale-[0.98]",
-        /* 1 kolom (mobiel): horizontale strip over volle breedte */
-        "flex-row items-center gap-2 p-3 min-h-[56px]",
-        /* sm+: grid met 2–3 kolommen → verticaal kaartje */
-        "sm:flex-col sm:items-center sm:gap-2 sm:py-4 sm:px-3 sm:min-h-0",
-        isLive
-          ? "border-green-200 shadow-md hover:shadow-lg"
-          : "border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
-      )}
-    >
-      {/* Thuisteam */}
-      <div
-        className={clsx(
-          "flex items-center gap-2 min-w-0",
-          "flex-1 justify-start",
-          "sm:flex-none sm:w-full sm:justify-center"
-        )}
-      >
-        <TeamLogo logoUrl={homeLogo} teamName={homeName} size="sm" className="flex-shrink-0" />
-        <span className="font-semibold text-gray-900 text-sm leading-tight break-words sm:text-center">
-          {homeName}
-        </span>
-      </div>
-
-      {scoreBlock}
-
-      {/* Uitteam: mobiel naam–logo rechts; sm+ zelfde volgorde als thuis (logo–naam) */}
-      <div
-        className={clsx(
-          "flex items-center gap-2 min-w-0 flex-1 justify-end",
-          "sm:flex-none sm:w-full sm:justify-center"
-        )}
-      >
-        <span className="font-semibold text-gray-900 text-sm leading-tight break-words text-right order-1 sm:order-2 sm:text-center">
-          {awayName}
-        </span>
-        <TeamLogo
-          logoUrl={awayLogo}
-          teamName={awayName}
-          size="sm"
-          className="flex-shrink-0 order-2 sm:order-1"
-        />
-      </div>
-    </Link>
-  );
+function sortMatchesInGroup(
+  matches: PublicMatch[],
+  groupKey: (typeof statusGroups)[number]["key"]
+): PublicMatch[] {
+  const copy = [...matches];
+  if (groupKey === "scheduled") {
+    return copy.sort((a, b) => (a.scheduledAt ?? Infinity) - (b.scheduledAt ?? Infinity));
+  }
+  if (groupKey === "finished") {
+    return copy.sort((a, b) => (b.scheduledAt ?? 0) - (a.scheduledAt ?? 0));
+  }
+  return copy.sort((a, b) => (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0));
 }
 
 export function MatchBrowser() {
@@ -145,9 +76,9 @@ export function MatchBrowser() {
   const connection = useConvexConnectionState();
   const [showConnectionIssue, setShowConnectionIssue] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAllWithoutSearch, setShowAllWithoutSearch] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("weekend");
+  const [venueFilter, setVenueFilter] = useState<VenueFilter>("all");
 
-  // If we stay in "loading" (undefined) and the client never connected or keeps retrying, show connection message
   useEffect(() => {
     if (matches !== undefined) {
       setShowConnectionIssue(false);
@@ -155,16 +86,19 @@ export function MatchBrowser() {
     }
     const notConnected =
       !connection.isWebSocketConnected || !connection.hasEverConnected;
-    const struggling =
-      connection.connectionRetries > 2;
+    const struggling = connection.connectionRetries > 2;
     const t = setTimeout(
       () => setShowConnectionIssue(notConnected || struggling),
       4000
     );
     return () => clearTimeout(t);
-  }, [matches, connection.isWebSocketConnected, connection.hasEverConnected, connection.connectionRetries]);
+  }, [
+    matches,
+    connection.isWebSocketConnected,
+    connection.hasEverConnected,
+    connection.connectionRetries,
+  ]);
 
-  // Loading state
   if (matches === undefined) {
     return (
       <div className="mt-8">
@@ -181,69 +115,116 @@ export function MatchBrowser() {
     );
   }
 
-  // Empty state
   const filteredMatches = filterMatchesForBrowser(
     matches,
     searchTerm,
-    showAllWithoutSearch
+    timeFilter,
+    venueFilter
   );
   const normalizedSearch = searchTerm.trim();
-  const showWeekendEmptyState = !normalizedSearch && !showAllWithoutSearch;
   const hasMatches = filteredMatches.length > 0;
+  const showWeekendEmptyCta =
+    !normalizedSearch && !hasMatches && timeFilter === "weekend";
+
+  const emptyTitle = normalizedSearch
+    ? `Geen wedstrijden gevonden voor "${normalizedSearch}"`
+    : venueFilter === "home"
+      ? "Geen thuiswedstrijden voor deze filters"
+      : venueFilter === "away"
+        ? "Geen uitwedstrijden voor deze filters"
+        : timeFilter === "today"
+          ? "Geen wedstrijden vandaag"
+          : timeFilter === "week"
+            ? "Geen wedstrijden in deze week"
+            : timeFilter === "all"
+              ? "Geen wedstrijden"
+              : "Geen wedstrijden in deze periode (komend weekend)";
 
   return (
     <div className="mt-8">
       <Divider />
 
-      <div className="mb-4">
-        <div className="flex gap-2">
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <input
             type="search"
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
             }}
-            placeholder="Zoek op team..."
-            className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-dia-green focus:outline-none"
+            placeholder="Filter op teamnaam…"
+            className="min-h-[44px] flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-dia-green focus:outline-none sm:min-w-[12rem]"
+            aria-label="Filter op teamnaam"
           />
-          {searchTerm && (
+          <select
+            value={timeFilter}
+            onChange={(event) =>
+              setTimeFilter(event.target.value as TimeFilter)
+            }
+            className="min-h-[44px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-dia-green focus:outline-none sm:min-w-[13rem] sm:w-auto"
+            aria-label="Filter op tijd"
+          >
+            {(Object.keys(TIME_FILTER_LABELS) as TimeFilter[]).map((key) => (
+              <option key={key} value={key}>
+                {TIME_FILTER_LABELS[key]}
+              </option>
+            ))}
+          </select>
+          <select
+            value={venueFilter}
+            onChange={(event) =>
+              setVenueFilter(event.target.value as VenueFilter)
+            }
+            className="min-h-[44px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-dia-green focus:outline-none sm:min-w-[11rem] sm:w-auto"
+            aria-label="Filter thuis of uit"
+          >
+            {(Object.keys(VENUE_FILTER_LABELS) as VenueFilter[]).map((key) => (
+              <option key={key} value={key}>
+                {VENUE_FILTER_LABELS[key]}
+              </option>
+            ))}
+          </select>
+          {(searchTerm || timeFilter !== "weekend" || venueFilter !== "all") && (
             <button
               type="button"
-              onClick={() => setSearchTerm("")}
-              className="min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-              aria-label="Zoekveld wissen"
+              onClick={() => {
+                setSearchTerm("");
+                setTimeFilter("weekend");
+                setVenueFilter("all");
+              }}
+              className="min-h-[44px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:w-auto"
             >
-              Wis
+              Reset filters
             </button>
           )}
         </div>
-        {!normalizedSearch && !showAllWithoutSearch && (
-          <p className="mt-2 text-xs text-gray-500">
-            Je ziet nu alleen live en wedstrijden van komend weekend.
-          </p>
-        )}
-        {!normalizedSearch && showAllWithoutSearch && (
-          <button
-            type="button"
-            onClick={() => setShowAllWithoutSearch(false)}
-            className="mt-2 min-h-[44px] text-xs font-medium text-dia-green hover:text-green-700"
-          >
-            Terug naar komend weekend
-          </button>
-        )}
+        <p className="text-xs text-gray-500 leading-relaxed">
+          {TIME_FILTER_HELP[timeFilter]}
+          {venueFilter !== "all" ? (
+            <>
+              {" "}
+              {venueFilter === "home"
+                ? "Alleen wedstrijden waarbij het clubteam thuis speelt."
+                : "Alleen wedstrijden waarbij het clubteam uit speelt."}
+            </>
+          ) : null}
+        </p>
       </div>
 
       {hasMatches ? (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {statusGroups.map((group) => {
-            const groupMatches = filteredMatches.filter(group.filter);
+            const groupMatches = sortMatchesInGroup(
+              filteredMatches.filter(group.filter),
+              group.key
+            );
             if (groupMatches.length === 0) return null;
 
             return (
               <section key={group.key}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <span
-                    className={clsx("w-2 h-2 rounded-full", group.dotClass)}
+                    className={clsx("w-2 h-2 rounded-full shrink-0", group.dotClass)}
                   />
                   <h3
                     className={clsx(
@@ -254,22 +235,20 @@ export function MatchBrowser() {
                     {group.label}
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <ul className="flex flex-col gap-3" role="list">
                   {groupMatches.map((match) => (
-                    <MatchCard key={match._id} match={match as PublicMatch} />
+                    <li key={match._id} className="w-full">
+                      <MatchBrowserCard match={match as PublicMatch} />
+                    </li>
                   ))}
-                </div>
+                </ul>
               </section>
             );
           })}
         </div>
       ) : (
         <div className="space-y-3 py-8 text-center" aria-live="polite">
-          <p className="text-sm text-gray-500">
-            {normalizedSearch
-              ? `Geen wedstrijden gevonden voor "${normalizedSearch}"`
-              : "Geen wedstrijden dit weekend"}
-          </p>
+          <p className="text-sm text-gray-500">{emptyTitle}</p>
           {normalizedSearch ? (
             <button
               type="button"
@@ -279,10 +258,10 @@ export function MatchBrowser() {
               Wis zoekopdracht
             </button>
           ) : null}
-          {showWeekendEmptyState && (
+          {showWeekendEmptyCta && (
             <button
               type="button"
-              onClick={() => setShowAllWithoutSearch(true)}
+              onClick={() => setTimeFilter("all")}
               className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
             >
               Toon alle wedstrijden

@@ -283,6 +283,11 @@ Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring).
 - **Live veldsituatie** — In **`/live/[code]`** de **opstelling op het veld** tonen (visueel veld + spelersposities), zodat toeschouwers de actuele veldsituatie herkennen. Sluit aan bij bestaande data zoals `matches.formationId`, `pitchType`, `matchPlayers.fieldSlotIndex` en positievelden op spelers.
 - **Meer tactische opstellingen (formatie-templates)** — Het aanbod **vaste formaties** in de coach- (en evt. admin-)UI uitbreiden: keuzelijst / templates (bijv. extra systemen naast wat er nu is), consistent met `matches.formationId` en het kiezen/plaatsen van spelers op het veld. *Niet* hetzelfde als alleen “lijst op de website tonen”; dit gaat om **keuze en beschikbaarheid** van formaties in de app.
 
+### Tech-schulden (warnings, niet-urgent)
+
+- **Next.js `middleware.ts` → `proxy.ts`** — In Next.js 16 is de `middleware`-file-conventie deprecated ten gunste van `proxy`. Huidige file: `src/middleware.ts` met Clerk. Actie later: `git mv src/middleware.ts src/proxy.ts` en `export default function middleware` → `proxy` hernoemen. Werkt nog; wordt breaking in Next.js 17.
+- **Convex minor upgrade** — Huidig geïnstalleerd: `convex@1.31.6`, beschikbaar: `1.35.1`. Non-breaking. Wanneer er tijd is: `npm install convex@latest` en smoke-testen.
+
 ### Aanvulling (backlog voice note → gestructureerd)
 
 1. **Spelersschilden met foto’s** — Spelerscards kunnen een foto tonen (avatar/schild-stijl). Prioriteit: **foto uploaden per speler (admin-flow)**; tonen op **veldoverzicht en bank**; **fallback** initialen of rugnummer (vergelijkbaar patroon als `TeamLogo` / initialen nu al voor logo’s).

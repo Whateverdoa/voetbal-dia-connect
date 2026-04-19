@@ -7,7 +7,12 @@
  * Fetches directly from the VoetbalAssist API server-side, maps the
  * response, and inserts in batches. Idempotent on voetbalassist_id.
  */
-import { action, internalMutation } from "../_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  type ActionCtx,
+} from "../_generated/server";
 import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import {
@@ -77,75 +82,81 @@ export const importWedstrijdenBatch = internalMutation({
   },
 });
 
+async function runVoetbalAssistImport(ctx: ActionCtx) {
+  await ctx.runMutation(internal.import.importWedstrijden.clearWedstrijden, {});
+
+  const now = new Date().toISOString();
+  const payload = {
+    clubWedstrijdenStandaardSorterenOp: "team",
+    datumBeginSeizoen: "2025-07-01T00:00:00",
+    datumEindeSeizoen: "2026-07-01T00:00:00",
+    datumTot: "2026-07-01T00:00:00",
+    datumVan: "2025-07-01T00:00:00",
+    klantAfkorting: "DIA",
+    lang: "nl",
+    programmaEnUitslagenType: 2,
+    vandaag: now,
+  };
+
+  const res = await fetch(VOETBALASSIST_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      Accept: "application/json, text/plain, */*",
+      Origin: "https://www.rkvvdia.nl",
+      Referer: "https://www.rkvvdia.nl/",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`VoetbalAssist API fout: ${res.status} ${res.statusText}`);
+  }
+
+  const rawData: RawWedstrijd[] = await res.json();
+  if (!Array.isArray(rawData)) {
+    throw new Error("Onverwacht API-antwoord: geen array");
+  }
+
+  const mapped: WedstrijdDoc[] = [];
+  for (const raw of rawData) {
+    const doc = mapRawToWedstrijd(raw);
+    if (doc) mapped.push(doc);
+  }
+
+  let totalCreated = 0;
+  let totalSkipped = 0;
+
+  for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
+    const chunk = mapped.slice(i, i + BATCH_SIZE);
+    const result = await ctx.runMutation(
+      internal.import.importWedstrijden.importWedstrijdenBatch,
+      { wedstrijden: chunk },
+    );
+    totalCreated += result.created;
+    totalSkipped += result.skipped;
+  }
+
+  return {
+    totalFromApi: rawData.length,
+    totalMapped: mapped.length,
+    totalCreated,
+    totalSkipped,
+    batchCount: Math.ceil(mapped.length / BATCH_SIZE),
+  };
+}
+
 /**
  * Fetch all DIA wedstrijden from VoetbalAssist API and import them.
  * Run with: npx convex run import/importWedstrijden:fetchAndImport
  */
 export const fetchAndImport = action({
   args: {},
-  handler: async (ctx) => {
-    await ctx.runMutation(internal.import.importWedstrijden.clearWedstrijden, {});
+  handler: async (ctx) => runVoetbalAssistImport(ctx),
+});
 
-    const now = new Date().toISOString();
-    const payload = {
-      clubWedstrijdenStandaardSorterenOp: "team",
-      datumBeginSeizoen: "2025-07-01T00:00:00",
-      datumEindeSeizoen: "2026-07-01T00:00:00",
-      datumTot: "2026-07-01T00:00:00",
-      datumVan: "2025-07-01T00:00:00",
-      klantAfkorting: "DIA",
-      lang: "nl",
-      programmaEnUitslagenType: 2,
-      vandaag: now,
-    };
-
-    const res = await fetch(VOETBALASSIST_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json;charset=UTF-8",
-        Accept: "application/json, text/plain, */*",
-        Origin: "https://www.rkvvdia.nl",
-        Referer: "https://www.rkvvdia.nl/",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      throw new Error(
-        `VoetbalAssist API fout: ${res.status} ${res.statusText}`,
-      );
-    }
-
-    const rawData: RawWedstrijd[] = await res.json();
-    if (!Array.isArray(rawData)) {
-      throw new Error("Onverwacht API-antwoord: geen array");
-    }
-
-    const mapped: WedstrijdDoc[] = [];
-    for (const raw of rawData) {
-      const doc = mapRawToWedstrijd(raw);
-      if (doc) mapped.push(doc);
-    }
-
-    let totalCreated = 0;
-    let totalSkipped = 0;
-
-    for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
-      const chunk = mapped.slice(i, i + BATCH_SIZE);
-      const result = await ctx.runMutation(
-        internal.import.importWedstrijden.importWedstrijdenBatch,
-        { wedstrijden: chunk },
-      );
-      totalCreated += result.created;
-      totalSkipped += result.skipped;
-    }
-
-    return {
-      totalFromApi: rawData.length,
-      totalMapped: mapped.length,
-      totalCreated,
-      totalSkipped,
-      batchCount: Math.ceil(mapped.length / BATCH_SIZE),
-    };
-  },
+/** Cron / internal pipeline entry (same behavior as public fetchAndImport). */
+export const fetchAndImportInternal = internalAction({
+  args: {},
+  handler: async (ctx) => runVoetbalAssistImport(ctx),
 });

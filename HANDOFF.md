@@ -202,8 +202,9 @@ Adminflow:
 - niet aannemen dat `op teamlijst staan` genoeg is; ze moeten in de wedstrijdselectie zitten
 
 Importflow voor VoetbalAssist/KNVB:
-- `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist
-- `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
+- **Automatisch (productie-Convex):** cron `weekend-results-hourly` draait **elk uur op zaterdag en zondag** (UTC `8–20`, ruwweg **09:00/10:00–21:00/22:00** Europe/Amsterdam). Alleen als er die dag minstens één wedstrijd in `matches` is met `scheduledAt + regulationDurationMinutes + 15 min` verstreken, wordt opgehaald + gesynct. Logs: Convex function logs (`import/weeklyUpdate:runIfMatchesEnded`).
+- **Handmatig (alles in één keer):** `npm run results:update` (= `npx convex run import/weeklyUpdate:runNow`). Zonder ingelogde admin: JSON-args met `opsSecret` gelijk aan `CONVEX_OPS_SECRET` (zelfde patroon als `syncAll`).
+- **Losse stappen (fallback):** `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist; `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
 - de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `JO13-2JM -> jo13-2`, `G Team -> g-team`
 - bewust niet automatisch gemapt: ambigue bronvarianten zoals kale `JO10` of `JO12`; die vragen handmatige teamkeuze of extra mapping
 - nieuwe niet-gespeelde wedstrijden krijgen tijdens de sync automatisch `matchPlayers` voor alle actieve teamspelers

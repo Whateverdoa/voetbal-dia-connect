@@ -23,6 +23,22 @@ function cleanTeamName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Return `YYYY-MM-DD` in Europe/Amsterdam for a given UTC ms timestamp.
+ *
+ * Used as part of the sync match-key so a DIA fixture whose kickoff time
+ * shifted after initial import still resolves to the same local match row.
+ */
+function amsterdamDateKey(ms: number | undefined): string {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return "no-date";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms));
+}
+
 function extractDiaMatch(
   thuisteam: string,
   uitteam: string,
@@ -208,18 +224,23 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   }
 
   const existingMatches = await ctx.db.query("matches").collect();
+  const matchKey = (
+    teamId: Id<"teams">,
+    opponent: string,
+    ms: number | undefined,
+  ): string =>
+    `${teamId}|${opponent.trim().toLowerCase()}|${amsterdamDateKey(ms)}`;
+
+  // NOTE: key uses Europe/Amsterdam date (YYYY-MM-DD), not exact ms. This allows
+  // the sync to still match a local row after DIA shifted the kickoff time.
+  // Assumes: at most one match per (team, opponent, Amsterdam-day). Safe for youth football.
   const existingByKey = new Map(
     existingMatches.map((match) => [
-      `${match.teamId}|${match.opponent.trim().toLowerCase()}|${match.scheduledAt ?? 0}`,
+      matchKey(match.teamId, match.opponent, match.scheduledAt),
       match,
     ]),
   );
-  const existingKeys = new Set(
-    existingMatches.map(
-      (match) =>
-        `${match.teamId}|${match.opponent.trim().toLowerCase()}|${match.scheduledAt ?? 0}`,
-    ),
-  );
+  const existingKeys = new Set(existingByKey.keys());
 
   let created = 0;
   let createdMatchPlayers = 0;
@@ -261,7 +282,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     }
 
     const opponent = extracted.opponent.trim();
-    const key = `${team._id}|${opponent.toLowerCase()}|${wedstrijd.datum_ms}`;
+    const key = matchKey(team._id, opponent, wedstrijd.datum_ms);
     const isFinished = wedstrijd.status === "gespeeld";
     const homeGoals = wedstrijd.thuis_goals ?? 0;
     const awayGoals = wedstrijd.uit_goals ?? 0;
@@ -289,6 +310,8 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         }
 
         if (!dryRun) {
+          const scheduledAtChanged =
+            existingMatch.scheduledAt !== wedstrijd.datum_ms;
           await ctx.db.patch(existingMatch._id, {
             status: "finished",
             currentQuarter: existingMatch.quarterCount,
@@ -296,6 +319,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
             awayScore: awayGoals,
             startedAt: existingMatch.startedAt ?? wedstrijd.datum_ms,
             finishedAt: wedstrijd.datum_ms + 3600000,
+            // Keep scheduledAt aligned with DIA's actual kickoff ms so the UI
+            // reflects the rescheduled time after finalisation.
+            ...(scheduledAtChanged ? { scheduledAt: wedstrijd.datum_ms } : {}),
           });
         }
         updatedFinished++;

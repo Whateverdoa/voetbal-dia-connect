@@ -252,13 +252,11 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   let skippedCancelled = 0;
   let skippedNoDate = 0;
   let updatedFinished = 0;
+  let updatedScheduledAt = 0;
+  let cancelledMatches = 0;
+  let uncancelledMatches = 0;
 
   for (const wedstrijd of wedstrijden) {
-    if (wedstrijd.status === "afgelast") {
-      skippedCancelled++;
-      continue;
-    }
-
     const extracted = extractDiaMatch(
       wedstrijd.thuisteam,
       wedstrijd.uitteam,
@@ -283,6 +281,29 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     const opponent = extracted.opponent.trim();
     const key = matchKey(team._id, opponent, wedstrijd.datum_ms);
+
+    // AFGELAST: mark the matching local row cancelled (if not already finished/live).
+    if (wedstrijd.status === "afgelast") {
+      const existingMatch = existingByKey.get(key);
+      const isLiveOrFinished =
+        existingMatch &&
+        (existingMatch.status === "live" ||
+          existingMatch.status === "halftime" ||
+          existingMatch.status === "finished");
+      if (existingMatch && !existingMatch.cancelledAt && !isLiveOrFinished) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { cancelledAt: Date.now() });
+        }
+        cancelledMatches++;
+        console.log(
+          `[sync] afgelast: ${team.slug} vs ${opponent} (${amsterdamDateKey(wedstrijd.datum_ms)})`,
+        );
+      } else {
+        skippedCancelled++;
+      }
+      continue;
+    }
+
     const isFinished = wedstrijd.status === "gespeeld";
     const homeGoals = wedstrijd.thuis_goals ?? 0;
     const awayGoals = wedstrijd.uit_goals ?? 0;
@@ -290,6 +311,34 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     if (existingKeys.has(key)) {
       const existingMatch = existingByKey.get(key);
+
+      // DIA reverted a cancellation — clear it.
+      if (existingMatch && existingMatch.cancelledAt) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { cancelledAt: undefined });
+        }
+        uncancelledMatches++;
+        console.log(
+          `[sync] hervat: ${team.slug} vs ${opponent} (${amsterdamDateKey(wedstrijd.datum_ms)})`,
+        );
+      }
+
+      // TIJD-DRIFT: existing scheduled/lineup match whose kickoff moved in DIA.
+      if (
+        existingMatch &&
+        !isFinished &&
+        (existingMatch.status === "scheduled" || existingMatch.status === "lineup") &&
+        existingMatch.scheduledAt !== wedstrijd.datum_ms
+      ) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { scheduledAt: wedstrijd.datum_ms });
+        }
+        updatedScheduledAt++;
+        console.log(
+          `[sync] tijd-drift: ${team.slug} vs ${opponent} ${existingMatch.scheduledAt ?? "?"} -> ${wedstrijd.datum_ms}`,
+        );
+      }
+
       if (existingMatch) {
         const matchPlayerCount = matchPlayerCountByMatchId.get(existingMatch._id) ?? 0;
         if (!isFinished && matchPlayerCount === 0 && activePlayerIds.length > 0) {
@@ -376,6 +425,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     createdMatchPlayers,
     backfilledMatchRosters,
     updatedFinished,
+    updatedScheduledAt,
+    cancelledMatches,
+    uncancelledMatches,
     skippedExisting,
     skippedExistingWithResult,
     skippedNoDiaTeam,

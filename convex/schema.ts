@@ -131,6 +131,8 @@ export default defineSchema({
 
     // Timestamps
     startedAt: v.optional(v.number()),
+    /** Set by the import sync when the DIA source reports `afgelast`. UI may hide/dim these. */
+    cancelledAt: v.optional(v.number()),
     quarterStartedAt: v.optional(v.number()), // When current quarter began (for match clock)
     finishedAt: v.optional(v.number()),
     createdAt: v.number(),

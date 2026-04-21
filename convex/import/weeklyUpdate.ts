@@ -16,6 +16,9 @@ type SyncWedstrijdenSummary = {
   createdMatchPlayers: number;
   backfilledMatchRosters: number;
   updatedFinished: number;
+  updatedScheduledAt: number;
+  cancelledMatches: number;
+  uncancelledMatches: number;
   skippedExisting: number;
   skippedExistingWithResult: number;
   skippedNoDiaTeam: number;

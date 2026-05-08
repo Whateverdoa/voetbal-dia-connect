@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getFormation } from "@/lib/formations";
+import type { Formation } from "@/lib/formations/types";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { createCorrelationId } from "@/lib/correlationId";
 import { FieldLines } from "./FieldLines";
@@ -17,11 +17,21 @@ interface PitchViewProps {
   matchId: Id<"matches">;
   players: MatchPlayer[];
   formationId: string | undefined;
+  resolvedFormation: Formation | undefined;
+  customFormationKind?: "8v8" | "11v11";
   status: MatchStatus;
   canEdit?: boolean;
 }
 
-export function PitchView({ matchId, players, formationId, status, canEdit = true }: PitchViewProps) {
+export function PitchView({
+  matchId,
+  players,
+  formationId,
+  resolvedFormation,
+  customFormationKind,
+  status,
+  canEdit = true,
+}: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
   const toggleOffField = useMutation(api.matchActions.togglePlayerOnField);
@@ -30,8 +40,10 @@ export function PitchView({ matchId, players, formationId, status, canEdit = tru
 
   const isLiveOrHalftime = status === "live" || status === "halftime";
 
-  const formation = formationId ? getFormation(formationId) : undefined;
-  const fieldMode = fieldModeFromFormation(formationId);
+  const formation = resolvedFormation;
+  const fieldMode = fieldModeFromFormation(formationId, {
+    customKind: customFormationKind,
+  });
   const cfg = FIELDS[fieldMode];
 
   const onField = players.filter((player) => player.onField);
@@ -150,17 +162,13 @@ export function PitchView({ matchId, players, formationId, status, canEdit = tru
         </span>
       </div>
 
-      <div className="w-full flex justify-center" style={{ perspective: "800px", marginTop: -80 }}>
+      <div className="w-full flex justify-center">
         <div
-          className="relative w-full overflow-hidden border rounded-sm"
+          className="relative w-full max-w-lg overflow-hidden border rounded-sm shadow-md"
           style={{
             background: "#2d7a3a",
             borderColor: "#1e5c28",
             aspectRatio: `${cfg.w} / ${cfg.h}`,
-            transform: "rotateX(12deg)",
-            transformOrigin: "center bottom",
-            boxShadow:
-              "0 -20px 60px -15px rgba(34,197,94,0.12), 0 30px 60px -20px rgba(0,0,0,0.6)",
           }}
         >
           <div
@@ -205,18 +213,6 @@ export function PitchView({ matchId, players, formationId, status, canEdit = tru
             );
           })}
         </div>
-      </div>
-
-      <div className="w-full flex justify-center" style={{ marginTop: -4 }}>
-        <div
-          style={{
-            width: "80%",
-            height: 3,
-            background:
-              "linear-gradient(90deg, transparent 5%, rgba(34,197,94,0.25) 50%, transparent 95%)",
-            borderRadius: 2,
-          }}
-        />
       </div>
 
       <PitchBench

@@ -50,6 +50,23 @@ export interface MatchEvent {
   displayExtraMinute?: number;
 }
 
+export interface SubstitutionPlanRow {
+  _id: Id<"substitutionPlans">;
+  matchId: Id<"matches">;
+  sequence: number;
+  targetQuarter?: number;
+  targetMinute?: number;
+  playerOutId: Id<"players">;
+  playerInId: Id<"players">;
+  status: "pending" | "skipped" | "executed";
+  note?: string;
+  executedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+  outName?: string;
+  inName?: string;
+}
+
 export interface StagedSubstitution {
   stagedEventId: Id<"matchEvents">;
   outId?: Id<"players">;
@@ -103,6 +120,15 @@ export interface Match {
   players: MatchPlayer[];
   events: MatchEvent[];
   stagedSubstitutions?: StagedSubstitution[];
+  substitutionPlans?: SubstitutionPlanRow[];
   formationId?: string;
+  customFormationTemplate?: {
+    _id: Id<"formationTemplates">;
+    name: string;
+    kind: "8v8" | "11v11";
+    structure: string;
+    slots: { id: number; x: number; y: number; position: string }[];
+    links?: { from: number; to: number }[];
+  } | null;
   pitchType?: "full" | "half";
 }

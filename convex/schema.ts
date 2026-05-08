@@ -125,8 +125,9 @@ export default defineSchema({
     // Match lead (wedstrijdleider) — coach who claimed lead role for this match
     leadCoachId: v.optional(v.id("coaches")),
 
-    // Field view: formation key (e.g. "8v8_1-3-3-1") and pitch type
+    // Field view: preset formation key and/or saved custom template for this team
     formationId: v.optional(v.string()),
+    customFormationTemplateId: v.optional(v.id("formationTemplates")),
     pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
 
     // Timestamps
@@ -210,6 +211,50 @@ export default defineSchema({
   })
     .index("by_match", ["matchId"])
     .index("by_match_type", ["matchId", "type"]),
+
+  // Reusable custom pitch formations per team (coach-editable slots)
+  formationTemplates: defineTable({
+    teamId: v.id("teams"),
+    kind: v.union(v.literal("8v8"), v.literal("11v11")),
+    name: v.string(),
+    /** Human-readable lines, e.g. "1-5-2" (including keeper row) */
+    structure: v.string(),
+    slots: v.array(
+      v.object({
+        id: v.number(),
+        x: v.number(),
+        y: v.number(),
+        position: v.string(),
+      })
+    ),
+    links: v.optional(
+      v.array(v.object({ from: v.number(), to: v.number() }))
+    ),
+    active: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_team", ["teamId"]),
+
+  // Pre-planned substitutions for a match (coach-only)
+  substitutionPlans: defineTable({
+    matchId: v.id("matches"),
+    sequence: v.number(),
+    targetQuarter: v.optional(v.number()),
+    targetMinute: v.optional(v.number()),
+    playerOutId: v.id("players"),
+    playerInId: v.id("players"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("skipped"),
+      v.literal("executed")
+    ),
+    note: v.optional(v.string()),
+    executedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_match", ["matchId"])
+    .index("by_match_sequence", ["matchId", "sequence"]),
 
   // VoetbalAssist kalender/uitslagen (import; niet overschrijven op voetbalassist_id)
   wedstrijden: defineTable({

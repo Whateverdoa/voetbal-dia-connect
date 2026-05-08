@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:restart": "powershell -ExecutionPolicy Bypass -File ./scripts/restart-dev.ps1",
-    "dev:frontend": "next dev --turbopack",
+    "dev:frontend": "next dev --turbopack -p 3000",
     "dev:backend": "convex dev",
     "build": "node scripts/build.mjs",
-    "start": "next start",
+    "start": "next start -p 3000",
     "lint": "eslint .",
     "test": "vitest",
     "test:run": "npm run test:pin-guard && vitest run",

@@ -1,15 +1,19 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
 import { FORMATION_GROUPS } from "@/lib/formations";
+import { CreateFormationModal } from "./CreateFormationModal";
 
 type LineupView = "veld" | "lijst";
 
 interface FormationSelectorProps {
   matchId: Id<"matches">;
+  teamId: Id<"teams">;
   formationId: string | undefined;
+  customFormationTemplateId: Id<"formationTemplates"> | undefined;
   lineupView: LineupView;
   onLineupViewChange: (view: LineupView) => void;
   canEdit?: boolean;
@@ -17,23 +21,37 @@ interface FormationSelectorProps {
 
 export function FormationSelector({
   matchId,
+  teamId,
   formationId,
+  customFormationTemplateId,
   lineupView,
   onLineupViewChange,
   canEdit = true,
 }: FormationSelectorProps) {
+  const [showCreate, setShowCreate] = useState(false);
   const setMatchFormation = useMutation(api.matchActions.setMatchFormation);
+  const customList = useQuery(api.formationTemplates.listForTeam, { teamId });
+
+  const selectValue = customFormationTemplateId
+    ? `custom:${String(customFormationTemplateId)}`
+    : formationId ?? "";
+
+  const handleSelectChange = (raw: string) => {
+    if (raw.startsWith("custom:")) {
+      const id = raw.replace("custom:", "") as Id<"formationTemplates">;
+      void setMatchFormation({ matchId, customFormationTemplateId: id });
+      return;
+    }
+    void setMatchFormation({ matchId, formationId: raw });
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-md p-3 flex flex-wrap gap-2 items-center relative z-10">
       <label className="text-sm font-medium text-gray-700">Formatie</label>
       <select
-        value={formationId ?? ""}
+        value={selectValue}
         disabled={!canEdit}
-        onChange={(e) => {
-          const value = e.target.value || undefined;
-          setMatchFormation({ matchId, formationId: value });
-        }}
+        onChange={(e) => handleSelectChange(e.target.value)}
         className="px-3 py-2 border rounded-lg text-sm flex-1 min-w-[140px]"
       >
         <option value="">Geen (lijst)</option>
@@ -46,7 +64,25 @@ export function FormationSelector({
             ))}
           </optgroup>
         ))}
+        {customList !== undefined && customList.length > 0 && (
+          <optgroup label="Eigen opgeslagen">
+            {customList.map((t) => (
+              <option key={String(t._id)} value={`custom:${String(t._id)}`}>
+                {t.name} ({t.structure})
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="text-sm font-medium text-dia-green border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+        >
+          + Eigen formatie
+        </button>
+      )}
       <div className="flex rounded-lg overflow-hidden border border-gray-300">
         <button
           type="button"
@@ -63,6 +99,16 @@ export function FormationSelector({
           Lijst
         </button>
       </div>
+
+      {showCreate && (
+        <CreateFormationModal
+          teamId={teamId}
+          onClose={() => setShowCreate(false)}
+          onCreated={(templateId) => {
+            void setMatchFormation({ matchId, customFormationTemplateId: templateId });
+          }}
+        />
+      )}
     </div>
   );
 }

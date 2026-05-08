@@ -198,3 +198,76 @@ export const F11_1343: Formation = {
     [8, 9], [9, 10],
   ],
 };
+
+/** 1-5-3-2 — Zeer defensief (vijf verdedigers) */
+export const F11_1532: Formation = {
+  name: "1-5-3-2 (Vijf achterin)",
+  slots: [
+    { id: 0, x: 50, y: 93, position: "GK" },
+    { id: 1, x: 92, y: 74, position: "RB" },
+    { id: 2, x: 70, y: 78, position: "CB" },
+    { id: 3, x: 50, y: 80, position: "CB" },
+    { id: 4, x: 30, y: 78, position: "CB" },
+    { id: 5, x: 8, y: 74, position: "LB" },
+    { id: 6, x: 72, y: 52, position: "CM" },
+    { id: 7, x: 50, y: 50, position: "CM" },
+    { id: 8, x: 28, y: 52, position: "CM" },
+    { id: 9, x: 60, y: 22, position: "ST" },
+    { id: 10, x: 40, y: 22, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2], [0, 3], [0, 4], [0, 5],
+    [2, 6], [3, 7], [4, 8],
+    [6, 9], [7, 9], [7, 10], [8, 10],
+    [9, 10],
+  ],
+};
+
+/** 4-2-3-1 — Hoog druk, één spits */
+export const F11_4231: Formation = {
+  name: "4-2-3-1 (Modern)",
+  slots: [
+    { id: 0, x: 50, y: 93, position: "GK" },
+    { id: 1, x: 85, y: 76, position: "RB" },
+    { id: 2, x: 62, y: 80, position: "CB" },
+    { id: 3, x: 38, y: 80, position: "CB" },
+    { id: 4, x: 15, y: 76, position: "LB" },
+    { id: 5, x: 62, y: 58, position: "CDM" },
+    { id: 6, x: 38, y: 58, position: "CDM" },
+    { id: 7, x: 88, y: 38, position: "RW" },
+    { id: 8, x: 50, y: 40, position: "CAM" },
+    { id: 9, x: 12, y: 38, position: "LW" },
+    { id: 10, x: 50, y: 20, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2], [0, 3], [0, 4],
+    [1, 5], [2, 5], [3, 6], [4, 6],
+    [5, 7], [5, 8], [6, 8], [6, 9],
+    [7, 10], [8, 10], [9, 10],
+  ],
+};
+
+/** 3-4-1-2 — Drie centraal, vier op middenveld, twee spitsen */
+export const F11_3412: Formation = {
+  name: "3-4-1-2 (Drie achterin)",
+  slots: [
+    { id: 0, x: 50, y: 93, position: "GK" },
+    { id: 1, x: 72, y: 80, position: "CB" },
+    { id: 2, x: 50, y: 82, position: "CB" },
+    { id: 3, x: 28, y: 80, position: "CB" },
+    { id: 4, x: 90, y: 54, position: "RM" },
+    { id: 5, x: 65, y: 54, position: "CM" },
+    { id: 6, x: 35, y: 54, position: "CM" },
+    { id: 7, x: 10, y: 54, position: "LM" },
+    { id: 8, x: 50, y: 38, position: "CAM" },
+    { id: 9, x: 60, y: 22, position: "ST" },
+    { id: 10, x: 40, y: 22, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2], [0, 3],
+    [1, 4], [2, 5], [2, 6], [3, 7],
+    [4, 8], [5, 8], [6, 8], [7, 8],
+    [8, 9], [8, 10],
+    [9, 10],
+  ],
+};

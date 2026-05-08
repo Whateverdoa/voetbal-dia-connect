@@ -50,7 +50,7 @@ export default function CoachPage() {
 
 function CoachPageWithClerk() {
   const { signOut } = useClerk();
-  const coachData = useQuery(api.matches.verifyCoachPin, {});
+  const coachData = useQuery(api.matches.verifyCoachAccess, {});
 
   if (coachData === undefined) {
     return (

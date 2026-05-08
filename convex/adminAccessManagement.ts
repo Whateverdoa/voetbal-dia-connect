@@ -67,23 +67,7 @@ export const backfillUserAccess = mutation({
       createdOrUpdated += 1;
     }
 
-    const matches = await ctx.db.query("matches").collect();
-    let matchedMatches = 0;
-    for (const match of matches) {
-      if (match.coachId) continue;
-      if (!match.coachPin) continue;
-
-      const coach = await ctx.db
-        .query("coaches")
-        .withIndex("by_pin", (q) => q.eq("pin", match.coachPin!))
-        .first();
-      if (!coach) continue;
-
-      await ctx.db.patch(match._id, { coachId: coach._id });
-      matchedMatches += 1;
-    }
-
-    return { createdOrUpdated, matchedMatches };
+    return { createdOrUpdated };
   },
 });
 

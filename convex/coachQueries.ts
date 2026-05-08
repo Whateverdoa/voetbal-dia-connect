@@ -98,7 +98,7 @@ export const listTeamPlayersNotInMatch = query({
   },
 });
 
-export const verifyCoachPin = query({
+export const verifyCoachAccess = query({
   args: {},
   handler: async (ctx) => {
     try {
@@ -116,14 +116,22 @@ export const verifyCoachPin = query({
 
       const flat = matches.flat();
       const enriched = await Promise.all(
-        flat.map(async (m) => {
-          const teamDoc = await ctx.db.get(m.teamId);
+        flat.map(async (match) => {
+          const teamDoc = await ctx.db.get(match.teamId);
           const club = teamDoc ? await ctx.db.get(teamDoc.clubId) : null;
-          const { coachPin: _omit, ...rest } = m;
           return {
-            ...rest,
+            _id: match._id,
+            teamId: match.teamId,
+            opponent: match.opponent,
+            isHome: match.isHome,
+            status: match.status,
+            currentQuarter: match.currentQuarter,
+            homeScore: match.homeScore,
+            awayScore: match.awayScore,
+            publicCode: match.publicCode,
+            scheduledAt: match.scheduledAt,
             teamName: teamDoc?.name ?? "Team",
-            ...logoFieldsForMatchWithTeamClub(m, teamDoc, club),
+            ...logoFieldsForMatchWithTeamClub(match, teamDoc, club),
           };
         })
       );

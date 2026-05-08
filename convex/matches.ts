@@ -22,7 +22,7 @@ export {
   getCoachTeamSetup,
   listByTeam,
   listTeamPlayersNotInMatch,
-  verifyCoachPin,
+  verifyCoachAccess,
 } from "./coachQueries";
 export { getForReferee, getMatchesForReferee } from "./refereeQueries";
 

@@ -211,6 +211,15 @@ Importflow voor VoetbalAssist/KNVB:
 - bestaande wedstrijden zonder `matchPlayers` kunnen tijdens dezelfde sync een roster-backfill krijgen zolang ze nog niet gespeeld zijn
 - een geïmporteerde uitslag mag een bestaande wedstrijd alleen naar `finished` zetten als er lokaal nog geen uitslag/stand is vastgelegd
 - als er lokaal al een score of afgeronde uitslag bestaat, wordt die match overgeslagen (`skippedExistingWithResult`)
+- **match-key is (team, tegenstander, Europe/Amsterdam-dag)** — niet ms-precisie. Zo matcht de sync nog steeds als DIA de aftrap-tijd verzette.
+- **periodieke drift-checks (draaien mee in dezelfde cron):**
+  - _tijd-drift:_ als DIA een nieuwe `datum_ms` doorgeeft voor een lokaal `scheduled`/`lineup` match, wordt `scheduledAt` bijgewerkt (`updatedScheduledAt` in de log). Bij finalisatie idem.
+  - _afgelasting:_ als DIA `status: "afgelast"` rapporteert voor een bestaande lokale match (niet `live`/`finished`), wordt `cancelledAt` gezet (`cancelledMatches` in de log). Trekt DIA de afgelasting later terug, dan clearet de sync `cancelledAt` weer (`uncancelledMatches`).
+  - _zichtbaarheid:_ Convex function logs → filter op `[sync] tijd-drift`, `[sync] afgelast`, `[sync] hervat`.
+
+Toekomst — Sportlink als bron:
+- Het swap-punt zit in `convex/import/resultsFetch.ts` (`fetchLatestResults`); de rest van de pipeline (`syncAllInternal`, `weeklyUpdate`, cron) blijft gelijk.
+- Zie `docs/sportlink-integration.md` voor het uitgewerkte plan (dataformaat, endpoints, auth). De `wedstrijden`-stagingtabel en de statusset (`gespeeld | gepland | afgelast`) zijn Sportlink-compatibel gekozen.
 
 ## Cutover Checklist
 ### 1. Preflight

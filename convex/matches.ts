@@ -22,7 +22,7 @@ export {
   getCoachTeamSetup,
   listByTeam,
   listTeamPlayersNotInMatch,
-  verifyCoachPin,
+  verifyCoachAccess,
 } from "./coachQueries";
 export { getForReferee, getMatchesForReferee } from "./refereeQueries";
 
@@ -212,22 +212,99 @@ export const getForCoach = query({
       ? await ctx.db.get(match.leadCoachId)
       : null;
 
-    const { coachPin: _legacyCoachPin, ...safeMatch } = match;
+    let customFormationTemplate: {
+      _id: Id<"formationTemplates">;
+      name: string;
+      kind: "8v8" | "11v11";
+      structure: string;
+      slots: { id: number; x: number; y: number; position: string }[];
+      links?: { from: number; to: number }[];
+    } | null = null;
+    if (match.customFormationTemplateId) {
+      const t = await ctx.db.get(match.customFormationTemplateId);
+      if (t && t.active && t.teamId === match.teamId) {
+        customFormationTemplate = {
+          _id: t._id,
+          name: t.name,
+          kind: t.kind,
+          structure: t.structure,
+          slots: t.slots,
+          links: t.links,
+        };
+      }
+    }
 
     const isCurrentCoachLead = match.leadCoachId === coach._id;
     const canControlClock = !!match.refereeId || isCurrentCoachLead;
 
+    const planRows = await ctx.db
+      .query("substitutionPlans")
+      .withIndex("by_match", (q) => q.eq("matchId", match._id))
+      .collect();
+    planRows.sort(
+      (a, b) => a.sequence - b.sequence || String(a._id).localeCompare(String(b._id))
+    );
+
+    const substitutionPlans = await Promise.all(
+      planRows.map(async (r) => {
+        const po = await ctx.db.get(r.playerOutId);
+        const pi = await ctx.db.get(r.playerInId);
+        return {
+          _id: r._id,
+          matchId: r.matchId,
+          sequence: r.sequence,
+          targetQuarter: r.targetQuarter,
+          targetMinute: r.targetMinute,
+          playerOutId: r.playerOutId,
+          playerInId: r.playerInId,
+          status: r.status,
+          note: r.note,
+          executedAt: r.executedAt,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+          outName: po?.name,
+          inName: pi?.name,
+        };
+      })
+    );
+
     return {
-      ...safeMatch,
+      _id: match._id,
+      teamId: match.teamId,
+      publicCode: match.publicCode,
+      opponent: match.opponent,
+      isHome: match.isHome,
+      scheduledAt: match.scheduledAt,
+      status: match.status,
+      currentQuarter: match.currentQuarter,
+      quarterCount: match.quarterCount,
+      regulationDurationMinutes: match.regulationDurationMinutes,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      showLineup: match.showLineup,
+      pausedAt: match.pausedAt,
+      accumulatedPauseTime: match.accumulatedPauseTime,
+      bankedOverrunSeconds: match.bankedOverrunSeconds,
+      refereeId: match.refereeId,
+      formationId: match.formationId,
+      customFormationTemplateId: match.customFormationTemplateId,
+      pitchType: match.pitchType,
+      startedAt: match.startedAt,
+      cancelledAt: match.cancelledAt,
+      quarterStartedAt: match.quarterStartedAt,
+      finishedAt: match.finishedAt,
+      createdAt: match.createdAt,
       teamName: team?.name ?? "Team",
       ...logoFieldsForMatchWithTeamClub(match, team, club),
       players: players.filter(Boolean),
       events: projectedEvents,
       stagedSubstitutions,
+      customFormationTemplate,
+      substitutionPlans,
       refereeName: referee?.name ?? null,
-      leadCoachId: safeMatch.leadCoachId ?? null,
+      leadCoachId: match.leadCoachId ?? null,
       leadCoachName: leadCoach?.name ?? null,
-      hasLead: !!safeMatch.leadCoachId,
+      hasLead: !!match.leadCoachId,
       isCurrentCoachLead,
       canControlClock,
     };

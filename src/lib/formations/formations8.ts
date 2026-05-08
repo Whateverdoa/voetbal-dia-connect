@@ -125,3 +125,63 @@ export const F8_1133: Formation = {
     [2, 5], [3, 5], [3, 6], [3, 7], [4, 7],
   ],
 };
+
+/** 1-5-2 — Vijf verdedigers, twee spitsen */
+export const F8_152: Formation = {
+  name: "1-5-2 (Vijf achterin)",
+  slots: [
+    { id: 0, x: 50, y: 90, position: "GK" },
+    { id: 1, x: 8, y: 72, position: "LB" },
+    { id: 2, x: 32, y: 76, position: "CB" },
+    { id: 3, x: 50, y: 78, position: "CB" },
+    { id: 4, x: 68, y: 76, position: "CB" },
+    { id: 5, x: 92, y: 72, position: "RB" },
+    { id: 6, x: 35, y: 22, position: "ST" },
+    { id: 7, x: 65, y: 22, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2], [0, 3], [0, 4], [0, 5],
+    [2, 6], [3, 6], [3, 7], [4, 7],
+    [1, 2], [4, 5],
+  ],
+};
+
+/** 1-2-4-1 — Twee verdedigers, vier middenveld, één spits */
+export const F8_1241: Formation = {
+  name: "1-2-4-1 (Compact middenveld)",
+  slots: [
+    { id: 0, x: 50, y: 90, position: "GK" },
+    { id: 1, x: 35, y: 74, position: "CB" },
+    { id: 2, x: 65, y: 74, position: "CB" },
+    { id: 3, x: 12, y: 48, position: "LM" },
+    { id: 4, x: 38, y: 50, position: "CM" },
+    { id: 5, x: 62, y: 50, position: "CM" },
+    { id: 6, x: 88, y: 48, position: "RM" },
+    { id: 7, x: 50, y: 20, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2],
+    [1, 3], [1, 4], [2, 5], [2, 6],
+    [3, 7], [4, 7], [5, 7], [6, 7],
+  ],
+};
+
+/** 1-4-1-2 — Vier verdedigers, één spil, twee spitsen */
+export const F8_1412: Formation = {
+  name: "1-4-1-2 (Twee spitsen)",
+  slots: [
+    { id: 0, x: 50, y: 90, position: "GK" },
+    { id: 1, x: 85, y: 72, position: "RB" },
+    { id: 2, x: 62, y: 76, position: "CB" },
+    { id: 3, x: 38, y: 76, position: "CB" },
+    { id: 4, x: 15, y: 72, position: "LB" },
+    { id: 5, x: 50, y: 50, position: "CDM" },
+    { id: 6, x: 38, y: 22, position: "ST" },
+    { id: 7, x: 62, y: 22, position: "ST" },
+  ],
+  links: [
+    [0, 1], [0, 2], [0, 3], [0, 4],
+    [2, 5], [3, 5],
+    [5, 6], [5, 7],
+  ],
+};

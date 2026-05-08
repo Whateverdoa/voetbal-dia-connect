@@ -15,6 +15,7 @@ export { EventTimeline } from "./EventTimeline";
 export { LineupToggle } from "./LineupToggle";
 export { PlayingTimePanel } from "./PlayingTimePanel";
 export { SubstitutionSuggestions } from "./SubstitutionSuggestions";
+export { SubstitutionPlanPanel } from "./SubstitutionPlanPanel";
 
 // Playing time sub-components
 export { PlayingTimeSummary } from "./PlayingTimeSummary";
@@ -42,4 +43,5 @@ export type {
   MatchEvent,
   MatchStatus,
   StagedSubstitution,
+  SubstitutionPlanRow,
 } from "./types";

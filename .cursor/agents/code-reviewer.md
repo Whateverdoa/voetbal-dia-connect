@@ -30,9 +30,12 @@ Ensure all code meets project standards for quality, security, and maintainabili
 - All function parameters and return types must be typed
 
 ### 3. Convex Security
-- **Every mutation must verify `coachPin`** before modifying data
-- Public queries must **never leak PINs** (strip sensitive fields)
-- All queries must use **indexes** (no full table scans)
+- **New code must not depend on legacy PIN auth**. The project is moving to Clerk identity + role/team checks.
+- Mutations must verify the caller through established identity helpers such as `verifyCoachTeamMembership`, `verifyIsMatchLead`, `requireCoachForMatch`, or other role-specific helpers before modifying data.
+- Live/halftime match-control mutations must require the match lead or the correct role capability.
+- Public queries must never leak legacy `coachPin`, role-linking internals, private emails, or coach-only planning events.
+- All queries must use indexes for bounded lookups; avoid full table scans.
+- `npm run test:pin-guard` must pass. It rejects banned legacy patterns in non-migration code: `coachPin`, `by_pin`, `verifyCoachPin`, `CLERK_COACH_EMAIL_PIN`, and `linkedPin(s)`.
 
 ### 4. File Organization
 - Components in `src/components/`
@@ -48,9 +51,10 @@ Ensure all code meets project standards for quality, security, and maintainabili
 
 ### Security
 - [ ] No exposed secrets or API keys
-- [ ] PIN verification on all mutations
+- [ ] Identity/role verification on all mutations
+- [ ] No new legacy PIN dependencies; `npm run test:pin-guard` passes
 - [ ] Input validation implemented
-- [ ] No PINs in public query responses
+- [ ] No legacy PINs, private emails, or coach-only data in public query responses
 
 ### Code Quality
 - [ ] File under 300 LOC
@@ -61,7 +65,7 @@ Ensure all code meets project standards for quality, security, and maintainabili
 
 ### Convex Patterns
 - [ ] Queries use proper indexes
-- [ ] Mutations verify `coachPin` first
+- [ ] Mutations verify Clerk identity, coach/referee role, team access, and match-lead requirements where applicable
 - [ ] Generated types used (`Id<"matches">`, etc.)
 - [ ] No direct table scans
 
@@ -84,7 +88,8 @@ Organize feedback by priority:
 ### Critical Issues (Must Fix)
 - Security vulnerabilities
 - 300 LOC violations
-- Missing PIN verification
+- Missing identity/role verification
+- New legacy PIN dependencies or failing `npm run test:pin-guard`
 - Exposed secrets
 
 ### Warnings (Should Fix)
@@ -106,8 +111,8 @@ Organize feedback by priority:
 1. **300 LOC violation** in `src/app/coach/match/[id]/page.tsx` (603 lines)
    - Split into: `MatchControlPanel.tsx`, `GoalModal.tsx`, `SubstitutionPanel.tsx`, `EventTimeline.tsx`
 
-2. **Missing PIN verification** in `convex/matchActions.ts:addGoal`
-   - Add: `const match = await ctx.db.get(args.matchId); if (match?.coachPin !== args.pin) throw new Error("Unauthorized");`
+2. **Missing role verification** in `convex/matchActions.ts:addGoal`
+   - Add the established auth helper for the operation, e.g. `const match = await ctx.db.get(args.matchId); if (!match || !(await verifyIsMatchLead(ctx, match))) throw new Error("Geen toegang");`
 
 ### Warnings
 

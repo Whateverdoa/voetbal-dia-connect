@@ -235,7 +235,7 @@ describe('TeamsTab', () => {
       // Find the first team row and click its edit button (pencil icon)
       const teamRows = container.querySelectorAll('.bg-gray-50');
       const editButtons = teamRows[0].querySelectorAll('button');
-      const editButton = editButtons[0]; // First button is edit (pencil)
+      const editButton = editButtons[1]; // Logo edit is first, pencil edit is second
       fireEvent.click(editButton!);
 
       // Should show input field with current name
@@ -250,7 +250,7 @@ describe('TeamsTab', () => {
       // Enter edit mode
       const teamRows = container.querySelectorAll('.bg-gray-50');
       const editButtons = teamRows[0].querySelectorAll('button');
-      fireEvent.click(editButtons[0]!);
+      fireEvent.click(editButtons[1]!);
 
       // Should show green save button and gray cancel button
       const saveButton = container.querySelector('.text-green-600');
@@ -266,7 +266,7 @@ describe('TeamsTab', () => {
       // Enter edit mode
       const teamRows = container.querySelectorAll('.bg-gray-50');
       const editButtons = teamRows[0].querySelectorAll('button');
-      fireEvent.click(editButtons[0]!);
+      fireEvent.click(editButtons[1]!);
 
       // Change the name - find the input in the first team row
       const editInput = teamRows[0].querySelector('input[type="text"]') as HTMLInputElement;
@@ -290,7 +290,7 @@ describe('TeamsTab', () => {
       // Enter edit mode and save
       const teamRows = container.querySelectorAll('.bg-gray-50');
       const editButtons = teamRows[0].querySelectorAll('button');
-      fireEvent.click(editButtons[0]!);
+      fireEvent.click(editButtons[1]!);
 
       const editInput = teamRows[0].querySelector('input[type="text"]') as HTMLInputElement;
       fireEvent.change(editInput, { target: { value: 'JO11-2' } });
@@ -309,7 +309,7 @@ describe('TeamsTab', () => {
       // Enter edit mode
       const teamRows = container.querySelectorAll('.bg-gray-50');
       const editButtons = teamRows[0].querySelectorAll('button');
-      fireEvent.click(editButtons[0]!);
+      fireEvent.click(editButtons[1]!);
 
       // Click cancel (the X button with text-gray-500 class in edit mode)
       // In edit mode, the buttons are: save (green), cancel (gray)

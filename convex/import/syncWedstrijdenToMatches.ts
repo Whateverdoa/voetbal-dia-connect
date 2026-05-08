@@ -23,6 +23,71 @@ function cleanTeamName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Return `YYYY-MM-DD` in Europe/Amsterdam for a given UTC ms timestamp.
+ *
+ * Used as part of the sync match-key so a DIA fixture whose kickoff time
+ * shifted after initial import still resolves to the same local match row.
+ */
+function amsterdamDateKey(ms: number | undefined): string {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return "no-date";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms));
+}
+
+/**
+ * Map a raw DIA team label (text after the "DIA " prefix, lowercased) to the
+ * local team slug. VoetbalAssist uses formats that don't directly equal our
+ * canonical slugs; this function bridges both.
+ *
+ * Examples:
+ *   "35+1"         -> "35-1"
+ *   "vr30+1"       -> "30-1"
+ *   "1 (zon)"      -> "zo1"
+ *   "10 (zon)"     -> "zo10"
+ *   "vr1 (zon)"    -> "vr1"
+ *   "o23-1"        -> "jo23-1"
+ *   "jo13-2jm"     -> "jo13-2"
+ *   "g team"       -> "g-team"
+ *   "jo13-3"       -> "jo13-3"  (no change)
+ */
+function normalizeDiaSlug(raw: string): string {
+  const s = raw.toLowerCase().trim();
+
+  // "vr1 (zon)" / "vr2 (zon)"  -> "vr1" / "vr2"  (women's Sunday team)
+  const vrZon = s.match(/^vr(\d+)\s*\(zon\)$/);
+  if (vrZon) return `vr${vrZon[1]}`;
+
+  // "N (zon)" -> "zoN"  (men's Sunday team)
+  const zon = s.match(/^(\d+)\s*\(zon\)$/);
+  if (zon) return `zo${zon[1]}`;
+
+  // "vr30+N" -> "30-N"  (women's 30+ team)
+  const vr30Plus = s.match(/^vr30\+(\d+)$/);
+  if (vr30Plus) return `30-${vr30Plus[1]}`;
+
+  // "35+N" -> "35-N"  (men's 35+ team)
+  const m35Plus = s.match(/^35\+(\d+)$/);
+  if (m35Plus) return `35-${m35Plus[1]}`;
+
+  // "o23-N" -> "jo23-N"  (legacy u23 naming)
+  const o23 = s.match(/^o23-(\d+)$/);
+  if (o23) return `jo23-${o23[1]}`;
+
+  // "joAA-NJM" -> "joAA-N"  (strip mixed/jongens-meisjes suffix)
+  const jm = s.match(/^(jo\d+-\d+)jm$/);
+  if (jm) return jm[1];
+
+  // "g team" -> "g-team"
+  if (s === "g team") return "g-team";
+
+  return s;
+}
+
 function extractDiaMatch(
   thuisteam: string,
   uitteam: string,
@@ -37,7 +102,7 @@ function extractDiaMatch(
     const diaTeam = home.slice(prefix.length).trim();
     const opponent = away;
     return {
-      teamSlug: diaTeam.toLowerCase(),
+      teamSlug: normalizeDiaSlug(diaTeam),
       opponent,
       isHome: true,
       opponentLogoUrl: findLocalLogo(opponent) ?? uitteamLogo ?? undefined,
@@ -48,7 +113,7 @@ function extractDiaMatch(
     const diaTeam = away.slice(prefix.length).trim();
     const opponent = home;
     return {
-      teamSlug: diaTeam.toLowerCase(),
+      teamSlug: normalizeDiaSlug(diaTeam),
       opponent,
       isHome: false,
       opponentLogoUrl: findLocalLogo(opponent) ?? thuisteamLogo ?? undefined,
@@ -208,18 +273,23 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   }
 
   const existingMatches = await ctx.db.query("matches").collect();
+  const matchKey = (
+    teamId: Id<"teams">,
+    opponent: string,
+    ms: number | undefined,
+  ): string =>
+    `${teamId}|${opponent.trim().toLowerCase()}|${amsterdamDateKey(ms)}`;
+
+  // NOTE: key uses Europe/Amsterdam date (YYYY-MM-DD), not exact ms. This allows
+  // the sync to still match a local row after DIA shifted the kickoff time.
+  // Assumes: at most one match per (team, opponent, Amsterdam-day). Safe for youth football.
   const existingByKey = new Map(
     existingMatches.map((match) => [
-      `${match.teamId}|${match.opponent.trim().toLowerCase()}|${match.scheduledAt ?? 0}`,
+      matchKey(match.teamId, match.opponent, match.scheduledAt),
       match,
     ]),
   );
-  const existingKeys = new Set(
-    existingMatches.map(
-      (match) =>
-        `${match.teamId}|${match.opponent.trim().toLowerCase()}|${match.scheduledAt ?? 0}`,
-    ),
-  );
+  const existingKeys = new Set(existingByKey.keys());
 
   let created = 0;
   let createdMatchPlayers = 0;
@@ -231,13 +301,11 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   let skippedCancelled = 0;
   let skippedNoDate = 0;
   let updatedFinished = 0;
+  let updatedScheduledAt = 0;
+  let cancelledMatches = 0;
+  let uncancelledMatches = 0;
 
   for (const wedstrijd of wedstrijden) {
-    if (wedstrijd.status === "afgelast") {
-      skippedCancelled++;
-      continue;
-    }
-
     const extracted = extractDiaMatch(
       wedstrijd.thuisteam,
       wedstrijd.uitteam,
@@ -261,7 +329,30 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     }
 
     const opponent = extracted.opponent.trim();
-    const key = `${team._id}|${opponent.toLowerCase()}|${wedstrijd.datum_ms}`;
+    const key = matchKey(team._id, opponent, wedstrijd.datum_ms);
+
+    // AFGELAST: mark the matching local row cancelled (if not already finished/live).
+    if (wedstrijd.status === "afgelast") {
+      const existingMatch = existingByKey.get(key);
+      const isLiveOrFinished =
+        existingMatch &&
+        (existingMatch.status === "live" ||
+          existingMatch.status === "halftime" ||
+          existingMatch.status === "finished");
+      if (existingMatch && !existingMatch.cancelledAt && !isLiveOrFinished) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { cancelledAt: Date.now() });
+        }
+        cancelledMatches++;
+        console.log(
+          `[sync] afgelast: ${team.slug} vs ${opponent} (${amsterdamDateKey(wedstrijd.datum_ms)})`,
+        );
+      } else {
+        skippedCancelled++;
+      }
+      continue;
+    }
+
     const isFinished = wedstrijd.status === "gespeeld";
     const homeGoals = wedstrijd.thuis_goals ?? 0;
     const awayGoals = wedstrijd.uit_goals ?? 0;
@@ -269,6 +360,34 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     if (existingKeys.has(key)) {
       const existingMatch = existingByKey.get(key);
+
+      // DIA reverted a cancellation — clear it.
+      if (existingMatch && existingMatch.cancelledAt) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { cancelledAt: undefined });
+        }
+        uncancelledMatches++;
+        console.log(
+          `[sync] hervat: ${team.slug} vs ${opponent} (${amsterdamDateKey(wedstrijd.datum_ms)})`,
+        );
+      }
+
+      // TIJD-DRIFT: existing scheduled/lineup match whose kickoff moved in DIA.
+      if (
+        existingMatch &&
+        !isFinished &&
+        (existingMatch.status === "scheduled" || existingMatch.status === "lineup") &&
+        existingMatch.scheduledAt !== wedstrijd.datum_ms
+      ) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { scheduledAt: wedstrijd.datum_ms });
+        }
+        updatedScheduledAt++;
+        console.log(
+          `[sync] tijd-drift: ${team.slug} vs ${opponent} ${existingMatch.scheduledAt ?? "?"} -> ${wedstrijd.datum_ms}`,
+        );
+      }
+
       if (existingMatch) {
         const matchPlayerCount = matchPlayerCountByMatchId.get(existingMatch._id) ?? 0;
         if (!isFinished && matchPlayerCount === 0 && activePlayerIds.length > 0) {
@@ -289,6 +408,8 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         }
 
         if (!dryRun) {
+          const scheduledAtChanged =
+            existingMatch.scheduledAt !== wedstrijd.datum_ms;
           await ctx.db.patch(existingMatch._id, {
             status: "finished",
             currentQuarter: existingMatch.quarterCount,
@@ -296,6 +417,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
             awayScore: awayGoals,
             startedAt: existingMatch.startedAt ?? wedstrijd.datum_ms,
             finishedAt: wedstrijd.datum_ms + 3600000,
+            // Keep scheduledAt aligned with DIA's actual kickoff ms so the UI
+            // reflects the rescheduled time after finalisation.
+            ...(scheduledAtChanged ? { scheduledAt: wedstrijd.datum_ms } : {}),
           });
         }
         updatedFinished++;
@@ -350,6 +474,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     createdMatchPlayers,
     backfilledMatchRosters,
     updatedFinished,
+    updatedScheduledAt,
+    cancelledMatches,
+    uncancelledMatches,
     skippedExisting,
     skippedExistingWithResult,
     skippedNoDiaTeam,
@@ -379,5 +506,128 @@ export const syncAllInternal = internalMutation({
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? false;
     return await performSyncAll(ctx, dryRun);
+  },
+});
+
+/**
+ * One-off cleanup: remove "scheduled ghost" match rows that were created by the
+ * pre-#40 ms-precision match-key when DIA shifted kickoff times. A row is a
+ * ghost iff:
+ *   - status === "scheduled"
+ *   - homeScore === 0 && awayScore === 0
+ *   - startedAt and finishedAt are unset
+ *   - not cancelled
+ *   - a SIBLING row exists with same (teamId, opponent lowercase, Amsterdam-day)
+ *     that IS already `finished` (confirmed real fixture) or `live`/`halftime`
+ *
+ * Cascade-deletes matchPlayers / matchCommandDedupes / matchEvents for the
+ * ghost (these should be empty for a never-played row; we remove them for
+ * safety).
+ */
+export const cleanupScheduledGhosts = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    const matches = await ctx.db.query("matches").collect();
+
+    const byKey = new Map<string, typeof matches>();
+    for (const m of matches) {
+      if (typeof m.scheduledAt !== "number") continue;
+      const k = `${m.teamId}|${m.opponent.trim().toLowerCase()}|${amsterdamDateKey(m.scheduledAt)}`;
+      const arr = byKey.get(k) ?? [];
+      arr.push(m);
+      byKey.set(k, arr);
+    }
+
+    const ghostIds: Id<"matches">[] = [];
+    const details: Array<{
+      key: string;
+      ghostId: Id<"matches">;
+      survivorId: Id<"matches">;
+      survivorStatus: string;
+    }> = [];
+
+    for (const [key, group] of byKey.entries()) {
+      if (group.length < 2) continue;
+      const survivors = group.filter(
+        (m) =>
+          m.status === "finished" ||
+          m.status === "live" ||
+          m.status === "halftime",
+      );
+      if (survivors.length === 0) continue;
+
+      const ghosts = group.filter(
+        (m) =>
+          m.status === "scheduled" &&
+          m.homeScore === 0 &&
+          m.awayScore === 0 &&
+          !m.startedAt &&
+          !m.finishedAt &&
+          !m.cancelledAt,
+      );
+
+      for (const ghost of ghosts) {
+        ghostIds.push(ghost._id);
+        details.push({
+          key,
+          ghostId: ghost._id,
+          survivorId: survivors[0]._id,
+          survivorStatus: survivors[0].status,
+        });
+      }
+    }
+
+    let deletedMatchPlayers = 0;
+    let deletedEvents = 0;
+    let deletedDedupes = 0;
+
+    if (!dryRun) {
+      for (const ghostId of ghostIds) {
+        const mps = await ctx.db
+          .query("matchPlayers")
+          .withIndex("by_match", (q) => q.eq("matchId", ghostId))
+          .collect();
+        for (const mp of mps) {
+          await ctx.db.delete(mp._id);
+          deletedMatchPlayers++;
+        }
+
+        const evs = await ctx.db
+          .query("matchEvents")
+          .withIndex("by_match", (q) => q.eq("matchId", ghostId))
+          .collect();
+        for (const e of evs) {
+          await ctx.db.delete(e._id);
+          deletedEvents++;
+        }
+
+        const dedupes = await ctx.db
+          .query("matchCommandDedupes")
+          .withIndex("by_match_command_correlation", (q) =>
+            q.eq("matchId", ghostId),
+          )
+          .collect();
+        for (const d of dedupes) {
+          await ctx.db.delete(d._id);
+          deletedDedupes++;
+        }
+
+        await ctx.db.delete(ghostId);
+      }
+    }
+
+    return {
+      dryRun,
+      ghostsFound: ghostIds.length,
+      deletedMatches: dryRun ? 0 : ghostIds.length,
+      deletedMatchPlayers,
+      deletedEvents,
+      deletedDedupes,
+      details: details.slice(0, 30),
+    };
   },
 });

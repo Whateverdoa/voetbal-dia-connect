@@ -18,11 +18,13 @@ import {
   RefereeAssignment,
   StagedSubstitutionsPanel,
   GoalEnrichmentPanel,
+  SubstitutionPlanPanel,
 } from "@/components/match";
 import type { Match } from "@/components/match";
 import { resolveLogoUrl } from "@/lib/logos";
 import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
+import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
 
 type ViewTab = "opstelling" | "speeltijd";
 type LineupView = "veld" | "lijst";
@@ -64,6 +66,18 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
   );
   const playersAbsent = match.players.filter(
     (p) => !p.onField && (p.absent ?? false)
+  );
+
+  const resolvedFormation = resolveMatchFormation(
+    match.formationId,
+    match.customFormationTemplate
+      ? {
+          name: match.customFormationTemplate.name,
+          kind: match.customFormationTemplate.kind,
+          slots: match.customFormationTemplate.slots,
+          links: match.customFormationTemplate.links,
+        }
+      : undefined
   );
 
   const isLive = match.status === "live" || match.status === "halftime";
@@ -146,6 +160,16 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           stagedSubstitutions={match.stagedSubstitutions ?? []}
         />
 
+        <SubstitutionPlanPanel
+          matchId={match._id}
+          status={match.status}
+          quarterCount={match.quarterCount}
+          plans={match.substitutionPlans ?? []}
+          players={match.players}
+          canEditPlan={canEditLineup}
+          canExecute={canDoSubstitutions}
+        />
+
         <RefereeAssignment
           matchId={match._id}
           currentRefereeId={match.refereeId}
@@ -185,7 +209,9 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
             <FormationSelector
               matchId={match._id}
+              teamId={match.teamId}
               formationId={match.formationId}
+              customFormationTemplateId={match.customFormationTemplate?._id}
               lineupView={lineupView}
               onLineupViewChange={setLineupView}
               canEdit={canEditLineup}
@@ -196,6 +222,8 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
                 matchId={match._id}
                 players={match.players}
                 formationId={match.formationId}
+                resolvedFormation={resolvedFormation}
+                customFormationKind={match.customFormationTemplate?.kind}
                 status={match.status}
                 canEdit={canEditLineup}
               />

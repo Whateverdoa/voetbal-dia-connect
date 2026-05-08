@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PitchView } from "./PitchView";
 import type { MatchPlayer } from "./types";
+import { getFormation } from "@/lib/formations";
 
 const mockUseMutation = vi.mocked(useMutation);
 
@@ -21,7 +22,9 @@ beforeAll(() => {
 });
 
 describe("PitchView", () => {
-  const matchId = "match123" as any;  const formationId = "8v8_1-3-3-1";
+  const matchId = "match123" as any;
+  const formationId = "8v8_1-3-3-1";
+  const resolvedFormation = getFormation(formationId)!;
 
   const playerOnField1: MatchPlayer = {
     matchPlayerId: "mp1" as any,
@@ -88,9 +91,9 @@ describe("PitchView", () => {
     return render(
       <PitchView
         matchId={matchId}
-       
         players={players}
         formationId={formationId}
+        resolvedFormation={resolvedFormation}
         status={status}
         canEdit={true}
       />

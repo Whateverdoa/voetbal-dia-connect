@@ -3,6 +3,7 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
 import {
   verifyCoachTeamMembership,
@@ -213,11 +214,13 @@ export const swapFieldPositions = mutation({
   },
 });
 
-// Set match formation and/or pitch type (field view)
+// Set match formation preset and/or custom team template (field view)
 export const setMatchFormation = mutation({
   args: {
     matchId: v.id("matches"),
     formationId: v.optional(v.string()),
+    /** Saved team template from formationTemplates; clears preset formationId when set. */
+    customFormationTemplateId: v.optional(v.id("formationTemplates")),
     pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
   },
   handler: async (ctx, args) => {
@@ -234,11 +237,38 @@ export const setMatchFormation = mutation({
     ) {
       throw new Error("Alleen de wedstrijdleider mag formatie wijzigen");
     }
-    const updates: { formationId?: string; pitchType?: "full" | "half" } = {};
-    if (args.formationId !== undefined) updates.formationId = args.formationId;
-    if (args.pitchType !== undefined) updates.pitchType = args.pitchType;
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(args.matchId, updates);
+
+    const patch: {
+      pitchType?: "full" | "half";
+      formationId?: string;
+      customFormationTemplateId?: Id<"formationTemplates">;
+    } = {};
+
+    if (args.pitchType !== undefined) {
+      patch.pitchType = args.pitchType;
+    }
+
+    if (args.customFormationTemplateId !== undefined) {
+      const tpl = await ctx.db.get(args.customFormationTemplateId);
+      if (!tpl || !tpl.active || tpl.teamId !== match.teamId) {
+        throw new Error("Ongeldige formatie-template");
+      }
+      patch.customFormationTemplateId = args.customFormationTemplateId;
+      patch.formationId = undefined;
+      await ctx.db.patch(args.matchId, patch);
+      return;
+    }
+
+    if (args.formationId !== undefined) {
+      const trimmed = args.formationId.trim();
+      patch.formationId = trimmed === "" ? undefined : trimmed;
+      patch.customFormationTemplateId = undefined;
+      await ctx.db.patch(args.matchId, patch);
+      return;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(args.matchId, patch);
     }
   },
 });

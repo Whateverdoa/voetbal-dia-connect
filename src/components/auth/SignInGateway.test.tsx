@@ -19,7 +19,7 @@ describe("SignInGateway", () => {
   it("renders the Clerk sign-in component when Clerk is enabled", () => {
     render(<SignInGateway clerkEnabled />);
 
-    expect(screen.getByText("Clerk SignIn -> /admin")).toBeInTheDocument();
+    expect(screen.getByText("Clerk SignIn -> /onboarding/rol")).toBeInTheDocument();
   });
 });
 

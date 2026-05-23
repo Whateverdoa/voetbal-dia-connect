@@ -13,6 +13,7 @@ interface RefereeClockControlsProps {
   currentQuarter: number;
   quarterCount: number;
   pausedAt?: number;
+  embedded?: boolean;
 }
 
 export function RefereeClockControls({
@@ -21,6 +22,7 @@ export function RefereeClockControls({
   currentQuarter,
   quarterCount,
   pausedAt,
+  embedded = false,
 }: RefereeClockControlsProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
@@ -65,10 +67,15 @@ export function RefereeClockControls({
   };
 
   const quarterLabel = quarterCount === 2 ? "helft" : "kwart";
+  const Wrapper = embedded ? "div" : "section";
 
   return (
-    <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide text-center">
+    <Wrapper className={embedded ? "space-y-3" : "bg-white rounded-xl shadow-md p-4 space-y-3"}>
+      <h2
+        className={`text-sm font-semibold text-gray-500 uppercase tracking-wide ${
+          embedded ? "text-left" : "text-center"
+        }`}
+      >
         Klokbediening
       </h2>
 
@@ -90,85 +97,87 @@ export function RefereeClockControls({
 
       {isLive && (
         <>
-          {isPaused ? (
-            <button
-              onClick={() => handleAction(() => resumeClockMut({ matchId }))}
-              disabled={isLoading}
-              className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl">▶</span>
-              {isLoading ? "Bezig..." : "Hervat klok"}
-            </button>
-          ) : (
-            <button
-              onClick={() => handleAction(() => pauseClockMut({ matchId }))}
-              disabled={isLoading}
-              className="w-full py-5 bg-orange-500 text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-orange-600 shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl">⏸</span>
-              {isLoading ? "Bezig..." : "Pauzeer klok"}
-            </button>
-          )}
-
-          {isFinalSegment ? (
-            endMatchConfirm ? (
-              <div className="space-y-2">
-                <p className="text-sm text-center text-gray-800 font-medium px-1">
-                  Is de wedstrijd echt afgelopen?
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEndMatchConfirm(false)}
-                    disabled={isLoading}
-                    className="flex-1 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Annuleren
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEndMatchConfirm(false);
-                      handleAction(() =>
-                        nextQuarter({
-                          matchId,
-                          correlationId: createCorrelationId("next-quarter"),
-                        })
-                      );
-                    }}
-                    disabled={isLoading}
-                    className="flex-1 py-4 bg-red-600 text-white font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? "Bezig..." : "Ja, beëindigen"}
-                  </button>
-                </div>
+          {endMatchConfirm ? (
+            <div className="space-y-2">
+              <p className="text-sm text-center text-gray-800 font-medium px-1">
+                Is de wedstrijd echt afgelopen?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEndMatchConfirm(false)}
+                  disabled={isLoading}
+                  className="py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEndMatchConfirm(false);
+                    handleAction(() =>
+                      nextQuarter({
+                        matchId,
+                        correlationId: createCorrelationId("next-quarter"),
+                      })
+                    );
+                  }}
+                  disabled={isLoading}
+                  className="py-4 bg-red-600 text-white font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Bezig..." : "Ja, beëindigen"}
+                </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEndMatchConfirm(true)}
-                disabled={isLoading}
-                className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Einde wedstrijd
-              </button>
-            )
+            </div>
           ) : (
-            <button
-              type="button"
-              onClick={() =>
-                handleAction(() =>
-                  nextQuarter({
-                    matchId,
-                    correlationId: createCorrelationId("next-quarter"),
-                  })
-                )
-              }
-              disabled={isLoading}
-              className="w-full py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Bezig..." : `Einde ${quarterLabel} ${currentQuarter}`}
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              {isPaused ? (
+                <button
+                  onClick={() => handleAction(() => resumeClockMut({ matchId }))}
+                  disabled={isLoading}
+                  className="py-4 bg-dia-green text-white text-base font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <span className="text-xl">▶</span>
+                  {isLoading ? "Bezig..." : "Hervat"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleAction(() => pauseClockMut({ matchId }))}
+                  disabled={isLoading}
+                  className="py-4 bg-orange-500 text-white text-base font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-orange-600 shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <span className="text-xl">⏸</span>
+                  {isLoading ? "Bezig..." : "Pauze"}
+                </button>
+              )}
+
+              {isFinalSegment ? (
+                <button
+                  type="button"
+                  onClick={() => setEndMatchConfirm(true)}
+                  disabled={isLoading}
+                  className="py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Einde match
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleAction(() =>
+                      nextQuarter({
+                        matchId,
+                        correlationId: createCorrelationId("next-quarter"),
+                      })
+                    )
+                  }
+                  disabled={isLoading}
+                  className="py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Bezig..." : `Einde ${quarterLabel} ${currentQuarter}`}
+                </button>
+              )}
+            </div>
           )}
         </>
       )}
@@ -188,6 +197,6 @@ export function RefereeClockControls({
           <p className="text-gray-500 font-medium">Wedstrijd is afgelopen</p>
         </div>
       )}
-    </section>
+    </Wrapper>
   );
 }

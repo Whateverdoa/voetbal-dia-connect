@@ -12,7 +12,9 @@ interface PitchBenchProps {
   onBench: MatchPlayer[];
   onFieldUnassigned: MatchPlayer[];
   selectedPlayerId: Id<"players"> | null;
-  onPlayerClick: (playerId: Id<"players">) => void;
+  onPlayerClick?: (playerId: Id<"players">) => void;
+  onBenchPlayerClick?: (playerId: Id<"players">) => void;
+  onUnassignedPlayerClick?: (playerId: Id<"players">) => void;
   onDeselect: () => void;
   nameLabel: (p: MatchPlayer) => string;
 }
@@ -95,9 +97,15 @@ export function PitchBench({
   onFieldUnassigned,
   selectedPlayerId,
   onPlayerClick,
+  onBenchPlayerClick,
+  onUnassignedPlayerClick,
   onDeselect,
   nameLabel,
 }: PitchBenchProps) {
+  const handleBenchPlayerClick = onBenchPlayerClick ?? onPlayerClick;
+  const handleUnassignedPlayerClick =
+    onUnassignedPlayerClick ?? onPlayerClick;
+
   return (
     <>
       {/* On field but no slot assigned */}
@@ -110,7 +118,7 @@ export function PitchBench({
             {onFieldUnassigned.map((p) => (
               <span
                 key={p.playerId}
-                onClick={() => onPlayerClick(p.playerId)}
+                onClick={() => handleUnassignedPlayerClick?.(p.playerId)}
                 className="inline-flex items-center px-2 py-1 bg-slate-800 rounded text-sm text-white border border-amber-400/20 cursor-pointer hover:bg-slate-700 transition-colors"
               >
                 {p.number != null && (
@@ -143,7 +151,7 @@ export function PitchBench({
                 player={p}
                 isSelected={selectedPlayerId === p.playerId}
                 isDimmed={selectedPlayerId !== null && selectedPlayerId !== p.playerId}
-                onClick={() => onPlayerClick(p.playerId)}
+                onClick={() => handleBenchPlayerClick?.(p.playerId)}
                 nameLabel={nameLabel}
               />
             ))}

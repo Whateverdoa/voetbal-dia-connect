@@ -253,6 +253,7 @@ export const getForCoach = query({
           _id: r._id,
           matchId: r.matchId,
           sequence: r.sequence,
+          kind: r.kind ?? "substitution",
           targetQuarter: r.targetQuarter,
           targetMinute: r.targetMinute,
           playerOutId: r.playerOutId,
@@ -310,6 +311,5 @@ export const getForCoach = query({
     };
   },
 });
-
 
 

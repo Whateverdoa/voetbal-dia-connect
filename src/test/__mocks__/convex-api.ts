@@ -69,4 +69,12 @@ export const api = {
     pauseClock: "matchActions:pauseClock",
     resumeClock: "matchActions:resumeClock",
   },
+  substitutionPlans: {
+    addPlanItem: "substitutionPlans:addPlanItem",
+    updatePlanItem: "substitutionPlans:updatePlanItem",
+    removePlanItem: "substitutionPlans:removePlanItem",
+    skipPlanItem: "substitutionPlans:skipPlanItem",
+    executePlanItem: "substitutionPlans:executePlanItem",
+    reorderPlan: "substitutionPlans:reorderPlan",
+  },
 };

@@ -1,17 +1,50 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import {
   verifyCoachTeamMembership,
   verifyIsMatchLead,
 } from "./pinHelpers";
 import { applyBenchSubstitutionWithSlotTransfer } from "./lib/benchSubstitutionCore";
 import {
+  buildSubstitutionPlanOrderAfterInsert,
   listEnrichedSubstitutionPlans,
   nextSubstitutionPlanSequence,
 } from "./lib/substitutionPlanRows";
 import { assertCanExecutePlannedSubstitution } from "./lib/substitutionPlanGuards";
+
+async function applyPlannedPositionSwap(
+  ctx: MutationCtx,
+  matchId: Id<"matches">,
+  playerAId: Id<"players">,
+  playerBId: Id<"players">
+) {
+  const mpA = await ctx.db
+    .query("matchPlayers")
+    .withIndex("by_match_player", (q) =>
+      q.eq("matchId", matchId).eq("playerId", playerAId)
+    )
+    .first();
+  const mpB = await ctx.db
+    .query("matchPlayers")
+    .withIndex("by_match_player", (q) =>
+      q.eq("matchId", matchId).eq("playerId", playerBId)
+    )
+    .first();
+
+  if (!mpA || !mpB) {
+    throw new Error("Speler zit niet in deze wedstrijd");
+  }
+  if (!mpA.onField || !mpB.onField) {
+    throw new Error("Beide spelers moeten echt op het veld staan");
+  }
+
+  const slotA = mpA.fieldSlotIndex;
+  const slotB = mpB.fieldSlotIndex;
+  await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB });
+  await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA });
+}
 
 export const listForMatch = query({
   args: { matchId: v.id("matches") },
@@ -29,9 +62,13 @@ export const addPlanItem = mutation({
     matchId: v.id("matches"),
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
+    kind: v.optional(
+      v.union(v.literal("substitution"), v.literal("positionSwap"))
+    ),
     targetQuarter: v.optional(v.number()),
     targetMinute: v.optional(v.number()),
     note: v.optional(v.string()),
+    insertAtQuarterBoundary: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
@@ -42,6 +79,7 @@ export const addPlanItem = mutation({
     if (args.playerOutId === args.playerInId) {
       throw new Error("Kies twee verschillende spelers");
     }
+    const kind = args.kind ?? "substitution";
 
     const mpOut = await ctx.db
       .query("matchPlayers")
@@ -61,18 +99,68 @@ export const addPlanItem = mutation({
 
     const now = Date.now();
     const seq = await nextSubstitutionPlanSequence(ctx, args.matchId);
-    const id = await ctx.db.insert("substitutionPlans", {
+    const planRow: {
+      matchId: Id<"matches">;
+      sequence: number;
+      kind: "substitution" | "positionSwap";
+      playerOutId: Id<"players">;
+      playerInId: Id<"players">;
+      status: "pending";
+      createdAt: number;
+      updatedAt: number;
+      targetQuarter?: number;
+      targetMinute?: number;
+      note?: string;
+    } = {
       matchId: args.matchId,
       sequence: seq,
-      targetQuarter: args.targetQuarter,
-      targetMinute: args.targetMinute,
+      kind,
       playerOutId: args.playerOutId,
       playerInId: args.playerInId,
       status: "pending",
-      note: args.note,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    if (args.targetQuarter !== undefined) {
+      planRow.targetQuarter = args.targetQuarter;
+    }
+    if (args.targetMinute !== undefined) {
+      planRow.targetMinute = args.targetMinute;
+    }
+    if (args.note !== undefined) {
+      planRow.note = args.note;
+    }
+    const id = await ctx.db.insert("substitutionPlans", planRow);
+
+    if (args.insertAtQuarterBoundary) {
+      const existingRows = await ctx.db
+        .query("substitutionPlans")
+        .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+        .collect();
+
+      const orderedIds = buildSubstitutionPlanOrderAfterInsert(
+        existingRows
+          .filter((row) => row._id !== id)
+          .map((row) => ({
+            _id: row._id,
+            sequence: row.sequence,
+            status: row.status,
+            targetQuarter: row.targetQuarter,
+          })),
+        {
+          _id: id,
+          sequence: seq,
+          status: "pending",
+          targetQuarter: args.targetQuarter,
+        },
+        { insertAtQuarterBoundary: true }
+      );
+
+      for (let index = 0; index < orderedIds.length; index += 1) {
+        await ctx.db.patch(orderedIds[index], { sequence: index, updatedAt: now });
+      }
+    }
+
     return id;
   },
 });
@@ -119,14 +207,31 @@ export const updatePlanItem = mutation({
     }
 
     const now = Date.now();
-    await ctx.db.patch(args.planId, {
-      targetQuarter: args.targetQuarter ?? row.targetQuarter,
-      targetMinute: args.targetMinute ?? row.targetMinute,
+    const patch: {
+      playerOutId: Id<"players">;
+      playerInId: Id<"players">;
+      updatedAt: number;
+      targetQuarter?: number;
+      targetMinute?: number;
+      note?: string;
+    } = {
       playerOutId: outId,
       playerInId: inId,
-      note: args.note !== undefined ? args.note : row.note,
       updatedAt: now,
-    });
+    };
+    const nextQuarter = args.targetQuarter ?? row.targetQuarter;
+    const nextMinute = args.targetMinute ?? row.targetMinute;
+    const nextNote = args.note !== undefined ? args.note : row.note;
+    if (nextQuarter !== undefined) {
+      patch.targetQuarter = nextQuarter;
+    }
+    if (nextMinute !== undefined) {
+      patch.targetMinute = nextMinute;
+    }
+    if (nextNote !== undefined) {
+      patch.note = nextNote;
+    }
+    await ctx.db.patch(args.planId, patch);
   },
 });
 
@@ -236,13 +341,22 @@ export const executePlanItem = mutation({
       throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
-    await applyBenchSubstitutionWithSlotTransfer(ctx, {
-      matchId: plan.matchId,
-      playerOutId: plan.playerOutId,
-      playerInId: plan.playerInId,
-      correlationId: args.correlationId,
-      commandType: "EXECUTE_SUBSTITUTION_PLAN",
-    });
+    if ((plan.kind ?? "substitution") === "positionSwap") {
+      await applyPlannedPositionSwap(
+        ctx,
+        plan.matchId,
+        plan.playerOutId,
+        plan.playerInId
+      );
+    } else {
+      await applyBenchSubstitutionWithSlotTransfer(ctx, {
+        matchId: plan.matchId,
+        playerOutId: plan.playerOutId,
+        playerInId: plan.playerInId,
+        correlationId: args.correlationId,
+        commandType: "EXECUTE_SUBSTITUTION_PLAN",
+      });
+    }
 
     const now = Date.now();
     await ctx.db.patch(args.planId, {

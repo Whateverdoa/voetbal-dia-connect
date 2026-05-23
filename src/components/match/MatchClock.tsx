@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { MatchStatus } from "./types";
 
 interface MatchClockProps {
@@ -12,6 +12,7 @@ interface MatchClockProps {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   status: MatchStatus;
+  className?: string;
 }
 
 /**
@@ -47,6 +48,7 @@ export function MatchClock({
   pausedAt,
   accumulatedPauseTime = 0,
   status,
+  className = "",
 }: MatchClockProps) {
   const isLive = status === "live";
   const isPaused = isLive && pausedAt != null;
@@ -55,7 +57,7 @@ export function MatchClock({
   const quarterDurationMs =
     (regulationDurationMinutes * 60 * 1000) / Math.max(1, quarterCount);
   const quarterBaseMs = Math.max(0, currentQuarter - 1) * quarterDurationMs;
-  const calcElapsed = (refTime: number) => {
+  const calcElapsed = useCallback((refTime: number) => {
     if (quarterStartedAt == null) {
       return 0;
     }
@@ -64,7 +66,7 @@ export function MatchClock({
       refTime - quarterStartedAt - accumulatedPauseTime
     );
     return quarterBaseMs + quarterElapsed;
-  };
+  }, [accumulatedPauseTime, quarterBaseMs, quarterStartedAt]);
 
   const [elapsed, setElapsed] = useState(() =>
     isPaused && pausedAt != null
@@ -77,33 +79,33 @@ export function MatchClock({
   useEffect(() => {
     // Paused: show frozen time, no interval
     if (isPaused && pausedAt != null) {
-      setElapsed(calcElapsed(pausedAt));
-      return;
+      const timer = setTimeout(() => setElapsed(calcElapsed(pausedAt)), 0);
+      return () => clearTimeout(timer);
     }
 
     if (!shouldTick) {
-      setElapsed(0);
-      return;
+      const timer = setTimeout(() => setElapsed(0), 0);
+      return () => clearTimeout(timer);
     }
 
-    // Running: sync immediately, then tick every second
-    setElapsed(calcElapsed(Date.now()));
+    // Running: sync on next task, then tick every second
+    const initialTimer = setTimeout(() => {
+      setElapsed(calcElapsed(Date.now()));
+    }, 0);
 
     const interval = setInterval(() => {
       setElapsed(calcElapsed(Date.now()));
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
   }, [
+    calcElapsed,
     shouldTick,
     isPaused,
-    quarterStartedAt,
     pausedAt,
-    accumulatedPauseTime,
-    quarterBaseMs,
-    regulationDurationMinutes,
-    quarterCount,
-    currentQuarter,
   ]);
 
   const isActive = shouldTick || isPaused;
@@ -111,7 +113,7 @@ export function MatchClock({
 
   return (
     <span
-      className={`font-mono tabular-nums ${isPaused ? "text-yellow-300 animate-pulse" : "text-white/80"}`}
+      className={`tabular-nums ${isPaused ? "text-yellow-300 animate-pulse" : "text-white/80"} ${className}`}
       aria-label={
         isPaused
           ? `Klok gepauzeerd: ${display}`

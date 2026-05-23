@@ -1,6 +1,7 @@
 import { Id } from "@/convex/_generated/dataModel";
 
 export type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
+export type SubstitutionPlanKind = "substitution" | "positionSwap";
 
 export interface MatchPlayer {
   matchPlayerId: Id<"matchPlayers">;
@@ -54,6 +55,7 @@ export interface SubstitutionPlanRow {
   _id: Id<"substitutionPlans">;
   matchId: Id<"matches">;
   sequence: number;
+  kind: SubstitutionPlanKind;
   targetQuarter?: number;
   targetMinute?: number;
   playerOutId: Id<"players">;

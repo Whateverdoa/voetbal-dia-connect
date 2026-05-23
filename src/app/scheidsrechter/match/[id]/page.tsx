@@ -5,13 +5,9 @@ import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
-import { MatchClock } from "@/components/match/MatchClock";
-import { RefereeClockControls } from "@/components/referee/RefereeClockControls";
-import { RefereeScoreControls } from "@/components/referee/RefereeScoreControls";
+import { RefereeMatchConsole } from "@/components/referee/RefereeMatchConsole";
 import type { MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
-import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
-import { TeamLogo } from "@/components/TeamLogo";
 
 export default function RefereeMatchPage() {
   const params = useParams();
@@ -67,8 +63,8 @@ export default function RefereeMatchPage() {
   const awayLogoUrl = match.isHome ? oppLogo : diaLogo;
 
   return (
-    <main className="min-h-screen bg-gray-100 pb-8">
-      <nav className="bg-gray-800 text-white px-4 py-2 sticky top-0 z-20">
+    <main className="flex h-[100svh] max-h-[100svh] flex-col overflow-hidden bg-gray-100 overscroll-none md:h-[100dvh] md:max-h-[100dvh]">
+      <nav className="shrink-0 bg-gray-800 px-4 py-2 text-white">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link
             href="/scheidsrechter"
@@ -82,12 +78,8 @@ export default function RefereeMatchPage() {
         </div>
       </nav>
 
-      <RefereeScoreHeader
-        homeScore={match.homeScore}
-        awayScore={match.awayScore}
-        teamName={match.teamName}
-        opponent={match.opponent}
-        isHome={match.isHome}
+      <RefereeMatchConsole
+        matchId={match.id as Id<"matches">}
         status={match.status as MatchStatus}
         currentQuarter={match.currentQuarter}
         quarterCount={match.quarterCount}
@@ -96,28 +88,15 @@ export default function RefereeMatchPage() {
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
         scheduledAt={match.scheduledAt}
+        homeScore={match.homeScore}
+        awayScore={match.awayScore}
+        homeName={match.isHome ? match.teamName : match.opponent}
+        awayName={match.isHome ? match.opponent : match.teamName}
         homeLogoUrl={homeLogoUrl}
         awayLogoUrl={awayLogoUrl}
+        diaTeamSide={match.isHome ? "home" : "away"}
+        diaPlayers={match.diaPlayers ?? []}
       />
-
-      <div className="max-w-lg mx-auto p-4 space-y-4">
-        <RefereeScoreControls
-          matchId={match.id as Id<"matches">}
-          homeScore={match.homeScore}
-          awayScore={match.awayScore}
-          homeName={match.isHome ? match.teamName : match.opponent}
-          awayName={match.isHome ? match.opponent : match.teamName}
-          diaTeamSide={match.isHome ? "home" : "away"}
-          diaPlayers={match.diaPlayers ?? []}
-        />
-        <RefereeClockControls
-          matchId={match.id as Id<"matches">}
-          status={match.status as MatchStatus}
-          currentQuarter={match.currentQuarter}
-          quarterCount={match.quarterCount}
-          pausedAt={match.pausedAt}
-        />
-      </div>
     </main>
   );
 }
@@ -130,126 +109,5 @@ function LoadingScreen() {
         <p className="text-gray-500">Laden...</p>
       </div>
     </main>
-  );
-}
-
-function RefereeScoreHeader({
-  homeScore,
-  awayScore,
-  teamName,
-  opponent,
-  isHome,
-  status,
-  currentQuarter,
-  quarterCount,
-  regulationDurationMinutes = 60,
-  quarterStartedAt,
-  pausedAt,
-  accumulatedPauseTime,
-  scheduledAt,
-  homeLogoUrl,
-  awayLogoUrl,
-}: {
-  homeScore: number;
-  awayScore: number;
-  teamName: string;
-  opponent: string;
-  isHome: boolean;
-  status: MatchStatus;
-  currentQuarter: number;
-  quarterCount: number;
-  regulationDurationMinutes?: number;
-  quarterStartedAt?: number;
-  pausedAt?: number;
-  accumulatedPauseTime?: number;
-  scheduledAt?: number;
-  homeLogoUrl: string | null;
-  awayLogoUrl: string | null;
-}) {
-  const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
-  const isHalftime = status === "halftime";
-  const isFinished = status === "finished";
-
-  const getLabel = () => {
-    if (isHalftime) return "Rust";
-    if (isFinished) return "Afgelopen";
-    if (isPaused) return `${quarterCount === 2 ? "Helft" : "Kwart"} ${currentQuarter} - gepauzeerd`;
-    if (isLive) return quarterCount === 2 ? `Helft ${currentQuarter}` : `Kwart ${currentQuarter}`;
-    return "Nog niet begonnen";
-  };
-
-  return (
-    <header
-      className={`p-6 text-white text-center ${
-        isPaused
-          ? "bg-gradient-to-b from-orange-500 to-orange-600"
-          : isLive
-            ? "bg-gradient-to-b from-green-600 to-green-700"
-            : isHalftime
-              ? "bg-gradient-to-b from-orange-500 to-orange-600"
-              : isFinished
-                ? "bg-gradient-to-b from-red-600 to-red-700"
-                : "bg-gradient-to-b from-blue-600 to-blue-700"
-      }`}
-    >
-      <div className="max-w-lg mx-auto">
-        <div className="mb-3">
-          <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-2">
-            {isLive && <span className="w-2 h-2 bg-white rounded-full animate-pulse" />}
-            {getLabel()}
-            {isLive && (
-              <MatchClock
-                currentQuarter={currentQuarter}
-                quarterCount={quarterCount}
-                regulationDurationMinutes={regulationDurationMinutes}
-                quarterStartedAt={quarterStartedAt}
-                pausedAt={pausedAt}
-                accumulatedPauseTime={accumulatedPauseTime}
-                status={status}
-              />
-            )}
-          </span>
-        </div>
-
-        {scheduledAt != null && (
-          <p className="text-sm text-white/90 tabular-nums mb-2">
-            <time dateTime={new Date(scheduledAt).toISOString()}>
-              {formatMatchDateNl(scheduledAt)} · {formatMatchTimeNl(scheduledAt)}
-            </time>
-          </p>
-        )}
-
-        <div className="text-6xl font-bold tabular-nums tracking-tight">
-          {homeScore} - {awayScore}
-        </div>
-
-        <div className="flex justify-between items-start gap-2 text-sm opacity-90 mt-3 max-w-md mx-auto">
-          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-            <TeamLogo
-              logoUrl={homeLogoUrl}
-              teamName={isHome ? teamName : opponent}
-              size="md"
-              className="ring-2 ring-white/30"
-            />
-            <span className="font-medium text-center leading-tight">
-              {isHome ? teamName : opponent}
-            </span>
-          </div>
-          <span className="text-xs opacity-75 shrink-0 pt-6">vs</span>
-          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-            <TeamLogo
-              logoUrl={awayLogoUrl}
-              teamName={isHome ? opponent : teamName}
-              size="md"
-              className="ring-2 ring-white/30"
-            />
-            <span className="font-medium text-center leading-tight">
-              {isHome ? opponent : teamName}
-            </span>
-          </div>
-        </div>
-      </div>
-    </header>
   );
 }

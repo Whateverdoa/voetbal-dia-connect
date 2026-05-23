@@ -1,12 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { Formation } from "@/lib/formations/types";
 import { createCorrelationId } from "@/lib/correlationId";
 import { projectSubstitutionPlan } from "@/lib/substitutions/projectSubstitutionPlan";
-import type { MatchPlayer, MatchStatus, SubstitutionPlanRow } from "./types";
+import { ProjectedPitchPlanner } from "./ProjectedPitchPlanner";
+import type {
+  MatchPlayer,
+  MatchStatus,
+  SubstitutionPlanKind,
+  SubstitutionPlanRow,
+} from "./types";
+
+type PlannerMode = "list" | "field";
 
 interface SubstitutionPlanPanelProps {
   matchId: Id<"matches">;
@@ -14,8 +23,47 @@ interface SubstitutionPlanPanelProps {
   quarterCount: number;
   plans: SubstitutionPlanRow[];
   players: MatchPlayer[];
+  resolvedFormation: Formation | undefined;
   canEditPlan: boolean;
   canExecute: boolean;
+}
+
+function names(players: MatchPlayer[]): string {
+  return players.length === 0 ? "geen" : players.map((player) => player.name).join(", ");
+}
+
+function periodWord(quarterCount: number): string {
+  return quarterCount === 2 ? "helft" : "kwart";
+}
+
+function timingLabel(row: SubstitutionPlanRow, quarterCount: number): string {
+  const period = periodWord(quarterCount);
+  if (row.targetQuarter != null && row.targetMinute != null) {
+    return `${period} ${row.targetQuarter} · min ~${row.targetMinute}`;
+  }
+  if (row.targetQuarter != null) {
+    return `start ${period} ${row.targetQuarter}`;
+  }
+  if (row.targetMinute != null) {
+    return `min ~${row.targetMinute}`;
+  }
+  return `start ${period}`;
+}
+
+function rowKind(row: SubstitutionPlanRow): SubstitutionPlanKind {
+  return row.kind ?? "substitution";
+}
+
+function rowLabel(row: SubstitutionPlanRow): string {
+  const left = row.outName ?? "?";
+  const right = row.inName ?? "?";
+  return rowKind(row) === "positionSwap"
+    ? `${left} ↔ ${right}`
+    : `${left} → ${right}`;
+}
+
+function rowBadge(row: SubstitutionPlanRow): string {
+  return rowKind(row) === "positionSwap" ? "Positiewissel" : "Wissel";
 }
 
 export function SubstitutionPlanPanel({
@@ -24,6 +72,7 @@ export function SubstitutionPlanPanel({
   quarterCount,
   plans,
   players,
+  resolvedFormation,
   canEditPlan,
   canExecute,
 }: SubstitutionPlanPanelProps) {
@@ -32,6 +81,8 @@ export function SubstitutionPlanPanel({
   const executePlanItem = useMutation(api.substitutionPlans.executePlanItem);
   const removePlanItem = useMutation(api.substitutionPlans.removePlanItem);
 
+  const [mode, setMode] = useState<PlannerMode>("list");
+  const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [playerOut, setPlayerOut] = useState<Id<"players"> | "">("");
   const [playerIn, setPlayerIn] = useState<Id<"players"> | "">("");
   const [targetQuarter, setTargetQuarter] = useState("");
@@ -40,10 +91,23 @@ export function SubstitutionPlanPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (selectedQuarter > quarterCount) {
+      setSelectedQuarter(quarterCount);
+    }
+  }, [quarterCount, selectedQuarter]);
+
+  useEffect(() => {
+    if (!resolvedFormation && mode === "field") {
+      setMode("list");
+    }
+  }, [mode, resolvedFormation]);
+
   const projection = useMemo(
-    () => projectSubstitutionPlan(players, plans),
-    [players, plans]
+    () => projectSubstitutionPlan(players, plans, selectedQuarter),
+    [players, plans, selectedQuarter]
   );
+
   const warningByPlanId = useMemo(
     () =>
       new Map(
@@ -57,20 +121,37 @@ export function SubstitutionPlanPanel({
 
   const canPressExecute =
     (status === "live" || status === "halftime") && canExecute;
+  const pending = plans.filter((plan) => plan.status === "pending");
+  const done = plans.filter((plan) => plan.status !== "pending");
+  const sortedPending = [...pending].sort(
+    (a, b) => a.sequence - b.sequence || String(a._id).localeCompare(String(b._id))
+  );
 
   const handleAdd = async () => {
     if (!playerOut || !playerIn) return;
     setError(null);
+    const normalizedQuarter = targetQuarter ? Number(targetQuarter) : undefined;
+    const normalizedMinute = targetMinute ? Number(targetMinute) : undefined;
+    const payload: Parameters<typeof addPlanItem>[0] = {
+      matchId,
+      playerOutId: playerOut,
+      playerInId: playerIn,
+      insertAtQuarterBoundary: normalizedQuarter !== undefined,
+    };
+
+    if (normalizedQuarter !== undefined) {
+      payload.targetQuarter = normalizedQuarter;
+    }
+    if (normalizedMinute !== undefined) {
+      payload.targetMinute = normalizedMinute;
+    }
+    if (note.trim()) {
+      payload.note = note.trim();
+    }
+
     try {
       setBusy("add");
-      await addPlanItem({
-        matchId,
-        playerOutId: playerOut,
-        playerInId: playerIn,
-        targetQuarter: targetQuarter ? Number(targetQuarter) : undefined,
-        targetMinute: targetMinute ? Number(targetMinute) : undefined,
-        note: note.trim() || undefined,
-      });
+      await addPlanItem(payload);
       setPlayerOut("");
       setPlayerIn("");
       setTargetQuarter("");
@@ -83,28 +164,67 @@ export function SubstitutionPlanPanel({
     }
   };
 
-  const pending = plans.filter((p) => p.status === "pending");
-  const done = plans.filter((p) => p.status !== "pending");
-  const sortedPending = [...pending].sort((a, b) => a.sequence - b.sequence);
+  const handleFieldCreatePlan = async (
+    playerOutId: Id<"players">,
+    playerInId: Id<"players">
+  ): Promise<boolean> => {
+    setError(null);
+    const payload: Parameters<typeof addPlanItem>[0] = {
+      matchId,
+      playerOutId,
+      playerInId,
+      targetQuarter: selectedQuarter,
+      insertAtQuarterBoundary: true,
+    };
+    try {
+      setBusy("field-add");
+      await addPlanItem(payload);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Fout");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  };
 
-  const names = (list: MatchPlayer[]) =>
-    list.length === 0 ? "geen" : list.map((player) => player.name).join(", ");
-
-  const timingLabel = (row: SubstitutionPlanRow): string => {
-    if (row.targetMinute != null) return `min ~${row.targetMinute}`;
-    if (row.targetQuarter != null) return `start kwart ${row.targetQuarter}`;
-    return "start van kwart";
+  const handleFieldCreatePositionSwap = async (
+    playerAId: Id<"players">,
+    playerBId: Id<"players">
+  ): Promise<boolean> => {
+    setError(null);
+    const payload: Parameters<typeof addPlanItem>[0] = {
+      matchId,
+      playerOutId: playerAId,
+      playerInId: playerBId,
+      kind: "positionSwap",
+      targetQuarter: selectedQuarter,
+      insertAtQuarterBoundary: true,
+    };
+    try {
+      setBusy("field-swap");
+      await addPlanItem(payload);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Fout");
+      return false;
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
     <section className="bg-white rounded-xl shadow-md p-4 space-y-4">
       <h2 className="font-bold text-lg">Wisselplan</h2>
       <p className="text-sm text-gray-600">
-        Plan wissels van tevoren. Tijdens de wedstrijd bevestig je ze hier; blessurewissels blijven mogelijk via
-        de normale wisselknop.
+        Plan wissels van tevoren. Tijdens de wedstrijd bevestig je ze hier;
+        blessurewissels blijven mogelijk via de normale wisselknop.
       </p>
+
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {error}
+        </div>
       )}
 
       <div className="grid gap-2 text-sm">
@@ -113,12 +233,44 @@ export function SubstitutionPlanPanel({
           {names(projection.startingBench)}
         </div>
         <div className="rounded-xl bg-blue-50 p-3 text-blue-900">
-          <span className="font-semibold">Virtuele bank na openstaand plan:</span>{" "}
+          <span className="font-semibold">Virtuele bank volgens openstaand plan:</span>{" "}
           {names(projection.projectedBench)}
         </div>
       </div>
 
-      {canEditPlan && (
+      <div className="flex rounded-lg overflow-hidden border border-gray-300">
+        <button
+          type="button"
+          onClick={() => setMode("list")}
+          className={`flex-1 px-3 py-2 text-sm font-medium ${
+            mode === "list"
+              ? "bg-dia-green text-white"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          Lijst
+        </button>
+        <button
+          type="button"
+          disabled={!resolvedFormation}
+          onClick={() => setMode("field")}
+          className={`flex-1 px-3 py-2 text-sm font-medium disabled:opacity-50 ${
+            mode === "field"
+              ? "bg-dia-green text-white"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          Planweergave
+        </button>
+      </div>
+
+      {!resolvedFormation && (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-600">
+          Kies eerst een formatie om Planweergave op het veld te gebruiken.
+        </div>
+      )}
+
+      {mode === "list" && canEditPlan && (
         <div className="border border-gray-200 rounded-xl p-3 space-y-2">
           <p className="text-sm font-semibold">Regel toevoegen</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -132,9 +284,12 @@ export function SubstitutionPlanPanel({
               className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
             >
               <option value="">Eruit (veld)</option>
-              {projection.projectedOnField.map((p) => (
-                <option key={String(p.playerId)} value={String(p.playerId)}>
-                  {p.name}
+              {projection.projectedOnField.map((player) => (
+                <option
+                  key={String(player.playerId)}
+                  value={String(player.playerId)}
+                >
+                  {player.name}
                 </option>
               ))}
             </select>
@@ -148,16 +303,21 @@ export function SubstitutionPlanPanel({
               className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
             >
               <option value="">Erin (bank)</option>
-              {projection.projectedBench.map((p) => (
-                <option key={String(p.playerId)} value={String(p.playerId)}>
-                  {p.name}
+              {projection.projectedBench.map((player) => (
+                <option
+                  key={String(player.playerId)}
+                  value={String(player.playerId)}
+                >
+                  {player.name}
                 </option>
               ))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-600">Kwart (optioneel)</label>
+              <label className="text-xs text-gray-600">
+                {quarterCount === 2 ? "Helft (optioneel)" : "Kwart (optioneel)"}
+              </label>
               <input
                 type="number"
                 min={1}
@@ -179,6 +339,9 @@ export function SubstitutionPlanPanel({
               />
             </div>
           </div>
+          <p className="text-xs text-gray-500">
+            Laat de minuut leeg voor start van {periodWord(quarterCount)}.
+          </p>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -196,6 +359,21 @@ export function SubstitutionPlanPanel({
         </div>
       )}
 
+      {mode === "field" && resolvedFormation && projection.quarterPreview && (
+        <ProjectedPitchPlanner
+          formation={resolvedFormation}
+          quarterCount={quarterCount}
+          selectedQuarter={selectedQuarter}
+          onQuarterChange={setSelectedQuarter}
+          preview={projection.quarterPreview}
+          quarterlessPendingCount={projection.quarterlessPendingRows.length}
+          canEdit={canEditPlan}
+          isBusy={busy === "field-add" || busy === "field-swap"}
+          onCreatePlan={handleFieldCreatePlan}
+          onCreatePositionSwap={handleFieldCreatePositionSwap}
+        />
+      )}
+
       <div className="space-y-2">
         <p className="text-sm font-semibold">Openstaand ({pending.length})</p>
         {pending.length === 0 ? (
@@ -206,10 +384,17 @@ export function SubstitutionPlanPanel({
               key={String(row._id)}
               className="border border-gray-200 rounded-xl p-3 flex flex-col gap-2"
             >
-              <div className="font-medium text-sm">
-                {row.sequence + 1}. {row.outName ?? "?"} → {row.inName ?? "?"}
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-700">
+                  {rowBadge(row)}
+                </span>
+                <div className="font-medium text-sm">
+                  {row.sequence + 1}. {rowLabel(row)}
+                </div>
               </div>
-              <p className="text-xs text-gray-600">Doel: {timingLabel(row)}</p>
+              <p className="text-xs text-gray-600">
+                Doel: {timingLabel(row, quarterCount)}
+              </p>
               {warningByPlanId.has(String(row._id)) && (
                 <p className="rounded-lg bg-amber-50 p-2 text-xs font-medium text-amber-800">
                   {warningByPlanId.get(String(row._id))}
@@ -277,7 +462,7 @@ export function SubstitutionPlanPanel({
           <ul className="mt-2 space-y-1 text-gray-600">
             {done.map((row) => (
               <li key={String(row._id)}>
-                {row.outName} → {row.inName}{" "}
+                {rowLabel(row)}{" "}
                 <span className="text-xs">
                   ({row.status === "executed" ? "gedaan" : "overgeslagen"})
                 </span>

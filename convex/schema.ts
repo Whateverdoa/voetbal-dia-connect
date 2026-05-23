@@ -239,6 +239,9 @@ export default defineSchema({
   substitutionPlans: defineTable({
     matchId: v.id("matches"),
     sequence: v.number(),
+    kind: v.optional(
+      v.union(v.literal("substitution"), v.literal("positionSwap"))
+    ),
     targetQuarter: v.optional(v.number()),
     targetMinute: v.optional(v.number()),
     playerOutId: v.id("players"),

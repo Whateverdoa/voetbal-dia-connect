@@ -26,7 +26,7 @@ import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
 
-type ViewTab = "opstelling" | "speeltijd";
+type ViewTab = "opstelling" | "wisselplan" | "speeltijd";
 type LineupView = "veld" | "lijst";
 
 interface MatchControlPanelProps {
@@ -39,24 +39,23 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
   const [activeTab, setActiveTab] = useState<ViewTab>("opstelling");
   const [lineupView, setLineupView] = useState<LineupView>("lijst");
   const [isConnected, setIsConnected] = useState(true);
-  const lastUpdateRef = useRef(Date.now());
+  const lastUpdateRef = useRef(0);
 
   useEffect(() => {
     lastUpdateRef.current = Date.now();
-    setIsConnected(true);
+    const reconnectTimer = window.setTimeout(() => {
+      setIsConnected(true);
+    }, 0);
+    return () => window.clearTimeout(reconnectTimer);
   }, [match]);
 
   useEffect(() => {
     if (match.status !== "live") return;
-
-    const checkConnection = () => {
-      const timeSinceUpdate = Date.now() - lastUpdateRef.current;
-      if (timeSinceUpdate > 30000) {
+    const interval = setInterval(() => {
+      if (Date.now() - lastUpdateRef.current > 30000) {
         setIsConnected(false);
       }
-    };
-
-    const interval = setInterval(checkConnection, 10000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [match.status]);
 
@@ -155,21 +154,6 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           onSubClick={() => setShowSubModal(true)}
         />
 
-        <StagedSubstitutionsPanel
-          matchId={match._id}
-          stagedSubstitutions={match.stagedSubstitutions ?? []}
-        />
-
-        <SubstitutionPlanPanel
-          matchId={match._id}
-          status={match.status}
-          quarterCount={match.quarterCount}
-          plans={match.substitutionPlans ?? []}
-          players={match.players}
-          canEditPlan={canEditLineup}
-          canExecute={canDoSubstitutions}
-        />
-
         <RefereeAssignment
           matchId={match._id}
           currentRefereeId={match.refereeId}
@@ -197,6 +181,12 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
             icon="⏱️"
             label="Speeltijd"
             badge={isLive}
+          />
+          <TabButton
+            active={activeTab === "wisselplan"}
+            onClick={() => setActiveTab("wisselplan")}
+            icon="🔁"
+            label="Wisselplan"
           />
         </div>
 
@@ -237,7 +227,6 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
                 canToggleAbsent={isPregame}
               />
             )}
-
             <EventTimeline
               events={match.events}
               teamName={match.teamName}
@@ -249,6 +238,25 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               players={match.players}
               teamName={match.teamName}
               opponentName={match.opponent}
+            />
+          </>
+        )}
+
+        {activeTab === "wisselplan" && (
+          <>
+            <StagedSubstitutionsPanel
+              matchId={match._id}
+              stagedSubstitutions={match.stagedSubstitutions ?? []}
+            />
+            <SubstitutionPlanPanel
+              matchId={match._id}
+              status={match.status}
+              quarterCount={match.quarterCount}
+              plans={match.substitutionPlans ?? []}
+              players={match.players}
+              resolvedFormation={resolvedFormation}
+              canEditPlan={canEditLineup}
+              canExecute={canDoSubstitutions}
             />
           </>
         )}

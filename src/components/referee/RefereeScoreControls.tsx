@@ -19,6 +19,7 @@ interface RefereeScoreControlsProps {
     number?: number;
     onField: boolean;
   }[];
+  embedded?: boolean;
 }
 
 type PendingTeam = "home" | "away" | null;
@@ -31,6 +32,7 @@ export function RefereeScoreControls({
   awayName,
   diaTeamSide,
   diaPlayers,
+  embedded = false,
 }: RefereeScoreControlsProps) {
   const adjustScore = useMutation(api.matchActions.adjustScore);
 
@@ -112,65 +114,86 @@ export function RefereeScoreControls({
     setShirtNumber("");
     setSelectedPlayerId(null);
   };
+  const Wrapper = embedded ? "div" : "section";
 
   return (
-    <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide text-center">
-        Score aanpassen
-      </h2>
+    <>
+      <Wrapper
+        className={
+          embedded
+            ? "space-y-3"
+            : "fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-lg rounded-t-3xl border border-b-0 border-gray-200 bg-white/95 p-4 shadow-2xl backdrop-blur md:static md:rounded-xl md:border-b md:shadow-md"
+        }
+      >
+        <h2
+          className={`text-sm font-semibold text-gray-500 uppercase tracking-wide ${
+            embedded ? "text-left" : "text-center"
+          }`}
+        >
+          Score aanpassen
+        </h2>
 
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-          {error}
+        {error && (
+          <div className={`${embedded ? "" : "mt-3 "}p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium`}>
+            {error}
+          </div>
+        )}
+
+        <div className={`${embedded ? "" : "mt-3 "}grid grid-cols-2 gap-3`}>
+          <ScoreColumn
+            teamName={homeName}
+            score={homeScore}
+            team="home"
+            isLoading={isLoading}
+            onIncrement={handleIncrementStart}
+            onDecrement={handleDecrement}
+          />
+          <ScoreColumn
+            teamName={awayName}
+            score={awayScore}
+            team="away"
+            isLoading={isLoading}
+            onIncrement={handleIncrementStart}
+            onDecrement={handleDecrement}
+          />
         </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <ScoreColumn
-          teamName={homeName}
-          score={homeScore}
-          team="home"
-          isLoading={isLoading}
-          onIncrement={handleIncrementStart}
-          onDecrement={handleDecrement}
-        />
-        <ScoreColumn
-          teamName={awayName}
-          score={awayScore}
-          team="away"
-          isLoading={isLoading}
-          onIncrement={handleIncrementStart}
-          onDecrement={handleDecrement}
-        />
-      </div>
+      </Wrapper>
 
       {pendingTeam && (
         <>
-          {pendingTeam === diaTeamSide ? (
-            <DiaScorerPrompt
-              teamName={pendingTeam === "home" ? homeName : awayName}
-              players={diaPlayers}
-              selectedPlayerId={selectedPlayerId}
-              onSelectPlayer={setSelectedPlayerId}
-              onConfirm={() => handleIncrementConfirm(false)}
-              onSkip={() => handleIncrementConfirm(true)}
-              onCancel={handleCancel}
-              isLoading={isLoading}
-            />
-          ) : (
-            <ShirtNumberPrompt
-              teamName={pendingTeam === "home" ? homeName : awayName}
-              shirtNumber={shirtNumber}
-              onShirtNumberChange={setShirtNumber}
-              onConfirm={() => handleIncrementConfirm(false)}
-              onSkip={() => handleIncrementConfirm(true)}
-              onCancel={handleCancel}
-              isLoading={isLoading}
-            />
-          )}
+          <button
+            type="button"
+            aria-label="Sluit score-invoer"
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+            onClick={handleCancel}
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg px-2 pb-2 md:px-0 md:pb-0">
+            {pendingTeam === diaTeamSide ? (
+              <DiaScorerPrompt
+                teamName={pendingTeam === "home" ? homeName : awayName}
+                players={diaPlayers}
+                selectedPlayerId={selectedPlayerId}
+                onSelectPlayer={setSelectedPlayerId}
+                onConfirm={() => handleIncrementConfirm(false)}
+                onSkip={() => handleIncrementConfirm(true)}
+                onCancel={handleCancel}
+                isLoading={isLoading}
+              />
+            ) : (
+              <ShirtNumberPrompt
+                teamName={pendingTeam === "home" ? homeName : awayName}
+                shirtNumber={shirtNumber}
+                onShirtNumberChange={setShirtNumber}
+                onConfirm={() => handleIncrementConfirm(false)}
+                onSkip={() => handleIncrementConfirm(true)}
+                onCancel={handleCancel}
+                isLoading={isLoading}
+              />
+            )}
+          </div>
         </>
       )}
-    </section>
+    </>
   );
 }
 
@@ -203,14 +226,14 @@ function DiaScorerPrompt({
   );
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in duration-200">
+    <div className="rounded-t-3xl border border-gray-200 bg-white p-4 space-y-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200 md:rounded-xl">
       <p className="text-sm font-medium text-gray-700 text-center">
         Doelpunt voor <strong>{teamName}</strong>
       </p>
       <label className="block text-xs text-gray-500 text-center">
         Selecteer de scorer (DIA-team)
       </label>
-      <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto">
         {sortedPlayers.map((player) => (
           <button
             key={String(player.playerId)}
@@ -277,7 +300,7 @@ function ScoreColumn({
       <span className="text-xs font-medium text-gray-500 truncate max-w-full">
         {teamName}
       </span>
-      <span className="text-3xl font-bold tabular-nums">{score}</span>
+      <span className="text-3xl font-bold tabular-nums sm:text-4xl">{score}</span>
       <div className="flex gap-2 w-full">
         <button
           onClick={() => onDecrement(team)}
@@ -318,7 +341,7 @@ function ShirtNumberPrompt({
   isLoading: boolean;
 }) {
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in duration-200">
+    <div className="rounded-t-3xl border border-gray-200 bg-white p-4 space-y-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200 md:rounded-xl">
       <p className="text-sm font-medium text-gray-700 text-center">
         Doelpunt voor <strong>{teamName}</strong>
       </p>

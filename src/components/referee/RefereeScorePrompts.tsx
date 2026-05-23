@@ -162,6 +162,7 @@ export function ScoreColumn({
   isLoading,
   onIncrement,
   onDecrement,
+  showScore = true,
 }: {
   teamName: string;
   score: number;
@@ -169,13 +170,14 @@ export function ScoreColumn({
   isLoading: boolean;
   onIncrement: (team: "home" | "away") => void;
   onDecrement: (team: "home" | "away") => Promise<void>;
+  showScore?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <span className="text-xs font-medium text-gray-500 truncate max-w-full">
         {teamName}
       </span>
-      <span className="text-3xl font-bold tabular-nums">{score}</span>
+      {showScore && <span className="text-3xl font-bold tabular-nums">{score}</span>}
       <div className="flex gap-2 w-full">
         <button
           onClick={() => onDecrement(team)}

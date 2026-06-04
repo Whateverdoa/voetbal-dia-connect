@@ -19,6 +19,7 @@ interface ScoreDisplayProps {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  frozenClockMs?: number;
   publicCode: string;
   scheduledAt?: number;
   homeLogoUrl?: string | null;
@@ -38,13 +39,13 @@ export function ScoreDisplay({
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
+  frozenClockMs,
   publicCode,
   scheduledAt,
   homeLogoUrl,
   awayLogoUrl,
 }: ScoreDisplayProps) {
   const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
 
@@ -52,10 +53,6 @@ export function ScoreDisplay({
   const getQuarterLabel = () => {
     if (isHalftime) return "Rust";
     if (isFinished) return "Afgelopen";
-    if (isPaused) {
-      const base = quarterCount === 2 ? `Helft ${currentQuarter}` : `Kwart ${currentQuarter}`;
-      return `${base} — Gepauzeerd`;
-    }
     if (isLive) {
       if (quarterCount === 2) {
         return `Helft ${currentQuarter}`;
@@ -94,7 +91,7 @@ export function ScoreDisplay({
           {quarterLabel && (
             <div className="mt-2 text-lg font-medium opacity-90 flex items-center justify-center gap-2">
               <span>{quarterLabel}</span>
-              {isLive && (
+              {(isLive || isHalftime || isFinished) && (
                 <MatchClock
                   currentQuarter={currentQuarter}
                   quarterCount={quarterCount}
@@ -102,6 +99,7 @@ export function ScoreDisplay({
                   quarterStartedAt={quarterStartedAt}
                   pausedAt={pausedAt}
                   accumulatedPauseTime={accumulatedPauseTime}
+                  frozenClockMs={frozenClockMs}
                   status={status}
                 />
               )}

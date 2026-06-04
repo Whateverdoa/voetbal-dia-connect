@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { formatElapsed, useMatchClock } from "@/lib/matchClock";
 import type { MatchStatus } from "./types";
 
 interface MatchClockProps {
@@ -11,20 +11,12 @@ interface MatchClockProps {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  frozenClockMs?: number;
   status: MatchStatus;
   className?: string;
 }
 
-/**
- * Formats elapsed milliseconds as MM:SS.
- * Exported for testing.
- */
-export function formatElapsed(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
+export { formatElapsed };
 
 /**
  * Real-time match clock showing elapsed time in global match time.
@@ -35,89 +27,32 @@ export function formatElapsed(ms: number): string {
  * - Q4 starts at 45:00 (for 60-minute regulation / 4 periods)
  * For 2 halves of 30', anchors are 00:00 and 30:00; for 2×45', anchors are 00:00 and 45:00.
  *
- * Accounts for pauses via pausedAt + accumulatedPauseTime.
- * - Running:  elapsed = quarterBase + (now - quarterStartedAt - accumulatedPauseTime)
- * - Paused:   elapsed = quarterBase + (pausedAt - quarterStartedAt - accumulatedPauseTime)
- * - Stopped:  displays "--:--"
+ * Interruption tracking no longer pauses the main clock. Players' minutes can
+ * freeze during an interruption, but the visible match clock keeps running.
  */
 export function MatchClock({
   currentQuarter,
   quarterCount,
   regulationDurationMinutes = 60,
   quarterStartedAt,
-  pausedAt,
-  accumulatedPauseTime = 0,
+  frozenClockMs,
   status,
   className = "",
 }: MatchClockProps) {
-  const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
-  const shouldTick = isLive && quarterStartedAt != null && !isPaused;
-
-  const quarterDurationMs =
-    (regulationDurationMinutes * 60 * 1000) / Math.max(1, quarterCount);
-  const quarterBaseMs = Math.max(0, currentQuarter - 1) * quarterDurationMs;
-  const calcElapsed = useCallback((refTime: number) => {
-    if (quarterStartedAt == null) {
-      return 0;
-    }
-    const quarterElapsed = Math.max(
-      0,
-      refTime - quarterStartedAt - accumulatedPauseTime
-    );
-    return quarterBaseMs + quarterElapsed;
-  }, [accumulatedPauseTime, quarterBaseMs, quarterStartedAt]);
-
-  const [elapsed, setElapsed] = useState(() =>
-    isPaused && pausedAt != null
-      ? calcElapsed(pausedAt)
-      : shouldTick
-        ? calcElapsed(Date.now())
-        : 0
-  );
-
-  useEffect(() => {
-    // Paused: show frozen time, no interval
-    if (isPaused && pausedAt != null) {
-      const timer = setTimeout(() => setElapsed(calcElapsed(pausedAt)), 0);
-      return () => clearTimeout(timer);
-    }
-
-    if (!shouldTick) {
-      const timer = setTimeout(() => setElapsed(0), 0);
-      return () => clearTimeout(timer);
-    }
-
-    // Running: sync on next task, then tick every second
-    const initialTimer = setTimeout(() => {
-      setElapsed(calcElapsed(Date.now()));
-    }, 0);
-
-    const interval = setInterval(() => {
-      setElapsed(calcElapsed(Date.now()));
-    }, 1000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(interval);
-    };
-  }, [
-    calcElapsed,
-    shouldTick,
-    isPaused,
-    pausedAt,
-  ]);
-
-  const isActive = shouldTick || isPaused;
-  const display = isActive ? formatElapsed(elapsed) : "--:--";
+  const { display, isRunning, hasClock } = useMatchClock({
+    currentQuarter,
+    quarterCount,
+    regulationDurationMinutes,
+    quarterStartedAt,
+    frozenClockMs,
+    status,
+  });
 
   return (
     <span
-      className={`tabular-nums ${isPaused ? "text-yellow-300 animate-pulse" : "text-white/80"} ${className}`}
+      className={`tabular-nums ${isRunning ? "text-white/80" : "text-white/75"} ${className}`}
       aria-label={
-        isPaused
-          ? `Klok gepauzeerd: ${display}`
-          : isActive
+        hasClock
             ? `Speeltijd: ${display}`
             : "Klok gestopt"
       }

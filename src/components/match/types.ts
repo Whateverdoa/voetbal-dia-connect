@@ -98,6 +98,13 @@ export interface Match {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  frozenClockMs?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  useBreakClock?: boolean;
+  breakClockAutoStart?: boolean;
+  halftimeStartedAt?: number;
+  scheduledBreakEndAt?: number;
   refereeId?: Id<"referees">;
   refereeName?: string | null;
   leadCoachId?: Id<"coaches"> | null;

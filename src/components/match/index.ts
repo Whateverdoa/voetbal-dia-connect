@@ -1,7 +1,10 @@
 // Match control components
 export { ScoreDisplay } from "./ScoreDisplay";
 export { MatchClock, formatElapsed } from "./MatchClock";
+export { StoppageControls } from "./StoppageControls";
+export { BreakClock } from "./BreakClock";
 export { MatchControls } from "./MatchControls";
+export { UndoGoalButton } from "./UndoGoalButton";
 export { GoalModal } from "./GoalModal";
 export { SubstitutionPanel } from "./SubstitutionPanel";
 export { StagedSubstitutionsPanel } from "./StagedSubstitutionsPanel";

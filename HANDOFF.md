@@ -145,7 +145,7 @@ Deze velden zijn niet meer bedoeld als runtime-auth pad. Ze bestaan nog om besta
 - `SignInGateway` stuurt naar `/admin`.
 - Admin heeft een assignment board met team-tabs, speeldag-tabs en side panel.
 - Oude keypad/PIN session UI is verwijderd uit `src/components` en `src/lib`.
-- **Wedstrijdvorm / speeltijd:** presets (4×15, 2×30, 2×45) in coach- en adminflows; klok gebruikt `regulationDurationMinutes` (default 60). **Einde wedstrijd:** tweestapsbevestiging in coach- en scheidsrechterklok (`MatchControls`, `RefereeClockControls`). **Wedstrijdgegevens:** korte “opgeslagen”-feedback in `MatchSettingsEdit`.
+- **Wedstrijdvorm / speeltijd:** presets (4×15, 2×30, 2×45) in coach- en adminflows; klok gebruikt `regulationDurationMinutes` (default 60). **Wedstrijdklok v2 (lokaal in ontwikkeling):** de hoofdklok loopt door tijdens geregistreerde onderbrekingen, spelersminuten bevriezen via `matchStoppages`, en rust/einde bewaren `frozenClockMs` zodat de klok niet naar `--:--` valt. Rust krijgt optioneel `halftimeStartedAt` / `scheduledBreakEndAt` met auto-hervatten via Convex scheduler. **Einde wedstrijd:** tweestapsbevestiging in coach- en scheidsrechterklok (`MatchControls`, `RefereeMatchConsole`). **Wedstrijdgegevens:** korte “opgeslagen”-feedback in `MatchSettingsEdit`.
 
 ## Verificatie
 Laatste beknopte check **april 2026** (lokaal):
@@ -338,5 +338,4 @@ Als planning en schaal belangrijker worden, pas dan dit model toe:
 Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
 
 **Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.
-
 

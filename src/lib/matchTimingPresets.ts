@@ -13,7 +13,7 @@ export const MATCH_TIMING_PRESETS: Record<
     quarterCount: 4,
     regulationDurationMinutes: 60,
     label: "4×15 min",
-    hint: "Rust tussendoor: in principe ca. 15 min.",
+    hint: "Pauzes: 3 min na kwart 1 en 3, 15 min na kwart 2.",
   },
   h2_30: {
     quarterCount: 2,
@@ -47,4 +47,28 @@ export function inferTimingPresetId(
     }
   }
   return null;
+}
+
+export function getBreakMinutesAfterQuarter(
+  presetId: MatchTimingPresetId,
+  completedQuarter: number
+): number | null {
+  if (presetId === "q4_15") {
+    if (completedQuarter === 1 || completedQuarter === 3) return 3;
+    if (completedQuarter === 2) return 15;
+    return null;
+  }
+
+  if (completedQuarter === 1) return 15;
+  return null;
+}
+
+export function getBreakMinutesForTiming(
+  quarterCount: number,
+  regulationDurationMinutes: number | undefined,
+  completedQuarter: number
+): number | null {
+  const presetId = inferTimingPresetId(quarterCount, regulationDurationMinutes);
+  if (!presetId) return null;
+  return getBreakMinutesAfterQuarter(presetId, completedQuarter);
 }

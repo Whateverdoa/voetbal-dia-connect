@@ -119,6 +119,8 @@ export const updateMatchMetadata = mutation({
     isHome: v.optional(v.boolean()),
     quarterCount: v.optional(v.number()),
     regulationDurationMinutes: v.optional(v.number()),
+    useBreakClock: v.optional(v.boolean()),
+    breakClockAutoStart: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
@@ -138,6 +140,8 @@ export const updateMatchMetadata = mutation({
       isHome?: boolean;
       quarterCount?: number;
       regulationDurationMinutes?: number | undefined;
+      useBreakClock?: boolean;
+      breakClockAutoStart?: boolean;
     } = {};
     if (args.opponent !== undefined) {
       const trimmed = args.opponent.trim();
@@ -146,6 +150,10 @@ export const updateMatchMetadata = mutation({
     }
     if (args.scheduledAt !== undefined) patch.scheduledAt = args.scheduledAt;
     if (args.isHome !== undefined) patch.isHome = args.isHome;
+    if (args.useBreakClock !== undefined) patch.useBreakClock = args.useBreakClock;
+    if (args.breakClockAutoStart !== undefined) {
+      patch.breakClockAutoStart = args.breakClockAutoStart;
+    }
 
     const nextQuarter = args.quarterCount ?? match.quarterCount;
     const nextReg =

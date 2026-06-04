@@ -5,6 +5,7 @@
  */
 import { query } from "./_generated/server";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
+import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
 
 // List all publicly visible matches, enriched with team/club names.
 export const listPublicMatches = query({
@@ -23,6 +24,7 @@ export const listPublicMatches = query({
         const team = await ctx.db.get(m.teamId);
         const club = team ? await ctx.db.get(team.clubId) : null;
         const refFields = await getPublicRefereeFields(ctx, m.refereeId);
+        const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, m._id, Date.now());
 
         return {
           _id: m._id,
@@ -34,6 +36,11 @@ export const listPublicMatches = query({
           awayScore: m.awayScore,
           currentQuarter: m.currentQuarter,
           quarterCount: m.quarterCount,
+          frozenClockMs: m.frozenClockMs,
+          activeStoppageStartedAt: m.activeStoppageStartedAt,
+          stoppageAdvisoryMs,
+          halftimeStartedAt: m.halftimeStartedAt,
+          scheduledBreakEndAt: m.scheduledBreakEndAt,
           scheduledAt: m.scheduledAt,
           teamName: team?.name ?? "Team",
           clubName: club?.name ?? "Club",
@@ -64,4 +71,3 @@ export const listPublicMatches = query({
     return enriched;
   },
 });
-

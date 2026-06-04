@@ -57,9 +57,9 @@ describe("matchEventGameTime", () => {
     expect(stamp.displayExtraMinute).toBe(5);
   });
 
-  it("uses pause timestamp as effective event time", () => {
+  it("uses wall-clock time as effective event time during interruptions", () => {
     const effective = getEffectiveEventTime({ currentQuarter: 1, quarterCount: 4, pausedAt: 1234 }, 9999);
-    expect(effective).toBe(1234);
+    expect(effective).toBe(9999);
   });
 
   it("computes quarter overrun seconds", () => {

@@ -179,6 +179,8 @@ export const seedMatches = mutation({
         homeScore: match.homeScore ?? 0,
         awayScore: match.awayScore ?? 0,
         showLineup: false,
+        useBreakClock: true,
+        breakClockAutoStart: true,
         startedAt: match.finished ? scheduledAt : undefined,
         finishedAt: match.finished ? scheduledAt + 3600000 : undefined,
         createdAt: Date.now(),

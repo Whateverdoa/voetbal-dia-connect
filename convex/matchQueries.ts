@@ -27,7 +27,12 @@ export const getPlayingTime = query({
         if (!player) return null;
 
         let totalMinutes = mp.minutesPlayed ?? 0;
-        if (mp.onField && mp.lastSubbedInAt && match.status === "live") {
+        if (
+          mp.onField &&
+          mp.lastSubbedInAt &&
+          match.status === "live" &&
+          match.activeStoppageStartedAt == null
+        ) {
           totalMinutes += (now - mp.lastSubbedInAt) / 60000;
         }
 
@@ -77,7 +82,12 @@ export const getSuggestedSubstitutions = query({
         if (!player) return null;
 
         let totalMinutes = mp.minutesPlayed ?? 0;
-        if (mp.onField && mp.lastSubbedInAt && match.status === "live") {
+        if (
+          mp.onField &&
+          mp.lastSubbedInAt &&
+          match.status === "live" &&
+          match.activeStoppageStartedAt == null
+        ) {
           totalMinutes += (now - mp.lastSubbedInAt) / 60000;
         }
 

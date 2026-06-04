@@ -254,6 +254,8 @@ export const createMatch = mutation({
       homeScore: 0,
       awayScore: 0,
       showLineup: false,
+      useBreakClock: true,
+      breakClockAutoStart: true,
       ...(args.refereeId ? { refereeId: args.refereeId } : {}),
       createdAt: Date.now(),
     });

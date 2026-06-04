@@ -133,6 +133,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         quarterStartedAt={match.quarterStartedAt}
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
+        frozenClockMs={match.frozenClockMs}
         publicCode={match.publicCode}
         scheduledAt={match.scheduledAt}
         homeLogoUrl={homeLogoUrl}
@@ -148,6 +149,11 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           homeScore={match.homeScore}
           awayScore={match.awayScore}
           pausedAt={match.pausedAt}
+          activeStoppageStartedAt={match.activeStoppageStartedAt}
+          stoppageAdvisoryMs={match.stoppageAdvisoryMs}
+          useBreakClock={match.useBreakClock}
+          breakClockAutoStart={match.breakClockAutoStart}
+          scheduledBreakEndAt={match.scheduledBreakEndAt}
           canControlClock={canControlClock}
           canDoSubstitutions={canDoSubstitutions}
           onGoalClick={() => setShowGoalModal(true)}

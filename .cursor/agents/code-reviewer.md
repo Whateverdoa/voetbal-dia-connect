@@ -14,7 +14,9 @@ Ensure all code meets project standards for quality, security, and maintainabili
 1. Run `git diff` to see recent changes
 2. Focus on modified files
 3. Apply the review checklist below
-4. Provide actionable feedback organized by priority
+4. For clock/timing changes, read `docs/match-clock-spec.md` and verify behavior against it
+5. Run `npm run test:pin-guard` on touched Convex/TS; run `npm run test:run` when clock, presets, or match UI logic changed
+6. Provide actionable feedback organized by priority
 
 ## Critical Rules (Must Enforce)
 
@@ -46,6 +48,16 @@ Ensure all code meets project standards for quality, security, and maintainabili
 ### 5. Schema Changes
 - Must be **backwards-compatible** (additive only)
 - Never remove or rename fields without migration plan
+
+### 6. Match clock (wedstrijdklok v2 / stoppage)
+- **Spec:** `docs/match-clock-spec.md` is the source of truth for product behavior
+- **Main clock** runs during live play; **freezes** at halftime/finish (`frozenClockMs`); no legacy “pause main clock” UX
+- **Break clock** (`breakClockActions`, `BreakClock`) handles rust/periode-pauze countdowns; scheduler auto-resume must be idempotent
+- **Stoppage** (`stoppageActions`, `matchStoppages`) is advisory extra time; main clock keeps ticking during registered stoppages
+- Clock mutations require match-lead / referee capability helpers (same bar as `clockActions`, `matchLifecycleActions`)
+- Public/live queries expose only safe fields — no coach-only stoppage internals
+- Prefer `src/lib/matchClock/` for pure timing logic; keep components thin; use re-export shims when moving files to avoid wide import churn
+- Presets and break durations live in `src/lib/matchTimingPresets.ts` (or `matchClock/presets.ts` if split) with Vitest coverage
 
 ## Review Checklist
 
@@ -81,6 +93,17 @@ Ensure all code meets project standards for quality, security, and maintainabili
 - [ ] Comments explain "why", not "what"
 - [ ] Consistent with existing codebase patterns
 
+### Match clock (if applicable)
+- [ ] Behavior matches `docs/match-clock-spec.md`
+- [ ] Schema fields additive; lifecycle resets clear break/stoppage/frozen state
+- [ ] `frozenClockMs`, break, and stoppage state consistent in queries + UI
+- [ ] `src/lib/matchClock/` (or presets) has unit tests; `MatchClock.test.tsx` updated
+
+### Verification (before approving)
+- [ ] `npm run test:pin-guard` passes
+- [ ] `npm run test:run` passes when clock, Convex timing, or match control UI changed
+- [ ] No secrets in diff; Convex schema deploy noted if schema changed
+
 ## Output Format
 
 Organize feedback by priority:
@@ -90,6 +113,7 @@ Organize feedback by priority:
 - 300 LOC violations
 - Missing identity/role verification
 - New legacy PIN dependencies or failing `npm run test:pin-guard`
+- Match clock behavior diverging from `docs/match-clock-spec.md`
 - Exposed secrets
 
 ### Warnings (Should Fix)
@@ -108,18 +132,20 @@ Organize feedback by priority:
 ```markdown
 ### Critical Issues
 
-1. **300 LOC violation** in `src/app/coach/match/[id]/page.tsx` (603 lines)
-   - Split into: `MatchControlPanel.tsx`, `GoalModal.tsx`, `SubstitutionPanel.tsx`, `EventTimeline.tsx`
+1. **300 LOC violation** in `convex/matches.ts` (>300 lines)
+   - Split read paths: e.g. `convex/matchQueries.ts` for coach/referee/public getters
 
-2. **Missing role verification** in `convex/matchActions.ts:addGoal`
-   - Add the established auth helper for the operation, e.g. `const match = await ctx.db.get(args.matchId); if (!match || !(await verifyIsMatchLead(ctx, match))) throw new Error("Geen toegang");`
+2. **Missing role verification** in `convex/stoppageActions.ts:startStoppage`
+   - Require match lead / referee helper before patching `matchStoppages`
 
 ### Warnings
 
-1. **`any` type** at line 45: `const player: any = ...`
-   - Use: `const player: Doc<"players"> = ...`
+1. **Main clock paused during live** — contradicts wedstrijdklok v2; use stoppage tracker instead of `pauseClock`
+
+2. **`any` type** in `src/components/live/types.ts`
+   - Use `Doc<"matches">` / shared `PublicMatch` types
 
 ### Suggestions
 
-1. Extract `useMatchState` hook from `page.tsx` to `src/hooks/useMatchState.ts`
+1. Move elapsed-ms math from `MatchClock.tsx` into `src/lib/matchClock/engine.ts` with Vitest coverage
 ```

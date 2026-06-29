@@ -29,7 +29,7 @@ export function getEffectiveEventTime(
   match: MatchClockSnapshot,
   now: number
 ): number {
-  return match.pausedAt ?? now;
+  return now;
 }
 
 export function getQuarterEndTimeWithPausedFallback(
@@ -57,12 +57,23 @@ function getElapsedQuarterSeconds(
     return 0;
   }
 
-  const elapsedMs =
-    effectiveTime -
-    match.quarterStartedAt -
-    (match.accumulatedPauseTime ?? 0);
+  const elapsedMs = effectiveTime - match.quarterStartedAt;
 
   return Math.max(0, Math.floor(elapsedMs / 1000));
+}
+
+export function computeVisibleClockMs(
+  match: MatchClockSnapshot,
+  effectiveTime: number
+): number {
+  if (!match.quarterStartedAt) {
+    return Math.max(0, match.currentQuarter - 1) * getQuarterDurationMs(match);
+  }
+
+  const quarterOffsetMs =
+    Math.max(0, match.currentQuarter - 1) * getQuarterDurationMs(match);
+  const elapsedQuarterMs = Math.max(0, effectiveTime - match.quarterStartedAt);
+  return quarterOffsetMs + elapsedQuarterMs;
 }
 
 export function computeQuarterOverrunSeconds(

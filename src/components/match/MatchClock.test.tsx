@@ -43,20 +43,20 @@ describe('MatchClock', () => {
     vi.useRealTimers();
   });
 
-  it('shows --:-- when status is not live', () => {
+  it('shows frozen time during halftime', () => {
     render(
       <MatchClock
         {...baseProps}
         status="halftime"
-        quarterStartedAt={Date.now()}
+        frozenClockMs={16 * 60 * 1000 + 12_000}
       />
     );
-    expect(screen.getByText('--:--')).toBeInTheDocument();
+    expect(screen.getByText('16:12')).toBeInTheDocument();
   });
 
-  it('shows --:-- when status is finished', () => {
-    render(<MatchClock {...baseProps} status="finished" />);
-    expect(screen.getByText('--:--')).toBeInTheDocument();
+  it('shows frozen time when status is finished', () => {
+    render(<MatchClock {...baseProps} status="finished" frozenClockMs={62 * 60 * 1000 + 5_000} />);
+    expect(screen.getByText('62:05')).toBeInTheDocument();
   });
 
   it('shows --:-- when live but quarterStartedAt is undefined', () => {
@@ -128,7 +128,7 @@ describe('MatchClock', () => {
     expect(screen.getByText('30:00')).toBeInTheDocument();
   });
 
-  it('shows paused global time correctly', () => {
+  it('keeps the main clock running during an interruption', () => {
     const now = Date.now();
     render(
       <MatchClock
@@ -139,10 +139,10 @@ describe('MatchClock', () => {
         pausedAt={now - 30_000}
       />
     );
-    expect(screen.getByText('16:00')).toBeInTheDocument();
+    expect(screen.getByText('16:30')).toBeInTheDocument();
   });
 
-  it('accounts for accumulated pause time while running', () => {
+  it('does not subtract accumulated legacy pause time from the main clock', () => {
     const now = Date.now();
     render(
       <MatchClock
@@ -153,7 +153,7 @@ describe('MatchClock', () => {
         accumulatedPauseTime={60_000}
       />
     );
-    expect(screen.getByText('01:00')).toBeInTheDocument();
+    expect(screen.getByText('02:00')).toBeInTheDocument();
   });
 
   it('ticks every second when live', () => {
@@ -196,9 +196,9 @@ describe('MatchClock', () => {
     expect(el).toBeInTheDocument();
   });
 
-  it('has stopped label when not live', () => {
-    render(<MatchClock {...baseProps} status="halftime" />);
-    const el = screen.getByLabelText('Klok gestopt');
+  it('has screen-reader label for frozen halftime clock', () => {
+    render(<MatchClock {...baseProps} status="halftime" frozenClockMs={900_000} />);
+    const el = screen.getByLabelText('Speeltijd: 15:00');
     expect(el).toBeInTheDocument();
   });
 });

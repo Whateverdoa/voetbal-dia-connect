@@ -29,6 +29,12 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
       inferTimingPresetId(match.quarterCount, match.regulationDurationMinutes) ??
       "q4_15"
   );
+  const [useBreakClock, setUseBreakClock] = useState(
+    match.useBreakClock !== false
+  );
+  const [breakClockAutoStart, setBreakClockAutoStart] = useState(
+    match.breakClockAutoStart !== false
+  );
   const [addPlayerId, setAddPlayerId] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerNumber, setNewPlayerNumber] = useState("");
@@ -45,7 +51,15 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
       match.regulationDurationMinutes
     );
     setTimingPreset(id ?? "q4_15");
-  }, [match._id, match.quarterCount, match.regulationDurationMinutes]);
+    setUseBreakClock(match.useBreakClock !== false);
+    setBreakClockAutoStart(match.breakClockAutoStart !== false);
+  }, [
+    match._id,
+    match.quarterCount,
+    match.regulationDurationMinutes,
+    match.useBreakClock,
+    match.breakClockAutoStart,
+  ]);
 
   useEffect(() => {
     if (!saveAcknowledged) return;
@@ -75,6 +89,8 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
         scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
         quarterCount: timing.quarterCount,
         regulationDurationMinutes: timing.regulationDurationMinutes,
+        useBreakClock,
+        breakClockAutoStart,
       });
       setSaveAcknowledged(true);
     } catch (err) {
@@ -178,6 +194,36 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
             onChange={setTimingPreset}
             compact
           />
+
+          <div className="rounded-xl border border-orange-100 bg-orange-50 p-3 space-y-2">
+            <p className="text-sm font-semibold text-orange-950">Rustklok</p>
+            <label className="flex items-start gap-3 text-sm text-orange-950">
+              <input
+                type="checkbox"
+                checked={useBreakClock}
+                onChange={(event) => setUseBreakClock(event.target.checked)}
+                className="mt-1 h-4 w-4 accent-dia-green"
+              />
+              <span>
+                Rustklok gebruiken met 3 minuten korte pauze en 15 minuten
+                hoofdrust.
+              </span>
+            </label>
+            <label className="flex items-start gap-3 text-sm text-orange-950">
+              <input
+                type="checkbox"
+                checked={breakClockAutoStart}
+                onChange={(event) =>
+                  setBreakClockAutoStart(event.target.checked)
+                }
+                disabled={!useBreakClock}
+                className="mt-1 h-4 w-4 accent-dia-green disabled:opacity-50"
+              />
+              <span>
+                Automatisch hervatten wanneer de rustklok afgelopen is.
+              </span>
+            </label>
+          </div>
 
           <button
             type="button"

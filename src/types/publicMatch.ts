@@ -17,6 +17,11 @@ export interface PublicMatch {
   awayScore: number;
   currentQuarter: number;
   quarterCount: number;
+  frozenClockMs?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  halftimeStartedAt?: number;
+  scheduledBreakEndAt?: number;
   scheduledAt?: number;
   teamName: string;
   clubName: string;

@@ -23,6 +23,8 @@ export {
   setMatchFormation,
 } from "./matchLineup";
 export { pauseClock, resumeClock } from "./clockActions";
+export { configureBreakClock } from "./breakClockActions";
+export { startStoppage, endStoppage } from "./stoppageActions";
 export { adjustScore } from "./scoreActions";
 export { assignReferee } from "./refereeActions";
 export { claimMatchLead, releaseMatchLead } from "./matchLeadActions";

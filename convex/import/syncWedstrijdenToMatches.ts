@@ -447,6 +447,8 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         homeScore: isFinished ? homeGoals : 0,
         awayScore: isFinished ? awayGoals : 0,
         showLineup: false,
+        useBreakClock: true,
+        breakClockAutoStart: true,
         startedAt: isFinished ? wedstrijd.datum_ms : undefined,
         finishedAt: isFinished ? wedstrijd.datum_ms + 3600000 : undefined,
         createdAt: Date.now(),

@@ -13,6 +13,7 @@ import {
 } from "./lib/matchEventProjection";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
+import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -92,6 +93,7 @@ export const getByPublicCode = query({
     }
 
     const refFields = await getPublicRefereeFields(ctx, match.refereeId);
+    const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, Date.now());
 
     return {
       id: match._id,
@@ -109,6 +111,13 @@ export const getByPublicCode = query({
       quarterStartedAt: match.quarterStartedAt,
       pausedAt: match.pausedAt,
       accumulatedPauseTime: match.accumulatedPauseTime,
+      frozenClockMs: match.frozenClockMs,
+      activeStoppageStartedAt: match.activeStoppageStartedAt,
+      stoppageAdvisoryMs,
+      useBreakClock: match.useBreakClock,
+      breakClockAutoStart: match.breakClockAutoStart,
+      halftimeStartedAt: match.halftimeStartedAt,
+      scheduledBreakEndAt: match.scheduledBreakEndAt,
       teamName: team?.name ?? "Team",
       teamSlug: team?.slug ?? "",
       clubName: club?.name ?? "Club",
@@ -155,7 +164,12 @@ export const getForCoach = query({
         if (!player) return null;
 
         let totalMinutes = mp.minutesPlayed ?? 0;
-        if (mp.onField && mp.lastSubbedInAt && match.status === "live") {
+        if (
+          mp.onField &&
+          mp.lastSubbedInAt &&
+          match.status === "live" &&
+          match.activeStoppageStartedAt == null
+        ) {
           totalMinutes += (now - mp.lastSubbedInAt) / 60000;
         }
 
@@ -201,6 +215,7 @@ export const getForCoach = query({
     }));
     const projectedEvents = applyGoalEnrichments(enrichedEvents);
     const stagedSubstitutions = deriveOpenStagedSubstitutions(projectedEvents);
+    const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, now);
 
     // Resolve referee name if assigned
     const referee = match.refereeId
@@ -286,6 +301,13 @@ export const getForCoach = query({
       pausedAt: match.pausedAt,
       accumulatedPauseTime: match.accumulatedPauseTime,
       bankedOverrunSeconds: match.bankedOverrunSeconds,
+      frozenClockMs: match.frozenClockMs,
+      activeStoppageStartedAt: match.activeStoppageStartedAt,
+      stoppageAdvisoryMs,
+      useBreakClock: match.useBreakClock,
+      breakClockAutoStart: match.breakClockAutoStart,
+      halftimeStartedAt: match.halftimeStartedAt,
+      scheduledBreakEndAt: match.scheduledBreakEndAt,
       refereeId: match.refereeId,
       formationId: match.formationId,
       customFormationTemplateId: match.customFormationTemplateId,
@@ -311,5 +333,4 @@ export const getForCoach = query({
     };
   },
 });
-
 

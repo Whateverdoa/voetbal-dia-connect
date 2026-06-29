@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuarterEndReminder } from "@/lib/matchClock/useQuarterEndReminder";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { TeamLogo } from "@/components/TeamLogo";
-import { MatchClock } from "@/components/match/MatchClock";
 import type { MatchStatus } from "@/components/match/types";
 import { createCorrelationId } from "@/lib/correlationId";
-import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
+import { RefereeClockPanel } from "./RefereeClockPanel";
+import { RefereeMatchHeader } from "./RefereeMatchHeader";
+import { RefereeScorePanel } from "./RefereeScorePanel";
 import {
   DiaScorerPrompt,
-  ScoreColumn,
   ShirtNumberPrompt,
 } from "./RefereeScorePrompts";
 
@@ -24,6 +24,12 @@ interface RefereeMatchConsoleProps {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  frozenClockMs?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  useBreakClock?: boolean;
+  breakClockAutoStart?: boolean;
+  scheduledBreakEndAt?: number;
   scheduledAt?: number;
   homeScore: number;
   awayScore: number;
@@ -51,6 +57,12 @@ export function RefereeMatchConsole({
   quarterStartedAt,
   pausedAt,
   accumulatedPauseTime,
+  frozenClockMs,
+  activeStoppageStartedAt,
+  stoppageAdvisoryMs,
+  useBreakClock = true,
+  breakClockAutoStart = true,
+  scheduledBreakEndAt,
   scheduledAt,
   homeScore,
   awayScore,
@@ -64,8 +76,6 @@ export function RefereeMatchConsole({
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
   const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
-  const pauseClockMut = useMutation(api.matchActions.pauseClock);
-  const resumeClockMut = useMutation(api.matchActions.resumeClock);
   const adjustScore = useMutation(api.matchActions.adjustScore);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -78,17 +88,35 @@ export function RefereeMatchConsole({
     null
   );
 
-  const isFinalSegment = currentQuarter >= quarterCount;
   const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
+  const clockSnapshot = useMemo(
+    () => ({
+      currentQuarter,
+      quarterCount,
+      regulationDurationMinutes,
+      quarterStartedAt,
+      frozenClockMs,
+      status,
+    }),
+    [
+      currentQuarter,
+      quarterCount,
+      regulationDurationMinutes,
+      quarterStartedAt,
+      frozenClockMs,
+      status,
+    ]
+  );
+  const { message: quarterReminderMessage, dismiss: dismissQuarterReminder } =
+    useQuarterEndReminder(clockSnapshot);
+  const hasInterruption = isLive && (activeStoppageStartedAt ?? pausedAt) != null;
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
-  const quarterLabel = quarterCount === 2 ? "helft" : "kwart";
   const statusLabel = (() => {
     if (isHalftime) return "Rust";
     if (isFinished) return "Afgelopen";
-    if (isPaused) return `${quarterCount === 2 ? "Helft" : "Kwart"} ${currentQuarter} - gepauzeerd`;
+    if (hasInterruption) return `${quarterCount === 2 ? "Helft" : "Kwart"} ${currentQuarter} - onderbreking`;
     if (isLive) {
       return quarterCount === 2
         ? `Helft ${currentQuarter}`
@@ -96,7 +124,7 @@ export function RefereeMatchConsole({
     }
     return "Nog niet begonnen";
   })();
-  const surfaceClasses = isPaused
+  const surfaceClasses = hasInterruption
     ? "from-orange-500 to-orange-600"
     : isLive
       ? "from-green-600 to-green-700"
@@ -204,278 +232,73 @@ export function RefereeMatchConsole({
     <>
       <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col px-2 py-1.5 md:px-4 md:py-4">
         <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
-          <header
-            className={`shrink-0 bg-gradient-to-b ${surfaceClasses} px-3 pb-3 pt-3 text-center text-white sm:px-5 sm:pb-5 sm:pt-5`}
-          >
-            <div className="mx-auto max-w-md">
-              <div className="mb-2 sm:mb-3">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-medium">
-                  {isLive && (
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                  )}
-                  {statusLabel}
-                </span>
-              </div>
-
-              {isScheduled && scheduledAt != null && (
-                <p className="mb-2 text-xs tabular-nums text-white/90 sm:mb-3 sm:text-sm">
-                  <time dateTime={new Date(scheduledAt).toISOString()}>
-                    {formatMatchDateNl(scheduledAt)} ·{" "}
-                    {formatMatchTimeNl(scheduledAt)}
-                  </time>
-                </p>
-              )}
-
-              <div className="rounded-[1.35rem] border border-white/20 bg-black/20 px-3 py-2.5 shadow-2xl backdrop-blur-sm sm:rounded-[1.75rem] sm:px-4 sm:py-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/70">
-                  Wedstrijdklok
-                </p>
-                <div className="mt-1.5 flex flex-col items-center sm:mt-2">
-                  <MatchClock
-                    currentQuarter={currentQuarter}
-                    quarterCount={quarterCount}
-                    regulationDurationMinutes={regulationDurationMinutes}
-                    quarterStartedAt={quarterStartedAt}
-                    pausedAt={pausedAt}
-                    accumulatedPauseTime={accumulatedPauseTime}
-                    status={status}
-                    className="font-sans text-[2.7rem] font-medium leading-none tracking-[-0.03em] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)] sm:text-6xl"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-2 flex items-baseline justify-center gap-3 font-sans tabular-nums sm:mt-4 sm:gap-4">
-                <span className="text-3xl font-medium tracking-[-0.03em] sm:text-5xl">
-                  {homeScore}
-                </span>
-                <span className="text-2xl font-medium text-white/85 sm:text-4xl">
-                  -
-                </span>
-                <span className="text-3xl font-medium tracking-[-0.03em] sm:text-5xl">
-                  {awayScore}
-                </span>
-              </div>
-
-              <div className="mx-auto mt-1.5 flex max-w-lg items-start justify-between gap-2 text-[11px] opacity-90 sm:mt-3 sm:gap-3 sm:text-sm">
-                <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                  <TeamLogo
-                    logoUrl={homeLogoUrl}
-                    teamName={homeName}
-                    size="sm"
-                    className="ring-2 ring-white/30"
-                  />
-                  <span className="text-center font-medium leading-tight">
-                    {homeName}
-                  </span>
-                </div>
-                <span className="shrink-0 pt-6 text-xs opacity-75">vs</span>
-                <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                  <TeamLogo
-                    logoUrl={awayLogoUrl}
-                    teamName={awayName}
-                    size="sm"
-                    className="ring-2 ring-white/30"
-                  />
-                  <span className="text-center font-medium leading-tight">
-                    {awayName}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </header>
+          <RefereeMatchHeader
+            status={status}
+            statusLabel={statusLabel}
+            surfaceClasses={surfaceClasses}
+            isLive={isLive}
+            isScheduled={isScheduled}
+            scheduledAt={scheduledAt}
+            currentQuarter={currentQuarter}
+            quarterCount={quarterCount}
+            regulationDurationMinutes={regulationDurationMinutes}
+            quarterStartedAt={quarterStartedAt}
+            pausedAt={pausedAt}
+            accumulatedPauseTime={accumulatedPauseTime}
+            frozenClockMs={frozenClockMs}
+            homeScore={homeScore}
+            awayScore={awayScore}
+            homeName={homeName}
+            awayName={awayName}
+            homeLogoUrl={homeLogoUrl}
+            awayLogoUrl={awayLogoUrl}
+          />
 
           <div className="flex flex-1 flex-col justify-between p-3 sm:p-4">
             <div className="space-y-2.5">
-              <div className="space-y-2.5">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-500">
-                  Klokbediening
-                </h2>
-
-                {clockError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                    {clockError}
-                  </div>
-                )}
-
-                {isScheduled && (
-                  <button
-                    onClick={() =>
-                      void withLoading(
-                        () => startMatch({ matchId }),
-                        handleClockError
-                      )
-                    }
-                    disabled={isLoading}
-                    className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-white shadow-lg transition-transform hover:bg-dia-green-light disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
-                  >
-                    {isLoading ? "Bezig..." : "Start wedstrijd"}
-                  </button>
-                )}
-
-                {isLive &&
-                  (endMatchConfirm ? (
-                    <div className="space-y-2">
-                      <p className="px-1 text-center text-sm font-medium text-gray-800">
-                        Is de wedstrijd echt afgelopen?
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEndMatchConfirm(false)}
-                          disabled={isLoading}
-                          className="min-h-[48px] rounded-xl border-2 border-gray-300 py-2.5 font-semibold text-gray-700 transition-transform hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
-                        >
-                          Annuleren
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEndMatchConfirm(false);
-                            void withLoading(
-                              () =>
-                                nextQuarter({
-                                  matchId,
-                                  correlationId: createCorrelationId(
-                                    "next-quarter"
-                                  ),
-                                }),
-                              handleClockError
-                            );
-                          }}
-                          disabled={isLoading}
-                          className="min-h-[48px] rounded-xl bg-red-600 py-2.5 font-semibold text-white transition-transform hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
-                        >
-                          {isLoading ? "Bezig..." : "Ja, beëindigen"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {isPaused ? (
-                        <button
-                          onClick={() =>
-                            void withLoading(
-                              () => resumeClockMut({ matchId }),
-                              handleClockError
-                            )
-                          }
-                          disabled={isLoading}
-                          className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-dia-green py-2.5 text-sm font-bold text-white shadow-lg transition-transform hover:bg-dia-green-light disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-                        >
-                          <span className="text-xl">▶</span>
-                          {isLoading ? "Bezig..." : "Hervat"}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            void withLoading(
-                              () => pauseClockMut({ matchId }),
-                              handleClockError
-                            )
-                          }
-                          disabled={isLoading}
-                          className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-white shadow-lg transition-transform hover:bg-orange-600 disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-                        >
-                          <span className="text-xl">⏸</span>
-                          {isLoading ? "Bezig..." : "Pauze"}
-                        </button>
-                      )}
-
-                      {isFinalSegment ? (
-                        <button
-                          type="button"
-                          onClick={() => setEndMatchConfirm(true)}
-                          disabled={isLoading}
-                          className="min-h-[52px] rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-                        >
-                          Einde match
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void withLoading(
-                              () =>
-                                nextQuarter({
-                                  matchId,
-                                  correlationId: createCorrelationId(
-                                    "next-quarter"
-                                  ),
-                                }),
-                              handleClockError
-                            )
-                          }
-                          disabled={isLoading}
-                          className="min-h-[52px] rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-                        >
-                          {isLoading
-                            ? "Bezig..."
-                            : `Einde ${quarterLabel} ${currentQuarter}`}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
-                {isHalftime && (
-                  <button
-                    onClick={() =>
-                      void withLoading(
-                        () => resumeHalftime({ matchId }),
-                        handleClockError
-                      )
-                    }
-                    disabled={isLoading}
-                    className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-white shadow-lg transition-transform hover:bg-dia-green-light disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
-                  >
-                    {isLoading
-                      ? "Bezig..."
-                      : `Start ${quarterLabel} ${currentQuarter}`}
-                  </button>
-                )}
-
-                {isFinished && (
-                  <div className="py-4 text-center">
-                    <p className="font-medium text-gray-500">
-                      Wedstrijd is afgelopen
-                    </p>
-                  </div>
-                )}
-              </div>
+              <RefereeClockPanel
+                matchId={matchId}
+                status={status}
+                currentQuarter={currentQuarter}
+                quarterCount={quarterCount}
+                pausedAt={pausedAt}
+                activeStoppageStartedAt={activeStoppageStartedAt}
+                stoppageAdvisoryMs={stoppageAdvisoryMs}
+                quarterReminderMessage={quarterReminderMessage}
+                onDismissQuarterReminder={dismissQuarterReminder}
+                useBreakClock={useBreakClock}
+                breakClockAutoStart={breakClockAutoStart}
+                scheduledBreakEndAt={scheduledBreakEndAt}
+                isLoading={isLoading}
+                clockError={clockError}
+                endMatchConfirm={endMatchConfirm}
+                onSetEndMatchConfirm={setEndMatchConfirm}
+                onStartMatch={() => startMatch({ matchId })}
+                onNextQuarter={() =>
+                  nextQuarter({
+                    matchId,
+                    correlationId: createCorrelationId("next-quarter"),
+                  })
+                }
+                onResumeHalftime={() => resumeHalftime({ matchId })}
+                onClockAction={(action, onError) =>
+                  void withLoading(action, onError)
+                }
+                onClockError={handleClockError}
+              />
 
               <div className="h-px bg-gray-200" />
 
-              <div className="space-y-2.5">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-500">
-                  Score aanpassen
-                </h2>
-
-                {scoreError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                    {scoreError}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <ScoreColumn
-                    teamName={homeName}
-                    score={homeScore}
-                    team="home"
-                    isLoading={isLoading}
-                    onIncrement={handleIncrementStart}
-                    onDecrement={handleDecrement}
-                    showScore={false}
-                  />
-                  <ScoreColumn
-                    teamName={awayName}
-                    score={awayScore}
-                    team="away"
-                    isLoading={isLoading}
-                    onIncrement={handleIncrementStart}
-                    onDecrement={handleDecrement}
-                    showScore={false}
-                  />
-                </div>
-              </div>
+              <RefereeScorePanel
+                homeName={homeName}
+                awayName={awayName}
+                homeScore={homeScore}
+                awayScore={awayScore}
+                isLoading={isLoading}
+                scoreError={scoreError}
+                onIncrement={handleIncrementStart}
+                onDecrement={handleDecrement}
+              />
             </div>
           </div>
         </section>

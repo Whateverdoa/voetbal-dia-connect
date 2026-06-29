@@ -12,7 +12,7 @@ import {
   SoundToggle,
   useGoalNotification,
 } from "./index";
-import { MatchClock } from "@/components/match/MatchClock";
+import { MatchClock, formatElapsed } from "@/components/match/MatchClock";
 import { LineupSection } from "./LineupSection";
 import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
@@ -35,10 +35,11 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
   const canReferee = hasRole(roles, "referee");
   const canAdmin = hasRole(roles, "admin");
   const isLive = match.status === "live";
-  const isPaused = isLive && match.pausedAt != null;
+  const hasInterruption = isLive && match.activeStoppageStartedAt != null;
   const isHalftime = match.status === "halftime";
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled" || match.status === "lineup";
+  const hasStoppageAdvice = (match.stoppageAdvisoryMs ?? 0) > 0;
 
   // Track previous scores for goal animation
   const prevScoresRef = useRef({ home: match.homeScore, away: match.awayScore });
@@ -95,7 +96,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
           {/* Status and quarter progress */}
           <div className="flex flex-col items-center gap-3 mb-4">
             <div className="flex items-center gap-2">
-              {isLive && !isPaused && (
+              {isLive && (
                 <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   LIVE
@@ -106,33 +107,45 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                     quarterStartedAt={match.quarterStartedAt}
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}
-                    status={match.status}
-                  />
-                </span>
-              )}
-              {isPaused && (
-                <span className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1 rounded-full text-sm font-medium">
-                  <span className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
-                  GEPAUZEERD
-                  <MatchClock
-                    currentQuarter={match.currentQuarter}
-                    quarterCount={match.quarterCount}
-                    regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
-                    quarterStartedAt={match.quarterStartedAt}
-                    pausedAt={match.pausedAt}
-                    accumulatedPauseTime={match.accumulatedPauseTime}
+                    frozenClockMs={match.frozenClockMs}
                     status={match.status}
                   />
                 </span>
               )}
               {isHalftime && (
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   RUST
+                  <MatchClock
+                    currentQuarter={match.currentQuarter}
+                    quarterCount={match.quarterCount}
+                    regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
+                    quarterStartedAt={match.quarterStartedAt}
+                    frozenClockMs={match.frozenClockMs}
+                    status={match.status}
+                  />
                 </span>
               )}
               {isFinished && (
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   AFGELOPEN
+                  <MatchClock
+                    currentQuarter={match.currentQuarter}
+                    quarterCount={match.quarterCount}
+                    regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
+                    quarterStartedAt={match.quarterStartedAt}
+                    frozenClockMs={match.frozenClockMs}
+                    status={match.status}
+                  />
+                </span>
+              )}
+              {hasInterruption && (
+                <span className="bg-yellow-500/30 px-3 py-1 rounded-full text-sm font-medium">
+                  ONDERBREKING
+                </span>
+              )}
+              {hasStoppageAdvice && (
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium tabular-nums">
+                  +{formatElapsed(match.stoppageAdvisoryMs ?? 0)}
                 </span>
               )}
               {isScheduled && (

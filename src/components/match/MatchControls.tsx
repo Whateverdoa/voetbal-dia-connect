@@ -6,6 +6,9 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "./types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { StoppageControls } from "./StoppageControls";
+import { BreakClock } from "./BreakClock";
+import { UndoGoalButton } from "./UndoGoalButton";
 
 interface MatchControlsProps {
   matchId: Id<"matches">;
@@ -15,6 +18,11 @@ interface MatchControlsProps {
   homeScore: number;
   awayScore: number;
   pausedAt?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  useBreakClock?: boolean;
+  breakClockAutoStart?: boolean;
+  scheduledBreakEndAt?: number;
   canAddGoals?: boolean;
   canControlClock?: boolean;
   canDoSubstitutions?: boolean;
@@ -30,6 +38,11 @@ export function MatchControls({
   homeScore,
   awayScore,
   pausedAt,
+  activeStoppageStartedAt,
+  stoppageAdvisoryMs,
+  useBreakClock = true,
+  breakClockAutoStart = true,
+  scheduledBreakEndAt,
   canAddGoals = true,
   canControlClock = true,
   canDoSubstitutions = true,
@@ -40,8 +53,6 @@ export function MatchControls({
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
   const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
   const removeLastGoal = useMutation(api.matchActions.removeLastGoal);
-  const pauseClockMut = useMutation(api.matchActions.pauseClock);
-  const resumeClockMut = useMutation(api.matchActions.resumeClock);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +95,6 @@ export function MatchControls({
   };
 
   const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
@@ -151,25 +161,15 @@ export function MatchControls({
             </div>
           )}
 
-          {canControlClock && (isPaused ? (
-            <button
-              onClick={() => handleMutation(() => resumeClockMut({ matchId }), "Hervat klok")}
-              disabled={isLoading}
-              className="w-full py-3 bg-dia-green text-white font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <span className="text-lg">▶</span>
-              {isLoading ? "Bezig..." : "Hervat klok"}
-            </button>
-          ) : (
-            <button
-              onClick={() => handleMutation(() => pauseClockMut({ matchId }), "Pauzeer klok")}
-              disabled={isLoading}
-              className="w-full py-3 bg-orange-500 text-white font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-orange-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <span className="text-lg">⏸</span>
-              {isLoading ? "Bezig..." : "Pauzeer klok"}
-            </button>
-          ))}
+          {canControlClock && (
+            <StoppageControls
+              matchId={matchId}
+              activeStoppageStartedAt={activeStoppageStartedAt ?? pausedAt}
+              stoppageAdvisoryMs={stoppageAdvisoryMs}
+              isLoading={isLoading}
+              onAction={handleMutation}
+            />
+          )}
 
           {canControlClock &&
             (isFinalSegment ? (
@@ -256,13 +256,21 @@ export function MatchControls({
       )}
 
       {isHalftime && canControlClock && (
-        <button
-          onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
-          disabled={isLoading}
-          className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? "Bezig..." : getResumeLabel()}
-        </button>
+        <div className="space-y-3">
+          {useBreakClock !== false && (
+            <BreakClock
+              scheduledBreakEndAt={scheduledBreakEndAt}
+              autoStart={breakClockAutoStart !== false}
+            />
+          )}
+          <button
+            onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
+            disabled={isLoading}
+            className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Bezig..." : getResumeLabel()}
+          </button>
+        </div>
       )}
 
       {isFinished && (
@@ -271,50 +279,5 @@ export function MatchControls({
         </div>
       )}
     </section>
-  );
-}
-
-function UndoGoalButton({
-  isConfirming,
-  isLoading,
-  onFirstTap,
-  onConfirm,
-  onCancel,
-}: {
-  isConfirming: boolean;
-  isLoading: boolean;
-  onFirstTap: () => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (isConfirming) {
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          disabled={isLoading}
-          className="flex-1 py-2 border-2 border-gray-300 text-gray-600 font-semibold rounded-xl min-h-[44px] active:scale-[0.98] transition-transform disabled:opacity-50"
-        >
-          Annuleren
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={isLoading}
-          className="flex-1 py-2 bg-red-600 text-white font-semibold rounded-xl min-h-[44px] active:scale-[0.98] transition-transform disabled:opacity-50"
-        >
-          {isLoading ? "Bezig..." : "Ja, verwijder"}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={onFirstTap}
-      disabled={isLoading}
-      className="w-full py-2 text-red-600 border-2 border-red-200 font-medium rounded-xl min-h-[44px] active:scale-[0.98] transition-transform hover:bg-red-50 hover:border-red-300 disabled:opacity-50 text-sm"
-    >
-      Laatste doelpunt ongedaan maken
-    </button>
   );
 }

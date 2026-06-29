@@ -16,6 +16,13 @@ export interface MatchData {
   quarterStartedAt?: number;
   pausedAt?: number;
   accumulatedPauseTime?: number;
+  frozenClockMs?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  useBreakClock?: boolean;
+  breakClockAutoStart?: boolean;
+  halftimeStartedAt?: number;
+  scheduledBreakEndAt?: number;
   teamName: string;
   teamSlug: string;
   clubName: string;

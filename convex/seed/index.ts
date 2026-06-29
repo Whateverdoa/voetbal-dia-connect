@@ -234,6 +234,8 @@ export const createSeedMatch = internalMutation({
       homeScore: args.homeScore,
       awayScore: args.awayScore,
       showLineup: false,
+      useBreakClock: true,
+      breakClockAutoStart: true,
       refereeId: args.refereeId,
       startedAt: args.finished ? args.scheduledAt : undefined,
       finishedAt: args.finished ? args.scheduledAt + 3600000 : undefined,

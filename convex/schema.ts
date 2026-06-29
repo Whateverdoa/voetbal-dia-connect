@@ -118,6 +118,14 @@ export default defineSchema({
     pausedAt: v.optional(v.number()), // Timestamp when clock was paused (undefined = running)
     accumulatedPauseTime: v.optional(v.number()), // Total ms paused this quarter (resets each quarter)
     bankedOverrunSeconds: v.optional(v.number()), // Overage from completed quarters, carried to full-time
+    frozenClockMs: v.optional(v.number()), // Visible match clock at halftime/finished
+    activeStoppageStartedAt: v.optional(v.number()), // Active interruption timer start
+
+    // Break clock state
+    useBreakClock: v.optional(v.boolean()),
+    breakClockAutoStart: v.optional(v.boolean()),
+    halftimeStartedAt: v.optional(v.number()),
+    scheduledBreakEndAt: v.optional(v.number()),
 
     // Referee assignment (optional — when set, referee can control the clock)
     refereeId: v.optional(v.id("referees")),
@@ -174,6 +182,16 @@ export default defineSchema({
     "commandType",
     "correlationId",
   ]),
+
+  matchStoppages: defineTable({
+    matchId: v.id("matches"),
+    quarter: v.number(),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_match", ["matchId"])
+    .index("by_match_quarter", ["matchId", "quarter"]),
 
   // Events during match (goals, assists, subs)
   matchEvents: defineTable({

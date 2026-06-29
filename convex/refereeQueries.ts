@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRefereeAccess, requireRefereeForMatch } from "./lib/userAccess";
+import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
 
 export const getForReferee = query({
   args: { matchId: v.id("matches") },
@@ -30,6 +31,7 @@ export const getForReferee = query({
             };
           })
       );
+      const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, Date.now());
 
       return {
         id: match._id,
@@ -46,6 +48,13 @@ export const getForReferee = query({
         quarterStartedAt: match.quarterStartedAt,
         pausedAt: match.pausedAt,
         accumulatedPauseTime: match.accumulatedPauseTime,
+        frozenClockMs: match.frozenClockMs,
+        activeStoppageStartedAt: match.activeStoppageStartedAt,
+        stoppageAdvisoryMs,
+        useBreakClock: match.useBreakClock,
+        breakClockAutoStart: match.breakClockAutoStart,
+        halftimeStartedAt: match.halftimeStartedAt,
+        scheduledBreakEndAt: match.scheduledBreakEndAt,
         teamName: team?.name ?? "Team",
         teamLogoUrl: team?.logoUrl,
         clubLogoUrl: club?.logoUrl,

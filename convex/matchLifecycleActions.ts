@@ -12,8 +12,11 @@ import { assertValidMatchTiming } from "./lib/matchTiming";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
+  computeVisibleClockMs,
   getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
+import { getBreakMinutesAfterQuarter } from "./lib/matchBreaks";
+import { internal } from "./_generated/api";
 
 // Create a new match
 export const create = mutation({
@@ -75,6 +78,8 @@ export const create = mutation({
       homeScore: 0,
       awayScore: 0,
       showLineup: false,
+      useBreakClock: true,
+      breakClockAutoStart: true,
       createdAt: Date.now(),
     });
 
@@ -113,6 +118,10 @@ export const start = mutation({
       pausedAt: undefined,
       accumulatedPauseTime: 0,
       bankedOverrunSeconds: 0,
+      frozenClockMs: undefined,
+      activeStoppageStartedAt: undefined,
+      halftimeStartedAt: undefined,
+      scheduledBreakEndAt: undefined,
     });
 
     const matchPlayers = await ctx.db
@@ -186,7 +195,21 @@ export const nextQuarter = mutation({
       }
     }
 
+    if (match.activeStoppageStartedAt != null) {
+      const stoppages = await ctx.db
+        .query("matchStoppages")
+        .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+        .collect();
+      const active = stoppages
+        .filter((stoppage) => stoppage.endedAt == null)
+        .sort((a, b) => b.startedAt - a.startedAt)[0];
+      if (active) {
+        await ctx.db.patch(active._id, { endedAt: effectiveEndTime });
+      }
+    }
+
     const quarterEndStamp = buildEventGameTimeStamp(match, effectiveEndTime);
+    const frozenClockMs = computeVisibleClockMs(match, effectiveEndTime);
 
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
@@ -207,10 +230,19 @@ export const nextQuarter = mutation({
         pausedAt: undefined,
         accumulatedPauseTime: undefined,
         bankedOverrunSeconds: nextBankedOverrunSeconds,
+        frozenClockMs,
+        activeStoppageStartedAt: undefined,
+        halftimeStartedAt: undefined,
+        scheduledBreakEndAt: undefined,
         finishedAt: now,
       });
       return;
     }
+
+    const breakMinutes = getBreakMinutesAfterQuarter(match, match.currentQuarter);
+    const halftimeStartedAt = now;
+    const scheduledBreakEndAt =
+      breakMinutes == null ? undefined : halftimeStartedAt + breakMinutes * 60_000;
 
     await ctx.db.patch(args.matchId, {
       status: "halftime",
@@ -219,7 +251,23 @@ export const nextQuarter = mutation({
       pausedAt: undefined,
       accumulatedPauseTime: undefined,
       bankedOverrunSeconds: nextBankedOverrunSeconds,
+      frozenClockMs,
+      activeStoppageStartedAt: undefined,
+      halftimeStartedAt,
+      scheduledBreakEndAt,
     });
+
+    if (
+      breakMinutes != null &&
+      match.useBreakClock !== false &&
+      match.breakClockAutoStart !== false
+    ) {
+      await ctx.scheduler.runAfter(
+        breakMinutes * 60_000,
+        internal.breakClockActions.autoResumeFromBreak,
+        { matchId: args.matchId, expectedBreakEndAt: scheduledBreakEndAt as number }
+      );
+    }
   },
 });
 
@@ -241,6 +289,10 @@ export const resumeFromHalftime = mutation({
       quarterStartedAt: now,
       pausedAt: undefined,
       accumulatedPauseTime: 0,
+      frozenClockMs: undefined,
+      activeStoppageStartedAt: undefined,
+      halftimeStartedAt: undefined,
+      scheduledBreakEndAt: undefined,
     });
 
     const matchPlayers = await ctx.db

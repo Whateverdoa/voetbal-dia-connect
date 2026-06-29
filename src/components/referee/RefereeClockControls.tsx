@@ -6,6 +6,8 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "@/components/match/types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { BreakClock } from "@/components/match/BreakClock";
+import { StoppageControls } from "@/components/match/StoppageControls";
 
 interface RefereeClockControlsProps {
   matchId: Id<"matches">;
@@ -13,6 +15,11 @@ interface RefereeClockControlsProps {
   currentQuarter: number;
   quarterCount: number;
   pausedAt?: number;
+  activeStoppageStartedAt?: number;
+  stoppageAdvisoryMs?: number;
+  useBreakClock?: boolean;
+  breakClockAutoStart?: boolean;
+  scheduledBreakEndAt?: number;
   embedded?: boolean;
 }
 
@@ -22,13 +29,16 @@ export function RefereeClockControls({
   currentQuarter,
   quarterCount,
   pausedAt,
+  activeStoppageStartedAt,
+  stoppageAdvisoryMs,
+  useBreakClock = true,
+  breakClockAutoStart = true,
+  scheduledBreakEndAt,
   embedded = false,
 }: RefereeClockControlsProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
   const resumeHalftime = useMutation(api.matchActions.resumeFromHalftime);
-  const pauseClockMut = useMutation(api.matchActions.pauseClock);
-  const resumeClockMut = useMutation(api.matchActions.resumeClock);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +57,6 @@ export function RefereeClockControls({
   }, [endMatchConfirm]);
 
   const isLive = status === "live";
-  const isPaused = isLive && pausedAt != null;
   const isHalftime = status === "halftime";
   const isFinished = status === "finished";
   const isScheduled = status === "scheduled" || status === "lineup";
@@ -130,27 +139,14 @@ export function RefereeClockControls({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {isPaused ? (
-                <button
-                  onClick={() => handleAction(() => resumeClockMut({ matchId }))}
-                  disabled={isLoading}
-                  className="py-4 bg-dia-green text-white text-base font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <span className="text-xl">▶</span>
-                  {isLoading ? "Bezig..." : "Hervat"}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleAction(() => pauseClockMut({ matchId }))}
-                  disabled={isLoading}
-                  className="py-4 bg-orange-500 text-white text-base font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-orange-600 shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <span className="text-xl">⏸</span>
-                  {isLoading ? "Bezig..." : "Pauze"}
-                </button>
-              )}
-
+            <div className="space-y-2">
+              <StoppageControls
+                matchId={matchId}
+                activeStoppageStartedAt={activeStoppageStartedAt ?? pausedAt}
+                stoppageAdvisoryMs={stoppageAdvisoryMs}
+                isLoading={isLoading}
+                onAction={handleAction}
+              />
               {isFinalSegment ? (
                 <button
                   type="button"
@@ -183,13 +179,21 @@ export function RefereeClockControls({
       )}
 
       {isHalftime && (
-        <button
-          onClick={() => handleAction(() => resumeHalftime({ matchId }))}
-          disabled={isLoading}
-          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
-        >
-          {isLoading ? "Bezig..." : `Start ${quarterLabel} ${currentQuarter}`}
-        </button>
+        <div className="space-y-3">
+          {useBreakClock !== false && (
+            <BreakClock
+              scheduledBreakEndAt={scheduledBreakEndAt}
+              autoStart={breakClockAutoStart !== false}
+            />
+          )}
+          <button
+            onClick={() => handleAction(() => resumeHalftime({ matchId }))}
+            disabled={isLoading}
+            className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
+          >
+            {isLoading ? "Bezig..." : `Start ${quarterLabel} ${currentQuarter}`}
+          </button>
+        </div>
       )}
 
       {isFinished && (

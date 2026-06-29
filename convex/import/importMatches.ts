@@ -95,6 +95,8 @@ export const importMatchBatch = mutation({
           homeScore: match.homeScore ?? 0,
           awayScore: match.awayScore ?? 0,
           showLineup: false,
+          useBreakClock: true,
+          breakClockAutoStart: true,
           startedAt: isFinished ? scheduledAt : undefined,
           finishedAt: isFinished ? scheduledAt + 3600000 : undefined,
           createdAt: Date.now(),

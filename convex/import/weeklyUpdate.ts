@@ -25,6 +25,8 @@ type SyncWedstrijdenSummary = {
   skippedUnknownTeam: number;
   skippedCancelled: number;
   skippedNoDate: number;
+  scoreOverwrites?: number;
+  discrepanciesFlagged?: number;
 };
 
 type WeeklyCronResult =

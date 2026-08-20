@@ -55,7 +55,7 @@ export default defineSchema({
     .index("by_pin", ["pin"])
     .index("by_email", ["email"]),
 
-  // Referees — global records with their own PIN (assigned to matches by admin/coach)
+  // Referees ÔÇö global records with their own PIN (assigned to matches by admin/coach)
   referees: defineTable({
     name: v.string(),
     pin: v.optional(v.string()), // Legacy PIN, to be removed after full auth migration
@@ -93,7 +93,20 @@ export default defineSchema({
     opponentLogoUrl: v.optional(v.string()),
     isHome: v.boolean(),
     scheduledAt: v.optional(v.number()),
-    
+    /** Football season key, e.g. "2025-2026" (July–June). */
+    seasonKey: v.optional(v.string()),
+    /** Sportlink wedstrijdcode — primary import key when Sportlink is active. */
+    sportlinkWedstrijdcode: v.optional(v.string()),
+    /**
+     * Set when Sportlink official score overwrote a different local score.
+     * Cleared manually or when scores align again on a later sync.
+     */
+    scoreDiscrepancyAt: v.optional(v.number()),
+    scoreDiscrepancyLocalHome: v.optional(v.number()),
+    scoreDiscrepancyLocalAway: v.optional(v.number()),
+    scoreDiscrepancySportlinkHome: v.optional(v.number()),
+    scoreDiscrepancySportlinkAway: v.optional(v.number()),
+
     // Match state
     status: v.union(
       v.literal("scheduled"),
@@ -127,10 +140,10 @@ export default defineSchema({
     halftimeStartedAt: v.optional(v.number()),
     scheduledBreakEndAt: v.optional(v.number()),
 
-    // Referee assignment (optional — when set, referee can control the clock)
+    // Referee assignment (optional ÔÇö when set, referee can control the clock)
     refereeId: v.optional(v.id("referees")),
 
-    // Match lead (wedstrijdleider) — coach who claimed lead role for this match
+    // Match lead (wedstrijdleider) ÔÇö coach who claimed lead role for this match
     leadCoachId: v.optional(v.id("coaches")),
 
     // Field view: preset formation key and/or saved custom template for this team
@@ -150,7 +163,10 @@ export default defineSchema({
     .index("by_code", ["publicCode"])
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
-    .index("by_refereeId", ["refereeId"]),
+    .index("by_refereeId", ["refereeId"])
+    .index("by_season", ["seasonKey"])
+    .index("by_team_and_season", ["teamId", "seasonKey"])
+    .index("by_sportlink_code", ["sportlinkWedstrijdcode"]),
 
   // Match lineup - which players are in this match
   matchPlayers: defineTable({
@@ -296,8 +312,10 @@ export default defineSchema({
     scheidsrechter: v.string(),
     thuisteamLogo: v.optional(v.string()),
     uitteamLogo: v.optional(v.string()),
+    sportlink_wedstrijdcode: v.optional(v.string()),
   })
     .index("by_voetbalassist_id", ["voetbalassist_id"])
     .index("by_datum", ["datum_ms"])
-    .index("by_team", ["dia_team"]),
+    .index("by_team", ["dia_team"])
+    .index("by_sportlink_code", ["sportlink_wedstrijdcode"]),
 });

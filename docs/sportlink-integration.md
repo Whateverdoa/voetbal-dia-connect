@@ -10,7 +10,7 @@ de huidige matchflow te blokkeren.
 - Provider interface: `src/lib/competition/provider.ts`
 - Sportlink client: `src/lib/competition/sportlinkClient.ts`
 - Config contract: zie `docs/config.md`
-- **Convex uitslagen-pipeline:** wanneer Sportlink live gaat, vervang alleen de implementatie in `convex/import/resultsFetch.ts` (staging `wedstrijden` vullen); cron (`convex/crons.ts`) en sync naar `matches` blijven hetzelfde.
+- **Convex uitslagen-pipeline:** `convex/import/resultsFetch.ts` kiest Sportlink wanneer `SPORTLINK_CLIENT_ID` gezet is (anders VoetbalAssist). Staging → `syncWedstrijdenToMatches`. Details: `docs/sportlink-programma-uitslagen.md`.
 
 ## Pollingstrategie
 

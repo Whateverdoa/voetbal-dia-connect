@@ -20,11 +20,28 @@ import {
   type RawWedstrijd,
   type WedstrijdDoc,
 } from "./wedstrijdenMapper";
+import { activeSeasonKey } from "../lib/season";
 
 const VOETBALASSIST_URL =
   "https://site-api.voetbalassi.st/DIA/front/programmaenuitslagen/PostWedstrijden";
 
-const WEDSTRIJD_V = v.object({
+/** VoetbalAssist season window for the active July–June season. */
+function voetbalAssistSeasonPayload(now = new Date()) {
+  const season = activeSeasonKey(now.getTime()); // e.g. "2026-2027"
+  const startYear = Number(season.slice(0, 4));
+  const endYear = startYear + 1;
+  const datumBeginSeizoen = `${startYear}-07-01T00:00:00`;
+  const datumEindeSeizoen = `${endYear}-07-01T00:00:00`;
+  return {
+    season,
+    datumBeginSeizoen,
+    datumEindeSeizoen,
+    datumVan: datumBeginSeizoen,
+    datumTot: datumEindeSeizoen,
+  };
+}
+
+export const WEDSTRIJD_V = v.object({
   voetbalassist_id: v.number(),
   datum: v.string(),
   tijd: v.string(),
@@ -42,6 +59,7 @@ const WEDSTRIJD_V = v.object({
   scheidsrechter: v.string(),
   thuisteamLogo: v.optional(v.string()),
   uitteamLogo: v.optional(v.string()),
+  sportlink_wedstrijdcode: v.optional(v.string()),
 });
 
 const BATCH_SIZE = 100;
@@ -85,17 +103,18 @@ export const importWedstrijdenBatch = internalMutation({
 async function runVoetbalAssistImport(ctx: ActionCtx) {
   await ctx.runMutation(internal.import.importWedstrijden.clearWedstrijden, {});
 
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const seasonWindow = voetbalAssistSeasonPayload(nowDate);
   const payload = {
     clubWedstrijdenStandaardSorterenOp: "team",
-    datumBeginSeizoen: "2025-07-01T00:00:00",
-    datumEindeSeizoen: "2026-07-01T00:00:00",
-    datumTot: "2026-07-01T00:00:00",
-    datumVan: "2025-07-01T00:00:00",
+    datumBeginSeizoen: seasonWindow.datumBeginSeizoen,
+    datumEindeSeizoen: seasonWindow.datumEindeSeizoen,
+    datumTot: seasonWindow.datumTot,
+    datumVan: seasonWindow.datumVan,
     klantAfkorting: "DIA",
     lang: "nl",
     programmaEnUitslagenType: 2,
-    vandaag: now,
+    vandaag: nowDate.toISOString(),
   };
 
   const res = await fetch(VOETBALASSIST_URL, {
@@ -138,6 +157,9 @@ async function runVoetbalAssistImport(ctx: ActionCtx) {
   }
 
   return {
+    season: seasonWindow.season,
+    datumVan: seasonWindow.datumVan,
+    datumTot: seasonWindow.datumTot,
     totalFromApi: rawData.length,
     totalMapped: mapped.length,
     totalCreated,

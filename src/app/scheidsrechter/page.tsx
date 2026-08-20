@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { RefereeMatchList } from "@/components/referee/RefereeMatchList";
+import { RefereeDashboard } from "@/components/referee/RefereeDashboard";
 
 const hasClerkPublishableKey = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -19,7 +19,7 @@ export default function ScheidsrechterPage() {
           <p className="text-sm text-gray-600">
             Deze omgeving verwacht Clerk-login via e-mail en rollen.
           </p>
-          <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black">
             Terug naar home
           </Link>
         </div>
@@ -53,7 +53,7 @@ function RefereePageWithClerk() {
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/sign-in"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black"
             >
               Naar inloggen
             </Link>
@@ -73,9 +73,9 @@ function RefereePageWithClerk() {
   }
 
   return (
-    <RefereeMatchList
+    <RefereeDashboard
       refereeName={data.referee.name}
-      matches={data.matches}
+      assignedMatches={data.matches}
       onLogout={() => {
         void signOut({ redirectUrl: "/" });
       }}

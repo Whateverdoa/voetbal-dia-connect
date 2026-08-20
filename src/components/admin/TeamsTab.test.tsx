@@ -253,7 +253,7 @@ describe('TeamsTab', () => {
       fireEvent.click(editButtons[1]!);
 
       // Should show green save button and gray cancel button
-      const saveButton = container.querySelector('.text-green-600');
+      const saveButton = container.querySelector('.text-dia-black');
       expect(saveButton).toBeInTheDocument();
       // Cancel button should also be present
       const allButtons = container.querySelectorAll('button');
@@ -273,7 +273,7 @@ describe('TeamsTab', () => {
       fireEvent.change(editInput, { target: { value: 'JO11-2' } });
 
       // Click save (green button)
-      const saveButton = container.querySelector('.text-green-600');
+      const saveButton = container.querySelector('.text-dia-black');
       fireEvent.click(saveButton!);
 
       await waitFor(() => {
@@ -295,7 +295,7 @@ describe('TeamsTab', () => {
       const editInput = teamRows[0].querySelector('input[type="text"]') as HTMLInputElement;
       fireEvent.change(editInput, { target: { value: 'JO11-2' } });
 
-      const saveButton = container.querySelector('.text-green-600');
+      const saveButton = container.querySelector('.text-dia-black');
       fireEvent.click(saveButton!);
 
       await waitFor(() => {

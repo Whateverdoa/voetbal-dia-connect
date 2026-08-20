@@ -65,7 +65,7 @@ export function ScoreDisplay({
   const quarterLabel = getQuarterLabel();
 
   return (
-    <div className="bg-dia-green text-white p-4 sm:p-6">
+    <div className="bg-dia-green text-black p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Top row: public code and status */}
         <div className="flex items-center justify-between mb-4">

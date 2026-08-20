@@ -63,7 +63,7 @@ export function MatchEditPanel({
 
   const toggleCls = (active: boolean) =>
     `flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-      active ? "bg-dia-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      active ? "bg-dia-green text-black" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
     }`;
 
   return (
@@ -147,7 +147,7 @@ export function MatchEditPanel({
                 type="button"
                 onClick={onAddPlayer}
                 disabled={!addPlayerId}
-                className="px-4 py-2 bg-dia-green text-white rounded-lg text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-dia-green text-black rounded-lg text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Toevoegen
               </button>
@@ -184,7 +184,7 @@ export function MatchEditPanel({
       )}
 
       <div className="flex gap-2 justify-end pt-2">
-        <button type="button" onClick={onSave} className="px-4 py-1.5 bg-dia-green text-white rounded-lg text-sm font-medium">
+        <button type="button" onClick={onSave} className="px-4 py-1.5 bg-dia-green text-black rounded-lg text-sm font-medium">
           Opslaan
         </button>
         <button type="button" onClick={onCancel} className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">

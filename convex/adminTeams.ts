@@ -68,6 +68,7 @@ export const updateTeam = mutation({
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
+    isSelectionTeam: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);

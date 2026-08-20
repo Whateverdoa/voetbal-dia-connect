@@ -65,7 +65,7 @@ export function HistoryGoalEditor({
         <button
           onClick={onSave}
           disabled={savingGoal}
-          className="text-xs px-2 py-1 rounded-lg bg-dia-green text-white disabled:opacity-50"
+          className="text-xs px-2 py-1 rounded-lg bg-dia-green text-black disabled:opacity-50"
         >
           {savingGoal ? "Bezig..." : "Goal opslaan"}
         </button>

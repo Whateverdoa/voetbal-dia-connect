@@ -22,7 +22,7 @@ export function MatchErrorScreen({
         <p className="text-red-600 font-medium mb-4">{message}</p>
         <Link
           href={backHref}
-          className="inline-block px-6 py-3 bg-dia-green text-white rounded-xl font-semibold
+          className="inline-block px-6 py-3 bg-dia-green text-black rounded-xl font-semibold
                      min-h-[48px] hover:bg-dia-green-light transition-colors"
         >
           {backLabel}

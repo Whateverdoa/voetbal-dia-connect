@@ -130,7 +130,7 @@ export function ProjectedPitchPlanner({
               onClick={() => onQuarterChange(quarter)}
               className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold ${
                 selectedQuarter === quarter
-                  ? "border-dia-green bg-dia-green text-white"
+                  ? "border-dia-green bg-dia-green text-black"
                   : "border-gray-300 bg-white text-gray-700"
               }`}
             >
@@ -140,7 +140,7 @@ export function ProjectedPitchPlanner({
         )}
       </div>
 
-      <div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+      <div className="rounded-xl bg-dia-green-light p-3 text-sm text-dia-black">
         <span className="font-semibold">
           Planweergave {periodLabel(quarterCount)} {selectedQuarter}:
         </span>{" "}

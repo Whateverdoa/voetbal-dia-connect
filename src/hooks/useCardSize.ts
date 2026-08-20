@@ -2,8 +2,7 @@
 
 /**
  * Responsive card dimensions for field and bench player cards.
- * Returns smaller sizes on phones (<640px), larger on tablet/desktop.
- * Mobile-first default prevents layout flash on the primary device (pitch-side phone).
+ * Phone / tablet / presentation (TV) breakpoints.
  */
 
 import { useState, useEffect } from "react";
@@ -17,7 +16,7 @@ export interface CardSize {
   posFont: number;
 }
 
-const PHONE: CardSize = {
+export const PHONE: CardSize = {
   card: 70,
   avatar: 34,
   icon: 22,
@@ -26,7 +25,7 @@ const PHONE: CardSize = {
   posFont: 8,
 };
 
-const TABLET: CardSize = {
+export const TABLET: CardSize = {
   card: 90,
   avatar: 45,
   icon: 28,
@@ -35,18 +34,32 @@ const TABLET: CardSize = {
   posFont: 10,
 };
 
+/** TV / beamer presentation (~140px cards). */
+export const PRESENTATION: CardSize = {
+  card: 140,
+  avatar: 72,
+  icon: 40,
+  nameFont: 14,
+  numFont: 20,
+  posFont: 12,
+};
+
 const BREAKPOINT = "(min-width: 640px)";
 
-export function useCardSize(): CardSize {
+export type CardSizeMode = "auto" | "presentation";
+
+export function useCardSize(mode: CardSizeMode = "auto"): CardSize {
   const [isWide, setIsWide] = useState(false);
 
   useEffect(() => {
+    if (mode === "presentation") return;
     const mql = window.matchMedia(BREAKPOINT);
     setIsWide(mql.matches);
     const handler = (e: MediaQueryListEvent) => setIsWide(e.matches);
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
-  }, []);
+  }, [mode]);
 
+  if (mode === "presentation") return PRESENTATION;
   return isWide ? TABLET : PHONE;
 }

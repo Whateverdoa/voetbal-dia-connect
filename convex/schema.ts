@@ -1,8 +1,8 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { cardProfileValidator, playerConsentsTable, wedstrijdenTable } from "./schemaFragments";
 
 export default defineSchema({
-  // Club level (DIA, etc)
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"
@@ -16,6 +16,10 @@ export default defineSchema({
     name: v.string(), // "JO12-1"
     slug: v.string(), // "jo12-1"
     logoUrl: v.optional(v.string()),
+    /** Selection team (e.g. JO13-1/2) — enables consent + gamification pilot features. */
+    isSelectionTeam: v.optional(v.boolean()),
+    /** Sportlink team code for bond import (optional). */
+    sportlinkTeamCode: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_club", ["clubId"])
@@ -55,19 +59,63 @@ export default defineSchema({
     .index("by_pin", ["pin"])
     .index("by_email", ["email"]),
 
-  // Referees ÔÇö global records with their own PIN (assigned to matches by admin/coach)
+  // Referees — global records with their own PIN (assigned to matches by admin/coach)
   referees: defineTable({
     name: v.string(),
     pin: v.optional(v.string()), // Legacy PIN, to be removed after full auth migration
     email: v.optional(v.string()),
+    /** Parent/guardian e-mail for jeugd nudge (Phase B). */
+    contactEmail: v.optional(v.string()),
     active: v.boolean(),
     /** When true, public live views may show this referee's name; default is hidden. */
     showPublicName: v.optional(v.boolean()),
     qualificationTags: v.optional(v.array(v.string())),
+    /**
+     * When true, included in weekly claim-pool invites / eligible open matches.
+     * Undefined/false = record exists (e.g. legacy coach) but not in active poule.
+     */
+    inClaimPool: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_pin", ["pin"])
     .index("by_email", ["email"]),
+
+  /** Weekly claim window for hybrid referee pool assignment. */
+  refereeClaimWindows: defineTable({
+    seasonKey: v.string(),
+    weekStartMs: v.number(),
+    weekEndMs: v.number(),
+    opensAt: v.number(),
+    closesAt: v.number(),
+    status: v.union(
+      v.literal("scheduled"),
+      v.literal("open"),
+      v.literal("closed")
+    ),
+    createdByEmail: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    closingReminderSentAt: v.optional(v.number()),
+  })
+    .index("by_week", ["weekStartMs"])
+    .index("by_season_week", ["seasonKey", "weekStartMs"])
+    .index("by_status", ["status"]),
+
+  /** In-app inbox for referees (claim open, assigned, reminders). */
+  refereeNotifications: defineTable({
+    refereeId: v.id("referees"),
+    type: v.union(
+      v.literal("claim_open"),
+      v.literal("assigned"),
+      v.literal("unassigned_reminder"),
+      v.literal("window_closing")
+    ),
+    matchId: v.optional(v.id("matches")),
+    weekStartMs: v.optional(v.number()),
+    body: v.string(),
+    createdAt: v.number(),
+    readAt: v.optional(v.number()),
+  }).index("by_referee_created", ["refereeId", "createdAt"]),
 
   // Players per team
   players: defineTable({
@@ -78,6 +126,12 @@ export default defineSchema({
     // EN position codes: GK, RB, CB, LB, RWB, LWB, CDM, CM, RM, LM, CAM, RW, LW, CF, ST
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
+    /** Public URL for player photo (or Convex storage URL). */
+    photoUrl: v.optional(v.string()),
+    /** Convex file storage id when photo was uploaded. */
+    photoStorageId: v.optional(v.id("_storage")),
+    /** Gamification card profile (selection teams only; respect consent). */
+    cardProfile: v.optional(cardProfileValidator),
     createdAt: v.number(),
   }).index("by_team", ["teamId"]),
 
@@ -140,10 +194,10 @@ export default defineSchema({
     halftimeStartedAt: v.optional(v.number()),
     scheduledBreakEndAt: v.optional(v.number()),
 
-    // Referee assignment (optional ÔÇö when set, referee can control the clock)
+    // Referee assignment (optional — when set, referee can control the clock)
     refereeId: v.optional(v.id("referees")),
 
-    // Match lead (wedstrijdleider) ÔÇö coach who claimed lead role for this match
+    // Match lead (wedstrijdleider) — coach who claimed lead role for this match
     leadCoachId: v.optional(v.id("coaches")),
 
     // Field view: preset formation key and/or saved custom template for this team
@@ -293,29 +347,7 @@ export default defineSchema({
     .index("by_match", ["matchId"])
     .index("by_match_sequence", ["matchId", "sequence"]),
 
-  // VoetbalAssist kalender/uitslagen (import; niet overschrijven op voetbalassist_id)
-  wedstrijden: defineTable({
-    voetbalassist_id: v.number(),
-    datum: v.string(), // "2025-08-23"
-    tijd: v.string(), // "08:55"
-    datum_ms: v.number(),
-    thuisteam: v.string(),
-    uitteam: v.string(),
-    thuis_goals: v.optional(v.number()),
-    uit_goals: v.optional(v.number()),
-    status: v.string(), // gespeeld | gepland | afgelast
-    type: v.string(), // competitie | beker | vriendschappelijk
-    categorie: v.string(),
-    leeftijd: v.number(),
-    dia_team: v.string(),
-    veld: v.string(),
-    scheidsrechter: v.string(),
-    thuisteamLogo: v.optional(v.string()),
-    uitteamLogo: v.optional(v.string()),
-    sportlink_wedstrijdcode: v.optional(v.string()),
-  })
-    .index("by_voetbalassist_id", ["voetbalassist_id"])
-    .index("by_datum", ["datum_ms"])
-    .index("by_team", ["dia_team"])
-    .index("by_sportlink_code", ["sportlink_wedstrijdcode"]),
+  // VoetbalAssist / Sportlink staged fixtures
+  wedstrijden: wedstrijdenTable,
+  playerConsents: playerConsentsTable,
 });

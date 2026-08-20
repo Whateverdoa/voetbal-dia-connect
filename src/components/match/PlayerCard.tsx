@@ -28,7 +28,7 @@ export function PlayerCard({
       className={clsx(
         "p-3 rounded-xl border-2 transition-all",
         absent && "bg-amber-50 border-amber-400",
-        !absent && onField && "bg-green-50 border-green-500",
+        !absent && onField && "bg-dia-green-light border-dia-yellow-deep",
         !absent && !onField && "bg-gray-50 border-gray-200",
         isKeeper && !absent && "ring-2 ring-yellow-400 ring-offset-1"
       )}
@@ -41,7 +41,7 @@ export function PlayerCard({
               className={clsx(
                 "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
                 absent && "bg-amber-200 text-amber-800",
-                !absent && onField && "bg-green-200 text-green-800",
+                !absent && onField && "bg-dia-green-light text-dia-black",
                 !absent && !onField && "bg-gray-200 text-gray-600"
               )}
             >
@@ -104,7 +104,7 @@ export function PlayerCard({
               "min-w-[40px] min-h-[40px] active:scale-95",
               onField
                 ? "bg-red-100 text-red-600 hover:bg-red-200"
-                : "bg-green-100 text-green-600 hover:bg-green-200"
+                : "bg-dia-green-light text-dia-black hover:bg-dia-green-light"
             )}
             aria-label={onField ? "Naar bank" : "Naar veld"}
           >

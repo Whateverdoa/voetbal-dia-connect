@@ -48,7 +48,7 @@ function PlayerRow({ player, variant }: PlayerRowProps) {
         variant === "field"
           ? player.isKeeper
             ? "bg-yellow-50"
-            : "bg-green-50"
+            : "bg-dia-green-light"
           : "bg-gray-50"
       }`}
     >

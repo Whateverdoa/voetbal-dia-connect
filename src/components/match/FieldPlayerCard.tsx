@@ -1,10 +1,9 @@
 /**
  * FieldPlayerCard — EA FC-style card for the field view.
- * Renders avatar silhouette, position-colored name bar, number, and position label.
- * Responsive: 70px on phone, 90px on tablet/desktop.
+ * Supports photo or silhouette, phone/tablet/presentation sizes.
  */
 import { getRoleColor, getRoleLabel } from "@/lib/roleColors";
-import { useCardSize } from "@/hooks/useCardSize";
+import { useCardSize, type CardSizeMode } from "@/hooks/useCardSize";
 
 interface FieldPlayerCardProps {
   name: string;
@@ -16,6 +15,8 @@ interface FieldPlayerCardProps {
   isDimmed: boolean;
   isEmpty: boolean;
   onClick: () => void;
+  photoUrl?: string | null;
+  sizeMode?: CardSizeMode;
 }
 
 function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
@@ -37,8 +38,10 @@ export function FieldPlayerCard({
   isDimmed,
   isEmpty,
   onClick,
+  photoUrl,
+  sizeMode = "auto",
 }: FieldPlayerCardProps) {
-  const sz = useCardSize();
+  const sz = useCardSize(sizeMode);
   const rc = getRoleColor(position);
   const posLabel = getRoleLabel(position);
   const scale = isSelected ? 1.08 : 1;
@@ -100,7 +103,6 @@ export function FieldPlayerCard({
           backdropFilter: "blur(16px)",
         }}
       >
-        {/* Position label (top-left) */}
         <div className="absolute top-1 left-1" style={{ lineHeight: 1 }}>
           <span
             className="font-bold uppercase"
@@ -110,17 +112,15 @@ export function FieldPlayerCard({
           </span>
         </div>
 
-        {/* Number badge (top-right) */}
         <div className="absolute top-1 right-1">
           <span className="font-mono font-bold text-white/30" style={{ fontSize: sz.numFont }}>
             {displayNumber}
           </span>
         </div>
 
-        {/* Avatar */}
         <div className="mt-3 mb-0.5">
           <div
-            className="rounded-full flex items-center justify-center"
+            className="rounded-full flex items-center justify-center overflow-hidden"
             style={{
               width: sz.avatar,
               height: sz.avatar,
@@ -128,11 +128,19 @@ export function FieldPlayerCard({
               border: `1.5px solid ${rc.bg}50`,
             }}
           >
-            <PlayerIcon size={sz.icon} color={rc.bg} />
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <PlayerIcon size={sz.icon} color={rc.bg} />
+            )}
           </div>
         </div>
 
-        {/* Name bar */}
         <div className="w-full py-1 text-center" style={{ background: rc.bg }}>
           <span
             className="font-bold uppercase tracking-wide"

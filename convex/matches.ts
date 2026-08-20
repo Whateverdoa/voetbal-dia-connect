@@ -80,13 +80,40 @@ export const getByPublicCode = query({
       const lineupPlayers = await Promise.all(
         matchPlayers.map(async (mp) => {
           const player = await ctx.db.get(mp.playerId);
-          return player ? {
+          if (!player) return null;
+
+          const consents = await ctx.db
+            .query("playerConsents")
+            .withIndex("by_player", (q) => q.eq("playerId", player._id))
+            .collect();
+          const publicOk = consents.some(
+            (c) => c.consentType === "public_display" && c.status === "granted"
+          );
+          const photoOk =
+            publicOk &&
+            consents.some((c) => c.consentType === "photo" && c.status === "granted");
+
+          // Non-selection teams: show name as today (no consent table required).
+          const selection = team?.isSelectionTeam === true;
+          const displayName =
+            !selection || publicOk
+              ? player.name
+              : player.name
+                  .trim()
+                  .split(/\s+/)
+                  .map((p) => p[0] ?? "")
+                  .join("")
+                  .toUpperCase() || "?";
+
+          return {
             id: mp.playerId,
-            name: player.name,
+            name: displayName,
             number: player.number,
             onField: mp.onField,
             isKeeper: mp.isKeeper,
-          } : null;
+            fieldSlotIndex: mp.fieldSlotIndex,
+            photoUrl: selection ? (photoOk ? player.photoUrl : undefined) : player.photoUrl,
+          };
         })
       );
       lineup = lineupPlayers.filter(Boolean);
@@ -106,6 +133,7 @@ export const getByPublicCode = query({
       homeScore: match.homeScore,
       awayScore: match.awayScore,
       showLineup: match.showLineup,
+      formationId: match.formationId,
       scheduledAt: match.scheduledAt,
       startedAt: match.startedAt,
       quarterStartedAt: match.quarterStartedAt,

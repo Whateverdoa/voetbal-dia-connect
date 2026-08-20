@@ -244,7 +244,7 @@ export function SubstitutionPlanPanel({
           onClick={() => setMode("list")}
           className={`flex-1 px-3 py-2 text-sm font-medium ${
             mode === "list"
-              ? "bg-dia-green text-white"
+              ? "bg-dia-green text-black"
               : "bg-gray-100 text-gray-700"
           }`}
         >
@@ -256,7 +256,7 @@ export function SubstitutionPlanPanel({
           onClick={() => setMode("field")}
           className={`flex-1 px-3 py-2 text-sm font-medium disabled:opacity-50 ${
             mode === "field"
-              ? "bg-dia-green text-white"
+              ? "bg-dia-green text-black"
               : "bg-gray-100 text-gray-700"
           }`}
         >
@@ -352,7 +352,7 @@ export function SubstitutionPlanPanel({
             type="button"
             disabled={!playerOut || !playerIn || busy !== null}
             onClick={() => void handleAdd()}
-            className="w-full py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
+            className="w-full py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
           >
             {busy === "add" ? "Bezig..." : "Toevoegen aan plan"}
           </button>
@@ -443,7 +443,7 @@ export function SubstitutionPlanPanel({
                         correlationId: createCorrelationId("plan-exec"),
                       }).finally(() => setBusy(null));
                     }}
-                    className="flex-1 py-2 bg-dia-green text-white rounded-lg text-sm font-semibold min-h-[44px]"
+                    className="flex-1 py-2 bg-dia-green text-black rounded-lg text-sm font-semibold min-h-[44px]"
                   >
                     Bevestigen
                   </button>

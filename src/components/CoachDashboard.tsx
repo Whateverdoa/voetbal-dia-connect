@@ -50,7 +50,7 @@ export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-dia-green text-white sticky top-0 z-40 shadow-md">
+      <header className="bg-dia-green text-black sticky top-0 z-40 shadow-md">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -78,9 +78,9 @@ export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         {liveMatches.length > 0 && (
-          <section className="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
-            <h2 className="text-lg font-bold text-green-700 mb-3 flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+          <section className="bg-dia-green-light border-2 border-dia-yellow-deep/40 rounded-2xl p-4">
+            <h2 className="text-lg font-bold text-dia-black mb-3 flex items-center gap-2">
+              <span className="w-3 h-3 bg-dia-yellow rounded-full animate-pulse" />
               Actieve wedstrijden
             </h2>
             <div className="space-y-3">
@@ -134,7 +134,7 @@ function TeamSection({
       <div className="p-4 space-y-4">
         <Link
           href={`/coach/new?teamId=${team.id}`}
-          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-white font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-light"
+          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-black font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-light"
         >
           <Plus className="w-5 h-5" />
           Nieuwe wedstrijd
@@ -170,7 +170,7 @@ function TeamSection({
               {hiddenCount > 0 && (
                 <button
                   onClick={() => setShowAllFinished(!showAllFinished)}
-                  className="w-full text-sm text-dia-green font-medium text-center py-2 hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
+                  className="w-full text-sm text-dia-black font-medium text-center py-2 hover:bg-dia-green/5 rounded-lg transition-colors min-h-[44px]"
                 >
                   {showAllFinished ? "Minder tonen ▲" : `+${hiddenCount} meer tonen ▼`}
                 </button>
@@ -225,7 +225,7 @@ function DashboardMatchCard({
       href={`/coach/match/${match._id}`}
       className={`block rounded-xl border-2 transition-all active:scale-[0.98] touch-manipulation ${
         isActive
-          ? "border-green-300 bg-green-50 shadow-md hover:shadow-lg"
+          ? "border-dia-yellow-deep/50 bg-dia-green-light shadow-md hover:shadow-lg"
           : "border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300"
       } ${compact ? "p-3" : "p-4"}`}
     >
@@ -245,7 +245,7 @@ function DashboardMatchCard({
           <div className="flex items-center gap-2 mb-1">
             <StatusBadge status={match.status as MatchStatus} size="sm" />
             {isActive && match.status === "live" && (
-              <span className="text-xs text-green-600 font-medium">
+              <span className="text-xs text-dia-black font-medium">
                 K{match.currentQuarter}
               </span>
             )}
@@ -270,7 +270,7 @@ function DashboardMatchCard({
           {showScore ? (
             <div
               className={`font-bold tabular-nums ${
-                isActive ? "text-green-600" : "text-gray-900"
+                isActive ? "text-dia-black" : "text-gray-900"
               } ${compact ? "text-2xl" : "text-3xl"}`}
             >
               {match.homeScore} - {match.awayScore}

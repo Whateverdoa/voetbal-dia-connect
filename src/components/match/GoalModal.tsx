@@ -84,7 +84,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
               <button
                 onClick={handleOurGoal}
                 disabled={isSubmitting}
-                className="w-full py-6 bg-dia-green text-white text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-6 bg-dia-green text-black text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <span className="text-3xl">⚽</span>
                 <span>GOAL!</span>
@@ -131,7 +131,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
                 className={clsx(
                   "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                   scorer === p.playerId
-                    ? "border-dia-green bg-green-50 shadow-md"
+                    ? "border-dia-green bg-dia-green-light shadow-md"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
@@ -158,7 +158,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
                   className={clsx(
                     "p-3 rounded-xl border-2 min-h-[48px] transition-all",
                     assist === null
-                      ? "border-dia-green bg-green-50"
+                      ? "border-dia-green bg-dia-green-light"
                       : "border-gray-200"
                   )}
                 >
@@ -173,7 +173,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
                       className={clsx(
                         "p-3 rounded-xl border-2 text-left min-h-[48px] transition-all",
                         assist === p.playerId
-                          ? "border-dia-green bg-green-50"
+                          ? "border-dia-green bg-dia-green-light"
                           : "border-gray-200"
                       )}
                     >
@@ -202,7 +202,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           <button
             onClick={handleSubmit}
             disabled={!scorer || isSubmitting}
-            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Bezig..." : "Registreren"}
           </button>

@@ -19,7 +19,7 @@ export function HelpShell({
 }: Props) {
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-dia-green text-white p-4 shrink-0">
+      <header className="bg-dia-green text-black p-4 shrink-0">
         <div className="max-w-lg mx-auto flex items-start gap-3">
           <Link
             href={backHref}
@@ -31,7 +31,7 @@ export function HelpShell({
           <div className="min-w-0">
             <h1 className="text-xl font-bold">{title}</h1>
             {subtitle ? (
-              <p className="text-sm text-white/85 mt-0.5">{subtitle}</p>
+              <p className="text-sm text-black/70 mt-0.5">{subtitle}</p>
             ) : null}
           </div>
         </div>

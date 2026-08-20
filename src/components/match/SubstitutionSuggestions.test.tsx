@@ -398,7 +398,7 @@ describe('SubstitutionSuggestions', () => {
         <SubstitutionSuggestions matchId={defaultMatchId} />
       );
 
-      const greenBgElements = container.querySelectorAll('.bg-green-100');
+      const greenBgElements = container.querySelectorAll('.bg-dia-green-light');
       expect(greenBgElements.length).toBeGreaterThan(0);
     });
   });

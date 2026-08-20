@@ -11,6 +11,7 @@ export interface MatchData {
   homeScore: number;
   awayScore: number;
   showLineup: boolean;
+  formationId?: string;
   scheduledAt?: number;
   startedAt?: number;
   quarterStartedAt?: number;
@@ -61,4 +62,6 @@ export interface LineupPlayer {
   number?: number;
   onField: boolean;
   isKeeper: boolean;
+  fieldSlotIndex?: number;
+  photoUrl?: string;
 }

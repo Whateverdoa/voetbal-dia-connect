@@ -109,7 +109,7 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   }
 
   return (
-    <div className={highlight ? "bg-green-50 -mx-2 px-2 py-1 rounded" : "py-1"}>
+    <div className={highlight ? "bg-dia-green-light -mx-2 px-2 py-1 rounded" : "py-1"}>
       <div className="flex items-center gap-3">
         {gameMinute ? (
           <div className="w-14 leading-tight">

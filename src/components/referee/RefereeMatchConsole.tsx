@@ -127,7 +127,7 @@ export function RefereeMatchConsole({
   const surfaceClasses = hasInterruption
     ? "from-orange-500 to-orange-600"
     : isLive
-      ? "from-green-600 to-green-700"
+      ? "from-dia-black to-neutral-900"
       : isHalftime
         ? "from-orange-500 to-orange-600"
         : isFinished

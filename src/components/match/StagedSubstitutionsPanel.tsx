@@ -93,7 +93,7 @@ export function StagedSubstitutionsPanel({
                   <button
                     onClick={() => onConfirm(substitution.stagedEventId)}
                     disabled={isBusy}
-                    className="flex-1 py-3 min-h-[48px] bg-dia-green text-white rounded-lg text-base font-medium disabled:opacity-50"
+                    className="flex-1 py-3 min-h-[48px] bg-dia-green text-black rounded-lg text-base font-medium disabled:opacity-50"
                   >
                     {isBusy ? "Bezig..." : "Wissel bevestigen"}
                   </button>

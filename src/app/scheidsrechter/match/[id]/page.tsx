@@ -28,7 +28,7 @@ export default function RefereeMatchPage() {
           <p className="text-red-600 font-medium">Ongeldige wedstrijdlink</p>
           <Link
             href="/scheidsrechter"
-            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
+            className="inline-block py-2 px-4 bg-dia-green text-black rounded-lg font-medium hover:bg-dia-yellow-deep"
           >
             Terug naar overzicht
           </Link>
@@ -48,7 +48,7 @@ export default function RefereeMatchPage() {
           <p className="text-red-600 font-medium">Wedstrijd niet gevonden of je hebt geen toegang</p>
           <Link
             href="/scheidsrechter"
-            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
+            className="inline-block py-2 px-4 bg-dia-green text-black rounded-lg font-medium hover:bg-dia-yellow-deep"
           >
             Terug naar overzicht
           </Link>

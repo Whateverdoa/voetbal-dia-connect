@@ -13,7 +13,7 @@ import type { ActiveRefereeOption, AssignmentBoardMatch } from "./types";
 import { MatchVersusLogos } from "@/components/MatchVersusLogos";
 
 const qualificationStyles = {
-  geschikt: "bg-emerald-100 text-emerald-700",
+  geschikt: "bg-dia-green-light text-dia-black",
   mogelijk: "bg-amber-100 text-amber-700",
   onbekend: "bg-slate-200 text-slate-600",
 };
@@ -143,7 +143,7 @@ export function AssignmentBoardPanel({
       <aside className="fixed inset-x-0 bottom-0 z-50 max-h-[88vh] overflow-hidden rounded-t-[28px] border border-slate-200 bg-white shadow-2xl md:inset-y-4 md:right-4 md:left-auto md:w-[460px] md:max-h-none md:rounded-[28px]">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="min-w-0 flex-1 pr-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-green">Wedstrijdpaneel</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-black">Wedstrijdpaneel</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <MatchVersusLogos
                 isHome={match.isHome}
@@ -185,10 +185,10 @@ export function AssignmentBoardPanel({
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-600">Thuis / Uit</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => setIsHome(true)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", isHome ? "bg-dia-green text-white" : "bg-white text-slate-600")}>
+                      <button type="button" onClick={() => setIsHome(true)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", isHome ? "bg-dia-green text-black" : "bg-white text-slate-600")}>
                         Thuis
                       </button>
-                      <button type="button" onClick={() => setIsHome(false)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", !isHome ? "bg-dia-green text-white" : "bg-white text-slate-600")}>
+                      <button type="button" onClick={() => setIsHome(false)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", !isHome ? "bg-dia-green text-black" : "bg-white text-slate-600")}>
                         Uit
                       </button>
                     </div>
@@ -246,14 +246,14 @@ export function AssignmentBoardPanel({
                   onClick={() => setSelectedRefereeId("")}
                   className={clsx(
                     "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition",
-                    selectedRefereeId ? "border-slate-200 bg-slate-50 hover:border-slate-300" : "border-dia-green bg-emerald-50"
+                    selectedRefereeId ? "border-slate-200 bg-slate-50 hover:border-slate-300" : "border-dia-green bg-dia-green-light"
                   )}
                 >
                   <div>
                     <div className="font-medium text-slate-800">Geen scheidsrechter</div>
                     <div className="text-xs text-slate-500">Nog niet toewijzen</div>
                   </div>
-                  {!selectedRefereeId && <Check size={16} className="text-dia-green" />}
+                  {!selectedRefereeId && <Check size={16} className="text-dia-black" />}
                 </button>
 
                 <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
@@ -267,7 +267,7 @@ export function AssignmentBoardPanel({
                         onClick={() => setSelectedRefereeId(referee.id)}
                         className={clsx(
                           "flex w-full items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition",
-                          isSelected ? "border-dia-green bg-emerald-50" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                          isSelected ? "border-dia-green bg-dia-green-light" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                         )}
                       >
                         <div>
@@ -291,7 +291,7 @@ export function AssignmentBoardPanel({
                           <span className={clsx("rounded-full px-2.5 py-1 text-xs font-semibold", qualificationStyles[qualificationState])}>
                             {qualificationState}
                           </span>
-                          {isSelected && <Check size={16} className="text-dia-green" />}
+                          {isSelected && <Check size={16} className="text-dia-black" />}
                         </div>
                       </button>
                     );
@@ -304,7 +304,7 @@ export function AssignmentBoardPanel({
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Acties</h3>
 
               <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" onClick={handleSave} disabled={saving || !opponent.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-light disabled:bg-slate-300">
+                <button type="button" onClick={handleSave} disabled={saving || !opponent.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-black transition hover:bg-dia-green-light disabled:bg-slate-300">
                   <Save size={16} />
                   {saving ? "Opslaan..." : "Opslaan"}
                 </button>

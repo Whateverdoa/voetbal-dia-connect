@@ -52,7 +52,7 @@ export function SoundToggle({ className }: SoundToggleProps) {
       className={clsx(
         "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors",
         enabled
-          ? "bg-dia-green/10 text-dia-green"
+          ? "bg-dia-green/10 text-dia-black"
           : "bg-gray-100 text-gray-500 hover:bg-gray-200",
         className
       )}

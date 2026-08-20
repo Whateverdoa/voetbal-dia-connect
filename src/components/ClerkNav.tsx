@@ -31,7 +31,7 @@ export function ClerkNav() {
           <nav className="flex items-center text-xs sm:text-sm">
             <Link
               href="/help"
-              className="font-medium text-dia-green hover:text-green-700 min-h-[44px] inline-flex items-center"
+              className="font-medium text-dia-black hover:text-dia-black min-h-[44px] inline-flex items-center"
             >
               Uitleg
             </Link>
@@ -44,7 +44,7 @@ export function ClerkNav() {
               Live
             </Link>
             {isCoach ? (
-              <Link href="/coach" className="font-medium text-dia-green hover:text-green-700">
+              <Link href="/coach" className="font-medium text-dia-black hover:text-dia-black">
                 Coach
               </Link>
             ) : null}
@@ -69,7 +69,7 @@ export function ClerkNav() {
           <SignInButton mode="modal">
             <button
               type="button"
-              className="text-sm font-medium text-dia-green hover:text-green-700"
+              className="text-sm font-medium text-dia-black hover:text-dia-black"
             >
               Inloggen
             </button>
@@ -77,7 +77,7 @@ export function ClerkNav() {
           <SignUpButton mode="modal">
             <button
               type="button"
-              className="text-sm font-medium text-white bg-dia-green px-3 py-1.5 rounded-lg hover:bg-green-700"
+              className="text-sm font-medium text-black bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-yellow-deep"
             >
               Registreren
             </button>

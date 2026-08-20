@@ -94,7 +94,7 @@ export function CreateFormationModal({
             type="button"
             disabled={busy}
             onClick={() => void handleSubmit()}
-            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
+            className="flex-1 py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
           >
             {busy ? "Bezig..." : "Opslaan"}
           </button>

@@ -147,7 +147,7 @@ describe('PlayingTimePanel', () => {
       );
 
       // Check for green background classes
-      const greenElements = container.querySelectorAll('.bg-green-100');
+      const greenElements = container.querySelectorAll('.bg-dia-green-light');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 

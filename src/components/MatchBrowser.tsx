@@ -17,8 +17,8 @@ const statusGroups = [
     key: "live" as const,
     label: "LIVE",
     filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
-    dotClass: "bg-green-500 animate-pulse",
-    labelClass: "text-green-600",
+    dotClass: "bg-dia-yellow animate-pulse",
+    labelClass: "text-dia-black",
   },
   {
     key: "scheduled" as const,
@@ -253,7 +253,7 @@ export function MatchBrowser() {
             <button
               type="button"
               onClick={() => setSearchTerm("")}
-              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+              className="min-h-[44px] text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
             >
               Wis zoekopdracht
             </button>
@@ -262,7 +262,7 @@ export function MatchBrowser() {
             <button
               type="button"
               onClick={() => setTimeFilter("all")}
-              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+              className="min-h-[44px] text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
             >
               Toon alle wedstrijden
             </button>

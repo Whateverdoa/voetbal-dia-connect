@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { normalizeEmail, parseEmailList } from "../../src/lib/auth/adminAccess";
+import { hasAdminRole } from "./adminOverride";
 
 export type AccessRole = "admin" | "coach" | "referee";
 export type AccessSource =
@@ -161,12 +162,21 @@ export async function requireCoachForTeam(
   ctx: ReaderCtx,
   teamId: Id<"teams">
 ) {
-  const { access, coach } = await requireCoachAccess(ctx);
+  const access = await getCurrentUserAccess(ctx);
+  if (hasAdminRole(access) && access) {
+    if (access.coachId) {
+      const own = await ctx.db.get(access.coachId);
+      if (own) return { access, coach: own };
+    }
+    throw new Error("Geen coachrecord voor dit team");
+  }
+
+  const { access: coachAccess, coach } = await requireCoachAccess(ctx);
   if (!coach.teamIds.includes(teamId)) {
     throw new Error("Geen toegang tot dit team");
   }
 
-  return { access, coach };
+  return { access: coachAccess, coach };
 }
 
 export async function requireRefereeAccess(ctx: ReaderCtx) {
@@ -187,6 +197,23 @@ export async function requireCoachForMatch(
   ctx: ReaderCtx,
   match: Doc<"matches">
 ) {
+  const access = await getCurrentUserAccess(ctx);
+  if (hasAdminRole(access) && access) {
+    if (access.coachId) {
+      const own = await ctx.db.get(access.coachId);
+      if (own) return own;
+    }
+    if (match.coachId) {
+      const assigned = await ctx.db.get(match.coachId);
+      if (assigned) return assigned;
+    }
+    if (match.leadCoachId) {
+      const lead = await ctx.db.get(match.leadCoachId);
+      if (lead) return lead;
+    }
+    throw new Error("Geen coachrecord voor deze wedstrijd");
+  }
+
   const { coach } = await requireCoachForTeam(ctx, match.teamId);
   return coach;
 }
@@ -195,6 +222,19 @@ export async function requireRefereeForMatch(
   ctx: ReaderCtx,
   match: Doc<"matches">
 ) {
+  const access = await getCurrentUserAccess(ctx);
+  if (hasAdminRole(access)) {
+    if (match.refereeId) {
+      const assigned = await ctx.db.get(match.refereeId);
+      if (assigned) return assigned;
+    }
+    if (access?.refereeId) {
+      const own = await ctx.db.get(access.refereeId);
+      if (own?.active) return own;
+    }
+    throw new Error("Geen scheidsrechterrecord voor deze wedstrijd");
+  }
+
   const { referee } = await requireRefereeAccess(ctx);
   if (!match.refereeId || match.refereeId !== referee._id) {
     throw new Error("Geen toegang tot deze wedstrijd");

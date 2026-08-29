@@ -39,7 +39,7 @@ export function MatchDetailsForm({
               onClick={() => setIsHome(true)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 isHome
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -49,7 +49,7 @@ export function MatchDetailsForm({
               onClick={() => setIsHome(false)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 !isHome
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -67,7 +67,7 @@ export function MatchDetailsForm({
               onClick={() => setQuarterCount(4)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 quarterCount === 4
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -77,7 +77,7 @@ export function MatchDetailsForm({
               onClick={() => setQuarterCount(2)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 quarterCount === 2
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -117,7 +117,7 @@ export function CreateMatchFooter({
         <button
           onClick={onCreate}
           disabled={!canCreate || isCreating}
-          className="w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
+          className="w-full py-4 bg-dia-green text-black font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
         >
           {isCreating ? (
             <span className="flex items-center justify-center gap-2">

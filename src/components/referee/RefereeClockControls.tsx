@@ -98,7 +98,7 @@ export function RefereeClockControls({
         <button
           onClick={() => handleAction(() => startMatch({ matchId }))}
           disabled={isLoading}
-          className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
+          className="w-full py-5 bg-dia-green text-black text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
@@ -189,7 +189,7 @@ export function RefereeClockControls({
           <button
             onClick={() => handleAction(() => resumeHalftime({ matchId }))}
             disabled={isLoading}
-            className="w-full py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
+            className="w-full py-5 bg-dia-green text-black text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50"
           >
             {isLoading ? "Bezig..." : `Start ${quarterLabel} ${currentQuarter}`}
           </button>

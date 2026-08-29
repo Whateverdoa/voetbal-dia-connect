@@ -23,8 +23,10 @@ import {
 import { AssignmentBoardPanel } from "./AssignmentBoardPanel";
 import { AssignmentBoardTable } from "./AssignmentBoardTable";
 import { AssignmentBoardFilters } from "./AssignmentBoardFilters";
+import { ClaimWindowStrip } from "./ClaimWindowStrip";
 import { MatchForm } from "./MatchForm";
 import type { ActiveRefereeOption, AssignmentBoardMatch } from "./types";
+import { activeSeasonKey } from "@/lib/season";
 
 function SummaryPill({ label, value }: { label: string; value: number }) {
   return (
@@ -53,7 +55,7 @@ function TabButton({
       className={clsx(
         "inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
         active
-          ? "border-dia-green bg-dia-green text-white"
+          ? "border-dia-green bg-dia-green text-black"
           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
       )}
     >
@@ -64,7 +66,9 @@ function TabButton({
 }
 
 export function AssignmentBoard() {
-  const boardData = useQuery(api.admin.listAssignmentBoard, {}) as AssignmentBoardMatch[] | undefined;
+  const boardData = useQuery(api.admin.listAssignmentBoard, {
+    seasonKey: activeSeasonKey(),
+  }) as AssignmentBoardMatch[] | undefined;
   const teams = useQuery(api.admin.listAllTeams);
   const coaches = useQuery(api.admin.listCoaches);
   const referees = useQuery(api.matches.listActiveReferees) as ActiveRefereeOption[] | undefined;
@@ -153,11 +157,13 @@ export function AssignmentBoard() {
 
   return (
     <div className="space-y-5">
+      <ClaimWindowStrip onStatusMessage={setStatusMessage} />
+
       <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(214,246,214,0.9),_rgba(255,255,255,0.95)_40%,_rgba(240,249,255,0.9)_100%)] shadow-[0_22px_70px_rgba(15,23,42,0.12)]">
         <div className="border-b border-white/70 px-5 py-5 md:px-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-green">Admin toewijzing</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-black">Admin toewijzing</p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-900">Scheidsrechters per speeldag toewijzen</h2>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
                 Kies eerst een club en daarna de speeldag. Je ziet standaard alle wedstrijden in de gekozen periode, zodat ook uitwedstrijden meteen zichtbaar zijn.
@@ -188,7 +194,7 @@ export function AssignmentBoard() {
             onStatusFilterChange={setStatusFilter}
           />
 
-          <button type="button" onClick={() => setIsCreateOpen(true)} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-light">
+          <button type="button" onClick={() => setIsCreateOpen(true)} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-black transition hover:bg-dia-green-light">
             <Plus size={18} />
             Nieuwe wedstrijd
           </button>
@@ -196,9 +202,9 @@ export function AssignmentBoard() {
       </section>
 
       {statusMessage && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-dia-yellow-deep/40 bg-dia-green-light px-4 py-3 text-sm text-dia-black">
           <span>{statusMessage}</span>
-          <button type="button" onClick={() => setStatusMessage("")} className="rounded-full p-1 text-emerald-700 transition hover:bg-emerald-100" aria-label="Melding sluiten">
+          <button type="button" onClick={() => setStatusMessage("")} className="rounded-full p-1 text-dia-black transition hover:bg-dia-green-light" aria-label="Melding sluiten">
             <X size={14} />
           </button>
         </div>
@@ -250,7 +256,7 @@ export function AssignmentBoard() {
           <div className="fixed inset-x-0 bottom-0 z-50 max-h-[92vh] overflow-y-auto rounded-t-[28px] border border-slate-200 bg-white p-5 shadow-2xl md:inset-x-auto md:top-6 md:right-6 md:bottom-6 md:w-[620px] md:rounded-[28px]">
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-green">Nieuwe wedstrijd</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-black">Nieuwe wedstrijd</p>
                 <h3 className="mt-1 text-xl font-semibold text-slate-900">Voeg een wedstrijd toe aan het bord</h3>
               </div>
               <button type="button" onClick={() => setIsCreateOpen(false)} className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100" aria-label="Formulier sluiten">

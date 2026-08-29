@@ -27,6 +27,15 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   }
   const currentClubId: Id<"clubs"> = clubId;
 
+  /** Selection / pilot teams first so JO13-2 is not buried under JO10/JO12. */
+  const sortedTeams = teams
+    ? [...teams].sort((a, b) => {
+        const sel = Number(b.isSelectionTeam === true) - Number(a.isSelectionTeam === true);
+        if (sel !== 0) return sel;
+        return a.name.localeCompare(b.name, "nl");
+      })
+    : undefined;
+
   async function handleCreate() {
     if (!newName.trim()) return;
     try {
@@ -82,13 +91,18 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        {teams === undefined ? (
+        {sortedTeams === undefined ? (
           <p className="text-gray-500">Laden...</p>
-        ) : teams.length === 0 ? (
+        ) : sortedTeams.length === 0 ? (
           <p className="text-gray-500">Geen teams.</p>
         ) : (
-          teams.map((team) => (
-            <div key={team._id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+          sortedTeams.map((team) => (
+            <div
+              key={team._id}
+              className={`flex items-center gap-2 p-3 rounded-lg ${
+                team.isSelectionTeam ? "bg-dia-green-light ring-1 ring-dia-yellow-deep/40" : "bg-gray-50"
+              }`}
+            >
               {editingId === team._id ? (
                 <>
                   <input
@@ -101,7 +115,7 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
                   <button
                     type="button"
                     onClick={() => handleUpdate(team._id)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
+                    className="p-2 text-dia-black hover:bg-dia-green-light rounded"
                   >
                     <Check size={18} />
                   </button>
@@ -147,7 +161,7 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
                   <button
                     type="button"
                     onClick={() => handleLogoSave(team._id)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
+                    className="p-2 text-dia-black hover:bg-dia-green-light rounded"
                   >
                     <Check size={18} />
                   </button>
@@ -162,7 +176,14 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
               ) : (
                 <>
                   <TeamLogo logoUrl={team.logoUrl} teamName={team.name} size="sm" />
-                  <span className="flex-1 font-medium">{team.name}</span>
+                  <span className="flex-1 font-medium flex items-center gap-2">
+                    {team.name}
+                    {team.isSelectionTeam ? (
+                      <span className="text-xs font-semibold uppercase tracking-wide text-dia-yellow bg-dia-black px-2 py-0.5 rounded border border-dia-yellow/50">
+                        Selectie
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="text-sm text-gray-500 font-mono">{team.slug}</span>
                   <button
                     type="button"
@@ -222,7 +243,7 @@ export function TeamsTab({ clubId }: { clubId: Id<"clubs"> | null }) {
             type="button"
             onClick={handleCreate}
             disabled={!newName.trim()}
-            className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
+            className="px-4 py-2 bg-dia-green text-black rounded-lg disabled:bg-gray-300"
           >
             Toevoegen
           </button>

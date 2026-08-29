@@ -11,17 +11,11 @@ import { v } from "convex/values";
 import { generatePublicCode } from "../seed/helpers";
 import { findLocalLogo } from "../lib/localLogos";
 import { requireAdminOrOps } from "../lib/opsAuth";
-
-type SyncExtraction = {
-  teamSlug: string;
-  opponent: string;
-  isHome: boolean;
-  opponentLogoUrl?: string;
-};
-
-function cleanTeamName(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
-}
+import { seasonKeyFromMs } from "../lib/season";
+import { homeVenueFieldForMatch } from "../lib/diaFields";
+import { extractDiaMatch } from "./diaTeamNormalize";
+import { replaceMatchRoster } from "./matchRosterReplace";
+import { buildFinishedScorePatch, isLiveOrHalftime } from "./syncScoreApply";
 
 /**
  * Return `YYYY-MM-DD` in Europe/Amsterdam for a given UTC ms timestamp.
@@ -39,88 +33,19 @@ function amsterdamDateKey(ms: number | undefined): string {
   }).format(new Date(ms));
 }
 
-/**
- * Map a raw DIA team label (text after the "DIA " prefix, lowercased) to the
- * local team slug. VoetbalAssist uses formats that don't directly equal our
- * canonical slugs; this function bridges both.
- *
- * Examples:
- *   "35+1"         -> "35-1"
- *   "vr30+1"       -> "30-1"
- *   "1 (zon)"      -> "zo1"
- *   "10 (zon)"     -> "zo10"
- *   "vr1 (zon)"    -> "vr1"
- *   "o23-1"        -> "jo23-1"
- *   "jo13-2jm"     -> "jo13-2"
- *   "g team"       -> "g-team"
- *   "jo13-3"       -> "jo13-3"  (no change)
- */
-function normalizeDiaSlug(raw: string): string {
-  const s = raw.toLowerCase().trim();
-
-  // "vr1 (zon)" / "vr2 (zon)"  -> "vr1" / "vr2"  (women's Sunday team)
-  const vrZon = s.match(/^vr(\d+)\s*\(zon\)$/);
-  if (vrZon) return `vr${vrZon[1]}`;
-
-  // "N (zon)" -> "zoN"  (men's Sunday team)
-  const zon = s.match(/^(\d+)\s*\(zon\)$/);
-  if (zon) return `zo${zon[1]}`;
-
-  // "vr30+N" -> "30-N"  (women's 30+ team)
-  const vr30Plus = s.match(/^vr30\+(\d+)$/);
-  if (vr30Plus) return `30-${vr30Plus[1]}`;
-
-  // "35+N" -> "35-N"  (men's 35+ team)
-  const m35Plus = s.match(/^35\+(\d+)$/);
-  if (m35Plus) return `35-${m35Plus[1]}`;
-
-  // "o23-N" -> "jo23-N"  (legacy u23 naming)
-  const o23 = s.match(/^o23-(\d+)$/);
-  if (o23) return `jo23-${o23[1]}`;
-
-  // "joAA-NJM" -> "joAA-N"  (strip mixed/jongens-meisjes suffix)
-  const jm = s.match(/^(jo\d+-\d+)jm$/);
-  if (jm) return jm[1];
-
-  // "g team" -> "g-team"
-  if (s === "g team") return "g-team";
-
-  return s;
-}
-
-function extractDiaMatch(
+function extractForSync(
   thuisteam: string,
   uitteam: string,
   thuisteamLogo?: string,
   uitteamLogo?: string,
-): SyncExtraction | null {
-  const home = cleanTeamName(thuisteam);
-  const away = cleanTeamName(uitteam);
-  const prefix = "DIA ";
-
-  if (home.toUpperCase().startsWith(prefix)) {
-    const diaTeam = home.slice(prefix.length).trim();
-    const opponent = away;
-    return {
-      teamSlug: normalizeDiaSlug(diaTeam),
-      opponent,
-      isHome: true,
-      opponentLogoUrl: findLocalLogo(opponent) ?? uitteamLogo ?? undefined,
-    };
-  }
-
-  if (away.toUpperCase().startsWith(prefix)) {
-    const diaTeam = away.slice(prefix.length).trim();
-    const opponent = home;
-    return {
-      teamSlug: normalizeDiaSlug(diaTeam),
-      opponent,
-      isHome: false,
-      opponentLogoUrl: findLocalLogo(opponent) ?? thuisteamLogo ?? undefined,
-    };
-  }
-
-  return null;
+) {
+  return extractDiaMatch(
+    thuisteam,
+    uitteam,
+    thuisteamLogo,
+    uitteamLogo,
+    (opponent) => findLocalLogo(opponent) ?? undefined,
+  );
 }
 
 export function hasManualResult(
@@ -203,7 +128,7 @@ export const listUnknownTeams = query({
 
     for (const wedstrijd of wedstrijden) {
       if (wedstrijd.status === "afgelast") continue;
-      const extracted = extractDiaMatch(
+      const extracted = extractForSync(
         wedstrijd.thuisteam,
         wedstrijd.uitteam,
         wedstrijd.thuisteamLogo,
@@ -289,6 +214,12 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
       match,
     ]),
   );
+  const existingBySportlink = new Map<string, Doc<"matches">>();
+  for (const match of existingMatches) {
+    if (match.sportlinkWedstrijdcode) {
+      existingBySportlink.set(match.sportlinkWedstrijdcode, match);
+    }
+  }
   const existingKeys = new Set(existingByKey.keys());
 
   let created = 0;
@@ -304,9 +235,12 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   let updatedScheduledAt = 0;
   let cancelledMatches = 0;
   let uncancelledMatches = 0;
+  let scoreOverwrites = 0;
+  let discrepanciesFlagged = 0;
+  let reassignedTeam = 0;
 
   for (const wedstrijd of wedstrijden) {
-    const extracted = extractDiaMatch(
+    const extracted = extractForSync(
       wedstrijd.thuisteam,
       wedstrijd.uitteam,
       wedstrijd.thuisteamLogo,
@@ -330,14 +264,22 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     const opponent = extracted.opponent.trim();
     const key = matchKey(team._id, opponent, wedstrijd.datum_ms);
+    const sportlinkCode = wedstrijd.sportlink_wedstrijdcode?.trim();
+
+    const resolveExisting = (): Doc<"matches"> | undefined => {
+      if (sportlinkCode) {
+        const byCode = existingBySportlink.get(sportlinkCode);
+        if (byCode) return byCode;
+      }
+      return existingByKey.get(key);
+    };
 
     // AFGELAST: mark the matching local row cancelled (if not already finished/live).
     if (wedstrijd.status === "afgelast") {
-      const existingMatch = existingByKey.get(key);
+      const existingMatch = resolveExisting();
       const isLiveOrFinished =
         existingMatch &&
-        (existingMatch.status === "live" ||
-          existingMatch.status === "halftime" ||
+        (isLiveOrHalftime(existingMatch.status) ||
           existingMatch.status === "finished");
       if (existingMatch && !existingMatch.cancelledAt && !isLiveOrFinished) {
         if (!dryRun) {
@@ -357,12 +299,44 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     const homeGoals = wedstrijd.thuis_goals ?? 0;
     const awayGoals = wedstrijd.uit_goals ?? 0;
     const activePlayerIds = activePlayerIdsByTeamId.get(team._id) ?? [];
+    let existingMatch = resolveExisting();
 
-    if (existingKeys.has(key)) {
-      const existingMatch = existingByKey.get(key);
+    if (existingMatch) {
+      // Correct team when Sportlink mapping changed (e.g. O13-2JM → jo13-2).
+      if (existingMatch.teamId !== team._id) {
+        const canReplaceRoster =
+          existingMatch.status === "scheduled" ||
+          existingMatch.status === "lineup";
+        if (!dryRun) {
+          const coachId = coachByTeamId.get(team._id);
+          await ctx.db.patch(existingMatch._id, {
+            teamId: team._id,
+            ...(coachId ? { coachId } : {}),
+          });
+          if (canReplaceRoster && !existingMatch.startedAt) {
+            const rosterResult = await replaceMatchRoster(ctx, {
+              matchId: existingMatch._id,
+              playerIds: activePlayerIds,
+              dryRun: false,
+            });
+            matchPlayerCountByMatchId.set(
+              existingMatch._id,
+              rosterResult.inserted,
+            );
+          }
+        }
+        reassignedTeam++;
+        existingMatch = {
+          ...existingMatch,
+          teamId: team._id,
+        };
+        console.log(
+          `[sync] team-herkoppel: ${sportlinkCode ?? key} -> ${team.slug}`,
+        );
+      }
 
       // DIA reverted a cancellation — clear it.
-      if (existingMatch && existingMatch.cancelledAt) {
+      if (existingMatch.cancelledAt) {
         if (!dryRun) {
           await ctx.db.patch(existingMatch._id, { cancelledAt: undefined });
         }
@@ -372,9 +346,38 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         );
       }
 
-      // TIJD-DRIFT: existing scheduled/lineup match whose kickoff moved in DIA.
+      // Backfill sportlink code onto date-keyed matches.
       if (
-        existingMatch &&
+        sportlinkCode &&
+        existingMatch.sportlinkWedstrijdcode !== sportlinkCode
+      ) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, {
+            sportlinkWedstrijdcode: sportlinkCode,
+          });
+        }
+        existingBySportlink.set(sportlinkCode, {
+          ...existingMatch,
+          sportlinkWedstrijdcode: sportlinkCode,
+        });
+      }
+
+      const venueField = homeVenueFieldForMatch(
+        extracted.isHome,
+        wedstrijd.veld,
+      );
+      if (
+        extracted.isHome &&
+        venueField &&
+        existingMatch.venueField !== venueField
+      ) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { venueField });
+        }
+      }
+
+      // TIJD-DRIFT: existing scheduled/lineup match whose kickoff moved.
+      if (
         !isFinished &&
         (existingMatch.status === "scheduled" || existingMatch.status === "lineup") &&
         existingMatch.scheduledAt !== wedstrijd.datum_ms
@@ -388,43 +391,57 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         );
       }
 
-      if (existingMatch) {
-        const matchPlayerCount = matchPlayerCountByMatchId.get(existingMatch._id) ?? 0;
-        if (!isFinished && matchPlayerCount === 0 && activePlayerIds.length > 0) {
-          createdMatchPlayers += await seedMatchPlayersForRoster(ctx, {
-            matchId: existingMatch._id,
-            playerIds: activePlayerIds,
-            dryRun,
-          });
-          backfilledMatchRosters++;
-          matchPlayerCountByMatchId.set(existingMatch._id, activePlayerIds.length);
-        }
+      const matchPlayerCount = matchPlayerCountByMatchId.get(existingMatch._id) ?? 0;
+      if (!isFinished && matchPlayerCount === 0 && activePlayerIds.length > 0) {
+        createdMatchPlayers += await seedMatchPlayersForRoster(ctx, {
+          matchId: existingMatch._id,
+          playerIds: activePlayerIds,
+          dryRun,
+        });
+        backfilledMatchRosters++;
+        matchPlayerCountByMatchId.set(existingMatch._id, activePlayerIds.length);
       }
 
-      if (existingMatch && existingMatch.status === "scheduled" && isFinished) {
-        if (hasManualResult(existingMatch)) {
-          skippedExistingWithResult++;
+      if (isFinished) {
+        const { result, patch } = buildFinishedScorePatch(
+          existingMatch,
+          homeGoals,
+          awayGoals,
+          Date.now(),
+        );
+        if (result.kind === "skipped_live") {
+          skippedExisting++;
           continue;
         }
 
+        const scheduledAtChanged =
+          existingMatch.scheduledAt !== wedstrijd.datum_ms;
+        const venueField = homeVenueFieldForMatch(
+          extracted.isHome,
+          wedstrijd.veld,
+        );
         if (!dryRun) {
-          const scheduledAtChanged =
-            existingMatch.scheduledAt !== wedstrijd.datum_ms;
           await ctx.db.patch(existingMatch._id, {
             status: "finished",
             currentQuarter: existingMatch.quarterCount,
-            homeScore: homeGoals,
-            awayScore: awayGoals,
             startedAt: existingMatch.startedAt ?? wedstrijd.datum_ms,
-            finishedAt: wedstrijd.datum_ms + 3600000,
-            // Keep scheduledAt aligned with DIA's actual kickoff ms so the UI
-            // reflects the rescheduled time after finalisation.
+            finishedAt: existingMatch.finishedAt ?? wedstrijd.datum_ms + 3600000,
             ...(scheduledAtChanged ? { scheduledAt: wedstrijd.datum_ms } : {}),
+            ...(sportlinkCode ? { sportlinkWedstrijdcode: sportlinkCode } : {}),
+            ...(venueField && existingMatch.venueField !== venueField
+              ? { venueField }
+              : {}),
+            ...patch,
           });
         }
         updatedFinished++;
+        if (result.kind === "applied") {
+          scoreOverwrites++;
+          if (result.discrepancy) discrepanciesFlagged++;
+        }
         continue;
       }
+
       skippedExisting++;
       continue;
     }
@@ -433,6 +450,10 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     if (!dryRun) {
       const code = await generateUniqueCode(ctx);
+      const venueField = homeVenueFieldForMatch(
+        extracted.isHome,
+        wedstrijd.veld,
+      );
       const matchId = await ctx.db.insert("matches", {
         teamId: team._id,
         publicCode: code,
@@ -441,6 +462,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         ...(extracted.opponentLogoUrl ? { opponentLogoUrl: extracted.opponentLogoUrl } : {}),
         isHome: extracted.isHome,
         scheduledAt: wedstrijd.datum_ms,
+        ...(venueField ? { venueField } : {}),
+        seasonKey: seasonKeyFromMs(wedstrijd.datum_ms),
+        ...(sportlinkCode ? { sportlinkWedstrijdcode: sportlinkCode } : {}),
         status: isFinished ? "finished" : "scheduled",
         currentQuarter: isFinished ? 4 : 1,
         quarterCount: 4,
@@ -453,6 +477,12 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         finishedAt: isFinished ? wedstrijd.datum_ms + 3600000 : undefined,
         createdAt: Date.now(),
       });
+
+      if (sportlinkCode) {
+        existingBySportlink.set(sportlinkCode, {
+          _id: matchId,
+        } as Doc<"matches">);
+      }
 
       if (!isFinished && activePlayerIds.length > 0) {
         createdMatchPlayers += await seedMatchPlayersForRoster(ctx, {
@@ -485,6 +515,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     skippedUnknownTeam,
     skippedCancelled,
     skippedNoDate,
+    scoreOverwrites,
+    discrepanciesFlagged,
+    reassignedTeam,
   };
 }
 
@@ -508,128 +541,5 @@ export const syncAllInternal = internalMutation({
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? false;
     return await performSyncAll(ctx, dryRun);
-  },
-});
-
-/**
- * One-off cleanup: remove "scheduled ghost" match rows that were created by the
- * pre-#40 ms-precision match-key when DIA shifted kickoff times. A row is a
- * ghost iff:
- *   - status === "scheduled"
- *   - homeScore === 0 && awayScore === 0
- *   - startedAt and finishedAt are unset
- *   - not cancelled
- *   - a SIBLING row exists with same (teamId, opponent lowercase, Amsterdam-day)
- *     that IS already `finished` (confirmed real fixture) or `live`/`halftime`
- *
- * Cascade-deletes matchPlayers / matchCommandDedupes / matchEvents for the
- * ghost (these should be empty for a never-played row; we remove them for
- * safety).
- */
-export const cleanupScheduledGhosts = internalMutation({
-  args: {
-    dryRun: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    const dryRun = args.dryRun ?? true;
-
-    const matches = await ctx.db.query("matches").collect();
-
-    const byKey = new Map<string, typeof matches>();
-    for (const m of matches) {
-      if (typeof m.scheduledAt !== "number") continue;
-      const k = `${m.teamId}|${m.opponent.trim().toLowerCase()}|${amsterdamDateKey(m.scheduledAt)}`;
-      const arr = byKey.get(k) ?? [];
-      arr.push(m);
-      byKey.set(k, arr);
-    }
-
-    const ghostIds: Id<"matches">[] = [];
-    const details: Array<{
-      key: string;
-      ghostId: Id<"matches">;
-      survivorId: Id<"matches">;
-      survivorStatus: string;
-    }> = [];
-
-    for (const [key, group] of byKey.entries()) {
-      if (group.length < 2) continue;
-      const survivors = group.filter(
-        (m) =>
-          m.status === "finished" ||
-          m.status === "live" ||
-          m.status === "halftime",
-      );
-      if (survivors.length === 0) continue;
-
-      const ghosts = group.filter(
-        (m) =>
-          m.status === "scheduled" &&
-          m.homeScore === 0 &&
-          m.awayScore === 0 &&
-          !m.startedAt &&
-          !m.finishedAt &&
-          !m.cancelledAt,
-      );
-
-      for (const ghost of ghosts) {
-        ghostIds.push(ghost._id);
-        details.push({
-          key,
-          ghostId: ghost._id,
-          survivorId: survivors[0]._id,
-          survivorStatus: survivors[0].status,
-        });
-      }
-    }
-
-    let deletedMatchPlayers = 0;
-    let deletedEvents = 0;
-    let deletedDedupes = 0;
-
-    if (!dryRun) {
-      for (const ghostId of ghostIds) {
-        const mps = await ctx.db
-          .query("matchPlayers")
-          .withIndex("by_match", (q) => q.eq("matchId", ghostId))
-          .collect();
-        for (const mp of mps) {
-          await ctx.db.delete(mp._id);
-          deletedMatchPlayers++;
-        }
-
-        const evs = await ctx.db
-          .query("matchEvents")
-          .withIndex("by_match", (q) => q.eq("matchId", ghostId))
-          .collect();
-        for (const e of evs) {
-          await ctx.db.delete(e._id);
-          deletedEvents++;
-        }
-
-        const dedupes = await ctx.db
-          .query("matchCommandDedupes")
-          .withIndex("by_match_command_correlation", (q) =>
-            q.eq("matchId", ghostId),
-          )
-          .collect();
-        for (const d of dedupes) {
-          await ctx.db.delete(d._id);
-          deletedDedupes++;
-        }
-
-        await ctx.db.delete(ghostId);
-      }
-    }
-
-    return {
-      dryRun,
-      ghostsFound: ghostIds.length,
-      deletedMatches: dryRun ? 0 : ghostIds.length,
-      deletedMatchPlayers,
-      deletedEvents,
-      deletedDedupes,
-      details: details.slice(0, 30),
-    };
   },
 });

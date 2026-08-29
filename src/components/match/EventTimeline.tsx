@@ -1,5 +1,6 @@
 "use client";
 
+import { assistKindLabel, formatAssistLine } from "@/lib/assistKind";
 import type { MatchEvent } from "./types";
 
 interface EventTimelineProps {
@@ -59,14 +60,22 @@ function getEventText(
             : `Eigen doelpunt (${scoringTeamName})`;
       }
       if (event.playerName) {
-        return `Doelpunt ${event.playerName} (${scoringTeamName})`;
+        const setPiece = assistKindLabel(event.assistKind);
+        const piece =
+          event.assistKind === "corner" || event.assistKind === "free_kick"
+            ? ` · ${setPiece}`
+            : "";
+        return `Doelpunt ${event.playerName} (${scoringTeamName})${piece}`;
       }
       if (event.note) {
         return `Doelpunt ${scoringTeamName} (${event.note})`;
       }
       return `Doelpunt ${scoringTeamName}`;
     case "assist":
-      return `Assist ${event.playerName || ""}`;
+      return (
+        formatAssistLine(event.playerName, event.assistKind) ??
+        `Assist ${event.playerName || ""}`
+      );
     case "sub_in":
       return `${event.playerName || "Speler"} erin`;
     case "sub_out":

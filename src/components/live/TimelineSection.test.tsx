@@ -73,4 +73,25 @@ describe("TimelineSection", () => {
 
     expect(screen.getByText("Doelpunt SCO JO12-2")).toBeInTheDocument();
   });
+
+  it("shows hoekschop on a team goal", () => {
+    render(
+      <TimelineSection
+        teamName="DIA JO13-2"
+        opponentName="TSC O13-2"
+        isScheduled={false}
+        events={[
+          buildEvent({
+            type: "goal",
+            playerName: "Jip",
+            assistKind: "corner",
+          }),
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByText("Doelpunt Jip (DIA JO13-2) · Hoekschop")
+    ).toBeInTheDocument();
+  });
 });

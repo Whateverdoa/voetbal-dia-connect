@@ -18,13 +18,19 @@ export default function HelpIndexPage() {
           <Link
             key={card.href}
             href={card.href}
-            className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-dia-green hover:bg-green-50/50 min-h-[44px]"
+            className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-dia-yellow hover:bg-dia-green-light/40 min-h-[44px]"
           >
             <h3 className="font-semibold text-gray-900">{card.title}</h3>
             <p className="text-sm text-gray-600 mt-1">{card.description}</p>
           </Link>
         ))}
       </div>
+
+      <p className="text-center text-xs text-gray-500">
+        <Link href="/help/club-en-rollen" className="underline underline-offset-2 hover:text-dia-black">
+          Rollen en e-mail
+        </Link>
+      </p>
     </HelpShell>
   );
 }

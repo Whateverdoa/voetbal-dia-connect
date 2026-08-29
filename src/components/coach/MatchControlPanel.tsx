@@ -15,6 +15,7 @@ import {
   SubstitutionSuggestions,
   MatchLeadBadge,
   MatchSettingsEdit,
+  LateRosterPanel,
   RefereeAssignment,
   StagedSubstitutionsPanel,
   GoalEnrichmentPanel,
@@ -25,6 +26,7 @@ import { resolveLogoUrl } from "@/lib/logos";
 import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
+import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
 
 type ViewTab = "opstelling" | "wisselplan" | "speeltijd";
 type LineupView = "veld" | "lijst";
@@ -120,6 +122,12 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         </div>
       </nav>
 
+      {match.viewingAsAdmin && (
+        <div className="max-w-2xl mx-auto px-4 pt-3">
+          <AdminPhaseBanner />
+        </div>
+      )}
+
       <ScoreDisplay
         homeScore={match.homeScore}
         awayScore={match.awayScore}
@@ -136,6 +144,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         frozenClockMs={match.frozenClockMs}
         publicCode={match.publicCode}
         scheduledAt={match.scheduledAt}
+        venueField={match.venueField}
         homeLogoUrl={homeLogoUrl}
         awayLogoUrl={awayLogoUrl}
       />
@@ -167,6 +176,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         />
 
         {isPregame && <MatchSettingsEdit match={match} />}
+        {!isPregame && <LateRosterPanel matchId={match._id} />}
 
         <MatchLeadBadge
           matchId={match._id}

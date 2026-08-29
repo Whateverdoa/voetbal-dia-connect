@@ -37,7 +37,7 @@ export function PlayerSelector({ players, selectedIds, onToggle }: PlayerSelecto
           key={p._id}
           className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-sm transition-colors ${
             selectedIds.has(p._id)
-              ? "bg-green-50 border border-green-300"
+              ? "bg-dia-green-light border border-dia-yellow-deep/50"
               : "bg-gray-50 border border-gray-200"
           } ${!p.active ? "opacity-50" : ""}`}
         >

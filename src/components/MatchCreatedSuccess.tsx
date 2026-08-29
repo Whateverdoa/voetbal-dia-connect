@@ -61,7 +61,7 @@ export function MatchCreatedSuccess({
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-dia-green text-white p-4">
+      <header className="bg-dia-green text-black p-4">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-xl font-bold">Wedstrijd aangemaakt!</h1>
           <p className="text-sm opacity-75">vs {opponent}</p>
@@ -69,14 +69,14 @@ export function MatchCreatedSuccess({
       </header>
 
       <div className="max-w-2xl mx-auto p-4 space-y-6">
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-dia-green-light border-2 border-dia-yellow-deep/40 rounded-xl p-6 text-center">
+          <div className="w-16 h-16 bg-dia-yellow rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-green-800 mb-2">
+          <h2 className="text-xl font-bold text-dia-black mb-2">
             Wedstrijd is klaar!
           </h2>
-          <p className="text-green-700">
+          <p className="text-dia-black">
             Deel de code met ouders zodat ze live kunnen meekijken.
           </p>
         </div>
@@ -99,8 +99,8 @@ export function MatchCreatedSuccess({
             >
               {copied ? (
                 <>
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-green-600">Gekopieerd!</span>
+                  <Check className="w-5 h-5 text-dia-black" />
+                  <span className="text-dia-black">Gekopieerd!</span>
                 </>
               ) : (
                 <>
@@ -112,7 +112,7 @@ export function MatchCreatedSuccess({
 
             <button
               onClick={handleShare}
-              className="flex items-center justify-center gap-2 py-4 px-4 bg-dia-green hover:bg-dia-green-light text-white font-semibold rounded-xl transition-colors min-h-[56px]"
+              className="flex items-center justify-center gap-2 py-4 px-4 bg-dia-green hover:bg-dia-green-light text-black font-semibold rounded-xl transition-colors min-h-[56px]"
             >
               <Share2 className="w-5 h-5" />
               <span>Delen</span>
@@ -134,7 +134,7 @@ export function MatchCreatedSuccess({
         <div className="space-y-3 pt-4">
           <Link
             href={`/coach/match/${matchId}`}
-            className="flex items-center justify-center gap-2 w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-light transition-colors min-h-[56px]"
+            className="flex items-center justify-center gap-2 w-full py-4 bg-dia-green text-black font-semibold rounded-xl hover:bg-dia-green-light transition-colors min-h-[56px]"
           >
             <span>Naar wedstrijd</span>
             <ArrowRight className="w-5 h-5" />

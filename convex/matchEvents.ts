@@ -12,6 +12,7 @@ import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
+import { assistKindValidator } from "./lib/assistKind";
 
 // Record a goal
 export const addGoal = mutation({
@@ -20,6 +21,7 @@ export const addGoal = mutation({
     correlationId: v.optional(v.string()),
     playerId: v.optional(v.id("players")),
     assistPlayerId: v.optional(v.id("players")),
+    assistKind: v.optional(assistKindValidator),
     isOwnGoal: v.optional(v.boolean()),
     isOpponentGoal: v.optional(v.boolean()),
   },
@@ -57,6 +59,7 @@ export const addGoal = mutation({
       type: "goal",
       playerId: args.playerId,
       relatedPlayerId: args.assistPlayerId,
+      assistKind: args.assistKind,
       quarter: match.currentQuarter,
       matchMs: goalStamp.gameSecond * 1000,
       isOwnGoal: args.isOwnGoal,
@@ -76,6 +79,7 @@ export const addGoal = mutation({
         type: "assist",
         playerId: args.assistPlayerId,
         relatedPlayerId: args.playerId,
+        assistKind: args.assistKind,
         quarter: match.currentQuarter,
         matchMs: assistStamp.gameSecond * 1000,
         correlationId: args.correlationId,

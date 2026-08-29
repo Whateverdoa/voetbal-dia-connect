@@ -21,7 +21,7 @@ const statusConfig: Record<MatchStatus, { label: string; className: string }> = 
   },
   live: {
     label: "LIVE",
-    className: "bg-green-500 text-white animate-pulse",
+    className: "bg-dia-yellow text-black animate-pulse",
   },
   halftime: {
     label: "Rust",
@@ -29,7 +29,7 @@ const statusConfig: Record<MatchStatus, { label: string; className: string }> = 
   },
   finished: {
     label: "Afgelopen",
-    className: "bg-red-600 text-white",
+    className: "bg-dia-black text-dia-yellow",
   },
 };
 
@@ -52,7 +52,7 @@ export function StatusBadge({ status, size = "sm", className }: StatusBadgeProps
       )}
     >
       {status === "live" && (
-        <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse" />
+        <span className="w-2 h-2 bg-dia-black rounded-full mr-1.5 animate-pulse" />
       )}
       {config.label}
     </span>

@@ -5,8 +5,13 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
-import type { MatchPlayer } from "./types";
+import {
+  resolveAssistKindForSubmit,
+  type AssistKind,
+} from "@/lib/assistKind";
 import { createCorrelationId } from "@/lib/correlationId";
+import { AssistPicker } from "./AssistPicker";
+import type { MatchPlayer } from "./types";
 
 interface GoalModalProps {
   matchId: Id<"matches">;
@@ -20,6 +25,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
   const [goalType, setGoalType] = useState<GoalType | null>(null);
   const [scorer, setScorer] = useState<Id<"players"> | null>(null);
   const [assist, setAssist] = useState<Id<"players"> | null>(null);
+  const [assistKind, setAssistKind] = useState<AssistKind | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,10 +56,12 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
     setIsSubmitting(true);
     setError(null);
     try {
+      const kind = resolveAssistKindForSubmit(assistKind, assist);
       await addGoal({
         matchId,
         playerId: scorer,
         assistPlayerId: assist ?? undefined,
+        ...(kind ? { assistKind: kind } : {}),
         isOpponentGoal: false,
         correlationId: createCorrelationId("goal"),
       });
@@ -84,7 +92,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
               <button
                 onClick={handleOurGoal}
                 disabled={isSubmitting}
-                className="w-full py-6 bg-dia-green text-white text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-6 bg-dia-green text-black text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <span className="text-3xl">⚽</span>
                 <span>GOAL!</span>
@@ -131,7 +139,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
                 className={clsx(
                   "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                   scorer === p.playerId
-                    ? "border-dia-green bg-green-50 shadow-md"
+                    ? "border-dia-green bg-dia-green-light shadow-md"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
@@ -148,47 +156,14 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           </div>
 
           {scorer && (
-            <>
-              <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                Assist (optioneel)
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setAssist(null)}
-                  className={clsx(
-                    "p-3 rounded-xl border-2 min-h-[48px] transition-all",
-                    assist === null
-                      ? "border-dia-green bg-green-50"
-                      : "border-gray-200"
-                  )}
-                >
-                  Geen assist
-                </button>
-                {playersOnField
-                  .filter((p) => p.playerId !== scorer)
-                  .map((p) => (
-                    <button
-                      key={p.playerId}
-                      onClick={() => setAssist(p.playerId)}
-                      className={clsx(
-                        "p-3 rounded-xl border-2 text-left min-h-[48px] transition-all",
-                        assist === p.playerId
-                          ? "border-dia-green bg-green-50"
-                          : "border-gray-200"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        {p.number && (
-                          <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center font-bold text-xs">
-                            {p.number}
-                          </span>
-                        )}
-                        <span className="font-medium text-sm truncate">{p.name}</span>
-                      </div>
-                    </button>
-                  ))}
-              </div>
-            </>
+            <AssistPicker
+              scorerId={scorer}
+              playersOnField={playersOnField}
+              assistId={assist}
+              assistKind={assistKind}
+              onAssistIdChange={setAssist}
+              onAssistKindChange={setAssistKind}
+            />
           )}
         </div>
 
@@ -202,7 +177,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           <button
             onClick={handleSubmit}
             disabled={!scorer || isSubmitting}
-            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Bezig..." : "Registreren"}
           </button>

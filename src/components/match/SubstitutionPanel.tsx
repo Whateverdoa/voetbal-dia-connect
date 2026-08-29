@@ -95,7 +95,7 @@ export function SubstitutionPanel({
               <span className="text-2xl">→</span>
               <div className={clsx(
                 "flex-1 text-center p-2 rounded-lg",
-                playerIn ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-400"
+                playerIn ? "bg-dia-green-light text-dia-black" : "bg-gray-200 text-gray-400"
               )}>
                 {playerInData ? (
                   <span className="font-medium">{playerInData.name}</span>
@@ -121,13 +121,13 @@ export function SubstitutionPanel({
                     "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                     playerOut === player.playerId
                       ? "border-red-500 bg-red-50 shadow-md"
-                      : "border-green-200 bg-green-50 hover:border-green-300",
+                      : "border-dia-yellow-deep/40 bg-dia-green-light hover:border-dia-yellow-deep/50",
                     selectionDisabled && "opacity-60 cursor-not-allowed"
                   )}
                 >
                   <div className="flex items-center gap-2">
                     {player.number && (
-                      <span className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center font-bold text-sm">
+                      <span className="w-8 h-8 bg-dia-green-light rounded-lg flex items-center justify-center font-bold text-sm">
                         {player.number}
                       </span>
                     )}
@@ -142,8 +142,8 @@ export function SubstitutionPanel({
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-green-600 mb-2 flex items-center gap-2">
-              <span className="w-5 h-5 bg-green-100 rounded flex items-center justify-center text-xs">↑</span>
+            <h3 className="text-sm font-semibold text-dia-black mb-2 flex items-center gap-2">
+              <span className="w-5 h-5 bg-dia-green-light rounded flex items-center justify-center text-xs">↑</span>
               Erin (bank)
             </h3>
             {playersOnBench.length === 0 ? (
@@ -160,7 +160,7 @@ export function SubstitutionPanel({
                     className={clsx(
                       "p-3 rounded-xl border-2 text-left min-h-[56px] transition-all active:scale-[0.98]",
                       playerIn === player.playerId
-                        ? "border-green-500 bg-green-50 shadow-md"
+                        ? "border-dia-yellow-deep bg-dia-green-light shadow-md"
                         : "border-gray-200 bg-gray-50 hover:border-gray-300",
                       selectionDisabled && "opacity-60 cursor-not-allowed"
                     )}
@@ -188,7 +188,7 @@ export function SubstitutionPanel({
             <div className="flex gap-3">
               <button
                 onClick={handleCreateAnother}
-                className="flex-1 py-3 border-2 border-dia-green text-dia-green rounded-xl font-semibold min-h-[48px]"
+                className="flex-1 py-3 border-2 border-dia-green text-dia-black rounded-xl font-semibold min-h-[48px]"
               >
                 Ja, nieuwe wissel
               </button>

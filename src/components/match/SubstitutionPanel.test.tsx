@@ -176,7 +176,7 @@ describe('SubstitutionPanel', () => {
       );
 
       const janButton = screen.getByText('Jan').closest('button');
-      expect(janButton).toHaveClass('bg-green-50');
+      expect(janButton).toHaveClass('bg-dia-green-light');
     });
   });
 
@@ -242,7 +242,7 @@ describe('SubstitutionPanel', () => {
       fireEvent.click(henkButton!);
 
       // After click, Henk's button should have green border
-      expect(henkButton).toHaveClass('border-green-500');
+      expect(henkButton).toHaveClass('border-dia-yellow-deep');
     });
 
     it('shows empty state when no players on bench', () => {
@@ -576,12 +576,12 @@ describe('SubstitutionPanel', () => {
 
       // Select Henk first
       fireEvent.click(henkButton!);
-      expect(henkButton).toHaveClass('border-green-500');
+      expect(henkButton).toHaveClass('border-dia-yellow-deep');
 
       // Change to Willem
       fireEvent.click(willemButton!);
-      expect(henkButton).not.toHaveClass('border-green-500');
-      expect(willemButton).toHaveClass('border-green-500');
+      expect(henkButton).not.toHaveClass('border-dia-yellow-deep');
+      expect(willemButton).toHaveClass('border-dia-yellow-deep');
     });
   });
 

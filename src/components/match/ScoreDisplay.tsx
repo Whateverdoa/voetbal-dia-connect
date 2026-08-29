@@ -22,6 +22,8 @@ interface ScoreDisplayProps {
   frozenClockMs?: number;
   publicCode: string;
   scheduledAt?: number;
+  /** Home pitch only; omit for away matches. */
+  venueField?: string | null;
   homeLogoUrl?: string | null;
   awayLogoUrl?: string | null;
 }
@@ -42,6 +44,7 @@ export function ScoreDisplay({
   frozenClockMs,
   publicCode,
   scheduledAt,
+  venueField,
   homeLogoUrl,
   awayLogoUrl,
 }: ScoreDisplayProps) {
@@ -65,7 +68,7 @@ export function ScoreDisplay({
   const quarterLabel = getQuarterLabel();
 
   return (
-    <div className="bg-dia-green text-white p-4 sm:p-6">
+    <div className="bg-dia-green text-black p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Top row: public code and status */}
         <div className="flex items-center justify-between mb-4">
@@ -76,12 +79,19 @@ export function ScoreDisplay({
         </div>
 
         {scheduledAt != null && (
-          <p className="text-center text-sm text-white/90 tabular-nums mb-3">
+          <p
+            className={`text-center text-sm text-white/90 tabular-nums ${
+              isHome && venueField ? "mb-1" : "mb-3"
+            }`}
+          >
             <time dateTime={new Date(scheduledAt).toISOString()}>
               {formatMatchDateNl(scheduledAt)} · {formatMatchTimeNl(scheduledAt)}
             </time>
           </p>
         )}
+        {isHome && venueField ? (
+          <p className="text-center text-sm text-white/85 mb-3">{venueField}</p>
+        ) : null}
 
         {/* Score - HUGE and centered */}
         <div className="text-center py-4">

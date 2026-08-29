@@ -136,7 +136,7 @@ function NewMatchContent() {
       <main className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-500 mb-4">Geen team geselecteerd</p>
-          <Link href="/coach" className="text-dia-green hover:underline">
+          <Link href="/coach" className="text-dia-black hover:underline">
             ← Terug naar dashboard
           </Link>
         </div>
@@ -153,7 +153,7 @@ function NewMatchContent() {
       <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-sm border border-gray-200">
           <p className="text-red-600 font-medium">Je hebt geen toegang tot dit team.</p>
-          <Link href="/coach" className="mt-4 inline-flex text-dia-green hover:underline">
+          <Link href="/coach" className="mt-4 inline-flex text-dia-black hover:underline">
             ← Terug naar dashboard
           </Link>
         </div>
@@ -163,7 +163,7 @@ function NewMatchContent() {
 
   return (
     <main className="min-h-screen pb-32">
-      <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
+      <header className="bg-dia-green text-black p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto">
           <Link
             href="/coach"
@@ -249,7 +249,7 @@ function MatchDetailsForm({
               onClick={() => setIsHome(true)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 isHome
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -260,7 +260,7 @@ function MatchDetailsForm({
               onClick={() => setIsHome(false)}
               className={`py-4 px-4 rounded-xl border-2 transition-all font-semibold min-h-[56px] ${
                 !isHome
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
             >
@@ -304,7 +304,7 @@ function CreateMatchFooter({
         <button
           onClick={onCreate}
           disabled={!canCreate || isCreating}
-          className="w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
+          className="w-full py-4 bg-dia-green text-black font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
         >
           {isCreating ? (
             <span className="flex items-center justify-center gap-2">

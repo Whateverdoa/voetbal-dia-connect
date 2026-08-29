@@ -1,6 +1,8 @@
 import { query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { compareSeasonHistory } from "./lib/matchHistoryOrder";
+import { isActiveSeasonMatch } from "./lib/season";
 
 // Get team by slug (public query)
 export const getBySlug = query({
@@ -26,18 +28,23 @@ export const getBySlug = query({
   },
 });
 
-// Get match history for a team (finished matches only, most recent first)
+// Finished matches for one season, first kickoff of the season first.
 export const getMatchHistory = query({
-  args: { teamId: v.id("teams") },
+  args: {
+    teamId: v.id("teams"),
+    seasonKey: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // Get all finished matches for this team
     const matches = await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
-      .order("desc")
       .collect();
 
-    const finishedMatches = matches.filter((m) => m.status === "finished");
+    const finishedMatches = matches.filter((m) => {
+      if (m.status !== "finished") return false;
+      if (!args.seasonKey) return true;
+      return isActiveSeasonMatch(m, args.seasonKey);
+    });
 
     // Enrich each match with goal scorers
     const enrichedMatches = await Promise.all(
@@ -143,25 +150,27 @@ export const getMatchHistory = query({
       })
     );
 
-    return enrichedMatches.sort((left, right) => {
-      const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
-      const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
-      return rightTimestamp - leftTimestamp;
-    });
+    return enrichedMatches.sort(compareSeasonHistory);
   },
 });
 
 // Get season stats for a team
 export const getSeasonStats = query({
-  args: { teamId: v.id("teams") },
+  args: {
+    teamId: v.id("teams"),
+    seasonKey: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // Get all finished matches
     const matches = await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
       .collect();
 
-    const finishedMatches = matches.filter((m) => m.status === "finished");
+    const finishedMatches = matches.filter((m) => {
+      if (m.status !== "finished") return false;
+      if (!args.seasonKey) return true;
+      return isActiveSeasonMatch(m, args.seasonKey);
+    });
 
     // Calculate record
     let wins = 0;

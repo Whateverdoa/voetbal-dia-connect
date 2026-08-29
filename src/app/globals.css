@@ -1,16 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* DIA brand colors - Dutch football club aesthetic */
-  --color-dia-green: #1B5E20;
-  --color-dia-green-light: #2E7D32;
-  --color-dia-green-dark: #0D3D14;
+  /* RKVV DIA brand — bannergeel + zwart (rkvvdia.nl gele menubalk #FFE713) */
+  --color-dia-green: #FFE713; /* bannergeel primary (token name kept for existing classes) */
+  --color-dia-green-light: #FFF493; /* soft yellow wash / hover */
+  --color-dia-green-dark: #0A0A0A; /* club black for dark chrome */
+  --color-dia-yellow: #FFE713;
+  --color-dia-yellow-deep: #DFC800; /* darker yellow for pressed/hover */
+  --color-dia-black: #0A0A0A;
   --color-dia-white: #FFFFFF;
 }
 
 :root {
   /* Legacy CSS variable for backwards compatibility */
-  --dia-green: #1B5E20;
+  --dia-green: #FFE713;
+  --dia-black: #0A0A0A;
 }
 
 html,
@@ -20,7 +24,8 @@ body {
 }
 
 body {
-  @apply bg-gray-50 min-h-screen;
+  /* Light operational UI; accent is black + banner yellow (not green). */
+  @apply bg-[#FCFBF2] min-h-screen;
 }
 
 /* Score display animation */
@@ -52,7 +57,7 @@ body {
 .timeline-event::before {
   content: '';
   @apply absolute left-3 top-2 w-2 h-2 rounded-full;
-  background-color: var(--dia-green);
+  background-color: var(--dia-black);
 }
 
 .timeline-event::after {
@@ -70,7 +75,7 @@ body {
 }
 
 .player-card.on-field {
-  @apply border-green-600 bg-green-50;
+  @apply border-dia-yellow-deep bg-dia-green-light;
 }
 
 .player-card.is-keeper {

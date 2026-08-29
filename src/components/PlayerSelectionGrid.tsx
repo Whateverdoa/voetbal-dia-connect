@@ -34,13 +34,13 @@ export function PlayerSelectionGrid({
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-gray-500" />
           <h2 className="font-semibold text-lg">Selectie</h2>
-          <span className="bg-dia-green text-white text-sm px-2 py-0.5 rounded-full">
+          <span className="bg-dia-green text-black text-sm px-2 py-0.5 rounded-full">
             {selectedPlayers.size}
           </span>
         </div>
         <button
           onClick={allSelected ? onDeselectAll : onSelectAll}
-          className="text-sm text-dia-green hover:underline font-medium min-h-[44px] px-2"
+          className="text-sm text-dia-black hover:underline font-medium min-h-[44px] px-2"
         >
           {allSelected ? "Deselecteer alle" : "Selecteer alle"}
         </button>
@@ -67,7 +67,7 @@ export function PlayerSelectionGrid({
                   onClick={() => onTogglePlayer(player._id)}
                   className={`p-3 rounded-xl border-2 text-left transition-all min-h-[56px] active:scale-[0.98] ${
                     isSelected
-                      ? "border-dia-green bg-green-50"
+                      ? "border-dia-green bg-dia-green-light"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -75,7 +75,7 @@ export function PlayerSelectionGrid({
                     <span
                       className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors ${
                         isSelected
-                          ? "bg-dia-green text-white"
+                          ? "bg-dia-green text-black"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >

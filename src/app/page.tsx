@@ -22,19 +22,19 @@ export default function Home() {
       <div className="w-full max-w-4xl space-y-6">
         {/* Logo/Header */}
         <div className="text-center space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-bold text-dia-green">
-            DIA Wedstrijduitslagen Live
+          <h1 className="text-3xl sm:text-4xl font-bold text-dia-black">
+            Wedstrijduitslagen Live
           </h1>
           <p className="text-gray-600">Volg de wedstrijd live</p>
           <div>
             <Link
               href="/help"
-              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-dia-green hover:text-green-700 underline underline-offset-4"
+              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-dia-black hover:text-dia-black underline underline-offset-4"
             >
-              Hoe werkt het?
+              Handleiding
             </Link>
             <span className="text-xs text-gray-500 block mt-1">
-              Meekijken kan zonder account; uitleg ook voor coaches, wedstrijdbegeleiders en club.
+              Coach, scheidsrechter en admin — meekijken kan zonder account.
             </span>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function Home() {
         <div className="text-center">
           <Link
             href="/standen"
-            className="text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+            className="text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
           >
             Vandaag live
           </Link>
@@ -77,7 +77,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={code.length !== 6}
-                  className="px-4 py-2 bg-dia-green text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-dia-green text-black font-semibold rounded-lg hover:bg-dia-yellow-deep disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Ga
                 </button>

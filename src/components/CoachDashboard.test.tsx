@@ -15,11 +15,32 @@ describe('CoachDashboard', () => {
   });
 
   describe('Header', () => {
-    it('renders Dutch welcome message with coach name', () => {
+    it('shows an admin banner when viewing all matches', () => {
       render(
-        <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
+        <CoachDashboard
+          data={{ ...mockCoachData, viewingAsAdmin: true }}
+          onLogout={mockOnLogout}
+        />
       );
-      expect(screen.getByText('Welkom, Coach Mike!')).toBeInTheDocument();
+      expect(screen.getByText('Je bekijkt dit als admin')).toBeInTheDocument();
+      expect(screen.getByText('Alle teams · dit seizoen')).toBeInTheDocument();
+    });
+
+    it('shows an empty filter message when admin has no matching teams', () => {
+      render(
+        <CoachDashboard
+          data={{
+            ...mockCoachData,
+            teams: [],
+            matches: [],
+            viewingAsAdmin: true,
+          }}
+          onLogout={mockOnLogout}
+        />
+      );
+      expect(
+        screen.getByText('Geen wedstrijden voor deze filters.')
+      ).toBeInTheDocument();
     });
 
     it('displays team name in header', () => {
@@ -113,6 +134,10 @@ describe('CoachDashboard', () => {
         <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Nieuwe wedstrijd')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Spelers' })).toHaveAttribute(
+        'href',
+        '/coach/team/team456'
+      );
     });
 
     it('new match button links to correct URL with teamId', () => {

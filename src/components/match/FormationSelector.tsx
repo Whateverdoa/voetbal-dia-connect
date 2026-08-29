@@ -78,7 +78,7 @@ export function FormationSelector({
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="text-sm font-medium text-dia-green border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+          className="text-sm font-medium text-dia-black border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
         >
           + Eigen formatie
         </button>
@@ -87,14 +87,14 @@ export function FormationSelector({
         <button
           type="button"
           onClick={() => onLineupViewChange("veld")}
-          className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-green text-white" : "bg-gray-100 text-gray-700"}`}
+          className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
         >
           Veld
         </button>
         <button
           type="button"
           onClick={() => onLineupViewChange("lijst")}
-          className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-green text-white" : "bg-gray-100 text-gray-700"}`}
+          className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
         >
           Lijst
         </button>

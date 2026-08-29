@@ -1,12 +1,19 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
-import { Check, Pencil, Plus, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { getPositionLabel } from "@/lib/positions";
+import {
+  type ActiveListFilter,
+  filterPlayers,
+  filterTeamsBySearch,
+} from "@/lib/admin/adminListFilters";
 import { PositionSelect } from "./PositionSelect";
+import { ConsentRoundPanel } from "./ConsentRoundPanel";
+import { PlayersFilterBar } from "./PlayersFilterBar";
+import { PlayerListRow } from "./PlayerListRow";
 
 interface Team {
   _id: Id<"teams">;
@@ -14,12 +21,27 @@ interface Team {
   clubName: string;
 }
 
+type PlayerRow = {
+  _id: Id<"players">;
+  name: string;
+  number?: number | null;
+  active: boolean;
+  positionPrimary?: string;
+  positionSecondary?: string;
+  photoUrl?: string;
+};
+
 export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(null);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveListFilter>("actief");
+  const [position, setPosition] = useState("");
+
   const players = useQuery(
     api.admin.listPlayersByTeam,
     selectedTeamId ? { teamId: selectedTeamId } : "skip"
-  );
+  ) as PlayerRow[] | undefined;
   const createPlayer = useMutation(api.admin.createPlayer);
   const updatePlayer = useMutation(api.admin.updatePlayer);
   const deletePlayer = useMutation(api.admin.deletePlayer);
@@ -35,6 +57,16 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
   const [editPositionSecondary, setEditPositionSecondary] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"players"> | null>(null);
   const [status, setStatus] = useState("");
+
+  const filteredTeams = useMemo(
+    () => filterTeamsBySearch(teams ?? [], teamSearch),
+    [teams, teamSearch]
+  );
+
+  const visiblePlayers = useMemo(
+    () => filterPlayers(players ?? [], { search, activeFilter, position }),
+    [players, search, activeFilter, position]
+  );
 
   async function handleCreate() {
     if (!selectedTeamId || !newName.trim()) return;
@@ -52,8 +84,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       setNewPositionSecondary("");
       setStatus("Speler toegevoegd");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${error instanceof Error ? error.message : "Onbekende fout"}`);
     }
   }
 
@@ -69,8 +100,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       setEditingId(null);
       setStatus("Speler bijgewerkt");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${error instanceof Error ? error.message : "Onbekende fout"}`);
     }
   }
 
@@ -79,8 +109,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       await updatePlayer({ playerId, active: !currentActive });
       setStatus(currentActive ? "Speler inactief" : "Speler actief");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${error instanceof Error ? error.message : "Onbekende fout"}`);
     }
   }
 
@@ -90,22 +119,30 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       setDeleteConfirm(null);
       setStatus("Speler verwijderd");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Onbekende fout";
-      setStatus(`Fout: ${message}`);
+      setStatus(`Fout: ${error instanceof Error ? error.message : "Onbekende fout"}`);
     }
   }
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Team</label>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Team</label>
+        <input
+          type="search"
+          value={teamSearch}
+          onChange={(e) => setTeamSearch(e.target.value)}
+          placeholder="Filter teams…"
+          className="min-h-[44px] w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-dia-green"
+        />
         <select
           value={selectedTeamId || ""}
-          onChange={(event) => setSelectedTeamId((event.target.value as Id<"teams">) || null)}
-          className="w-full px-3 py-2 border rounded-lg"
+          onChange={(e) =>
+            setSelectedTeamId((e.target.value as Id<"teams">) || null)
+          }
+          className="w-full min-h-[44px] px-3 py-2 border rounded-lg"
         >
           <option value="">Selecteer team...</option>
-          {teams?.map((team) => (
+          {filteredTeams.map((team) => (
             <option key={team._id} value={team._id}>
               {team.name} ({team.clubName})
             </option>
@@ -114,102 +151,54 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
       </div>
 
       {selectedTeamId && (
-        <div className="space-y-2">
+        <div className="space-y-3">
+          <ConsentRoundPanel teamId={selectedTeamId} onStatus={setStatus} />
+          <PlayersFilterBar
+            search={search}
+            onSearchChange={setSearch}
+            activeFilter={activeFilter}
+            onActiveFilterChange={setActiveFilter}
+            position={position}
+            onPositionChange={setPosition}
+            visibleCount={visiblePlayers.length}
+            totalCount={players?.length ?? 0}
+          />
           {players === undefined ? (
             <p className="text-gray-500">Laden...</p>
-          ) : players.length === 0 ? (
-            <p className="text-gray-500">Geen spelers in dit team.</p>
+          ) : visiblePlayers.length === 0 ? (
+            <p className="text-gray-500">Geen spelers voor deze filters.</p>
           ) : (
-            players.map((player) => (
-              <div
+            visiblePlayers.map((player) => (
+              <PlayerListRow
                 key={player._id}
-                className={`flex items-center gap-2 p-3 rounded-lg ${
-                  player.active ? "bg-gray-50" : "bg-gray-200 opacity-60"
-                }`}
-              >
-                {editingId === player._id ? (
-                  <>
-                    <input
-                      type="number"
-                      value={editNumber}
-                      onChange={(event) => setEditNumber(event.target.value)}
-                      placeholder="#"
-                      className="w-16 px-2 py-1 border rounded"
-                    />
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(event) => setEditName(event.target.value)}
-                      className="flex-1 min-w-0 px-2 py-1 border rounded"
-                      autoFocus
-                    />
-                    <PositionSelect value={editPositionPrimary} onChange={setEditPositionPrimary} placeholder="—" title="Positie 1" className="w-32 px-2 py-1 border rounded text-sm" />
-                    <PositionSelect value={editPositionSecondary} onChange={setEditPositionSecondary} placeholder="—" title="Positie 2" className="w-32 px-2 py-1 border rounded text-sm" />
-                    <button type="button" onClick={() => handleUpdate(player._id)} className="p-2 text-green-600 hover:bg-green-50 rounded">
-                      <Check size={18} />
-                    </button>
-                    <button type="button" onClick={() => setEditingId(null)} className="p-2 text-gray-500 hover:bg-gray-100 rounded">
-                      <X size={18} />
-                    </button>
-                  </>
-                ) : deleteConfirm === player._id ? (
-                  <>
-                    <span className="flex-1 text-red-600">Verwijderen?</span>
-                    <button type="button" onClick={() => handleDelete(player._id)} className="px-3 py-1 bg-red-600 text-white rounded text-sm">
-                      Ja
-                    </button>
-                    <button type="button" onClick={() => setDeleteConfirm(null)} className="px-3 py-1 bg-gray-200 rounded text-sm">
-                      Nee
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-10 text-center font-bold text-gray-500">
-                      {player.number ? `#${player.number}` : "-"}
-                    </span>
-                    <span className="flex-1 min-w-0">{player.name}</span>
-                    <span className="text-xs text-gray-500 shrink-0">
-                      {(player as { positionPrimary?: string }).positionPrimary
-                        ? getPositionLabel((player as { positionPrimary?: string }).positionPrimary!)
-                        : ""}
-                      {(player as { positionSecondary?: string }).positionSecondary
-                        ? ` / ${getPositionLabel((player as { positionSecondary?: string }).positionSecondary!)}`
-                        : ""}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleActive(player._id, player.active)}
-                      className={`p-2 rounded ${
-                        player.active
-                          ? "text-green-600 hover:bg-green-50"
-                          : "text-gray-400 hover:bg-gray-100"
-                      }`}
-                    >
-                      {player.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(player._id);
-                        setEditName(player.name);
-                        setEditNumber(player.number?.toString() || "");
-                        setEditPositionPrimary((player as { positionPrimary?: string }).positionPrimary ?? "");
-                        setEditPositionSecondary((player as { positionSecondary?: string }).positionSecondary ?? "");
-                      }}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded"
-                    >
-                      <Pencil size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirm(player._id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </>
-                )}
-              </div>
+                player={player}
+                editingId={editingId}
+                deleteConfirm={deleteConfirm}
+                editName={editName}
+                editNumber={editNumber}
+                editPositionPrimary={editPositionPrimary}
+                editPositionSecondary={editPositionSecondary}
+                onEditName={setEditName}
+                onEditNumber={setEditNumber}
+                onEditPositionPrimary={setEditPositionPrimary}
+                onEditPositionSecondary={setEditPositionSecondary}
+                onStartEdit={() => {
+                  setEditingId(player._id);
+                  setEditName(player.name);
+                  setEditNumber(player.number?.toString() || "");
+                  setEditPositionPrimary(player.positionPrimary ?? "");
+                  setEditPositionSecondary(player.positionSecondary ?? "");
+                }}
+                onCancelEdit={() => setEditingId(null)}
+                onSave={() => void handleUpdate(player._id)}
+                onAskDelete={() => setDeleteConfirm(player._id)}
+                onCancelDelete={() => setDeleteConfirm(null)}
+                onConfirmDelete={() => void handleDelete(player._id)}
+                onToggleActive={() =>
+                  void handleToggleActive(player._id, player.active)
+                }
+                onPhotoDone={setStatus}
+              />
             ))
           )}
         </div>
@@ -224,24 +213,36 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
             <input
               type="number"
               value={newNumber}
-              onChange={(event) => setNewNumber(event.target.value)}
+              onChange={(e) => setNewNumber(e.target.value)}
               placeholder="#"
               className="w-20 px-3 py-2 border rounded-lg"
             />
             <input
               type="text"
               value={newName}
-              onChange={(event) => setNewName(event.target.value)}
+              onChange={(e) => setNewName(e.target.value)}
               placeholder="Naam"
               className="flex-1 min-w-[120px] px-3 py-2 border rounded-lg"
             />
-            <PositionSelect value={newPositionPrimary} onChange={setNewPositionPrimary} placeholder="Positie 1" title="Positie 1" className="px-3 py-2 border rounded-lg text-sm" />
-            <PositionSelect value={newPositionSecondary} onChange={setNewPositionSecondary} placeholder="Positie 2" title="Positie 2" className="px-3 py-2 border rounded-lg text-sm" />
+            <PositionSelect
+              value={newPositionPrimary}
+              onChange={setNewPositionPrimary}
+              placeholder="Positie 1"
+              title="Positie 1"
+              className="px-3 py-2 border rounded-lg text-sm"
+            />
+            <PositionSelect
+              value={newPositionSecondary}
+              onChange={setNewPositionSecondary}
+              placeholder="Positie 2"
+              title="Positie 2"
+              className="px-3 py-2 border rounded-lg text-sm"
+            />
             <button
               type="button"
-              onClick={handleCreate}
+              onClick={() => void handleCreate()}
               disabled={!newName.trim()}
-              className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
+              className="px-4 py-2 bg-dia-green text-black rounded-lg disabled:bg-gray-300"
             >
               Toevoegen
             </button>

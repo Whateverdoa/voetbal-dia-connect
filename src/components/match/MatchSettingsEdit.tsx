@@ -73,7 +73,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
 
   const toggleCls = (active: boolean) =>
     `flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-      active ? "bg-dia-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      active ? "bg-dia-green text-black" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
     }`;
 
   const handleSaveMetadata = async () => {
@@ -229,14 +229,14 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
             type="button"
             onClick={handleSaveMetadata}
             disabled={savingMetadata}
-            className="w-full py-2 bg-dia-green text-white font-medium rounded-xl text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full py-2 bg-dia-green text-black font-medium rounded-xl text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {savingMetadata ? "Bezig met opslaan…" : "Wijzigingen opslaan"}
           </button>
 
           {saveAcknowledged && (
             <p
-              className="text-sm text-green-800 bg-green-50 border border-green-200 px-3 py-2 rounded-lg"
+              className="text-sm text-dia-black bg-dia-green-light border border-dia-yellow-deep/40 px-3 py-2 rounded-lg"
               role="status"
             >
               Opgeslagen. Wijzigingen zijn bijgewerkt.
@@ -265,7 +265,7 @@ export function MatchSettingsEdit({ match }: MatchSettingsEditProps) {
                 <button
                   type="button" onClick={handleAddExisting}
                   disabled={!addPlayerId}
-                  className="px-4 py-2 bg-dia-green text-white rounded-lg text-sm font-medium disabled:bg-gray-300"
+                  className="px-4 py-2 bg-dia-green text-black rounded-lg text-sm font-medium disabled:bg-gray-300"
                 >
                   Toevoegen
                 </button>

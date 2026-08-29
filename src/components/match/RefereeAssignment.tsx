@@ -72,7 +72,7 @@ export function RefereeAssignment({
           <span className="text-lg">🏁</span>
           <span className="font-semibold text-gray-700">Scheidsrechter</span>
           {hasReferee && (
-            <span className="text-xs bg-dia-green/10 text-dia-green px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-dia-green/10 text-dia-black px-2 py-0.5 rounded-full font-medium">
               {currentRefereeName ?? "Toegewezen"}
             </span>
           )}
@@ -88,7 +88,7 @@ export function RefereeAssignment({
           </p>
 
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
-          {success && <p className="text-sm text-dia-green font-medium">{success}</p>}
+          {success && <p className="text-sm text-dia-black font-medium">{success}</p>}
 
           {hasReferee ? (
             <div className="space-y-2">
@@ -121,7 +121,7 @@ export function RefereeAssignment({
                       className="w-full py-2 px-3 text-left bg-gray-50 hover:bg-dia-green/10 rounded-lg transition-colors min-h-[44px] disabled:opacity-50 flex items-center justify-between"
                     >
                       <span className="font-medium text-gray-700">{referee.name}</span>
-                      <span className="text-xs text-dia-green font-medium">Toewijzen</span>
+                      <span className="text-xs text-dia-black font-medium">Toewijzen</span>
                     </button>
                   ))}
                 </div>

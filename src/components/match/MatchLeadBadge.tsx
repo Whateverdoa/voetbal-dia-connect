@@ -70,7 +70,7 @@ export function MatchLeadBadge({
           <span className="text-lg">🏁</span>
           <span className="font-semibold text-gray-700">Wedstrijdleider</span>
           {hasLead && leadCoachName && (
-            <span className="text-xs bg-dia-green/10 text-dia-green px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-dia-green/10 text-dia-black px-2 py-0.5 rounded-full font-medium">
               {leadCoachName}
             </span>
           )}
@@ -86,7 +86,7 @@ export function MatchLeadBadge({
           </p>
 
           {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
-          {success && <p className="text-sm text-dia-green font-medium">{success}</p>}
+          {success && <p className="text-sm text-dia-black font-medium">{success}</p>}
 
           {hasLead ? (
             <div className="space-y-2">
@@ -107,7 +107,7 @@ export function MatchLeadBadge({
               <button
                 onClick={handleClaim}
                 disabled={isLoading}
-                className="w-full py-2 bg-dia-green text-white font-medium rounded-xl min-h-[44px] active:scale-[0.98] transition-transform hover:bg-dia-green/90 disabled:opacity-50 text-sm"
+                className="w-full py-2 bg-dia-green text-black font-medium rounded-xl min-h-[44px] active:scale-[0.98] transition-transform hover:bg-dia-green/90 disabled:opacity-50 text-sm"
               >
                 {isLoading ? "Bezig..." : "Neem de leiding"}
               </button>

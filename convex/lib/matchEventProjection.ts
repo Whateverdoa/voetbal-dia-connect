@@ -58,6 +58,7 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
       relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
       playerName: latest.playerName ?? event.playerName,
       relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
+      assistKind: latest.assistKind ?? event.assistKind,
       matchMs: toMs(event),
     };
   });

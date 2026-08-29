@@ -42,7 +42,7 @@ export default function LiveMatchPage() {
 
 function LoadingScreen() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-dia-green to-green-800">
+    <main className="min-h-screen flex items-center justify-center bg-dia-black">
       <div className="text-center text-white">
         <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="mt-4">Wedstrijd laden...</p>
@@ -63,7 +63,7 @@ function NotFoundScreen({ code }: { code: string }) {
         </p>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-dia-green text-white rounded-lg font-medium"
+          className="inline-block px-6 py-3 bg-dia-green text-black rounded-lg font-medium"
         >
           Andere code invoeren
         </Link>

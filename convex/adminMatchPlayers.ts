@@ -1,9 +1,10 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminAccess } from "./adminAuth";
+import { assertMatchAcceptsRosterAdd } from "./lib/lateMatchRoster";
 
 /**
- * Add an existing team player to a scheduled match. Admin only.
+ * Add an existing team player to a match (also after kick-off). Admin only.
  */
 export const addPlayerToMatch = mutation({
   args: {
@@ -15,9 +16,7 @@ export const addPlayerToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const player = await ctx.db.get(args.playerId);
     if (!player || player.teamId !== match.teamId) {
@@ -45,7 +44,7 @@ export const addPlayerToMatch = mutation({
 });
 
 /**
- * Create a new player and add to a scheduled match. Admin only.
+ * Create a new player and add to a match (also after kick-off). Admin only.
  */
 export const createPlayerAndAddToMatch = mutation({
   args: {
@@ -60,9 +59,7 @@ export const createPlayerAndAddToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const trimmed = args.name.trim();
     if (!trimmed) throw new Error("Naam is verplicht");

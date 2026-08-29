@@ -42,6 +42,7 @@ export {
   createPlayers,
   listPlayersByTeam,
   updatePlayer,
+  searchPlayersByName,
   deletePlayer,
 } from "./adminPlayers";
 
@@ -62,3 +63,12 @@ export {
   listTeamPlayersNotInMatch,
   updateMatch,
 } from "./adminMatches";
+
+export {
+  getClaimWindowForWeek,
+  getWeekAssignmentStats,
+  openClaimWindow,
+  closeClaimWindow,
+  sendEmailNudgeNow,
+  listUnassignedForWeek,
+} from "./refereeClaimWindows";

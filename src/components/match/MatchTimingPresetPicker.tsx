@@ -36,7 +36,7 @@ export function MatchTimingPresetPicker({
               className={clsx(
                 "rounded-xl border-2 px-3 py-2.5 text-left transition-colors min-h-[48px]",
                 active
-                  ? "border-dia-green bg-green-50 text-dia-green"
+                  ? "border-dia-green bg-dia-green-light text-dia-black"
                   : "border-gray-200 text-gray-700 hover:border-gray-300"
               )}
             >

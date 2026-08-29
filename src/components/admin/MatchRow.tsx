@@ -26,6 +26,11 @@ export interface AdminMatch {
   opponentLogoUrl?: string | null;
   quarterCount?: number;
   regulationDurationMinutes?: number;
+  scoreDiscrepancyAt?: number;
+  scoreDiscrepancyLocalHome?: number;
+  scoreDiscrepancyLocalAway?: number;
+  scoreDiscrepancySportlinkHome?: number;
+  scoreDiscrepancySportlinkAway?: number;
 }
 
 interface MatchRowProps {
@@ -37,7 +42,7 @@ interface MatchRowProps {
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   scheduled: { label: "Gepland", cls: "bg-blue-100 text-blue-700" },
   lineup: { label: "Opstelling", cls: "bg-blue-100 text-blue-700" },
-  live: { label: "LIVE", cls: "bg-green-100 text-green-700" },
+  live: { label: "LIVE", cls: "bg-dia-green-light text-dia-black" },
   halftime: { label: "Rust", cls: "bg-orange-100 text-orange-700" },
   finished: { label: "Afgelopen", cls: "bg-red-100 text-red-700" },
 };
@@ -97,9 +102,17 @@ export function MatchRow({ match, onEdit, onStatusMessage }: MatchRowProps) {
       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
         {badge.label}
       </span>
+      {match.scoreDiscrepancyAt != null && (
+        <span
+          className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-900"
+          title={`Lokaal ${match.scoreDiscrepancyLocalHome ?? "?"}-${match.scoreDiscrepancyLocalAway ?? "?"} → Sportlink ${match.scoreDiscrepancySportlinkHome ?? "?"}-${match.scoreDiscrepancySportlinkAway ?? "?"}`}
+        >
+          Uitslag afwijking
+        </span>
+      )}
 
       {match.refereeName ? (
-        <span className="text-xs text-green-700">Scheidsrechter: {match.refereeName}</span>
+        <span className="text-xs text-dia-black">Scheidsrechter: {match.refereeName}</span>
       ) : (
         <span className="text-xs text-amber-600 flex items-center gap-1">
           <AlertTriangle size={12} /> Geen scheidsrechter

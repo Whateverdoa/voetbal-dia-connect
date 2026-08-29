@@ -81,8 +81,8 @@ export function PlayingTimePanel({ matchId }: PlayingTimePanelProps) {
 
       <PlayerListSection
         title={`Op het veld (${onFieldPlayers.length})`}
-        icon={<span className="w-3 h-3 bg-green-500 rounded-full" />}
-        titleClassName="text-green-700"
+        icon={<span className="w-3 h-3 bg-dia-yellow rounded-full" />}
+        titleClassName="text-dia-black"
         players={onFieldPlayers}
         averageMinutes={averageMinutes}
         maxMinutes={maxMinutes}

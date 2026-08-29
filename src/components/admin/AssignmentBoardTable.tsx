@@ -12,13 +12,13 @@ const statusBadges: Record<
 > = {
   scheduled: { label: "Gepland", className: "bg-blue-100 text-blue-700" },
   lineup: { label: "Opstelling", className: "bg-sky-100 text-sky-700" },
-  live: { label: "LIVE", className: "bg-emerald-100 text-emerald-700" },
+  live: { label: "LIVE", className: "bg-dia-green-light text-dia-black" },
   halftime: { label: "Rust", className: "bg-amber-100 text-amber-700" },
   finished: { label: "Afgelopen", className: "bg-slate-200 text-slate-700" },
 };
 
 const qualificationBadges = {
-  geschikt: "bg-emerald-100 text-emerald-700",
+  geschikt: "bg-dia-green-light text-dia-black",
   mogelijk: "bg-amber-100 text-amber-700",
   onbekend: "bg-slate-200 text-slate-600",
 };
@@ -84,8 +84,8 @@ export function AssignmentBoardTable({
                 <tr
                   key={match._id}
                   className={clsx(
-                    "cursor-pointer transition-colors hover:bg-emerald-50/70",
-                    isSelected && "bg-emerald-50/80"
+                    "cursor-pointer transition-colors hover:bg-dia-green-light/70",
+                    isSelected && "bg-dia-green-light/80"
                   )}
                   onClick={() => onSelect(match._id)}
                   aria-selected={isSelected}

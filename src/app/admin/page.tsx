@@ -62,7 +62,7 @@ function AdminPageWithClerk() {
             Dit account heeft nog geen admin-rol in `userAccess`.
           </p>
           <div className="flex justify-center gap-3 pt-2">
-            <Link href="/sign-in" className="text-sm text-dia-green hover:underline">
+            <Link href="/sign-in" className="text-sm text-dia-black hover:underline">
               Naar inloggen
             </Link>
             <button

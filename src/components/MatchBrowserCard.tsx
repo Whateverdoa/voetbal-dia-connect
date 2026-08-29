@@ -25,7 +25,7 @@ export function MatchBrowserCard({ match }: Props) {
   const timeColumn =
     isLive ? (
       <div className="flex flex-col gap-0.5">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-green-600">Live</span>
+        <span className="text-[11px] font-bold uppercase tracking-wide text-dia-black">Live</span>
         <span className="text-[10px] text-gray-500">
           {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
         </span>
@@ -50,7 +50,7 @@ export function MatchBrowserCard({ match }: Props) {
       className={clsx(
         "flex w-full max-w-full flex-row items-stretch gap-3 rounded-xl border bg-white p-3 touch-manipulation transition-all active:scale-[0.99] sm:gap-4 sm:p-4",
         isLive
-          ? "border-green-200 shadow-sm hover:border-green-300 hover:shadow-md"
+          ? "border-dia-yellow-deep/40 shadow-sm hover:border-dia-yellow-deep/50 hover:shadow-md"
           : "border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md"
       )}
     >
@@ -67,7 +67,7 @@ export function MatchBrowserCard({ match }: Props) {
               <span
                 className={clsx(
                   "text-lg font-bold sm:text-xl",
-                  isLive ? "text-green-600" : "text-gray-800"
+                  isLive ? "text-dia-black" : "text-gray-800"
                 )}
               >
                 {match.homeScore} - {match.awayScore}
@@ -83,6 +83,9 @@ export function MatchBrowserCard({ match }: Props) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500">
           <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{match.publicCode}</span>
+          {match.isHome && match.venueField ? (
+            <span className="text-dia-black/70">{match.venueField}</span>
+          ) : null}
           {match.refereeAssigned === true && (
             <span
               title={

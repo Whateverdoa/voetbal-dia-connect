@@ -2,13 +2,17 @@
  * Coach-specific queries and misc queries re-exported via matches.ts.
  */
 import { query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { normalizeQualificationTags } from "../src/lib/admin/assignmentBoard";
 import {
+  getCurrentUserAccess,
   requireCoachAccess,
   requireCoachForMatch,
   requireCoachForTeam,
 } from "./lib/userAccess";
+import { hasAdminRole, ADMIN_DISPLAY_NAME } from "./lib/adminOverride";
+import { listSeasonMatchesForAdminView } from "./lib/adminLiveView";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 
 export const listActiveReferees = query({
@@ -39,7 +43,10 @@ export const getCoachTeamSetup = query({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
     try {
-      await requireCoachForTeam(ctx, args.teamId);
+      const access = await getCurrentUserAccess(ctx);
+      if (!hasAdminRole(access)) {
+        await requireCoachForTeam(ctx, args.teamId);
+      }
     } catch {
       return null;
     }
@@ -72,7 +79,10 @@ export const listTeamPlayersNotInMatch = query({
     if (!match) return null;
 
     try {
-      await requireCoachForMatch(ctx, match);
+      const access = await getCurrentUserAccess(ctx);
+      if (!hasAdminRole(access)) {
+        await requireCoachForMatch(ctx, match);
+      }
     } catch {
       return null;
     }
@@ -99,9 +109,14 @@ export const listTeamPlayersNotInMatch = query({
 });
 
 export const verifyCoachAccess = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { seasonKey: v.optional(v.string()) },
+  handler: async (ctx, args) => {
     try {
+      const access = await getCurrentUserAccess(ctx);
+      if (hasAdminRole(access) && args.seasonKey) {
+        return await buildAdminCoachDashboard(ctx, args.seasonKey);
+      }
+
       const { coach } = await requireCoachAccess(ctx);
       const teams = await Promise.all(coach.teamIds.map((teamId) => ctx.db.get(teamId)));
       const matches = await Promise.all(
@@ -142,9 +157,39 @@ export const verifyCoachAccess = query({
           .filter((team): team is NonNullable<typeof team> => team !== null)
           .map((team) => ({ id: team._id, name: team.name })),
         matches: enriched,
+        viewingAsAdmin: false,
       };
     } catch {
       return null;
     }
   },
 });
+
+async function buildAdminCoachDashboard(ctx: QueryCtx, seasonKey: string) {
+  const identity = await ctx.auth.getUserIdentity();
+  const { rows, teams } = await listSeasonMatchesForAdminView(ctx, seasonKey);
+  const matches = rows.map(({ match, teamName, logos }) => ({
+    _id: match._id,
+    teamId: match.teamId,
+    opponent: match.opponent,
+    isHome: match.isHome,
+    status: match.status,
+    currentQuarter: match.currentQuarter,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+    publicCode: match.publicCode,
+    scheduledAt: match.scheduledAt,
+    teamName,
+    ...logos,
+  }));
+
+  return {
+    coach: {
+      id: "admin",
+      name: identity?.name?.trim() || ADMIN_DISPLAY_NAME,
+    },
+    teams,
+    matches,
+    viewingAsAdmin: true,
+  };
+}

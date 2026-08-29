@@ -27,7 +27,7 @@ export function PlayingTimeSummary({
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <div className="bg-gray-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-dia-green">
+          <div className="text-2xl font-bold text-dia-black">
             {formatMinutes(averageMinutes)}
           </div>
           <div className="text-xs text-gray-500 mt-1">Gemiddeld</div>
@@ -40,7 +40,7 @@ export function PlayingTimeSummary({
                 ? "text-red-600"
                 : spread > 4
                   ? "text-yellow-600"
-                  : "text-green-600"
+                  : "text-dia-black"
             )}
           >
             {formatMinutes(spread)}

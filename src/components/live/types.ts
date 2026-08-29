@@ -11,7 +11,10 @@ export interface MatchData {
   homeScore: number;
   awayScore: number;
   showLineup: boolean;
+  formationId?: string;
   scheduledAt?: number;
+  /** Home pitch only (DIA terrein); null for away. */
+  venueField?: string | null;
   startedAt?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
@@ -42,6 +45,7 @@ export interface MatchEvent {
   type: string;
   playerName?: string;
   relatedPlayerName?: string;
+  assistKind?: "pass" | "corner" | "free_kick";
   stagedEventId?: string;
   targetEventId?: string;
   quarter: number;
@@ -61,4 +65,6 @@ export interface LineupPlayer {
   number?: number;
   onField: boolean;
   isKeeper: boolean;
+  fieldSlotIndex?: number;
+  photoUrl?: string;
 }

@@ -208,7 +208,7 @@ Importflow voor VoetbalAssist/KNVB:
   - Logs: Convex function logs → filter op `weeklyUpdate`.
 - **Handmatig (alles in één keer):** `npm run results:update` (= `npx convex run import/weeklyUpdate:runNow`). Zonder ingelogde admin: JSON-args met `opsSecret` gelijk aan `CONVEX_OPS_SECRET` (zelfde patroon als `syncAll`).
 - **Losse stappen (fallback):** `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist; `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
-- de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `JO13-2JM -> jo13-2`, `G Team -> g-team`
+- de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `O13-2JM / JO13-2JM -> jo13-2`, `G Team -> g-team`
 - bewust niet automatisch gemapt: ambigue bronvarianten zoals kale `JO10` of `JO12`; die vragen handmatige teamkeuze of extra mapping
 - nieuwe niet-gespeelde wedstrijden krijgen tijdens de sync automatisch `matchPlayers` voor alle actieve teamspelers
 - bestaande wedstrijden zonder `matchPlayers` kunnen tijdens dezelfde sync een roster-backfill krijgen zolang ze nog niet gespeeld zijn
@@ -285,6 +285,11 @@ Open punten uit gebruik / data (geen volledige specs; vastgelegd voor opvolging)
 
 **Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device. Zie ook **`docs/plans/product-backlog.md`**.
 
+## Tech-schulden (niet-urgent)
+
+- **Next.js `middleware.ts` → `proxy.ts`** — Next.js 16 deprecatet de `middleware`-file-conventie; breaking in 17. Huidige file: `src/middleware.ts` (Clerk). Later: hernoemen naar `src/proxy.ts` en de export. Geen haast zolang we op Next 16 blijven.
+- **Convex** — staat op `^1.44`. De upgrade uit PR #38 (`1.31.6` → `1.35.1`) is achterhaald; die PR is gesloten.
+
 ## Future To-Do's (product)
 
 Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring). *Status: backlog — nog niet geprioriteerd of ingepland tenzij anders vermeld.*
@@ -301,6 +306,14 @@ Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring).
 2. **Veldlayout — plat bovenaanzicht** — Het veld is nu **perspectivisch**; gewenst: terug naar een **plat, vlak bovenaanzicht** (traditioneel tactiekbord). *Dit is een UI-designbeslissing, geen datawijziging.* **Volgende stap:** afstemmen met Roel over de gewenste layout vóór implementatie (sluit aan bij “live veldsituatie” hierboven, maar specificeert de weergave-richting).
 3. **Wedstrijdplan vooraf (pre-match planning)** — Nu vooral wissels **tijdens** de wedstrijd. Gewenst: **vooraf** een vollediger plan: **opstelling per kwart**, **geplande wissels** (uit/in, moment/timing), bewerkbaar **tijdens** de wedstrijd; plan = **startpunt**, geen dwangbuis. **Technisch (richting):** een **draft**-volgorde die **los staat** van de **append-only** `matchEvents` tot de coach een geplande actie **bevestigt**; uitgevoerde acties blijven gewone events. *Complex — verdient een apart **WAT+HOE**-document vóór bouwen.*
 4. **Backlog & planning** — Volledige uitwerking van open punten staat in **`docs/plans/product-backlog.md`**. Optioneel later: koppeling aan GitHub Projects, Linear, enz. zodat dit document vooral “wat en waarom” blijft en tickets de status bijhouden.
+
+### JO13-pilot: presentatie, gamificatie, consent (Fable)
+
+Actief implementatietraject voor selectieteams (presentatie, gamificatie, consent). **Hoofd-testteam nu: JO13-2** (`jo13-2`); andere teams later.
+
+- **Masterplan:** [`docs/plans/fable-jo13-presentatie-gamificatie.plan.md`](docs/plans/fable-jo13-presentatie-gamificatie.plan.md)
+- **Voortgang (live tracker):** [`docs/plans/fable-jo13-progress.md`](docs/plans/fable-jo13-progress.md) — Fable werkt taken af en logt in dit bestand.
+- **Open roadmap (2026-08):** [`docs/plans/open-roadmap.md`](docs/plans/open-roadmap.md) — inventaris + tactiek-presentatie, selectie-teamportaal, heatmaps-future.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.

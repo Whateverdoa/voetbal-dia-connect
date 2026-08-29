@@ -1,4 +1,5 @@
 import { Id } from "@/convex/_generated/dataModel";
+import type { AssistKind } from "@/lib/assistKind";
 
 export type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
 export type SubstitutionPlanKind = "substitution" | "positionSwap";
@@ -38,6 +39,7 @@ export interface MatchEvent {
   targetEventId?: Id<"matchEvents">;
   playerName?: string;
   relatedPlayerName?: string;
+  assistKind?: AssistKind;
   quarter: number;
   matchMs?: number;
   isOwnGoal?: boolean;
@@ -87,6 +89,7 @@ export interface Match {
   opponent: string;
   isHome: boolean;
   scheduledAt?: number;
+  venueField?: string | null;
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
@@ -112,6 +115,7 @@ export interface Match {
   hasLead?: boolean;
   isCurrentCoachLead?: boolean;
   canControlClock?: boolean;
+  viewingAsAdmin?: boolean;
   capabilities?: {
     canControlClock: boolean;
     canDoSubstitutions: boolean;

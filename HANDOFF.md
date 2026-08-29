@@ -305,6 +305,7 @@ Actief implementatietraject voor selectieteams (presentatie, gamificatie, consen
 
 - **Masterplan:** [`docs/plans/fable-jo13-presentatie-gamificatie.plan.md`](docs/plans/fable-jo13-presentatie-gamificatie.plan.md)
 - **Voortgang (live tracker):** [`docs/plans/fable-jo13-progress.md`](docs/plans/fable-jo13-progress.md) — Fable werkt taken af en logt in dit bestand.
+- **Open roadmap (2026-08):** [`docs/plans/open-roadmap.md`](docs/plans/open-roadmap.md) — inventaris + tactiek-presentatie, selectie-teamportaal, heatmaps-future.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.

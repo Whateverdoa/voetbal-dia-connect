@@ -15,6 +15,7 @@ import {
   SubstitutionSuggestions,
   MatchLeadBadge,
   MatchSettingsEdit,
+  LateRosterPanel,
   RefereeAssignment,
   StagedSubstitutionsPanel,
   GoalEnrichmentPanel,
@@ -167,6 +168,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         />
 
         {isPregame && <MatchSettingsEdit match={match} />}
+        {!isPregame && <LateRosterPanel matchId={match._id} />}
 
         <MatchLeadBadge
           matchId={match._id}

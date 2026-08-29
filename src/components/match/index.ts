@@ -34,6 +34,7 @@ export { MatchLeadBadge } from "./MatchLeadBadge";
 // Pregame settings edit
 export { MatchTimingPresetPicker } from "./MatchTimingPresetPicker";
 export { MatchSettingsEdit } from "./MatchSettingsEdit";
+export { LateRosterPanel } from "./LateRosterPanel";
 
 // Loading/Error screens
 export { MatchLoadingScreen } from "./MatchLoadingScreen";

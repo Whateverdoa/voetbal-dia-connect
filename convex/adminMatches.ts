@@ -13,6 +13,7 @@ import {
 } from "../src/lib/admin/assignmentBoard";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { assertValidMatchTiming } from "./lib/matchTiming";
+import { assertMatchAcceptsRosterAdd } from "./lib/lateMatchRoster";
 import { seasonKeyFromMs } from "./lib/season";
 import { isActiveSeasonMatch } from "./lib/season";
 import { hasScheduleOverlap } from "../src/lib/referee/eligibility";
@@ -453,9 +454,7 @@ export const addPlayerToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const player = await ctx.db.get(args.playerId);
     if (!player || player.teamId !== match.teamId) {
@@ -495,9 +494,7 @@ export const createPlayerAndAddToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const trimmed = args.name.trim();
     if (!trimmed) throw new Error("Naam is verplicht");

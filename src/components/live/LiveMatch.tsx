@@ -40,7 +40,8 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
   const isHalftime = match.status === "halftime";
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled" || match.status === "lineup";
-  const hasStoppageAdvice = (match.stoppageAdvisoryMs ?? 0) > 0;
+  const hasStoppageAdvice =
+    !isFinished && (match.stoppageAdvisoryMs ?? 0) > 0;
 
   // Track previous scores for goal animation
   const prevScoresRef = useRef({ home: match.homeScore, away: match.awayScore });

@@ -26,6 +26,7 @@ export function GoalEnrichmentPanel({
   const [targetId, setTargetId] = useState<Id<"matchEvents"> | null>(null);
   const [scorerId, setScorerId] = useState<Id<"players"> | "">("");
   const [assistId, setAssistId] = useState<Id<"players"> | "">("");
+  const [assistKind, setAssistKind] = useState<"" | "pass" | "corner" | "free_kick">("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,10 +43,12 @@ export function GoalEnrichmentPanel({
     if (!selectedGoal) {
       setScorerId("");
       setAssistId("");
+      setAssistKind("");
       return;
     }
     setScorerId(selectedGoal.playerId ?? "");
     setAssistId(selectedGoal.relatedPlayerId ?? "");
+    setAssistKind(selectedGoal.assistKind ?? "");
   }, [selectedGoal]);
 
   if (goals.length === 0) {
@@ -62,11 +65,13 @@ export function GoalEnrichmentPanel({
         eventId: targetId,
         scorerId: scorerId || undefined,
         assistId: assistId || undefined,
+        assistKind: assistKind || undefined,
         correlationId: createCorrelationId("enrich-goal"),
       });
       setTargetId(null);
       setScorerId("");
       setAssistId("");
+      setAssistKind("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Onbekende fout");
     } finally {
@@ -100,6 +105,11 @@ export function GoalEnrichmentPanel({
             }`}
             {goal.playerName ? ` • scorer: ${goal.playerName}` : ""}
             {goal.relatedPlayerName ? ` • assist: ${goal.relatedPlayerName}` : ""}
+            {goal.assistKind === "corner"
+              ? " • hoekschop"
+              : goal.assistKind === "free_kick"
+                ? " • vrije trap"
+                : ""}
             {goal.note ? ` • ${goal.note}` : ""}
           </option>
         ))}
@@ -129,6 +139,20 @@ export function GoalEnrichmentPanel({
               {player.name}
             </option>
           ))}
+        </select>
+        <select
+          value={assistKind}
+          onChange={(e) =>
+            setAssistKind(
+              e.target.value as "" | "pass" | "corner" | "free_kick"
+            )
+          }
+          className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base sm:col-span-2"
+        >
+          <option value="">Soort (optioneel)</option>
+          <option value="pass">Assist</option>
+          <option value="corner">Hoekschop</option>
+          <option value="free_kick">Vrije trap</option>
         </select>
       </div>
 

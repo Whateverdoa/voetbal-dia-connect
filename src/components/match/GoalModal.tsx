@@ -5,8 +5,13 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
-import type { MatchPlayer } from "./types";
+import {
+  resolveAssistKindForSubmit,
+  type AssistKind,
+} from "@/lib/assistKind";
 import { createCorrelationId } from "@/lib/correlationId";
+import { AssistPicker } from "./AssistPicker";
+import type { MatchPlayer } from "./types";
 
 interface GoalModalProps {
   matchId: Id<"matches">;
@@ -20,6 +25,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
   const [goalType, setGoalType] = useState<GoalType | null>(null);
   const [scorer, setScorer] = useState<Id<"players"> | null>(null);
   const [assist, setAssist] = useState<Id<"players"> | null>(null);
+  const [assistKind, setAssistKind] = useState<AssistKind | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,10 +56,12 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
     setIsSubmitting(true);
     setError(null);
     try {
+      const kind = resolveAssistKindForSubmit(assistKind, assist);
       await addGoal({
         matchId,
         playerId: scorer,
         assistPlayerId: assist ?? undefined,
+        ...(kind ? { assistKind: kind } : {}),
         isOpponentGoal: false,
         correlationId: createCorrelationId("goal"),
       });
@@ -148,47 +156,14 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           </div>
 
           {scorer && (
-            <>
-              <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                Assist (optioneel)
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setAssist(null)}
-                  className={clsx(
-                    "p-3 rounded-xl border-2 min-h-[48px] transition-all",
-                    assist === null
-                      ? "border-dia-green bg-dia-green-light"
-                      : "border-gray-200"
-                  )}
-                >
-                  Geen assist
-                </button>
-                {playersOnField
-                  .filter((p) => p.playerId !== scorer)
-                  .map((p) => (
-                    <button
-                      key={p.playerId}
-                      onClick={() => setAssist(p.playerId)}
-                      className={clsx(
-                        "p-3 rounded-xl border-2 text-left min-h-[48px] transition-all",
-                        assist === p.playerId
-                          ? "border-dia-green bg-dia-green-light"
-                          : "border-gray-200"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        {p.number && (
-                          <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center font-bold text-xs">
-                            {p.number}
-                          </span>
-                        )}
-                        <span className="font-medium text-sm truncate">{p.name}</span>
-                      </div>
-                    </button>
-                  ))}
-              </div>
-            </>
+            <AssistPicker
+              scorerId={scorer}
+              playersOnField={playersOnField}
+              assistId={assist}
+              assistKind={assistKind}
+              onAssistIdChange={setAssist}
+              onAssistKindChange={setAssistKind}
+            />
           )}
         </div>
 

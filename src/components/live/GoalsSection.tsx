@@ -1,3 +1,4 @@
+import { formatAssistLine } from "@/lib/assistKind";
 import type { MatchEvent } from "./types";
 
 interface GoalsSectionProps {
@@ -15,28 +16,32 @@ export function GoalsSection({ events, teamName }: GoalsSectionProps) {
         <span>⚽</span> Doelpunten {teamName}
       </h2>
       <div className="space-y-2">
-        {goals.map((event, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⚽</span>
-              <div>
-                <p className="font-medium">
-                  {event.playerName || "Goal"}
-                  {event.isOwnGoal && " (eigen goal)"}
-                </p>
-                {event.relatedPlayerName && (
-                  <p className="text-sm text-gray-500">
-                    Assist: {event.relatedPlayerName}
+        {goals.map((event, i) => {
+          const assistLine = formatAssistLine(
+            event.relatedPlayerName,
+            event.assistKind
+          );
+          return (
+            <div
+              key={i}
+              className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚽</span>
+                <div>
+                  <p className="font-medium">
+                    {event.playerName || "Goal"}
+                    {event.isOwnGoal && " (eigen goal)"}
                   </p>
-                )}
+                  {assistLine && (
+                    <p className="text-sm text-gray-500">{assistLine}</p>
+                  )}
+                </div>
               </div>
+              <span className="text-sm text-gray-400">Q{event.quarter}</span>
             </div>
-            <span className="text-sm text-gray-400">Q{event.quarter}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

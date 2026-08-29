@@ -43,6 +43,7 @@ export interface MatchEvent {
   type: string;
   playerName?: string;
   relatedPlayerName?: string;
+  assistKind?: "pass" | "corner" | "free_kick";
   stagedEventId?: string;
   targetEventId?: string;
   quarter: number;

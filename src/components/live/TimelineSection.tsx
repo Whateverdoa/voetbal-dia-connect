@@ -1,3 +1,4 @@
+import { assistKindLabel, formatAssistLine } from "@/lib/assistKind";
 import type { MatchEvent } from "./types";
 
 interface TimelineSectionProps {
@@ -83,8 +84,20 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
           : event.note
             ? `Doelpunt ${scoringTeamName} (${event.note})`
             : `Doelpunt ${scoringTeamName}`;
+        if (
+          event.assistKind === "corner" ||
+          event.assistKind === "free_kick"
+        ) {
+          text += ` · ${assistKindLabel(event.assistKind)}`;
+        }
         highlight = true;
       }
+      break;
+    case "assist":
+      icon = "👟";
+      text =
+        formatAssistLine(event.playerName, event.assistKind) ??
+        `Assist ${event.playerName || ""}`;
       break;
     case "sub_out":
       icon = "🔁";

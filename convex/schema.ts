@@ -282,6 +282,9 @@ export default defineSchema({
     ),
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
+    assistKind: v.optional(
+      v.union(v.literal("pass"), v.literal("corner"), v.literal("free_kick"))
+    ),
     quarter: v.number(),
     matchMs: v.optional(v.number()), // Milliseconds from match start (derived from gameSecond)
     isOwnGoal: v.optional(v.boolean()),

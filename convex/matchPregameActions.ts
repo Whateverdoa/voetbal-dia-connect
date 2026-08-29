@@ -5,10 +5,11 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifyCoachTeamMembership } from "./pinHelpers";
 import { assertValidMatchTiming } from "./lib/matchTiming";
+import { assertMatchAcceptsRosterAdd } from "./lib/lateMatchRoster";
 
 /**
- * Create a new player in the team roster and add them to a scheduled match.
- * Allowed only when match status is "scheduled". Any team coach may perform this.
+ * Create a new player in the team roster and add them to the match.
+ * Allowed before, during, and after kick-off. Any team coach may perform this.
  */
 export const createPlayerAndAddToMatch = mutation({
   args: {
@@ -23,9 +24,7 @@ export const createPlayerAndAddToMatch = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
     if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
@@ -58,8 +57,8 @@ export const createPlayerAndAddToMatch = mutation({
 });
 
 /**
- * Add an existing team player to a scheduled match.
- * Allowed only when match status is "scheduled". Any team coach may perform this.
+ * Add an existing team player to the match.
+ * Allowed before, during, and after kick-off. Any team coach may perform this.
  */
 export const addExistingPlayerToMatch = mutation({
   args: {
@@ -71,9 +70,7 @@ export const addExistingPlayerToMatch = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd vóór de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
     if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }

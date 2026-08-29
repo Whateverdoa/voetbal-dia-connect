@@ -89,6 +89,7 @@ export interface Match {
   opponent: string;
   isHome: boolean;
   scheduledAt?: number;
+  venueField?: string | null;
   status: MatchStatus;
   currentQuarter: number;
   quarterCount: number;
@@ -114,6 +115,7 @@ export interface Match {
   hasLead?: boolean;
   isCurrentCoachLead?: boolean;
   canControlClock?: boolean;
+  viewingAsAdmin?: boolean;
   capabilities?: {
     canControlClock: boolean;
     canDoSubstitutions: boolean;

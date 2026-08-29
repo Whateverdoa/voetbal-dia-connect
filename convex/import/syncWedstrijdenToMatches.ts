@@ -12,7 +12,9 @@ import { generatePublicCode } from "../seed/helpers";
 import { findLocalLogo } from "../lib/localLogos";
 import { requireAdminOrOps } from "../lib/opsAuth";
 import { seasonKeyFromMs } from "../lib/season";
+import { homeVenueFieldForMatch } from "../lib/diaFields";
 import { extractDiaMatch } from "./diaTeamNormalize";
+import { replaceMatchRoster } from "./matchRosterReplace";
 import { buildFinishedScorePatch, isLiveOrHalftime } from "./syncScoreApply";
 
 /**
@@ -302,12 +304,26 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     if (existingMatch) {
       // Correct team when Sportlink mapping changed (e.g. O13-2JM → jo13-2).
       if (existingMatch.teamId !== team._id) {
+        const canReplaceRoster =
+          existingMatch.status === "scheduled" ||
+          existingMatch.status === "lineup";
         if (!dryRun) {
           const coachId = coachByTeamId.get(team._id);
           await ctx.db.patch(existingMatch._id, {
             teamId: team._id,
             ...(coachId ? { coachId } : {}),
           });
+          if (canReplaceRoster && !existingMatch.startedAt) {
+            const rosterResult = await replaceMatchRoster(ctx, {
+              matchId: existingMatch._id,
+              playerIds: activePlayerIds,
+              dryRun: false,
+            });
+            matchPlayerCountByMatchId.set(
+              existingMatch._id,
+              rosterResult.inserted,
+            );
+          }
         }
         reassignedTeam++;
         existingMatch = {
@@ -344,6 +360,20 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
           ...existingMatch,
           sportlinkWedstrijdcode: sportlinkCode,
         });
+      }
+
+      const venueField = homeVenueFieldForMatch(
+        extracted.isHome,
+        wedstrijd.veld,
+      );
+      if (
+        extracted.isHome &&
+        venueField &&
+        existingMatch.venueField !== venueField
+      ) {
+        if (!dryRun) {
+          await ctx.db.patch(existingMatch._id, { venueField });
+        }
       }
 
       // TIJD-DRIFT: existing scheduled/lineup match whose kickoff moved.
@@ -386,6 +416,10 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
         const scheduledAtChanged =
           existingMatch.scheduledAt !== wedstrijd.datum_ms;
+        const venueField = homeVenueFieldForMatch(
+          extracted.isHome,
+          wedstrijd.veld,
+        );
         if (!dryRun) {
           await ctx.db.patch(existingMatch._id, {
             status: "finished",
@@ -394,6 +428,9 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
             finishedAt: existingMatch.finishedAt ?? wedstrijd.datum_ms + 3600000,
             ...(scheduledAtChanged ? { scheduledAt: wedstrijd.datum_ms } : {}),
             ...(sportlinkCode ? { sportlinkWedstrijdcode: sportlinkCode } : {}),
+            ...(venueField && existingMatch.venueField !== venueField
+              ? { venueField }
+              : {}),
             ...patch,
           });
         }
@@ -413,6 +450,10 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
 
     if (!dryRun) {
       const code = await generateUniqueCode(ctx);
+      const venueField = homeVenueFieldForMatch(
+        extracted.isHome,
+        wedstrijd.veld,
+      );
       const matchId = await ctx.db.insert("matches", {
         teamId: team._id,
         publicCode: code,
@@ -421,6 +462,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         ...(extracted.opponentLogoUrl ? { opponentLogoUrl: extracted.opponentLogoUrl } : {}),
         isHome: extracted.isHome,
         scheduledAt: wedstrijd.datum_ms,
+        ...(venueField ? { venueField } : {}),
         seasonKey: seasonKeyFromMs(wedstrijd.datum_ms),
         ...(sportlinkCode ? { sportlinkWedstrijdcode: sportlinkCode } : {}),
         status: isFinished ? "finished" : "scheduled",

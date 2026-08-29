@@ -10,6 +10,7 @@ import {
   requireCoachForMatch,
   requireRefereeForMatch,
 } from "./lib/userAccess";
+import { hasAdminRole } from "./lib/adminOverride";
 
 type ReaderCtx = QueryCtx | MutationCtx;
 
@@ -33,6 +34,7 @@ export async function verifyClockPin(
 ): Promise<boolean> {
   const access = await getCurrentUserAccess(ctx);
   if (!access) return false;
+  if (hasAdminRole(access)) return true;
 
   if (access.roles.includes("referee")) {
     try {
@@ -62,6 +64,21 @@ export async function verifyIsMatchLead(
   match: Doc<"matches">,
   _pin?: string,
 ): Promise<Doc<"coaches"> | null> {
+  const access = await getCurrentUserAccess(ctx);
+  if (hasAdminRole(access)) {
+    const coach = await verifyCoachTeamMembership(ctx, match);
+    if (coach) return coach;
+    if (match.leadCoachId) {
+      const lead = await ctx.db.get(match.leadCoachId);
+      if (lead) return lead;
+    }
+    if (match.coachId) {
+      const assigned = await ctx.db.get(match.coachId);
+      if (assigned) return assigned;
+    }
+    return coach;
+  }
+
   const coach = await verifyCoachTeamMembership(ctx, match);
   if (!coach || match.leadCoachId !== coach._id) {
     return null;

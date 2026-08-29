@@ -13,6 +13,8 @@ export interface MatchData {
   showLineup: boolean;
   formationId?: string;
   scheduledAt?: number;
+  /** Home pitch only (DIA terrein); null for away. */
+  venueField?: string | null;
   startedAt?: number;
   quarterStartedAt?: number;
   pausedAt?: number;

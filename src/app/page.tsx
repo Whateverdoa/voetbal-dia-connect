@@ -31,10 +31,10 @@ export default function Home() {
               href="/help"
               className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-dia-black hover:text-dia-black underline underline-offset-4"
             >
-              Hoe werkt het?
+              Handleiding
             </Link>
             <span className="text-xs text-gray-500 block mt-1">
-              Meekijken kan zonder account; uitleg ook voor coaches, wedstrijdbegeleiders en club.
+              Coach, scheidsrechter en admin — meekijken kan zonder account.
             </span>
           </div>
         </div>

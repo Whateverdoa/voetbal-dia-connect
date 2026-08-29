@@ -23,6 +23,8 @@ export interface PublicMatch {
   halftimeStartedAt?: number;
   scheduledBreakEndAt?: number;
   scheduledAt?: number;
+  /** Home pitch only (DIA terrein); null for away. */
+  venueField?: string | null;
   teamName: string;
   clubName: string;
   teamLogoUrl?: string | null;

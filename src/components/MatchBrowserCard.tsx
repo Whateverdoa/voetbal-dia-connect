@@ -83,6 +83,9 @@ export function MatchBrowserCard({ match }: Props) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-500">
           <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{match.publicCode}</span>
+          {match.isHome && match.venueField ? (
+            <span className="text-dia-black/70">{match.venueField}</span>
+          ) : null}
           {match.refereeAssigned === true && (
             <span
               title={

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Uitleg",
+  title: "Handleiding",
   description:
-    "Hoe DIA Live werkt: meekijken zonder account, coaches en wedstrijdbegeleiders via de club, admins en publiek — uitleg lezen zonder in te loggen.",
+    "Handleiding voor DIA Live: coach, scheidsrechter en admin, plus meekijken zonder account.",
 };
 
 export default function HelpLayout({

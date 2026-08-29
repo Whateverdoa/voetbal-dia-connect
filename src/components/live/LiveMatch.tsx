@@ -165,6 +165,9 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 </time>
               </p>
             )}
+            {match.isHome && match.venueField ? (
+              <p className="text-sm text-white/85 text-center">{match.venueField}</p>
+            ) : null}
 
             {/* Quarter progress indicator */}
             {!isScheduled && (

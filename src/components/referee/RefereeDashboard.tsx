@@ -1,20 +1,24 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RefereeOpenMatchCard } from "./RefereeOpenMatchCard";
+import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
+import Link from "next/link";
 
 type Tab = "beschikbaar" | "mijn" | "meldingen";
 
 interface AssignedMatch {
   id: string;
+  teamId?: string;
   opponent: string;
   isHome: boolean;
   status: string;
   scheduledAt?: number;
   teamName: string;
+  publicCode?: string;
 }
 
 function formatDate(timestamp?: number): string {
@@ -32,13 +36,17 @@ function formatDate(timestamp?: number): string {
 export function RefereeDashboard({
   refereeName,
   assignedMatches,
+  viewingAsAdmin = false,
+  toolbar,
   onLogout,
 }: {
   refereeName: string;
   assignedMatches: AssignedMatch[];
+  viewingAsAdmin?: boolean;
+  toolbar?: ReactNode;
   onLogout: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>("beschikbaar");
+  const [tab, setTab] = useState<Tab>(viewingAsAdmin ? "mijn" : "beschikbaar");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -88,9 +96,17 @@ export function RefereeDashboard({
           >
             ← Uitloggen
           </button>
-          <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-            Scheidsrechter
-          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/help/scheidsrechter"
+              className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 inline-flex items-center"
+            >
+              Handleiding
+            </Link>
+            <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+              Scheidsrechter
+            </span>
+          </div>
         </div>
       </nav>
 
@@ -98,16 +114,27 @@ export function RefereeDashboard({
         <p className="text-sm opacity-80">Welkom</p>
         <h1 className="text-2xl font-bold">{refereeName}</h1>
         <p className="text-sm opacity-80 mt-1">
-          {eligible?.isWindowOpen ? "Claimronde is open" : "Geen open claimronde"}
+          {viewingAsAdmin
+            ? "Alle wedstrijden dit seizoen"
+            : eligible?.isWindowOpen
+              ? "Claimronde is open"
+              : "Geen open claimronde"}
         </p>
       </header>
+
+      {(viewingAsAdmin || toolbar) && (
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
+          {viewingAsAdmin && <AdminPhaseBanner />}
+          {toolbar}
+        </div>
+      )}
 
       <div className="max-w-lg mx-auto px-4 pt-4">
         <div className="grid grid-cols-3 gap-2 rounded-2xl bg-white p-1 shadow-sm">
           {(
             [
               ["beschikbaar", `Beschikbaar${openCount ? ` (${openCount})` : ""}`],
-              ["mijn", "Mijn wedstrijden"],
+              ["mijn", viewingAsAdmin ? "Wedstrijden" : "Mijn wedstrijden"],
               ["meldingen", `Meldingen${unread ? ` (${unread})` : ""}`],
             ] as const
           ).map(([key, label]) => (
@@ -172,10 +199,16 @@ export function RefereeDashboard({
           <>
             {assignedMatches.length === 0 ? (
               <div className="bg-white rounded-xl shadow-md p-6 text-center space-y-2">
-                <p className="text-gray-500">Nog geen wedstrijden toegewezen.</p>
-                <p className="text-sm text-gray-400">
-                  Claim er één onder Beschikbaar, of vraag de admin.
+                <p className="text-gray-500">
+                  {viewingAsAdmin
+                    ? "Geen wedstrijden voor deze filters."
+                    : "Nog geen wedstrijden toegewezen."}
                 </p>
+                {!viewingAsAdmin && (
+                  <p className="text-sm text-gray-400">
+                    Claim er één onder Beschikbaar, of vraag de admin.
+                  </p>
+                )}
               </div>
             ) : (
               assignedMatches.map((match) => (
@@ -193,7 +226,7 @@ export function RefereeDashboard({
                     </p>
                     <p className="text-xs text-dia-black mt-2">Tik om te openen →</p>
                   </a>
-                  {match.status === "scheduled" && (
+                  {match.status === "scheduled" && !viewingAsAdmin && (
                     <button
                       type="button"
                       disabled={busyId === match.id}

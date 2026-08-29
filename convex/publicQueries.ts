@@ -42,6 +42,7 @@ export const listPublicMatches = query({
           halftimeStartedAt: m.halftimeStartedAt,
           scheduledBreakEndAt: m.scheduledBreakEndAt,
           scheduledAt: m.scheduledAt,
+          venueField: m.isHome ? (m.venueField ?? null) : null,
           teamName: team?.name ?? "Team",
           clubName: club?.name ?? "Club",
           teamLogoUrl: team?.logoUrl ?? null,

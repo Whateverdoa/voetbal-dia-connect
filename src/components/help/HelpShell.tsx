@@ -14,13 +14,13 @@ export function HelpShell({
   title,
   subtitle,
   backHref = "/help",
-  backLabel = "Terug naar uitleg",
+  backLabel = "Terug naar handleiding",
   children,
 }: Props) {
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-dia-green text-black p-4 shrink-0">
-        <div className="max-w-lg mx-auto flex items-start gap-3">
+        <div className="max-w-2xl mx-auto flex items-start gap-3">
           <Link
             href={backHref}
             className="p-2 -ml-2 hover:bg-white/10 rounded-lg transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -36,7 +36,7 @@ export function HelpShell({
           </div>
         </div>
       </header>
-      <div className="flex-1 w-full max-w-lg mx-auto px-4 py-6 space-y-8">{children}</div>
+      <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-6 space-y-8">{children}</div>
     </main>
   );
 }

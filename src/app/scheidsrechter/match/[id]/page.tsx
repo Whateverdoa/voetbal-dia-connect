@@ -8,6 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { RefereeMatchConsole } from "@/components/referee/RefereeMatchConsole";
 import type { MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
+import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
 
 export default function RefereeMatchPage() {
   const params = useParams();
@@ -73,10 +74,18 @@ export default function RefereeMatchPage() {
             ← Terug
           </Link>
           <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-            Scheidsrechter
+            {match.viewingAsAdmin ? "Admin" : "Scheidsrechter"}
           </span>
         </div>
       </nav>
+
+      {match.viewingAsAdmin && (
+        <div className="shrink-0 px-4 pt-2">
+          <div className="max-w-lg mx-auto">
+            <AdminPhaseBanner />
+          </div>
+        </div>
+      )}
 
       <RefereeMatchConsole
         matchId={match.id as Id<"matches">}

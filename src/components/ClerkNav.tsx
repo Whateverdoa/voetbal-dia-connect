@@ -33,7 +33,7 @@ export function ClerkNav() {
               href="/help"
               className="font-medium text-dia-black hover:text-dia-black min-h-[44px] inline-flex items-center"
             >
-              Uitleg
+              Handleiding
             </Link>
           </nav>
         </Show>
@@ -43,12 +43,12 @@ export function ClerkNav() {
             <Link href="/" className="font-medium text-gray-600 hover:text-gray-900">
               Live
             </Link>
-            {isCoach ? (
+            {(isCoach || isAdmin) ? (
               <Link href="/coach" className="font-medium text-dia-black hover:text-dia-black">
                 Coach
               </Link>
             ) : null}
-            {isReferee ? (
+            {(isReferee || isAdmin) ? (
               <Link href="/scheidsrechter" className="font-medium text-gray-700 hover:text-gray-900">
                 Scheidsrechter
               </Link>
@@ -59,7 +59,7 @@ export function ClerkNav() {
               </Link>
             ) : null}
             <Link href="/help" className="font-medium text-gray-600 hover:text-gray-900">
-              Uitleg
+              Handleiding
             </Link>
           </nav>
         </Show>

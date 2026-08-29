@@ -6,12 +6,14 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { SeasonSummary, MatchList } from "@/components/history";
+import { activeSeasonKey } from "@/lib/season";
 
 export default function TeamHistoryPage() {
   const params = useParams();
   const slug = params.slug as string;
 
   const team = useQuery(api.teams.getBySlug, { teamSlug: slug });
+  const seasonKey = activeSeasonKey();
 
   if (team === undefined) {
     return <LoadingScreen />;
@@ -37,14 +39,16 @@ export default function TeamHistoryPage() {
             <span className="text-dia-black font-medium">Geschiedenis</span>
           </nav>
           <h1 className="text-2xl font-bold">{team.name}</h1>
-          <p className="text-dia-black/70">{team.clubName}</p>
+          <p className="text-dia-black/70">
+            {team.clubName} · seizoen {seasonKey}
+          </p>
         </div>
       </header>
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        <SeasonSummary teamId={team.id} />
-        <MatchList teamId={team.id} />
+        <SeasonSummary teamId={team.id} seasonKey={seasonKey} />
+        <MatchList teamId={team.id} seasonKey={seasonKey} />
       </div>
     </main>
   );

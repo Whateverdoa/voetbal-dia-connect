@@ -1,35 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LogOut, Plus, Users } from "lucide-react";
-import { StatusBadge, MatchStatus } from "./StatusBadge";
-import { MatchVersusLogos } from "@/components/MatchVersusLogos";
-
-interface DashboardMatch {
-  _id: string;
-  teamId: string;
-  opponent: string;
-  isHome: boolean;
-  status: "scheduled" | "lineup" | "live" | "halftime" | "finished";
-  currentQuarter: number;
-  homeScore: number;
-  awayScore: number;
-  publicCode: string;
-  scheduledAt?: number;
-  teamName?: string;
-  teamLogoUrl?: string | null;
-  clubLogoUrl?: string | null;
-  opponentLogoUrl?: string | null;
-}
+import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
+import {
+  DashboardMatchCard,
+  type DashboardMatch,
+} from "@/components/coach/DashboardMatchCard";
 
 interface CoachDashboardProps {
   data: {
     coach: { id: string; name: string };
     teams: { id: string; name: string }[];
     matches: DashboardMatch[];
+    viewingAsAdmin?: boolean;
   };
   onLogout: () => void;
+  toolbar?: ReactNode;
 }
 
 function sortByMostRecentMatch(left: DashboardMatch, right: DashboardMatch) {
@@ -38,7 +26,7 @@ function sortByMostRecentMatch(left: DashboardMatch, right: DashboardMatch) {
   return rightTimestamp - leftTimestamp;
 }
 
-export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
+export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps) {
   const matchesByTeam = data.teams.map((team) => ({
     team,
     matches: data.matches.filter((m) => m.teamId === team.id),
@@ -60,23 +48,35 @@ export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
               <div>
                 <h1 className="text-lg font-bold">Welkom, {data.coach.name}!</h1>
                 <p className="text-sm text-white/80">
-                  {data.teams.map((t) => t.name).join(" • ")}
+                  {data.viewingAsAdmin
+                    ? "Alle teams · dit seizoen"
+                    : data.teams.map((t) => t.name).join(" • ")}
                 </p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]"
-              aria-label="Uitloggen"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-sm font-medium hidden sm:inline">Uitloggen</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <Link
+                href="/help/coach"
+                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"
+              >
+                Handleiding
+              </Link>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]"
+                aria-label="Uitloggen"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="text-sm font-medium hidden sm:inline">Uitloggen</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
+        {data.viewingAsAdmin && <AdminPhaseBanner />}
+        {toolbar}
         {liveMatches.length > 0 && (
           <section className="bg-dia-green-light border-2 border-dia-yellow-deep/40 rounded-2xl p-4">
             <h2 className="text-lg font-bold text-dia-black mb-3 flex items-center gap-2">
@@ -98,6 +98,11 @@ export function CoachDashboard({ data, onLogout }: CoachDashboardProps) {
         {matchesByTeam.map(({ team, matches }) => (
           <TeamSection key={team.id} team={team} matches={matches} />
         ))}
+        {data.viewingAsAdmin && matchesByTeam.length === 0 && (
+          <p className="text-center text-gray-500 py-8">
+            Geen wedstrijden voor deze filters.
+          </p>
+        )}
       </div>
     </main>
   );
@@ -123,11 +128,19 @@ function TeamSection({
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-gray-900">{team.name}</h2>
-          <span className="text-sm text-gray-500">
-            {matches.length} wedstrijd{matches.length !== 1 ? "en" : ""}
-          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/coach/team/${team.id}`}
+              className="text-sm font-semibold text-dia-black bg-white border border-gray-200 px-3 py-2 rounded-lg min-h-[44px] inline-flex items-center"
+            >
+              Spelers
+            </Link>
+            <span className="text-sm text-gray-500">
+              {matches.length} wedstrijd{matches.length !== 1 ? "en" : ""}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -189,101 +202,4 @@ function TeamSection({
   );
 }
 
-function DashboardMatchCard({
-  match,
-  compact = false,
-  diaTeamName,
-}: {
-  match: DashboardMatch;
-  compact?: boolean;
-  diaTeamName?: string;
-}) {
-  const diaLabel = diaTeamName ?? match.teamName ?? "Team";
-  const isActive =
-    match.status === "live" || match.status === "halftime" || match.status === "lineup";
-  const showScore = match.status !== "scheduled";
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString("nl-NL", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
-  };
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("nl-NL", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  return (
-    <Link
-      href={`/coach/match/${match._id}`}
-      className={`block rounded-xl border-2 transition-all active:scale-[0.98] touch-manipulation ${
-        isActive
-          ? "border-dia-yellow-deep/50 bg-dia-green-light shadow-md hover:shadow-lg"
-          : "border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300"
-      } ${compact ? "p-3" : "p-4"}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="mb-2">
-            <MatchVersusLogos
-              isHome={match.isHome}
-              teamName={diaLabel}
-              opponent={match.opponent}
-              teamLogoUrl={match.teamLogoUrl}
-              clubLogoUrl={match.clubLogoUrl}
-              opponentLogoUrl={match.opponentLogoUrl}
-              size="sm"
-            />
-          </div>
-          <div className="flex items-center gap-2 mb-1">
-            <StatusBadge status={match.status as MatchStatus} size="sm" />
-            {isActive && match.status === "live" && (
-              <span className="text-xs text-dia-black font-medium">
-                K{match.currentQuarter}
-              </span>
-            )}
-          </div>
-          <p className={`font-semibold text-gray-900 truncate ${compact ? "text-sm" : ""}`}>
-            {match.isHome ? "vs " : "@ "}
-            {match.opponent}
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-            {match.scheduledAt && (
-              <span className="text-xs text-gray-500">
-                {formatDate(match.scheduledAt)} {formatTime(match.scheduledAt)}
-              </span>
-            )}
-            <span className="font-mono text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-              {match.publicCode}
-            </span>
-          </div>
-        </div>
-
-        <div className="text-right flex-shrink-0">
-          {showScore ? (
-            <div
-              className={`font-bold tabular-nums ${
-                isActive ? "text-dia-black" : "text-gray-900"
-              } ${compact ? "text-2xl" : "text-3xl"}`}
-            >
-              {match.homeScore} - {match.awayScore}
-            </div>
-          ) : (
-            <div className={`text-gray-400 font-medium ${compact ? "text-xl" : "text-2xl"}`}>
-              - - -
-            </div>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-export type { DashboardMatch };
+export type { DashboardMatch } from "@/components/coach/DashboardMatchCard";

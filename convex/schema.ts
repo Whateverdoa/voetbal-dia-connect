@@ -147,6 +147,11 @@ export default defineSchema({
     opponentLogoUrl: v.optional(v.string()),
     isHome: v.boolean(),
     scheduledAt: v.optional(v.number()),
+    /**
+     * Home pitch label from Sportlink/VA (e.g. "Veld 3 (kunstgras)").
+     * Only set for home matches; away venues are not DIA fields.
+     */
+    venueField: v.optional(v.string()),
     /** Football season key, e.g. "2025-2026" (July–June). */
     seasonKey: v.optional(v.string()),
     /** Sportlink wedstrijdcode — primary import key when Sportlink is active. */

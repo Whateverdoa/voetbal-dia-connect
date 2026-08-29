@@ -1,11 +1,20 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/convex/_generated/api";
+import { AdminDashboardControls } from "@/components/AdminDashboardControls";
 import { CoachDashboard } from "@/components/CoachDashboard";
+import { useRoleViewMode } from "@/hooks/useRoleViewMode";
+import { activeSeasonKey } from "@/lib/season";
+import {
+  EMPTY_ADMIN_VIEW_FILTERS,
+  filterAdminMatches,
+  filterAdminTeams,
+} from "@/lib/adminViewFilters";
 
 const hasClerkPublishableKey = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -49,8 +58,36 @@ export default function CoachPage() {
 }
 
 function CoachPageWithClerk() {
+  const access = useQuery(api.userQueries.getMyRoles);
+
+  if (access === undefined) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <p className="text-sm font-medium text-gray-600">Coachdashboard laden...</p>
+      </main>
+    );
+  }
+
+  return <CoachPageReady roles={access.roles} />;
+}
+
+function CoachPageReady({ roles }: { roles: string[] }) {
   const { signOut } = useClerk();
-  const coachData = useQuery(api.matches.verifyCoachAccess, {});
+  const isAdmin = roles.includes("admin");
+  const hasOwnRole = roles.includes("coach");
+  const [viewMode, setViewMode] = useRoleViewMode("coach", { isAdmin, hasOwnRole });
+  const [filters, setFilters] = useState(EMPTY_ADMIN_VIEW_FILTERS);
+
+  const coachData = useQuery(api.matches.verifyCoachAccess, {
+    seasonKey: isAdmin && viewMode === "admin" ? activeSeasonKey() : undefined,
+  });
+
+  const filteredData = useMemo(() => {
+    if (!coachData || !coachData.viewingAsAdmin) return coachData;
+    const matches = filterAdminMatches(coachData.matches, filters);
+    const teams = filterAdminTeams(coachData.teams, matches, filters.teamId);
+    return { ...coachData, matches, teams };
+  }, [coachData, filters]);
 
   if (coachData === undefined) {
     return (
@@ -60,7 +97,21 @@ function CoachPageWithClerk() {
     );
   }
 
-  if (coachData === null) {
+  const toolbar = isAdmin ? (
+    <AdminDashboardControls
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      ownLabel="Coach"
+      hasOwnRole={hasOwnRole}
+      filters={filters}
+      onFiltersChange={setFilters}
+      teams={coachData?.teams ?? []}
+      matchCount={filteredData?.matches.length ?? 0}
+      totalCount={coachData?.matches.length ?? 0}
+    />
+  ) : undefined;
+
+  if (coachData === null || filteredData === null) {
     return (
       <main className="min-h-screen flex flex-col bg-gray-50">
         <header className="bg-dia-green text-black p-4">
@@ -79,28 +130,35 @@ function CoachPageWithClerk() {
         </header>
 
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm border border-gray-200 text-center space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Geen coachtoegang</h2>
-            <p className="text-sm text-gray-600">
-              Dit account heeft geen actieve coach-rol of is nog niet gekoppeld aan een team.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/sign-in"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black"
-              >
-                Naar inloggen
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  void signOut({ redirectUrl: "/" });
-                }}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700"
-              >
-                Uitloggen
-              </button>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm border border-gray-200 space-y-4">
+            {toolbar}
+            <div className="text-center space-y-3">
+              <h2 className="text-xl font-semibold text-gray-900">Geen coachtoegang</h2>
+              <p className="text-sm text-gray-600">
+                {isAdmin
+                  ? "Dit account is niet gekoppeld aan een coach. Kies Admin om wedstrijden te zoeken."
+                  : "Dit account heeft geen actieve coach-rol of is nog niet gekoppeld aan een team."}
+              </p>
             </div>
+            {!isAdmin && (
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  href="/sign-in"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black"
+                >
+                  Naar inloggen
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void signOut({ redirectUrl: "/" });
+                  }}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700"
+                >
+                  Uitloggen
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -109,7 +167,8 @@ function CoachPageWithClerk() {
 
   return (
     <CoachDashboard
-      data={coachData}
+      data={filteredData}
+      toolbar={toolbar}
       onLogout={() => {
         void signOut({ redirectUrl: "/" });
       }}

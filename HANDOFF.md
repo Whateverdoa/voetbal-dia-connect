@@ -282,6 +282,11 @@ Open punten uit gebruik / data (geen volledige specs; vastgelegd voor opvolging)
 
 **Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device. Zie ook **`docs/plans/product-backlog.md`**.
 
+## Tech-schulden (niet-urgent)
+
+- **Next.js `middleware.ts` → `proxy.ts`** — Next.js 16 deprecatet de `middleware`-file-conventie; breaking in 17. Huidige file: `src/middleware.ts` (Clerk). Later: hernoemen naar `src/proxy.ts` en de export. Geen haast zolang we op Next 16 blijven.
+- **Convex** — staat op `^1.44`. De upgrade uit PR #38 (`1.31.6` → `1.35.1`) is achterhaald; die PR is gesloten.
+
 ## Future To-Do's (product)
 
 Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring). *Status: backlog — nog niet geprioriteerd of ingepland tenzij anders vermeld.*

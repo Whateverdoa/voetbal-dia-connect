@@ -94,6 +94,7 @@ Samenvatting van **openstaande** product- en techniekwerk, naast **HANDOFF.md** 
 ## 7. Optioneel / meta
 
 - **Logo’s:** upload naar Convex storage als statische URLs tekort schieten (HANDOFF § *Club-/teamlogo's*).
+- **Next.js middleware → proxy:** `src/middleware.ts` hernoemen vóór Next 17 (HANDOFF § *Tech-schulden*).
 - **Tracker:** issues uit dit document naar GitHub Issues / Projects voor voortgangsdates en owners.
 
 ---

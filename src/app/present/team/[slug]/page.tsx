@@ -6,11 +6,12 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
 import { PresentationPitchView } from "@/components/presentation/PresentationPitchView";
+import { PresentSubstitutionPlanView } from "@/components/presentation/PresentSubstitutionPlanView";
 import { TeamDeckGrid } from "@/components/cards/TeamDeckGrid";
 import { getFormation } from "@/lib/formations";
 import Link from "next/link";
 
-type Tab = "opstelling" | "deck";
+type Tab = "opstelling" | "wisselplan" | "deck";
 
 export default function PresentTeamPage() {
   const params = useParams();
@@ -63,6 +64,12 @@ export default function PresentTeamPage() {
         <TabButton active={tab === "opstelling"} onClick={() => setTab("opstelling")}>
           Opstelling
         </TabButton>
+        <TabButton
+          active={tab === "wisselplan"}
+          onClick={() => setTab("wisselplan")}
+        >
+          Wisselplan
+        </TabButton>
         {team.isSelectionTeam ? (
           <TabButton active={tab === "deck"} onClick={() => setTab("deck")}>
             Teamdeck
@@ -90,9 +97,26 @@ export default function PresentTeamPage() {
             Geen actieve wedstrijd voor dit team. Start of open een wedstrijd als coach.
           </p>
         )
-      ) : (
-        <TeamDeckGrid players={deck ?? []} />
-      )}
+      ) : null}
+
+      {tab === "wisselplan" ? (
+        match ? (
+          <PresentSubstitutionPlanView
+            players={match.players}
+            plans={match.substitutionPlans}
+            quarterCount={match.quarterCount}
+            formationId={match.formationId ?? undefined}
+            resolvedFormation={formation}
+          />
+        ) : (
+          <p className="text-slate-400 text-center py-16">
+            Geen actieve wedstrijd — wisselplan verschijnt zodra er een wedstrijd live
+            of in opstelling staat.
+          </p>
+        )
+      ) : null}
+
+      {tab === "deck" ? <TeamDeckGrid players={deck ?? []} /> : null}
     </PresentationShell>
   );
 }

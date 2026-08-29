@@ -5,7 +5,7 @@
 | Veld | Waarde |
 |------|--------|
 | **Gestart** | 2026-07-07 |
-| **Laatste update** | 2026-08-02 |
+| **Laatste update** | 2026-08-29 |
 | **Huidige fase** | 5 — pilot live; namen + consent later |
 | **Hoofd-testteam** | `jo13-2` (JO13-2) — andere teams later |
 | **Agent** | Fable / Cursor implementatie |
@@ -101,7 +101,7 @@ Statuswaarden: `niet_gestart` · `bezig` · `review` · `klaar` · `geblokkeerd`
 
 - [x] 5.1 `isSelectionTeam: true` op `jo13-1` en `jo13-2` *(mutatie `seasonMigrations:markJo13SelectionTeams`)*
 - [x] 5.2 Roster + `active` vlag gecontroleerd *(helper `deactivateInfrequentPlayers` + admin UI)*
-- [x] 5.3 Consent-ronde *(deferred — UI/runbook klaar; uitvoeren later)*
+- [x] 5.3 Consent-ronde JO13-2 ouders uitgevoerd *(groen / go; JO13-1 later)*
 - [x] 5.4 Coach-training kleedkamer + mobiel *(runbook URLs)*
 - [x] 5.5 Eerste wedstrijd met TV (`/present/team/jo13-1/live`) *(runbook)*
 - [x] 5.6 Retrospectief notities in werklog *(template in runbook)*
@@ -138,6 +138,7 @@ Zie [fable-jo13-pilot-runbook.md](./fable-jo13-pilot-runbook.md) voor live club-
 | 2026-08-02 | 5 | Proceed zonder volledige namen/consent: JO13 selectieteams bevestigd, seasonKey backfill, presentatie-smoke OK. Ontbrekende Sportlink-namen + consent-ronde later. |
 | 2026-08-02 | 5 | **JO13-2** = hoofd-testteam (6 spelers). JO13-1 e.d. later. Test-URLs: `/present/team/jo13-2` en `/present/team/jo13-2/live?kiosk=1`. |
 | 2026-08-02 | 0 | **Seizoenswissel:** export+purge 1562× `2025-2026`; VA-import `2026-2027` (16 fixtures, 6 matches gesynct). JO13 nog niet in VA-programma. |
+| 2026-08-29 | 5 | **Consent-ronde JO13-2** ouders afgerond (groen). Volgende productslice: Wisselplan op `/present`. |
 
 ---
 

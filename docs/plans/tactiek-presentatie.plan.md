@@ -1,6 +1,6 @@
 # Plan — Tactiek tonen op presentatie (kleedkamer / TV)
 
-**Status:** gepland (nog niet gebouwd)  
+**Status:** in uitvoering (Wisselplan-tab op `/present`)  
 **Roadmap:** [open-roadmap.md](./open-roadmap.md)  
 **Afhankelijk van:** bestaande `substitutionPlans` + coach `SubstitutionPlanPanel`
 

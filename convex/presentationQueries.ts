@@ -5,6 +5,10 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { redactPlayerForPublic } from "./lib/privacyFilter";
 import type { ConsentRow } from "./lib/privacyFilter";
+import {
+  listPresentationSubstitutionPlans,
+  presentationPlanValidator,
+} from "./lib/presentationSubstitutionPlans";
 
 export const getTeamPresentation = query({
   args: { teamSlug: v.string() },
@@ -133,6 +137,7 @@ export const getMatchPresentation = query({
           absent: v.boolean(),
         })
       ),
+      substitutionPlans: v.array(presentationPlanValidator),
     })
   ),
   handler: async (ctx, args) => {
@@ -183,6 +188,11 @@ export const getMatchPresentation = query({
       });
     }
 
+    const substitutionPlans = await listPresentationSubstitutionPlans(
+      ctx,
+      match._id
+    );
+
     return {
       matchId: match._id,
       publicCode: match.publicCode,
@@ -205,6 +215,7 @@ export const getMatchPresentation = query({
       accumulatedPauseTime: match.accumulatedPauseTime ?? null,
       frozenClockMs: match.frozenClockMs ?? null,
       players,
+      substitutionPlans,
     };
   },
 });

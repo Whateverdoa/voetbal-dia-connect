@@ -111,7 +111,7 @@ function CoachPageReady({ roles }: { roles: string[] }) {
     />
   ) : undefined;
 
-  if (coachData === null || filteredData === null) {
+  if (!filteredData) {
     return (
       <main className="min-h-screen flex flex-col bg-gray-50">
         <header className="bg-dia-green text-black p-4">

@@ -42,6 +42,12 @@ if (deploymentKind === "local") {
     throw new Error("Local deployment must use a 127.0.0.1 Convex URL");
   }
 } else {
+  const expectedDeployment = `dev:${target.developmentDeployment}`;
+  if (deployment !== expectedDeployment) {
+    throw new Error(
+      `Cloud dev target must be ${expectedDeployment}; received ${deployment}`
+    );
+  }
   const configuredTeam = process.env.JEUGDVOETBAL_CONVEX_TEAM?.trim();
   const configuredProject = process.env.JEUGDVOETBAL_CONVEX_PROJECT?.trim();
   if (configuredTeam !== target.team || configuredProject !== target.project) {
@@ -56,5 +62,5 @@ if (process.env.SPORTLINK_CLIENT_ID?.trim()) {
 }
 
 console.log(
-  `Verified isolated Convex target ${target.team}/${target.project} (${deploymentKind})`
+  `Verified isolated Convex target ${target.team}/${target.project}/${target.developmentDeployment} (${deploymentKind})`
 );

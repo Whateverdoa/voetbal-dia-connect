@@ -69,6 +69,19 @@ npm run seed:new-app
 This command refuses the protected project, the wrong Convex team, production
 deployment kinds, and any local `SPORTLINK_CLIENT_ID`.
 
+After the reviewed schema/functions have been pushed and both synthetic seeds
+exist, run the backend portion of the M2 live exit check with:
+
+```bash
+npm run verify:m2-live
+```
+
+The verifier is restricted to the configured cloud development deployment. It
+uses Convex CLI test identities to exercise the public role-protected functions,
+checks that acceptance does not assign, races two planner confirmations, and
+requires one assignment plus the expected audit events. It does not replace a
+real Clerk sign-in or the physical-device APNs test.
+
 ## Quality Checks
 
 ```bash

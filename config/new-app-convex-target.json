@@ -1,5 +1,6 @@
 {
   "team": "mike-ten-hoonte",
   "project": "jeugdvoetbal-apple-dev",
+  "developmentDeployment": "brainy-buffalo-707",
   "allowedDeploymentKinds": ["local", "dev"]
 }

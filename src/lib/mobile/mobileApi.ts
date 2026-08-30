@@ -191,14 +191,24 @@ export function requiredVersion(body: Record<string, unknown>) {
   return body.version;
 }
 
+function bodyValue(body: Record<string, unknown>, key: string) {
+  if (Object.hasOwn(body, key)) return body[key];
+  const snakeCaseKey = key.replace(
+    /[A-Z]/g,
+    (character) => `_${character.toLowerCase()}`
+  );
+  return body[snakeCaseKey];
+}
+
 export function requiredCorrelationId(body: Record<string, unknown>) {
+  const value = bodyValue(body, "correlationId");
   if (
-    typeof body.correlationId !== "string" ||
-    !body.correlationId.trim()
+    typeof value !== "string" ||
+    !value.trim()
   ) {
     throw new MobileApiError("VALIDATION_ERROR", "correlationId is required");
   }
-  const normalized = body.correlationId.trim();
+  const normalized = value.trim();
   if (normalized.length > 100) {
     throw new MobileApiError(
       "VALIDATION_ERROR",
@@ -213,7 +223,7 @@ export function optionalString(
   key: string,
   maxLength = 1_000
 ) {
-  const value = body[key];
+  const value = bodyValue(body, key);
   if (value === undefined || value === null) return undefined;
   if (typeof value !== "string") {
     throw new MobileApiError("VALIDATION_ERROR", `${key} must be a string`);
@@ -228,4 +238,4 @@ export function optionalString(
   return normalized || undefined;
 }
 
-export const testHelpers = { errorCode };
+export const testHelpers = { bodyValue, errorCode };

@@ -51,6 +51,43 @@ export const refereeAssignmentStatusValidator = v.union(
   v.literal("no_show")
 );
 
+export const mobileDevicePlatformValidator = v.union(
+  v.literal("ios"),
+  v.literal("ipados")
+);
+
+export const mobileDeviceEnvironmentValidator = v.union(
+  v.literal("sandbox"),
+  v.literal("production")
+);
+
+export const mobileDeviceStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("disabled")
+);
+
+export const mobilePushRouteTypeValidator = v.union(
+  v.literal("referee_offer"),
+  v.literal("referee_assignment")
+);
+
+export const mobilePushNotificationTypeValidator = v.union(
+  v.literal("offer_sent"),
+  v.literal("offer_reminder"),
+  v.literal("offer_expired"),
+  v.literal("offer_withdrawn"),
+  v.literal("assignment_confirmed"),
+  v.literal("assignment_cancelled")
+);
+
+export const mobilePushDeliveryStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("sending"),
+  v.literal("sent"),
+  v.literal("failed"),
+  v.literal("skipped")
+);
+
 export const assignmentAuditEventTypeValidator = v.union(
   v.literal("membership_created"),
   v.literal("membership_updated"),
@@ -98,6 +135,45 @@ export const clubMembershipsTable = defineTable({
   .index("by_user", ["userId"])
   .index("by_club", ["clubId"])
   .index("by_club_and_user", ["clubId", "userId"]);
+
+export const mobileDevicesTable = defineTable({
+  userId: v.id("appUsers"),
+  apnsToken: v.string(),
+  platform: mobileDevicePlatformValidator,
+  environment: mobileDeviceEnvironmentValidator,
+  appVersion: v.string(),
+  status: mobileDeviceStatusValidator,
+  lastRegisteredAt: v.number(),
+  disabledAt: v.optional(v.number()),
+  disableReason: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+  .index("by_user", ["userId"])
+  .index("by_user_and_status", ["userId", "status"])
+  .index("by_apns_token", ["apnsToken"]);
+
+export const mobilePushDeliveriesTable = defineTable({
+  recipientUserId: v.id("appUsers"),
+  deviceId: v.optional(v.id("mobileDevices")),
+  notificationType: mobilePushNotificationTypeValidator,
+  routeType: mobilePushRouteTypeValidator,
+  resourceId: v.string(),
+  eventKey: v.string(),
+  status: mobilePushDeliveryStatusValidator,
+  attemptCount: v.number(),
+  nextAttemptAt: v.optional(v.number()),
+  providerStatus: v.optional(v.number()),
+  providerId: v.optional(v.string()),
+  providerReason: v.optional(v.string()),
+  sentAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+  .index("by_event_key", ["eventKey"])
+  .index("by_status_and_next_attempt", ["status", "nextAttemptAt"])
+  .index("by_recipient_and_created_at", ["recipientUserId", "createdAt"])
+  .index("by_device_and_created_at", ["deviceId", "createdAt"]);
 
 export const refereeProfilesTable = defineTable({
   clubId: v.id("clubs"),
@@ -222,6 +298,7 @@ export const refereeOffersTable = defineTable({
   sentAt: v.number(),
   expiresAt: v.number(),
   respondedAt: v.optional(v.number()),
+  reminderSentAt: v.optional(v.number()),
   responseNote: v.optional(v.string()),
   declineReasonCode: v.optional(v.string()),
   matchingRunId: v.optional(v.id("matchingRuns")),
@@ -236,7 +313,12 @@ export const refereeOffersTable = defineTable({
   .index("by_referee_and_status", ["refereeProfileId", "status"])
   .index("by_club_and_status", ["clubId", "status"])
   .index("by_need_and_correlation", ["needId", "correlationId"])
-  .index("by_status_and_expires_at", ["status", "expiresAt"]);
+  .index("by_status_and_expires_at", ["status", "expiresAt"])
+  .index("by_status_and_reminder_and_expires_at", [
+    "status",
+    "reminderSentAt",
+    "expiresAt",
+  ]);
 
 export const refereeAssignmentsTable = defineTable({
   needId: v.id("matchRefereeNeeds"),

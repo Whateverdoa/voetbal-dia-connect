@@ -15,6 +15,11 @@ export const api = {
   refereeDomain: {
     listPlannerRefereeProfiles: "refereeDomain:listPlannerRefereeProfiles",
   },
+  mobileDevices: {
+    registerMyDevice: "mobileDevices:registerMyDevice",
+    unregisterMyDevice: "mobileDevices:unregisterMyDevice",
+    listMyDevices: "mobileDevices:listMyDevices",
+  },
   refereeAssignmentQueries: {
     listPlannerQueue: "refereeAssignmentQueries:listPlannerQueue",
     getPlannerCandidateEligibility:

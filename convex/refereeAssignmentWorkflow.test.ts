@@ -148,6 +148,11 @@ describe("manual referee assignment workflow", () => {
   it("requires planner confirmation after referee acceptance", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createFixture(t);
+    await fixture.refereeActor.mutation(api.mobileDevices.registerMyDevice, {
+      apnsToken: "cd".repeat(32),
+      platform: "ios",
+      appVersion: "0.1.0",
+    });
     const sent = await sendFixtureOffer(fixture);
     const pendingOffers = await fixture.refereeActor.query(
       api.refereeAssignmentQueries.listMyOffers,
@@ -231,6 +236,63 @@ describe("manual referee assignment workflow", () => {
       "offer_accepted",
       "assignment_confirmed",
     ]);
+    const deliveries = await t.run(async (ctx) =>
+      await ctx.db.query("mobilePushDeliveries").take(10)
+    );
+    expect(
+      deliveries.map((delivery) => ({
+        type: delivery.notificationType,
+        route: delivery.routeType,
+        resourceId: delivery.resourceId,
+      }))
+    ).toEqual([
+      {
+        type: "offer_sent",
+        route: "referee_offer",
+        resourceId: String(sent.offerId),
+      },
+      {
+        type: "assignment_confirmed",
+        route: "referee_assignment",
+        resourceId: String(confirmed.assignmentId),
+      },
+    ]);
+  });
+
+  it("queues an offer reminder only once before expiry", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createFixture(t);
+    await fixture.refereeActor.mutation(api.mobileDevices.registerMyDevice, {
+      apnsToken: "ef".repeat(32),
+      platform: "ios",
+      appVersion: "0.1.0",
+    });
+    const sent = await sendFixtureOffer(fixture);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(sent.offerId, {
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      });
+    });
+
+    const first = await t.mutation(
+      internal.refereeOfferReminders.queuePendingOfferReminders,
+      { reminderWindowMs: 2 * 60 * 60 * 1000 }
+    );
+    const second = await t.mutation(
+      internal.refereeOfferReminders.queuePendingOfferReminders,
+      { reminderWindowMs: 2 * 60 * 60 * 1000 }
+    );
+
+    expect(first).toEqual({ reminded: 1, deliveriesQueued: 1 });
+    expect(second).toEqual({ reminded: 0, deliveriesQueued: 0 });
+    const reminders = await t.run(async (ctx) =>
+      await ctx.db
+        .query("mobilePushDeliveries")
+        .withIndex("by_event_key")
+        .take(10)
+    );
+    expect(reminders.filter((row) => row.notificationType === "offer_reminder"))
+      .toHaveLength(1);
   });
 
   it("enforces offer ownership, versions, and idempotent responses", async () => {

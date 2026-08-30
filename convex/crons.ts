@@ -47,4 +47,18 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "referee-offer-reminders",
+  { minutes: 5 },
+  internal.refereeOfferReminders.queuePendingOfferReminders,
+  {},
+);
+
+crons.interval(
+  "mobile-push-recovery",
+  { minutes: 1 },
+  internal.mobilePush.dispatchDueDeliveries,
+  {},
+);
+
 export default crons;

@@ -7,6 +7,7 @@ import {
   requireMatchingReplay,
 } from "./lib/assignmentAudit";
 import { evaluateRefereeEligibility } from "./lib/refereeAssignmentEligibility";
+import { queueMobilePushForReferee } from "./lib/mobilePushQueue";
 import {
   refereeAssignmentStatusValidator,
   refereeNeedStatusValidator,
@@ -288,6 +289,12 @@ export const sendOffer = authenticatedMutation({
       correlationId: args.correlationId,
       createdAt: now,
     });
+    await queueMobilePushForReferee(ctx, profile, {
+      notificationType: "offer_sent",
+      routeType: "referee_offer",
+      resourceId: String(offerId),
+      eventKey: `offer_sent:${offerId}:1`,
+    });
     return {
       offerId,
       offerStatus: "pending" as const,
@@ -545,6 +552,19 @@ export const confirmAssignment = authenticatedMutation({
         correlationId: `${args.correlationId}:withdraw:${competingOffer._id}`,
         createdAt: now,
       });
+      const competingProfile = await ctx.db.get(
+        competingOffer.refereeProfileId
+      );
+      if (competingProfile) {
+        await queueMobilePushForReferee(ctx, competingProfile, {
+          notificationType: "offer_withdrawn",
+          routeType: "referee_offer",
+          resourceId: String(competingOffer._id),
+          eventKey: `offer_withdrawn:${competingOffer._id}:${
+            competingOffer.version + 1
+          }`,
+        });
+      }
     }
 
     await ctx.db.insert("assignmentAuditEvents", {
@@ -565,6 +585,12 @@ export const confirmAssignment = authenticatedMutation({
       },
       correlationId: args.correlationId,
       createdAt: now,
+    });
+    await queueMobilePushForReferee(ctx, profile, {
+      notificationType: "assignment_confirmed",
+      routeType: "referee_assignment",
+      resourceId: String(assignmentId),
+      eventKey: `assignment_confirmed:${assignmentId}:1`,
     });
     return {
       assignmentId,
@@ -701,6 +727,12 @@ export const cancelAssignment = authenticatedMutation({
       },
       correlationId: args.correlationId,
       createdAt: now,
+    });
+    await queueMobilePushForReferee(ctx, profile, {
+      notificationType: "assignment_cancelled",
+      routeType: "referee_assignment",
+      resourceId: String(assignment._id),
+      eventKey: `assignment_cancelled:${assignment._id}:${nextAssignmentVersion}`,
     });
     return {
       assignmentId: assignment._id,

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
+import { queueMobilePushForReferee } from "./lib/mobilePushQueue";
 
 export const expirePendingOffers = internalMutation({
   args: { limit: v.optional(v.number()) },
@@ -51,6 +52,15 @@ export const expirePendingOffers = internalMutation({
         correlationId: `expire:${offer._id}:${offer.version}`,
         createdAt: now,
       });
+      const profile = await ctx.db.get(offer.refereeProfileId);
+      if (profile) {
+        await queueMobilePushForReferee(ctx, profile, {
+          notificationType: "offer_expired",
+          routeType: "referee_offer",
+          resourceId: String(offer._id),
+          eventKey: `offer_expired:${offer._id}:${nextOfferVersion}`,
+        });
+      }
     }
 
     return { expired: offers.length, reopenedNeeds };

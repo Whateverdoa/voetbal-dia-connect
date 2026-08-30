@@ -7,6 +7,8 @@ import {
   clubMembershipsTable,
   matchRefereeNeedsTable,
   matchingRunsTable,
+  mobileDevicesTable,
+  mobilePushDeliveriesTable,
   refereeAssignmentsTable,
   refereeAvailabilityWindowsTable,
   refereeOffersTable,
@@ -15,6 +17,8 @@ import {
 
 export default defineSchema({
   appUsers: appUsersTable,
+  mobileDevices: mobileDevicesTable,
+  mobilePushDeliveries: mobilePushDeliveriesTable,
 
   clubs: defineTable({
     name: v.string(),

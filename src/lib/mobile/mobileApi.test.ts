@@ -68,12 +68,18 @@ describe("mobile API envelope", () => {
     expect(requiredCorrelationId({ correlationId: " action-123 " })).toBe(
       "action-123"
     );
+    expect(requiredCorrelationId({ correlation_id: " ios-action-123 " })).toBe(
+      "ios-action-123"
+    );
     expect(() => requiredVersion({ version: 0 })).toThrow("version must be");
     expect(() => requiredCorrelationId({})).toThrow("correlationId is required");
     expect(() =>
       requiredCorrelationId({ correlationId: "x".repeat(101) })
     ).toThrow("at most 100");
     expect(optionalString({ note: " akkoord " }, "note")).toBe("akkoord");
+    expect(optionalString({ reason_code: " unavailable " }, "reasonCode")).toBe(
+      "unavailable"
+    );
     expect(() => optionalString({ note: "x".repeat(1_001) }, "note")).toThrow(
       "at most 1000"
     );

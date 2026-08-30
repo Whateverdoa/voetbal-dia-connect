@@ -85,8 +85,9 @@ export function TacticPitch({
   }, [board, canEdit, ensureBoard, matchId, seeded]);
 
   const onDrop = useCallback(
-    (payload: { playerId: Id<"players">; x: number; y: number; onBoard: boolean }) =>
-      moveToken({ matchId, ...payload }),
+    (payload: { playerId: Id<"players">; x: number; y: number; onBoard: boolean }) => {
+      void moveToken({ matchId, ...payload });
+    },
     [matchId, moveToken],
   );
   const { dragId, displayTokens, startDrag } = useTacticDrag(

@@ -97,6 +97,19 @@ De build valideert deze scheiding automatisch zodra
 npm run verify:new-app-web-target
 ```
 
+Na deployment controleert een tokenloze probe dat de publieke mobile adapter
+bereikbaar is en niet naar een loginpagina of gecachete foutrespons omleidt:
+
+```bash
+JEUGDVOETBAL_API_BASE_URL='https://mobile-dev.your-domain.nl/v1/mobile' \
+npm run verify:mobile-api-deployment
+```
+
+Een geldige preflight geeft voor `POST /auth/session` exact de
+versie-onafhankelijke `401 UNAUTHENTICATED`-envelope terug, met
+`cache-control: no-store` en dezelfde `x-request-id`. De probe gebruikt geen
+Clerk-token en muteert geen data.
+
 ## Sportlink
 
 De importcode voor programma, uitslagen en rosters gebruikt de client ID vanuit

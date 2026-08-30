@@ -102,6 +102,16 @@ enforced. Run `npm run verify:new-app-web-target` before linking or deploying
 that Vercel project. This guard is inactive for the existing live web
 application.
 
+After deployment, verify the public adapter without sharing a Clerk token:
+
+```bash
+JEUGDVOETBAL_API_BASE_URL='https://mobile-dev.your-domain.nl/v1/mobile' \
+npm run verify:mobile-api-deployment
+```
+
+The probe requires the documented unauthenticated `401` envelope, request-ID
+echo, and `no-store` response. It never signs in or changes application data.
+
 ## Quality Checks
 
 ```bash

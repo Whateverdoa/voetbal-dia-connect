@@ -3,6 +3,12 @@ import { internalMutation } from "../_generated/server";
 import type { ClubRole } from "../lib/clubAccess";
 import { REFEREE_CONFIGS } from "./seedData";
 
+const m2VerificationScenarioValidator = v.union(
+  v.literal("assignment"),
+  v.literal("reminder"),
+  v.literal("expiry")
+);
+
 export const ensureSyntheticBase = internalMutation({
   args: {},
   returns: v.object({
@@ -67,6 +73,114 @@ export const ensureSyntheticBase = internalMutation({
       clubCreated,
       teamCreated,
       refereesCreated,
+    };
+  },
+});
+
+export const createM2VerificationFixture = internalMutation({
+  args: {
+    runId: v.string(),
+    scenario: m2VerificationScenarioValidator,
+  },
+  returns: v.object({
+    clubId: v.id("clubs"),
+    matchId: v.id("matches"),
+    needId: v.id("matchRefereeNeeds"),
+    needStatus: v.union(
+      v.literal("open"),
+      v.literal("matching"),
+      v.literal("awaiting_response"),
+      v.literal("awaiting_confirmation"),
+      v.literal("assigned"),
+      v.literal("cancelled"),
+      v.literal("completed")
+    ),
+    needVersion: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const runId = args.runId.trim().toLowerCase();
+    if (!/^[a-z0-9-]{8,80}$/.test(runId)) {
+      throw new Error("INVALID_VERIFICATION_RUN_ID");
+    }
+    const club = await ctx.db
+      .query("clubs")
+      .withIndex("by_slug", (q) => q.eq("slug", "dia"))
+      .unique();
+    if (!club) throw new Error("SYNTHETIC_BASE_REQUIRED");
+    const team = await ctx.db
+      .query("teams")
+      .withIndex("by_slug", (q) =>
+        q.eq("clubId", club._id).eq("slug", "jo12-1")
+      )
+      .unique();
+    if (!team) throw new Error("SYNTHETIC_BASE_REQUIRED");
+
+    const fixtureKey = `${args.scenario}:${runId}`;
+    let hash = 0;
+    for (const character of fixtureKey) {
+      hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0;
+    }
+    const publicCode = `V${hash.toString(36).toUpperCase().padStart(5, "0").slice(-5)}`;
+    const opponent = `M2 ${args.scenario} verification ${runId}`;
+    let match = await ctx.db
+      .query("matches")
+      .withIndex("by_code", (q) => q.eq("publicCode", publicCode))
+      .unique();
+    if (match && match.opponent !== opponent) {
+      throw new Error("VERIFICATION_FIXTURE_CODE_COLLISION");
+    }
+    if (!match) {
+      const dayOffset =
+        args.scenario === "assignment" ? 7 : args.scenario === "reminder" ? 8 : 9;
+      const matchId = await ctx.db.insert("matches", {
+        teamId: team._id,
+        publicCode,
+        opponent,
+        isHome: true,
+        scheduledAt: Date.now() + dayOffset * 24 * 60 * 60 * 1000,
+        status: "scheduled",
+        currentQuarter: 1,
+        quarterCount: 4,
+        homeScore: 0,
+        awayScore: 0,
+        showLineup: false,
+        createdAt: Date.now(),
+      });
+      match = await ctx.db.get(matchId);
+    }
+    if (!match) throw new Error("VERIFICATION_FIXTURE_CREATE_FAILED");
+
+    let need = await ctx.db
+      .query("matchRefereeNeeds")
+      .withIndex("by_match", (q) => q.eq("matchId", match._id))
+      .first();
+    if (!need) {
+      const scheduledAt = match.scheduledAt ?? Date.now();
+      const needId = await ctx.db.insert("matchRefereeNeeds", {
+        matchId: match._id,
+        clubId: club._id,
+        arrivalAt: scheduledAt - 30 * 60 * 1000,
+        expectedEndAt: scheduledAt + 75 * 60 * 1000,
+        venue: "Sportpark Development",
+        ageGroup: "JO12",
+        matchLevel: "recreatief",
+        requiredQualification: "club-jeugd",
+        status: "open",
+        policyVersion: "manual-v1",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        version: 1,
+      });
+      need = await ctx.db.get(needId);
+    }
+    if (!need) throw new Error("VERIFICATION_FIXTURE_CREATE_FAILED");
+
+    return {
+      clubId: club._id,
+      matchId: match._id,
+      needId: need._id,
+      needStatus: need.status,
+      needVersion: need.version,
     };
   },
 });

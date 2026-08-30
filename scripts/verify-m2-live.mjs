@@ -1,4 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import { promisify } from "node:util";
@@ -9,7 +10,6 @@ const execFileAsync = promisify(execFile);
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..");
 const CONVEX_BIN = path.join(PROJECT_ROOT, "node_modules", ".bin", "convex");
-const SEED_OPPONENT = "Testclub United JO12-1";
 const REQUIRED_AUDIT_EVENTS = [
   "offer_sent",
   "offer_accepted",
@@ -129,7 +129,13 @@ function loadAndVerifyTarget() {
   return requireCloudDevDeployment(process.env.CONVEX_DEPLOYMENT);
 }
 
-async function findEligibleReferee(deploymentName, clubId, needId) {
+async function findEligibleReferee(
+  deploymentName,
+  clubId,
+  needId,
+  excludedProfileIds = []
+) {
+  const excludedProfiles = new Set(excludedProfileIds);
   for (const refereeNumber of [3, 4, 1, 2]) {
     const identity = seedIdentity(`referee-${refereeNumber}`);
     const profile = await runConvex(
@@ -139,6 +145,7 @@ async function findEligibleReferee(deploymentName, clubId, needId) {
       identity
     );
     if (!profile) continue;
+    if (excludedProfiles.has(profile.profileId)) continue;
     const eligibility = await runConvex(
       deploymentName,
       "refereeAssignmentQueries:getPlannerCandidateEligibility",
@@ -148,6 +155,195 @@ async function findEligibleReferee(deploymentName, clubId, needId) {
     if (eligibility.eligible) return { identity, profile };
   }
   throw new Error("Synthetic seed contains no eligible referee for the M2 match");
+}
+
+async function createVerificationFixture(deploymentName, runId, scenario) {
+  const fixture = await runConvex(
+    deploymentName,
+    "seed/refereeFirstMutations:createM2VerificationFixture",
+    { runId, scenario }
+  );
+  assert(
+    fixture.needStatus === "open",
+    `Fresh ${scenario} fixture must be open; received ${fixture.needStatus}`
+  );
+  return fixture;
+}
+
+async function sendVerificationOffer({
+  deploymentName,
+  fixture,
+  referee,
+  expiresAt,
+  correlationId,
+}) {
+  const offer = await runConvex(
+    deploymentName,
+    "refereeAssignmentCommands:sendOffer",
+    {
+      needId: fixture.needId,
+      refereeProfileId: referee.profile.profileId,
+      expiresAt,
+      needVersion: fixture.needVersion,
+      correlationId,
+    },
+    seedIdentity("planner")
+  );
+  assert(offer.offerStatus === "pending", "Offer was not created as pending");
+  return offer;
+}
+
+async function registerSyntheticDevice(deploymentName, referee) {
+  const existingDevices = await runConvex(
+    deploymentName,
+    "mobileDevices:listMyDevices",
+    {},
+    referee.identity
+  );
+  for (const device of existingDevices.filter(
+    (candidate) => candidate.status === "active"
+  )) {
+    await runConvex(
+      deploymentName,
+      "mobileDevices:unregisterMyDevice",
+      { deviceId: device.deviceId },
+      referee.identity
+    );
+  }
+  const apnsToken = createHash("sha256")
+    .update(`m2-live:${referee.profile.profileId}`)
+    .digest("hex");
+  return await runConvex(
+    deploymentName,
+    "mobileDevices:registerMyDevice",
+    { apnsToken, platform: "ios", appVersion: "0.1.0" },
+    referee.identity
+  );
+}
+
+async function verifyReminderScenario(
+  deploymentName,
+  runId,
+  excludedProfileIds
+) {
+  const fixture = await createVerificationFixture(
+    deploymentName,
+    runId,
+    "reminder"
+  );
+  const referee = await findEligibleReferee(
+    deploymentName,
+    fixture.clubId,
+    fixture.needId,
+    excludedProfileIds
+  );
+  const device = await registerSyntheticDevice(deploymentName, referee);
+  const offer = await sendVerificationOffer({
+    deploymentName,
+    fixture,
+    referee,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+    correlationId: `${runId}:reminder-offer`,
+  });
+  const first = await runConvex(
+    deploymentName,
+    "refereeOfferReminders:queuePendingOfferReminders",
+    { limit: 200, reminderWindowMs: 10 * 60 * 1000 }
+  );
+  assert(first.reminded >= 1, "Pending offer reminder was not marked");
+  assert(first.deliveriesQueued >= 1, "Pending offer reminder push was not queued");
+  const replay = await runConvex(
+    deploymentName,
+    "refereeOfferReminders:queuePendingOfferReminders",
+    { limit: 200, reminderWindowMs: 10 * 60 * 1000 }
+  );
+  assert(replay.reminded === 0, "Pending offer reminder was not idempotent");
+  const currentOffer = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:getMyOffer",
+    { offerId: offer.offerId },
+    referee.identity
+  );
+  assert(currentOffer?.status === "pending", "Reminder changed the offer state");
+  await runConvex(
+    deploymentName,
+    "mobileDevices:unregisterMyDevice",
+    { deviceId: device.deviceId },
+    referee.identity
+  );
+  return {
+    refereeProfileId: referee.profile.profileId,
+    status: currentOffer.status,
+    reminded: first.reminded,
+    deliveriesQueued: first.deliveriesQueued,
+    replayReminded: replay.reminded,
+  };
+}
+
+async function verifyExpiryScenario(
+  deploymentName,
+  runId,
+  excludedProfileIds
+) {
+  const fixture = await createVerificationFixture(
+    deploymentName,
+    runId,
+    "expiry"
+  );
+  const referee = await findEligibleReferee(
+    deploymentName,
+    fixture.clubId,
+    fixture.needId,
+    excludedProfileIds
+  );
+  const offer = await sendVerificationOffer({
+    deploymentName,
+    fixture,
+    referee,
+    expiresAt: Date.now() + 2_000,
+    correlationId: `${runId}:expiry-offer`,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 2_500));
+  const result = await runConvex(
+    deploymentName,
+    "refereeOfferExpiry:expirePendingOffers",
+    { limit: 200 }
+  );
+  assert(result.expired >= 1, "Expired offer was not processed");
+  assert(result.reopenedNeeds >= 1, "Expired offer did not reopen its need");
+  const currentOffer = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:getMyOffer",
+    { offerId: offer.offerId },
+    referee.identity
+  );
+  assert(currentOffer?.status === "expired", "Offer is not expired after the job");
+  const queue = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:listPlannerQueue",
+    { clubId: fixture.clubId },
+    seedIdentity("planner")
+  );
+  const reopenedNeed = queue.find((entry) => entry.needId === fixture.needId);
+  assert(reopenedNeed?.status === "open", "Expired need is not open again");
+  const audit = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:listNeedAudit",
+    { needId: fixture.needId },
+    seedIdentity("planner")
+  );
+  assert(
+    audit.some((event) => event.eventType === "offer_expired"),
+    "Expiry audit event is missing"
+  );
+  return {
+    refereeProfileId: referee.profile.profileId,
+    offerStatus: currentOffer.status,
+    needStatus: reopenedNeed.status,
+    expired: result.expired,
+    reopenedNeeds: result.reopenedNeeds,
+    auditEvents: audit.map((event) => event.eventType),
+  };
 }
 
 async function verifyAssignedState(
@@ -188,47 +384,25 @@ async function verifyAssignedState(
 async function main() {
   const deploymentName = loadAndVerifyTarget();
   assert(existsSync(CONVEX_BIN), "Convex CLI is not installed; run npm ci first");
-
-  const club = await runConvex(
+  const runId = `m2-live-${Date.now()}`;
+  const fixture = await createVerificationFixture(
     deploymentName,
-    "admin:getClubBySlug",
-    { slug: "dia" }
+    runId,
+    "assignment"
   );
-  assert(club?._id, "Synthetic DIA club is missing; run npm run seed:new-app first");
-
   const plannerIdentity = seedIdentity("planner");
-  const queue = await runConvex(
-    deploymentName,
-    "refereeAssignmentQueries:listPlannerQueue",
-    { clubId: club._id },
-    plannerIdentity
-  );
-  const need = queue.find((entry) => entry.match.opponent === SEED_OPPONENT);
-  assert(need, "Synthetic M2 referee need is missing; run npm run seed:new-app first");
-  assert(
-    need.status === "open",
-    `Synthetic M2 referee need must be open for a fresh verification; received ${need.status}`
-  );
-
   const referee = await findEligibleReferee(
     deploymentName,
-    club._id,
-    need.needId
+    fixture.clubId,
+    fixture.needId
   );
-  const runId = `m2-live-${Date.now()}`;
-  const offer = await runConvex(
+  const offer = await sendVerificationOffer({
     deploymentName,
-    "refereeAssignmentCommands:sendOffer",
-    {
-      needId: need.needId,
-      refereeProfileId: referee.profile.profileId,
-      expiresAt: Date.now() + 30 * 60 * 1000,
-      needVersion: need.version,
-      correlationId: `${runId}:offer`,
-    },
-    plannerIdentity
-  );
-  assert(offer.offerStatus === "pending", "Offer was not created as pending");
+    fixture,
+    referee,
+    expiresAt: Date.now() + 30 * 60 * 1000,
+    correlationId: `${runId}:offer`,
+  });
 
   const accepted = await runConvex(
     deploymentName,
@@ -249,11 +423,13 @@ async function main() {
   const beforeConfirmation = await runConvex(
     deploymentName,
     "refereeAssignmentQueries:listMyAssignments",
-    { clubId: club._id },
+    { clubId: fixture.clubId },
     referee.identity
   );
   assert(
-    !beforeConfirmation.some((assignment) => assignment.needId === need.needId),
+    !beforeConfirmation.some(
+      (assignment) => assignment.needId === fixture.needId
+    ),
     "Acceptance incorrectly created an assignment before planner confirmation"
   );
 
@@ -281,10 +457,12 @@ async function main() {
   const finalQueue = await runConvex(
     deploymentName,
     "refereeAssignmentQueries:listPlannerQueue",
-    { clubId: club._id },
+    { clubId: fixture.clubId },
     plannerIdentity
   );
-  const assignedNeed = finalQueue.find((entry) => entry.needId === need.needId);
+  const assignedNeed = finalQueue.find(
+    (entry) => entry.needId === fixture.needId
+  );
   assert(assignedNeed?.status === "assigned", "Need was not assigned after confirmation");
   assert(
     assignedNeed.assignment?.assignmentId === confirmed.assignmentId,
@@ -293,11 +471,60 @@ async function main() {
 
   const evidence = await verifyAssignedState(
     deploymentName,
-    club._id,
+    fixture.clubId,
     assignedNeed,
     referee.identity,
     confirmed.assignmentId
   );
+  const cancelled = await runConvex(
+    deploymentName,
+    "refereeAssignmentCommands:cancelAssignment",
+    {
+      assignmentId: confirmed.assignmentId,
+      assignmentVersion: confirmed.assignmentVersion,
+      reason: "Synthetic M2 live cancellation",
+      reopenNeed: true,
+      correlationId: `${runId}:cancel`,
+    },
+    plannerIdentity
+  );
+  assert(
+    cancelled.assignmentStatus === "cancelled" &&
+      cancelled.needStatus === "open",
+    "Assignment cancellation did not reopen the need"
+  );
+  const cancelledAssignments = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:listMyAssignments",
+    { clubId: fixture.clubId },
+    referee.identity
+  );
+  const cancelledAssignment = cancelledAssignments.find(
+    (assignment) => assignment.assignmentId === confirmed.assignmentId
+  );
+  assert(
+    cancelledAssignment?.status === "cancelled",
+    "Referee does not see the cancelled assignment state"
+  );
+  const cancellationAudit = await runConvex(
+    deploymentName,
+    "refereeAssignmentQueries:listNeedAudit",
+    { needId: fixture.needId },
+    plannerIdentity
+  );
+  assert(
+    cancellationAudit.some(
+      (event) => event.eventType === "assignment_cancelled"
+    ),
+    "Assignment cancellation audit event is missing"
+  );
+
+  const reminder = await verifyReminderScenario(deploymentName, runId, [
+    referee.profile.profileId,
+  ]);
+  const expiry = await verifyExpiryScenario(deploymentName, runId, [
+    reminder.refereeProfileId,
+  ]);
   console.log(
     JSON.stringify(
       {
@@ -305,9 +532,13 @@ async function main() {
         needStatus: assignedNeed.status,
         offerStatus: "accepted",
         assignmentStatus: confirmed.assignmentStatus,
+        cancellationStatus: cancelled.assignmentStatus,
+        reopenedAfterCancellation: cancelled.needStatus,
         confirmations: { succeeded: 1, rejected: 1 },
         assignmentCountForNeed: evidence.matchingAssignments.length,
-        auditEvents: evidence.audit.map((event) => event.eventType),
+        auditEvents: cancellationAudit.map((event) => event.eventType),
+        reminder,
+        expiry,
       },
       null,
       2

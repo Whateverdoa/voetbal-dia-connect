@@ -33,6 +33,13 @@ De nieuwe-app-seed maakt uitsluitend een minimale developmentclub, testteam,
 lokale scheidsrechters en M1/M2-workflowrecords. Hij importeert geen spelers,
 coachcontacten, Sportlinkdata of records uit de bestaande `seed:init`.
 
+Na de schema/function-push en seed voert `npm run verify:m2-live` herhaalbare,
+run-specifieke fixtures uit voor offeracceptatie, gelijktijdige bevestiging,
+annulering, reminder-idempotentie en expiry. De remindercontrole registreert
+tijdelijk één synthetisch device, bewijst dat precies één delivery wordt gequeue'd
+en schakelt het device daarna weer uit. Werkelijke APNs-providerdelivery vereist
+de aparte sandboxcredentials en fysieke-devicegate.
+
 Configureer Clerk pas nadat in het Clerk Dashboard een aparte development-app
 is aangemaakt, Native API is ingeschakeld en de Apple bundle is geregistreerd.
 De configurator accepteert uitsluitend een `pk_test_` publishable key en leidt

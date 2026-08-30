@@ -55,4 +55,32 @@ describe("referee-first synthetic seed", () => {
     expect(state.players).toEqual([]);
     expect(state.coaches).toEqual([]);
   });
+
+  it("creates idempotent isolated fixtures for every M2 live scenario", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(
+      internal.seed.refereeFirstMutations.ensureSyntheticBase,
+      {}
+    );
+
+    for (const scenario of ["assignment", "reminder", "expiry"] as const) {
+      const first = await t.mutation(
+        internal.seed.refereeFirstMutations.createM2VerificationFixture,
+        { runId: "m2-live-test-run", scenario }
+      );
+      const replay = await t.mutation(
+        internal.seed.refereeFirstMutations.createM2VerificationFixture,
+        { runId: "m2-live-test-run", scenario }
+      );
+      expect(replay).toEqual(first);
+      expect(first).toMatchObject({ needStatus: "open", needVersion: 1 });
+    }
+
+    const counts = await t.run(async (ctx) => ({
+      matches: (await ctx.db.query("matches").take(10)).length,
+      needs: (await ctx.db.query("matchRefereeNeeds").take(10)).length,
+      players: (await ctx.db.query("players").take(1)).length,
+    }));
+    expect(counts).toEqual({ matches: 3, needs: 3, players: 0 });
+  });
 });

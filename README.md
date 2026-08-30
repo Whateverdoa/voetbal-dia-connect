@@ -19,6 +19,10 @@ Do not use it for development or staging of the new Apple app.
 - Verify `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` before running any
   schema push, import, seed, cron, or deployment command.
 
+The new-app development project is `Whateverdoa/jeugdvoetbal-apple-dev`.
+Do not create or select this project under a personal Convex team. Run
+`npm run verify:new-app-target` before new-app seed or migration commands.
+
 If `CONVEX_DEPLOYMENT` is unset, `convex dev` asks which project to configure.
 For new-app work, create/select the isolated project and never select the current
 live project.
@@ -45,6 +49,7 @@ Convex project.
 ```bash
 npm ci
 npx convex dev --until-success
+npm run verify:new-app-target
 npm run dev:frontend
 ```
 
@@ -52,6 +57,16 @@ The frontend runs at [http://localhost:3000](http://localhost:3000).
 
 Running `npm run dev` starts both the frontend and `convex dev`; use it only
 after the local deployment target has been verified.
+
+After the existing synthetic DIA seed has been created, add the referee-first
+M1 records with:
+
+```bash
+npm run seed:new-app
+```
+
+This command refuses the protected project, the wrong Convex team, production
+deployment kinds, and any local `SPORTLINK_CLIENT_ID`.
 
 ## Quality Checks
 

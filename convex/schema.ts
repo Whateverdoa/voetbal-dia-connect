@@ -1,8 +1,21 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { cardProfileValidator, playerConsentsTable, wedstrijdenTable } from "./schemaFragments";
+import {
+  appUsersTable,
+  assignmentAuditEventsTable,
+  clubMembershipsTable,
+  matchRefereeNeedsTable,
+  matchingRunsTable,
+  refereeAssignmentsTable,
+  refereeAvailabilityWindowsTable,
+  refereeOffersTable,
+  refereeProfilesTable,
+} from "./refereeAssignmentSchema";
 
 export default defineSchema({
+  appUsers: appUsersTable,
+
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"
@@ -358,4 +371,14 @@ export default defineSchema({
   // VoetbalAssist / Sportlink staged fixtures
   wedstrijden: wedstrijdenTable,
   playerConsents: playerConsentsTable,
+
+  // Referee-first identity, planning, and assignment domain.
+  clubMemberships: clubMembershipsTable,
+  refereeProfiles: refereeProfilesTable,
+  refereeAvailabilityWindows: refereeAvailabilityWindowsTable,
+  matchRefereeNeeds: matchRefereeNeedsTable,
+  matchingRuns: matchingRunsTable,
+  refereeOffers: refereeOffersTable,
+  refereeAssignments: refereeAssignmentsTable,
+  assignmentAuditEvents: assignmentAuditEventsTable,
 });

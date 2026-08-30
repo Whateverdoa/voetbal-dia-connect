@@ -1,8 +1,28 @@
 # Rollen en toegang (DIA Live)
 
+## Nieuwe app: club-scoped rollen
+
+De referee-first iPhone/iPad-app en de nieuwe MacBook-workflows gebruiken het
+M1-model in Convex:
+
+- `club_admin`: clubbeheer en membershipbeheer;
+- `planner`: referee-pool, beschikbaarheid en assignments binnen de club;
+- `coach`: eigen teams en wedstrijdvoorbereiding;
+- `referee`: eigen profiel, beschikbaarheid, offers en assignments.
+
+Clerk levert de ingelogde identity. Convex koppelt die via `appUsers` aan
+`clubMemberships`; de server controleert club, membershipstatus, rol en
+resource-relatie. Clerk public metadata of een door de client gekozen actieve
+workspace verleent op zichzelf geen rechten.
+
+De bestaande tabellen `userAccess`, `coaches`, `referees` en de rol `admin`
+blijven tijdens de migratie bestaan voor de huidige live app. Ze zijn geen
+autorisatiebron voor nieuwe M1-functies.
+
 ## Overzicht
 
-De app kent drie rollen: **admin**, **coach** en **scheidsrechter**. Toegang wordt bepaald door:
+De huidige live app kent drie legacyrollen: **admin**, **coach** en
+**scheidsrechter**. Toegang wordt bepaald door:
 
 1. **Clerk** (login): `publicMetadata.role` / `publicMetadata.roles` — bepaalt of je naar /admin, /coach of /scheidsrechter mag (middleware).
 2. **Convex** (data): admin via e-mailallowlist; coach en scheidsrechter via e-mail in de tabellen `coaches` en `referees`. Toegang is volledig e-mailgebaseerd via Clerk; PIN wordt niet meer gebruikt voor inloggen of rechten.

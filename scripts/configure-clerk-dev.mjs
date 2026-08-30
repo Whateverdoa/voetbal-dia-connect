@@ -8,15 +8,15 @@ const target = JSON.parse(
   readFileSync(new URL("config/new-app-convex-target.json", repositoryRoot), "utf8")
 );
 
-function normalizeIssuer(rawValue) {
+function normalizeFrontendApiUrl(rawValue) {
   const value = rawValue?.trim();
-  if (!value) throw new Error("CLERK_JWT_ISSUER_DOMAIN is required");
+  if (!value) throw new Error("CLERK_FRONTEND_API_URL is required");
 
   let url;
   try {
     url = new URL(value);
   } catch {
-    throw new Error("CLERK_JWT_ISSUER_DOMAIN must be a valid HTTPS URL");
+    throw new Error("CLERK_FRONTEND_API_URL must be a valid HTTPS URL");
   }
   if (
     url.protocol !== "https:" ||
@@ -27,12 +27,12 @@ function normalizeIssuer(rawValue) {
     url.search ||
     url.hash
   ) {
-    throw new Error("CLERK_JWT_ISSUER_DOMAIN must be an HTTPS origin without a path");
+    throw new Error("CLERK_FRONTEND_API_URL must be an HTTPS origin without a path");
   }
   return url.origin;
 }
 
-export function issuerFromDevelopmentPublishableKey(publishableKey) {
+export function frontendApiUrlFromDevelopmentPublishableKey(publishableKey) {
   const value = publishableKey?.trim();
   if (!value?.startsWith("pk_test_")) {
     throw new Error("A Clerk development publishable key starting with pk_test_ is required");
@@ -44,7 +44,7 @@ export function issuerFromDevelopmentPublishableKey(publishableKey) {
   const decodedDomain = Buffer.from(encodedDomain, "base64url")
     .toString("utf8")
     .replace(/\$+$/, "");
-  return normalizeIssuer(
+  return normalizeFrontendApiUrl(
     decodedDomain.startsWith("https://")
       ? decodedDomain
       : `https://${decodedDomain}`
@@ -53,16 +53,21 @@ export function issuerFromDevelopmentPublishableKey(publishableKey) {
 
 export function validateClerkDevelopmentConfiguration({
   publishableKey,
-  issuer,
+  frontendApiUrl,
 }) {
-  const keyIssuer = issuerFromDevelopmentPublishableKey(publishableKey);
-  const normalizedIssuer = issuer?.trim() ? normalizeIssuer(issuer) : keyIssuer;
-  if (normalizedIssuer !== keyIssuer) {
+  const keyFrontendApiUrl = frontendApiUrlFromDevelopmentPublishableKey(publishableKey);
+  const normalizedFrontendApiUrl = frontendApiUrl?.trim()
+    ? normalizeFrontendApiUrl(frontendApiUrl)
+    : keyFrontendApiUrl;
+  if (normalizedFrontendApiUrl !== keyFrontendApiUrl) {
     throw new Error(
-      `Clerk issuer mismatch: publishable key belongs to ${keyIssuer}, received ${normalizedIssuer}`
+      `Clerk Frontend API URL mismatch: publishable key belongs to ${keyFrontendApiUrl}, received ${normalizedFrontendApiUrl}`
     );
   }
-  return { publishableKey: publishableKey.trim(), issuer: normalizedIssuer };
+  return {
+    publishableKey: publishableKey.trim(),
+    frontendApiUrl: normalizedFrontendApiUrl,
+  };
 }
 
 function run(command, args, options = {}) {
@@ -75,13 +80,14 @@ function run(command, args, options = {}) {
 
 export function configureClerkDevelopment({
   publishableKey = process.env.JEUGDVOETBAL_CLERK_PUBLISHABLE_KEY,
-  issuer = process.env.CLERK_JWT_ISSUER_DOMAIN,
+  frontendApiUrl =
+    process.env.CLERK_FRONTEND_API_URL ?? process.env.CLERK_JWT_ISSUER_DOMAIN,
 } = {}, dependencies = {}) {
   const execute = dependencies.run ?? run;
   const log = dependencies.log ?? console.log;
   const configuration = validateClerkDevelopmentConfiguration({
     publishableKey,
-    issuer,
+    frontendApiUrl,
   });
 
   execute(process.execPath, ["scripts/verify-new-app-convex-target.mjs"]);
@@ -91,10 +97,10 @@ export function configureClerkDevelopment({
     "set",
     "--deployment",
     target.developmentDeployment,
-    "CLERK_JWT_ISSUER_DOMAIN",
-    configuration.issuer,
+    "CLERK_FRONTEND_API_URL",
+    configuration.frontendApiUrl,
   ]);
-  const configuredIssuer = execute(
+  const configuredFrontendApiUrl = execute(
     "npx",
     [
       "convex",
@@ -102,16 +108,16 @@ export function configureClerkDevelopment({
       "get",
       "--deployment",
       target.developmentDeployment,
-      "CLERK_JWT_ISSUER_DOMAIN",
+      "CLERK_FRONTEND_API_URL",
     ],
     { capture: true }
   ).trim();
-  if (configuredIssuer !== configuration.issuer) {
-    throw new Error("Convex returned a different Clerk issuer after configuration");
+  if (configuredFrontendApiUrl !== configuration.frontendApiUrl) {
+    throw new Error("Convex returned a different Clerk Frontend API URL after configuration");
   }
 
   log(
-    `Configured Clerk issuer on isolated development deployment ${target.developmentDeployment}.`
+    `Configured Clerk Frontend API URL on isolated development deployment ${target.developmentDeployment}.`
   );
   log(
     "Use JEUGDVOETBAL_CLERK_PUBLISHABLE_KEY for the Apple build; it was not written to Git."

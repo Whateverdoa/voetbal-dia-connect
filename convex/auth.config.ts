@@ -12,10 +12,15 @@ function decodePublishableKeyDomain(publishableKey: string) {
   return decoded.startsWith("http") ? decoded : `https://${decoded}`;
 }
 
-function getClerkIssuerDomain() {
-  const explicitDomain = process.env.CLERK_JWT_ISSUER_DOMAIN?.trim();
+function getClerkFrontendApiUrl() {
+  const explicitDomain = process.env.CLERK_FRONTEND_API_URL?.trim();
   if (explicitDomain) {
     return explicitDomain;
+  }
+
+  const legacyDomain = process.env.CLERK_JWT_ISSUER_DOMAIN?.trim();
+  if (legacyDomain) {
+    return legacyDomain;
   }
 
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
@@ -24,14 +29,14 @@ function getClerkIssuerDomain() {
   }
 
   throw new Error(
-    "Clerk issuer domein ontbreekt. Stel CLERK_JWT_ISSUER_DOMAIN in voor Convex auth."
+    "Clerk Frontend API URL ontbreekt. Stel CLERK_FRONTEND_API_URL in voor Convex auth."
   );
 }
 
 export default {
   providers: [
     {
-      domain: getClerkIssuerDomain(),
+      domain: getClerkFrontendApiUrl(),
       applicationID: "convex",
     },
   ],

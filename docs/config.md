@@ -43,11 +43,12 @@ de aparte sandboxcredentials en fysieke-devicegate.
 Configureer Clerk pas nadat in het Clerk Dashboard een aparte development-app
 is aangemaakt, Native API is ingeschakeld en de Apple bundle is geregistreerd.
 De configurator accepteert uitsluitend een `pk_test_` publishable key en leidt
-het bijbehorende issuer-domein uit die sleutel af. Een optioneel meegegeven
-`CLERK_JWT_ISSUER_DOMAIN` wordt als kruiscontrole gebruikt en bij afwijking
-geweigerd.
+de bijbehorende Frontend API URL uit die sleutel af. Een optioneel meegegeven
+`CLERK_FRONTEND_API_URL` wordt als kruiscontrole gebruikt en bij afwijking
+geweigerd. `CLERK_JWT_ISSUER_DOMAIN` blijft alleen als tijdelijke legacy-input
+ondersteund.
 Daarna draait hij de targetcontrole en schrijft hij alleen
-`CLERK_JWT_ISSUER_DOMAIN` naar `brainy-buffalo-707`:
+`CLERK_FRONTEND_API_URL` naar `brainy-buffalo-707`:
 
 ```bash
 JEUGDVOETBAL_CLERK_PUBLISHABLE_KEY='pk_test_...' \

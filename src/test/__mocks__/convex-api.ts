@@ -7,6 +7,8 @@ export const api = {
   },
   clubIdentity: {
     getMyM1Status: "clubIdentity:getMyM1Status",
+    getMyClubMemberships: "clubIdentity:getMyClubMemberships",
+    getMyMobileSession: "clubIdentity:getMyMobileSession",
     syncCurrentAccount: "clubIdentity:syncCurrentAccount",
     bootstrapLegacyAdminMembership: "clubIdentity:bootstrapLegacyAdminMembership",
   },
@@ -18,6 +20,10 @@ export const api = {
     getPlannerCandidateEligibility:
       "refereeAssignmentQueries:getPlannerCandidateEligibility",
     listNeedAudit: "refereeAssignmentQueries:listNeedAudit",
+    listMyOffers: "refereeAssignmentQueries:listMyOffers",
+    getMyOffer: "refereeAssignmentQueries:getMyOffer",
+    listMyAssignments: "refereeAssignmentQueries:listMyAssignments",
+    getMyAssignment: "refereeAssignmentQueries:getMyAssignment",
   },
   refereeAssignmentCommands: {
     createNeed: "refereeAssignmentCommands:createNeed",

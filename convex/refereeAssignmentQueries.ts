@@ -274,6 +274,51 @@ export const listMyOffers = authenticatedQuery({
   },
 });
 
+export const getMyOffer = authenticatedQuery({
+  args: { offerId: v.id("refereeOffers") },
+  returns: v.union(refereeOfferValidator, v.null()),
+  handler: async (ctx, args) => {
+    const offer = await ctx.db.get(args.offerId);
+    if (!offer) return null;
+    await requireClubRole(ctx, ctx.user._id, offer.clubId, ["referee"]);
+    const profile = await ctx.db
+      .query("refereeProfiles")
+      .withIndex("by_club_and_user", (q) =>
+        q.eq("clubId", offer.clubId).eq("userId", ctx.user._id)
+      )
+      .unique();
+    if (!profile || profile._id !== offer.refereeProfileId) {
+      throw new Error("FORBIDDEN");
+    }
+    const need = await ctx.db.get(offer.needId);
+    const match = await ctx.db.get(offer.matchId);
+    if (!need || !match) return null;
+    const team = await ctx.db.get(match.teamId);
+    if (!team) return null;
+    return {
+      offerId: offer._id,
+      status: offer.status,
+      version: offer.version,
+      sentAt: offer.sentAt,
+      expiresAt: offer.expiresAt,
+      respondedAt: offer.respondedAt ?? null,
+      responseNote: offer.responseNote ?? null,
+      needId: need._id,
+      needStatus: need.status,
+      needVersion: need.version,
+      arrivalAt: need.arrivalAt ?? null,
+      venue: need.venue ?? null,
+      match: {
+        matchId: match._id,
+        teamName: team.name,
+        opponent: match.opponent,
+        scheduledAt: match.scheduledAt ?? null,
+        isHome: match.isHome,
+      },
+    };
+  },
+});
+
 export const listMyAssignments = authenticatedQuery({
   args: {
     clubId: v.id("clubs"),
@@ -341,6 +386,58 @@ export const listMyAssignments = authenticatedQuery({
       })
     );
     return rows.filter((row) => row !== null);
+  },
+});
+
+export const getMyAssignment = authenticatedQuery({
+  args: { assignmentId: v.id("refereeAssignments") },
+  returns: v.union(
+    v.object({
+      assignmentId: v.id("refereeAssignments"),
+      status: refereeAssignmentStatusValidator,
+      version: v.number(),
+      confirmedAt: v.number(),
+      needId: v.id("matchRefereeNeeds"),
+      arrivalAt: v.union(v.number(), v.null()),
+      venue: v.union(v.string(), v.null()),
+      match: matchSummaryValidator,
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment) return null;
+    await requireClubRole(ctx, ctx.user._id, assignment.clubId, ["referee"]);
+    const profile = await ctx.db
+      .query("refereeProfiles")
+      .withIndex("by_club_and_user", (q) =>
+        q.eq("clubId", assignment.clubId).eq("userId", ctx.user._id)
+      )
+      .unique();
+    if (!profile || profile._id !== assignment.refereeProfileId) {
+      throw new Error("FORBIDDEN");
+    }
+    const need = await ctx.db.get(assignment.needId);
+    const match = await ctx.db.get(assignment.matchId);
+    if (!need || !match) return null;
+    const team = await ctx.db.get(match.teamId);
+    if (!team) return null;
+    return {
+      assignmentId: assignment._id,
+      status: assignment.status,
+      version: assignment.version,
+      confirmedAt: assignment.confirmedAt,
+      needId: need._id,
+      arrivalAt: need.arrivalAt ?? null,
+      venue: need.venue ?? null,
+      match: {
+        matchId: match._id,
+        teamName: team.name,
+        opponent: match.opponent,
+        scheduledAt: match.scheduledAt ?? null,
+        isHome: match.isHome,
+      },
+    };
   },
 });
 

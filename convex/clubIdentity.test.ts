@@ -85,6 +85,23 @@ describe("club identity and authorization", () => {
         status: "active",
       }),
     ]);
+    const mobileSession = await asLegacyAdmin.query(
+      api.clubIdentity.getMyMobileSession,
+      {}
+    );
+    expect(mobileSession).toMatchObject({
+      profile: {
+        displayName: "Legacy Admin",
+        email: "legacy-admin@jeugdvoetbal.test",
+      },
+      memberships: [
+        {
+          clubId,
+          roles: ["club_admin", "planner"],
+          status: "active",
+        },
+      ],
+    });
     const auditCount = await t.run(async (ctx) =>
       (
         await ctx.db

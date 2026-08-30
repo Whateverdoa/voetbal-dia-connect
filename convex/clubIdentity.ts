@@ -108,6 +108,47 @@ export const getMyClubMemberships = authenticatedQuery({
   },
 });
 
+export const getMyMobileSession = authenticatedQuery({
+  args: {},
+  returns: v.object({
+    profile: v.object({
+      id: v.id("appUsers"),
+      displayName: v.union(v.string(), v.null()),
+      email: v.union(v.string(), v.null()),
+    }),
+    memberships: v.array(membershipSummaryValidator),
+  }),
+  handler: async (ctx) => {
+    const memberships = await ctx.db
+      .query("clubMemberships")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .take(100);
+    const summaries = await Promise.all(
+      memberships.map(async (membership) => {
+        const club = await ctx.db.get(membership.clubId);
+        return club
+          ? {
+              membershipId: membership._id,
+              clubId: membership.clubId,
+              clubName: club.name,
+              roles: membership.roles,
+              status: membership.status,
+              version: membership.version,
+            }
+          : null;
+      })
+    );
+    return {
+      profile: {
+        id: ctx.user._id,
+        displayName: ctx.user.displayName ?? null,
+        email: ctx.user.email ?? null,
+      },
+      memberships: summaries.filter((summary) => summary !== null),
+    };
+  },
+});
+
 export const getMyM1Status = identityQuery({
   args: {},
   returns: v.object({

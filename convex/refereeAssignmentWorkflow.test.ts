@@ -154,6 +154,15 @@ describe("manual referee assignment workflow", () => {
       { clubId: fixture.clubId, status: "pending" }
     );
     expect(pendingOffers).toHaveLength(1);
+    const offerDetail = await fixture.refereeActor.query(
+      api.refereeAssignmentQueries.getMyOffer,
+      { offerId: sent.offerId }
+    );
+    expect(offerDetail).toMatchObject({
+      offerId: sent.offerId,
+      status: "pending",
+      match: { matchId: fixture.matchId },
+    });
     const awaitingQueue = await fixture.plannerActor.query(
       api.refereeAssignmentQueries.listPlannerQueue,
       { clubId: fixture.clubId, status: "awaiting_response" }
@@ -196,6 +205,15 @@ describe("manual referee assignment workflow", () => {
       { clubId: fixture.clubId, status: "confirmed" }
     );
     expect(assignments).toHaveLength(1);
+    const assignmentDetail = await fixture.refereeActor.query(
+      api.refereeAssignmentQueries.getMyAssignment,
+      { assignmentId: confirmed.assignmentId }
+    );
+    expect(assignmentDetail).toMatchObject({
+      assignmentId: confirmed.assignmentId,
+      status: "confirmed",
+      match: { matchId: fixture.matchId },
+    });
     const assignedQueue = await fixture.plannerActor.query(
       api.refereeAssignmentQueries.listPlannerQueue,
       { clubId: fixture.clubId, status: "assigned" }
@@ -228,6 +246,12 @@ describe("manual referee assignment workflow", () => {
       })
     ).rejects.toThrow("VERSION_CONFLICT");
     const sent = await sendFixtureOffer(fixture);
+    await expect(
+      fixture.otherRefereeActor.query(
+        api.refereeAssignmentQueries.getMyOffer,
+        { offerId: sent.offerId }
+      )
+    ).rejects.toThrow("FORBIDDEN");
     await expect(
       fixture.otherRefereeActor.mutation(
         api.refereeAssignmentCommands.acceptOffer,

@@ -235,7 +235,8 @@ export const refereeOffersTable = defineTable({
   .index("by_need_and_referee", ["needId", "refereeProfileId"])
   .index("by_referee_and_status", ["refereeProfileId", "status"])
   .index("by_club_and_status", ["clubId", "status"])
-  .index("by_need_and_correlation", ["needId", "correlationId"]);
+  .index("by_need_and_correlation", ["needId", "correlationId"])
+  .index("by_status_and_expires_at", ["status", "expiresAt"]);
 
 export const refereeAssignmentsTable = defineTable({
   needId: v.id("matchRefereeNeeds"),

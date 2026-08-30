@@ -40,4 +40,11 @@ crons.cron(
   internal.refereeNotifications.createWindowClosingReminders,
 );
 
+crons.interval(
+  "referee-offer-expiry",
+  { minutes: 1 },
+  internal.refereeOfferExpiry.expirePendingOffers,
+  {},
+);
+
 export default crons;

@@ -69,6 +69,11 @@ npm run seed:new-app
 This command refuses the protected project, the wrong Convex team, production
 deployment kinds, and any local `SPORTLINK_CLIENT_ID`.
 
+Before the first schema push, configure the matching Clerk development issuer
+with the guarded workflow documented in `docs/config.md`. It verifies the
+`pk_test_` key/issuer pair and the isolated Convex target before changing the
+development deployment.
+
 After the reviewed schema/functions have been pushed and both synthetic seeds
 exist, run the backend portion of the M2 live exit check with:
 

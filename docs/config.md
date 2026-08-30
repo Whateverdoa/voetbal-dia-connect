@@ -18,6 +18,7 @@ queries of mutations.
 - Convex-project: `jeugdvoetbal-apple-dev`
 - Lokaal configuratiebestand: `.env.local` (door Git genegeerd)
 - Targetcontrole: `npm run verify:new-app-target`
+- Bewaakte Clerk-koppeling: `npm run configure:clerk-dev`
 - M1 seed na de bestaande seed: `npm run seed:new-app`
 
 Voor een cloud development deployment moeten `.env.local` of de CI-secretset
@@ -28,6 +29,22 @@ ook exact bevatten:
 
 De targetcontrole vereist exact het bevestigde team en project en weigert onder
 andere het oude project, productie-deployments en een lokale Sportlink client ID.
+
+Configureer Clerk pas nadat in het Clerk Dashboard een aparte development-app
+is aangemaakt, Native API is ingeschakeld en de Apple bundle is geregistreerd.
+De configurator accepteert uitsluitend een `pk_test_` publishable key, leidt het
+bijbehorende issuer-domein uit die sleutel af en weigert een afwijkende issuer.
+Daarna draait hij de targetcontrole en schrijft hij alleen
+`CLERK_JWT_ISSUER_DOMAIN` naar `brainy-buffalo-707`:
+
+```bash
+JEUGDVOETBAL_CLERK_PUBLISHABLE_KEY='pk_test_...' \
+CLERK_JWT_ISSUER_DOMAIN='https://...clerk.accounts.dev' \
+npm run configure:clerk-dev
+```
+
+De publishable key is clientconfiguratie en wordt door dit script niet naar Git
+of Convex geschreven. Een Clerk secret key is voor deze stap niet nodig.
 
 ## Sportlink
 

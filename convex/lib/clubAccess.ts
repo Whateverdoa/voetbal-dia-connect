@@ -85,6 +85,13 @@ export const identityMutation = customMutation(
   }))
 );
 
+export const identityQuery = customQuery(
+  query,
+  customCtx(async (ctx: QueryCtx) => ({
+    identity: await requireIdentity(ctx),
+  }))
+);
+
 export const authenticatedQuery = customQuery(
   query,
   customCtx(async (ctx: QueryCtx) => await requireAppUser(ctx))

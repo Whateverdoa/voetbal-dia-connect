@@ -5,6 +5,26 @@ export const api = {
   userQueries: {
     getMyRoles: "userQueries:getMyRoles",
   },
+  clubIdentity: {
+    getMyM1Status: "clubIdentity:getMyM1Status",
+    syncCurrentAccount: "clubIdentity:syncCurrentAccount",
+    bootstrapLegacyAdminMembership: "clubIdentity:bootstrapLegacyAdminMembership",
+  },
+  refereeDomain: {
+    listPlannerRefereeProfiles: "refereeDomain:listPlannerRefereeProfiles",
+  },
+  refereeAssignmentQueries: {
+    listPlannerQueue: "refereeAssignmentQueries:listPlannerQueue",
+    getPlannerCandidateEligibility:
+      "refereeAssignmentQueries:getPlannerCandidateEligibility",
+    listNeedAudit: "refereeAssignmentQueries:listNeedAudit",
+  },
+  refereeAssignmentCommands: {
+    createNeed: "refereeAssignmentCommands:createNeed",
+    sendOffer: "refereeAssignmentCommands:sendOffer",
+    confirmAssignment: "refereeAssignmentCommands:confirmAssignment",
+    cancelAssignment: "refereeAssignmentCommands:cancelAssignment",
+  },
   matches: {
     verifyCoachAccess: "matches:verifyCoachAccess",
     getByPublicCode: "matches:getByPublicCode",

@@ -8,6 +8,10 @@ vi.mock("./AssignmentBoard", () => ({
   AssignmentBoard: () => <div>AssignmentBoard Mock</div>,
 }));
 
+vi.mock("./RefereePlanningQueue", () => ({
+  RefereePlanningQueue: () => <div>RefereePlanningQueue Mock</div>,
+}));
+
 vi.mock("./TeamsTab", () => ({
   TeamsTab: () => <div>TeamsTab Mock</div>,
 }));
@@ -41,11 +45,20 @@ describe("AdminWorkspace", () => {
     });
   });
 
-  it("opens on Toewijzing by default", () => {
+  it("opens on referee planning by default", () => {
     render(<AdminWorkspace onLogout={vi.fn()} />);
 
-    expect(screen.getByText("AssignmentBoard Mock")).toBeInTheDocument();
+    expect(screen.getByText("RefereePlanningQueue Mock")).toBeInTheDocument();
+    expect(screen.queryByText("AssignmentBoard Mock")).not.toBeInTheDocument();
     expect(screen.queryByText("TeamsTab Mock")).not.toBeInTheDocument();
+  });
+
+  it("keeps direct assignment available as a compatibility view", () => {
+    render(<AdminWorkspace onLogout={vi.fn()} />);
+
+    fireEvent.click(screen.getByText("Direct toewijzen"));
+
+    expect(screen.getByText("AssignmentBoard Mock")).toBeInTheDocument();
   });
 
   it("switches to Beheer and shows management tabs", () => {

@@ -651,6 +651,32 @@ export const cancelAssignment = authenticatedMutation({
       updatedAt: now,
       version: nextNeedVersion,
     });
+    const acceptedOffer = assignment.acceptedOfferId
+      ? await ctx.db.get(assignment.acceptedOfferId)
+      : null;
+    if (acceptedOffer?.status === "accepted") {
+      await ctx.db.patch(acceptedOffer._id, {
+        status: "withdrawn",
+        updatedAt: now,
+        version: acceptedOffer.version + 1,
+      });
+      await ctx.db.insert("assignmentAuditEvents", {
+        actorType: "user",
+        actorUserId: ctx.user._id,
+        clubId: assignment.clubId,
+        matchId: assignment.matchId,
+        needId: assignment.needId,
+        offerId: acceptedOffer._id,
+        assignmentId: assignment._id,
+        refereeProfileId: assignment.refereeProfileId,
+        eventType: "offer_withdrawn",
+        previousStatus: acceptedOffer.status,
+        newStatus: "withdrawn",
+        reasonCode: args.reason.trim(),
+        correlationId: `${args.correlationId}:withdraw:${acceptedOffer._id}`,
+        createdAt: now,
+      });
+    }
     const match = await ctx.db.get(assignment.matchId);
     if (match && match.refereeId === profile.legacyRefereeId) {
       await ctx.db.patch(match._id, { refereeId: undefined });

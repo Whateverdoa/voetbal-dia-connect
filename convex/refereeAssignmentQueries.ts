@@ -6,6 +6,7 @@ import {
   refereeNeedStatusValidator,
   refereeOfferStatusValidator,
 } from "./refereeAssignmentSchema";
+import { evaluateRefereeEligibility } from "./lib/refereeAssignmentEligibility";
 
 const PLANNER_ROLES = ["club_admin", "planner"] as const;
 
@@ -35,6 +36,51 @@ const plannerAssignmentValidator = v.object({
   status: refereeAssignmentStatusValidator,
   confirmedAt: v.number(),
   version: v.number(),
+});
+
+const refereeEligibilityCodeValidator = v.union(
+  v.literal("PROFILE_INACTIVE"),
+  v.literal("PROFILE_WRONG_CLUB"),
+  v.literal("CLUB_BLOCKED"),
+  v.literal("TEAM_BLOCKED"),
+  v.literal("AGE_GROUP_NOT_ALLOWED"),
+  v.literal("MATCH_LEVEL_NOT_ALLOWED"),
+  v.literal("QUALIFICATION_MISMATCH"),
+  v.literal("MATCH_TIME_MISSING"),
+  v.literal("REFEREE_UNAVAILABLE"),
+  v.literal("REFEREE_CONFLICT")
+);
+
+export const getPlannerCandidateEligibility = authenticatedQuery({
+  args: {
+    needId: v.id("matchRefereeNeeds"),
+    refereeProfileId: v.id("refereeProfiles"),
+  },
+  returns: v.object({
+    refereeProfileId: v.id("refereeProfiles"),
+    refereeName: v.string(),
+    eligible: v.boolean(),
+    codes: v.array(refereeEligibilityCodeValidator),
+    startsAt: v.union(v.number(), v.null()),
+    endsAt: v.union(v.number(), v.null()),
+  }),
+  handler: async (ctx, args) => {
+    const need = await ctx.db.get(args.needId);
+    const profile = await ctx.db.get(args.refereeProfileId);
+    if (!need || !profile) throw new Error("NOT_FOUND");
+    await requireClubRole(ctx, ctx.user._id, need.clubId, PLANNER_ROLES);
+    if (profile.clubId !== need.clubId) throw new Error("FORBIDDEN");
+
+    const result = await evaluateRefereeEligibility(ctx, need, profile);
+    return {
+      refereeProfileId: profile._id,
+      refereeName: profile.displayName,
+      eligible: result.eligible,
+      codes: result.codes,
+      startsAt: result.startsAt,
+      endsAt: result.endsAt,
+    };
+  },
 });
 
 export const listPlannerQueue = authenticatedQuery({

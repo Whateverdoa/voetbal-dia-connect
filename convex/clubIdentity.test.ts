@@ -14,6 +14,124 @@ const modules = import.meta.glob([
 ]);
 
 describe("club identity and authorization", () => {
+  it("reports an unsynchronized account without granting memberships", async () => {
+    const t = convexTest(schema, modules);
+    const actor = t.withIdentity({
+      subject: "not-synchronized",
+      email: "new-user@jeugdvoetbal.test",
+    });
+
+    await expect(actor.query(api.clubIdentity.getMyM1Status, {})).resolves.toEqual({
+      accountSynced: false,
+      memberships: [],
+    });
+  });
+
+  it("bootstraps planner roles only for an authenticated legacy admin", async () => {
+    const t = convexTest(schema, modules);
+    const asLegacyAdmin = t.withIdentity({
+      subject: "legacy-admin",
+      email: "legacy-admin@jeugdvoetbal.test",
+      name: "Legacy Admin",
+    });
+    await asLegacyAdmin.mutation(api.clubIdentity.syncCurrentAccount, {});
+    const clubId = await t.run(async (ctx) => {
+      const now = Date.now();
+      const id = await ctx.db.insert("clubs", {
+        name: "Bootstrap Testclub",
+        slug: "bootstrap-testclub",
+        createdAt: now,
+      });
+      await ctx.db.insert("userAccess", {
+        email: "legacy-admin@jeugdvoetbal.test",
+        roles: ["admin"],
+        active: true,
+        source: "admin_manual",
+        lastSyncedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return id;
+    });
+
+    const first = await asLegacyAdmin.mutation(
+      api.clubIdentity.bootstrapLegacyAdminMembership,
+      {
+        clubId,
+        correlationId: "bootstrap-legacy-admin",
+      }
+    );
+    expect(first).toMatchObject({
+      created: true,
+      roles: ["club_admin", "planner"],
+      version: 1,
+    });
+
+    const replay = await asLegacyAdmin.mutation(
+      api.clubIdentity.bootstrapLegacyAdminMembership,
+      {
+        clubId,
+        correlationId: "bootstrap-legacy-admin",
+      }
+    );
+    expect(replay).toEqual(first);
+
+    const status = await asLegacyAdmin.query(api.clubIdentity.getMyM1Status, {});
+    expect(status.accountSynced).toBe(true);
+    expect(status.memberships).toEqual([
+      expect.objectContaining({
+        clubId,
+        roles: ["club_admin", "planner"],
+        status: "active",
+      }),
+    ]);
+    const auditCount = await t.run(async (ctx) =>
+      (
+        await ctx.db
+          .query("assignmentAuditEvents")
+          .withIndex("by_correlation", (q) =>
+            q.eq("correlationId", "bootstrap-legacy-admin")
+          )
+          .take(2)
+      ).length
+    );
+    expect(auditCount).toBe(1);
+  });
+
+  it("denies planner bootstrap to a legacy non-admin", async () => {
+    const t = convexTest(schema, modules);
+    const asCoach = t.withIdentity({
+      subject: "legacy-coach",
+      email: "legacy-coach@jeugdvoetbal.test",
+    });
+    await asCoach.mutation(api.clubIdentity.syncCurrentAccount, {});
+    const clubId = await t.run(async (ctx) => {
+      const now = Date.now();
+      const id = await ctx.db.insert("clubs", {
+        name: "Denied Testclub",
+        slug: "denied-testclub",
+        createdAt: now,
+      });
+      await ctx.db.insert("userAccess", {
+        email: "legacy-coach@jeugdvoetbal.test",
+        roles: ["coach"],
+        active: true,
+        source: "coach_sync",
+        lastSyncedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return id;
+    });
+
+    await expect(
+      asCoach.mutation(api.clubIdentity.bootstrapLegacyAdminMembership, {
+        clubId,
+        correlationId: "coach-cannot-bootstrap",
+      })
+    ).rejects.toThrow("FORBIDDEN");
+  });
+
   it("allows every active club role in its own club and denies cross-club access", async () => {
     const t = convexTest(schema, modules);
     const asAdmin = t.withIdentity({

@@ -311,6 +311,15 @@ describe("manual referee assignment workflow", () => {
   it("revalidates availability before confirmation", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createFixture(t);
+    await expect(
+      fixture.plannerActor.query(
+        api.refereeAssignmentQueries.getPlannerCandidateEligibility,
+        {
+          needId: fixture.need.needId,
+          refereeProfileId: fixture.profileId,
+        }
+      )
+    ).resolves.toMatchObject({ eligible: true, codes: [] });
     const sent = await sendFixtureOffer(fixture);
     const accepted = await fixture.refereeActor.mutation(
       api.refereeAssignmentCommands.acceptOffer,
@@ -332,6 +341,19 @@ describe("manual referee assignment workflow", () => {
         updatedAt: now,
         version: 1,
       });
+    });
+
+    await expect(
+      fixture.plannerActor.query(
+        api.refereeAssignmentQueries.getPlannerCandidateEligibility,
+        {
+          needId: fixture.need.needId,
+          refereeProfileId: fixture.profileId,
+        }
+      )
+    ).resolves.toMatchObject({
+      eligible: false,
+      codes: ["REFEREE_UNAVAILABLE"],
     });
 
     await expect(
@@ -402,5 +424,21 @@ describe("manual referee assignment workflow", () => {
     );
     expect(cancelled.assignmentStatus).toBe("cancelled");
     expect(cancelled.needStatus).toBe("open");
+
+    const replacementOffer = await fixture.plannerActor.mutation(
+      api.refereeAssignmentCommands.sendOffer,
+      {
+        needId: fixture.need.needId,
+        refereeProfileId: fixture.otherProfileId,
+        expiresAt: fixture.startsAt - 7 * 60 * 60 * 1000,
+        needVersion: cancelled.needVersion,
+        correlationId: `replacement-offer-${fixture.matchId}`,
+      }
+    );
+    expect(replacementOffer.offerStatus).toBe("pending");
+    expect(replacementOffer.needStatus).toBe("awaiting_response");
+
+    const oldOffer = await t.run(async (ctx) => await ctx.db.get(sent.offerId));
+    expect(oldOffer?.status).toBe("withdrawn");
   });
 });

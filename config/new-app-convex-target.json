@@ -2,5 +2,7 @@
   "team": "mike-ten-hoonte",
   "project": "jeugdvoetbal-apple-dev",
   "developmentDeployment": "brainy-buffalo-707",
+  "cloudUrl": "https://brainy-buffalo-707.eu-west-1.convex.cloud",
+  "siteUrl": "https://brainy-buffalo-707.eu-west-1.convex.site",
   "allowedDeploymentKinds": ["local", "dev"]
 }

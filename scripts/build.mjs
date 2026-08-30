@@ -11,17 +11,25 @@
  */
 
 import { execSync } from "node:child_process";
+import { validateNewAppWebTarget } from "./verify-new-app-web-target.mjs";
 
 const deployKey = process.env.CONVEX_DEPLOY_KEY;
 const vercelEnv = process.env.VERCEL_ENV; // "production" | "preview" | "development"
 
 const isProduction = vercelEnv === "production";
 
+if (process.env.JEUGDVOETBAL_APPLE_ENVIRONMENT) {
+  validateNewAppWebTarget(process.env);
+  console.log("Verified isolated Apple development web target.");
+}
+
 if (deployKey && isProduction) {
-  console.log("🚀 Production build: deploying Convex functions + Next.js build");
+  console.log(
+    "🚀 Production build: deploying Convex functions + Next.js build",
+  );
   // CONVEX_VERBOSE=1 surfaces detailed logs if deploy hangs (e.g. "Analyzing source code...")
   const env = { ...process.env, CONVEX_VERBOSE: "1" };
-  execSync("npx convex deploy --cmd \"next build\"", {
+  execSync('npx convex deploy --cmd "next build"', {
     stdio: "inherit",
     env,
   });

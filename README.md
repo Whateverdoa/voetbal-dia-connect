@@ -93,6 +93,15 @@ checks that acceptance does not assign, races two planner confirmations, and
 requires one assignment plus the expected audit events. It does not replace a
 real Clerk sign-in or the physical-device APNs test.
 
+The separate MacBook/iPhone web target must opt in with
+`JEUGDVOETBAL_APPLE_ENVIRONMENT=development`. Its build then refuses the wrong
+Convex URLs, unknown Vercel environments, a Convex deploy key, Sportlink
+credentials, or missing Clerk development keys. A stable Vercel production URL
+is allowed only because the exact isolated development backend is still
+enforced. Run `npm run verify:new-app-web-target` before linking or deploying
+that Vercel project. This guard is inactive for the existing live web
+application.
+
 ## Quality Checks
 
 ```bash

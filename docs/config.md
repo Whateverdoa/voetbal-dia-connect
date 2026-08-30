@@ -70,6 +70,33 @@ tegelijk `APNS_PRIVATE_KEY` en `APNS_PRIVATE_KEY_FILE` mee. De configurator lees
 alle vijf waarden na het schrijven terug en meldt alleen welke variabelen zijn
 geverifieerd, nooit hun inhoud.
 
+## Afzonderlijke web- en mobile-API deployment
+
+Het ontwikkelproject voor de Apple-app gebruikt dezelfde Next.js-code, maar een
+eigen Vercel-project of vergelijkbare deployment. Configureer daar:
+
+- `JEUGDVOETBAL_APPLE_ENVIRONMENT=development`
+- `JEUGDVOETBAL_CONVEX_TEAM=mike-ten-hoonte`
+- `JEUGDVOETBAL_CONVEX_PROJECT=jeugdvoetbal-apple-dev`
+- `NEXT_PUBLIC_CONVEX_URL=https://brainy-buffalo-707.eu-west-1.convex.cloud`
+- `NEXT_PUBLIC_CONVEX_SITE_URL=https://brainy-buffalo-707.eu-west-1.convex.site`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...`
+- `CLERK_SECRET_KEY=sk_test_...`
+
+De publishable key mag in de clientbuild staan. De secret key wordt alleen in
+de server-side deploymentsecretstore gezet en niet in chat, Git, Xcode of
+Convex. Zet voor deze ontwikkeldeployment geen `CONVEX_DEPLOY_KEY` en geen
+`SPORTLINK_CLIENT_ID`; schema/functions worden uitsluitend via de lokaal
+bewaakte Convex-workflow gepusht en Sportlink blijft eigendom van de bestaande
+live importer.
+
+De build valideert deze scheiding automatisch zodra
+`JEUGDVOETBAL_APPLE_ENVIRONMENT` aanwezig is. Handmatige preflight:
+
+```bash
+npm run verify:new-app-web-target
+```
+
 ## Sportlink
 
 De importcode voor programma, uitslagen en rosters gebruikt de client ID vanuit

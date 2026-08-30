@@ -10,11 +10,11 @@
 
 | Bron | Status | Nog open |
 |------|--------|----------|
-| [fable-jo13-presentatie-gamificatie.plan.md](./fable-jo13-presentatie-gamificatie.plan.md) + [fable-jo13-progress.md](./fable-jo13-progress.md) | Codefasen 0–5 `klaar` | Consent-ronde; Sportlink-namen; JO13-1 later |
-| [fable-jo13-pilot-runbook.md](./fable-jo13-pilot-runbook.md) | Runbook klaar | Club-uitvoering 5.3–5.6 |
-| [avg-jo13-consent.md](./avg-jo13-consent.md) | Beleid klaar | Tokens delen; ≥80% granted vóór foto’s/XP op TV |
+| [fable-jo13-presentatie-gamificatie.plan.md](./fable-jo13-presentatie-gamificatie.plan.md) + [fable-jo13-progress.md](./fable-jo13-progress.md) | Codefasen 0–5 `klaar` | Sportlink-namen; JO13-1 later |
+| [fable-jo13-pilot-runbook.md](./fable-jo13-pilot-runbook.md) | Runbook klaar | Club-uitvoering 5.4–5.6 (consent JO13-2 gedaan) |
+| [avg-jo13-consent.md](./avg-jo13-consent.md) | Beleid klaar | JO13-2 consent-ronde gedaan; JO13-1 later |
 | [coach_scheids_admin_logos.plan.md](./coach_scheids_admin_logos.plan.md) | Deels gebouwd | Acceptatiecriteria afvinken |
-| Tactiekstudio (Fable fase 2 rest) | Presentatie-basis klaar | Wisselplan-tab op `/present` ontbreekt — zie [tactiek-presentatie](./tactiek-presentatie.plan.md) |
+| Tactiekstudio (Fable fase 2 rest) | Presentatie-basis klaar | Wisselplan-tab op `/present` — zie [tactiek-presentatie](./tactiek-presentatie.plan.md) (in uitvoering) |
 
 ## B. Product backlog — prioriteit 1–3
 
@@ -57,8 +57,8 @@ Aparte team-ervaring voor `isSelectionTeam`: publieke landing + ingelogd SaaS-ac
 
 ## Voorgestelde volgorde
 
-1. Tactiek-presentatie (Wisselplan op `/present`)
-2. Selectie-portaal P0–P1 (landing) parallel met consent-ronde JO13-2
+1. Tactiek-presentatie (Wisselplan op `/present`) — **nu**
+2. Selectie-portaal P0–P1 (landing) — consent JO13-2 is gedaan
 3. Portaal P2–P3 (login + gamificatie-app)
 4. Pre-match WAT+HOE / admin UX
 5. Heatmaps (future)

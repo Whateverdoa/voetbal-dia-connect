@@ -25,6 +25,13 @@ de huidige matchflow te blokkeren.
   - geen harde fout in paginaflow
   - optioneel later: subtiele melding “Externe stand tijdelijk niet beschikbaar”
 
-## Open dependency
+## Client-ID status en eigenaarschap
 
-- `SPORTLINK_CLIENT_ID` moet vanuit bestuur worden aangeleverd.
+- De club beschikt over een Sportlink client ID.
+- De waarde wordt uitsluitend ingesteld als `SPORTLINK_CLIENT_ID` in de
+  server-side Convex-omgeving en wordt niet opgeslagen in Git of clients.
+- De bestaande live backend blijft tijdens ontwikkeling eigenaar van geplande
+  polling.
+- De nieuwe lokale database gebruikt seed- of snapshotdata.
+- Een tweede permanente poller met dezelfde client ID vereist eerst expliciete
+  afspraken over quota, consistentie en welke deployment per club leidend is.

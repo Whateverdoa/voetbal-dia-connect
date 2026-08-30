@@ -23,6 +23,20 @@ If `CONVEX_DEPLOYMENT` is unset, `convex dev` asks which project to configure.
 For new-app work, create/select the isolated project and never select the current
 live project.
 
+## Sportlink Client ID
+
+The fixtures and roster imports already read `SPORTLINK_CLIENT_ID` from the
+server-side Convex environment. Never put this value in Swift, a
+`NEXT_PUBLIC_*` variable, Git, or browser code.
+
+- Existing live remains the scheduled Sportlink importer during new-app
+  development.
+- Local new-app environments use seed or sanitized snapshot data.
+- Use a separate Sportlink test client ID for staging when available.
+- If only the live club client ID exists, use it only in an approved controlled
+  staging import window and avoid permanent duplicate polling.
+- Exactly one production deployment owns scheduled imports for a club.
+
 ## Local Setup
 
 Requirements: supported Node.js/npm versions and access to the intended isolated

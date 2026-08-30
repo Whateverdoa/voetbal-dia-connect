@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Voetbal DIA Connect
 
-## Getting Started
+Next.js and Convex application for youth-football administration, team and match
+preparation, live match control, referee workflows, and public results.
 
-First, run the development server:
+This repository is also the backend source of truth for the planned universal
+iPhone/iPad application and its versioned `/v1/mobile` adapter.
+
+## Database Safety
+
+The existing Convex production deployment serves the current live application.
+Do not use it for development or staging of the new Apple app.
+
+- Create a separate Convex project/deployment for the new app.
+- Reuse the version-controlled schema and functions, not the physical live data.
+- Seed synthetic data or use an explicitly sanitized snapshot.
+- Never copy production `.env.local`, PINs, youth data, contact data, or deploy
+  keys into the new environment.
+- Verify `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` before running any
+  schema push, import, seed, cron, or deployment command.
+
+If `CONVEX_DEPLOYMENT` is unset, `convex dev` asks which project to configure.
+For new-app work, create/select the isolated project and never select the current
+live project.
+
+## Local Setup
+
+Requirements: supported Node.js/npm versions and access to the intended isolated
+Convex project.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+npx convex dev --until-success
+npm run dev:frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The frontend runs at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Running `npm run dev` starts both the frontend and `convex dev`; use it only
+after the local deployment target has been verified.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quality Checks
 
-## Learn More
+```bash
+npx tsc --noEmit
+npx tsc -p convex/tsconfig.json --noEmit
+npm run test:run
+npm run lint
+npm run build
+npm audit
+```
 
-To learn more about Next.js, take a look at the following resources:
+The build script deploys Convex only when both `CONVEX_DEPLOY_KEY` is present
+and `VERCEL_ENV=production`. Local and preview builds run Next.js only.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Repository Roles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Convex schema, queries, mutations, schedulers, imports, and audit behavior.
+- Responsive Next.js dashboards for admin, planner, coach, and referee.
+- Referee matching and assignment domain.
+- Planned stable mobile API DTOs and commands under `/v1/mobile`.
+- Shared identity and authorization policy.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The SwiftUI client and cross-repository product specifications live in
+[`Whateverdoa/Jeugdvoetbal-app`](https://github.com/Whateverdoa/Jeugdvoetbal-app).

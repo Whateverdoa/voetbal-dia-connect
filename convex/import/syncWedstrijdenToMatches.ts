@@ -13,6 +13,7 @@ import { findLocalLogo } from "../lib/localLogos";
 import { requireAdminOrOps } from "../lib/opsAuth";
 import { seasonKeyFromMs } from "../lib/season";
 import { homeVenueFieldForMatch } from "../lib/diaFields";
+import { cancelRefereeWorkflowForMatch } from "../lib/refereeMatchCancellation";
 import { extractDiaMatch } from "./diaTeamNormalize";
 import { replaceMatchRoster } from "./matchRosterReplace";
 import { buildFinishedScorePatch, isLiveOrHalftime } from "./syncScoreApply";
@@ -283,7 +284,13 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
           existingMatch.status === "finished");
       if (existingMatch && !existingMatch.cancelledAt && !isLiveOrFinished) {
         if (!dryRun) {
-          await ctx.db.patch(existingMatch._id, { cancelledAt: Date.now() });
+          const cancelledAt = Date.now();
+          await cancelRefereeWorkflowForMatch(ctx, {
+            matchId: existingMatch._id,
+            cancelledAt,
+            actorServiceId: "sportlink-fixture-sync",
+            correlationId: `sportlink-match-cancelled:${wedstrijd._id}:${cancelledAt}`,
+          });
         }
         cancelledMatches++;
         console.log(

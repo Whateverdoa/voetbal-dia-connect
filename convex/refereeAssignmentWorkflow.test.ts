@@ -4,6 +4,7 @@
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
+import { cancelRefereeWorkflowForMatch } from "./lib/refereeMatchCancellation";
 import schema from "./schema";
 
 const modules = import.meta.glob([
@@ -341,6 +342,57 @@ describe("manual referee assignment workflow", () => {
     expect(replay).toEqual(first);
   });
 
+  it("finds an active offer beyond a long offer history", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createFixture(t);
+    await t.run(async (ctx) => {
+      const need = await ctx.db.get(fixture.need.needId);
+      if (!need?.createdByUserId) throw new Error("missing fixture planner");
+      const now = Date.now();
+      for (let index = 0; index < 101; index += 1) {
+        await ctx.db.insert("refereeOffers", {
+          needId: need._id,
+          matchId: fixture.matchId,
+          clubId: fixture.clubId,
+          refereeProfileId: fixture.profileId,
+          status: "declined",
+          sentAt: now - 10_000 + index,
+          expiresAt: fixture.startsAt - 7 * 60 * 60 * 1000,
+          respondedAt: now - 9_000 + index,
+          sentByUserId: need.createdByUserId,
+          correlationId: `historical-offer-${index}`,
+          createdAt: now - 10_000 + index,
+          updatedAt: now - 9_000 + index,
+          version: 2,
+        });
+      }
+      await ctx.db.insert("refereeOffers", {
+        needId: need._id,
+        matchId: fixture.matchId,
+        clubId: fixture.clubId,
+        refereeProfileId: fixture.profileId,
+        status: "pending",
+        sentAt: now,
+        expiresAt: fixture.startsAt - 7 * 60 * 60 * 1000,
+        sentByUserId: need.createdByUserId,
+        correlationId: "active-offer-after-history",
+        createdAt: now,
+        updatedAt: now,
+        version: 1,
+      });
+    });
+
+    await expect(
+      fixture.plannerActor.mutation(api.refereeAssignmentCommands.sendOffer, {
+        needId: fixture.need.needId,
+        refereeProfileId: fixture.otherProfileId,
+        expiresAt: fixture.startsAt - 7 * 60 * 60 * 1000,
+        needVersion: fixture.need.version,
+        correlationId: `offer-after-long-history-${fixture.matchId}`,
+      })
+    ).rejects.toThrow("ACTIVE_OFFER_EXISTS");
+  });
+
   it("expires pending offers and reopens their need", async () => {
     const t = convexTest(schema, modules);
     const fixture = await createFixture(t);
@@ -526,5 +578,94 @@ describe("manual referee assignment workflow", () => {
 
     const oldOffer = await t.run(async (ctx) => await ctx.db.get(sent.offerId));
     expect(oldOffer?.status).toBe("withdrawn");
+  });
+
+  it("cancels the referee workflow atomically when a match is cancelled", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createFixture(t);
+    const sent = await sendFixtureOffer(fixture);
+    const accepted = await fixture.refereeActor.mutation(
+      api.refereeAssignmentCommands.acceptOffer,
+      {
+        offerId: sent.offerId,
+        offerVersion: sent.offerVersion,
+        correlationId: `accept-before-match-cancel-${fixture.matchId}`,
+      }
+    );
+    const confirmed = await fixture.plannerActor.mutation(
+      api.refereeAssignmentCommands.confirmAssignment,
+      {
+        acceptedOfferId: sent.offerId,
+        offerVersion: accepted.offerVersion,
+        needVersion: accepted.needVersion,
+        correlationId: `confirm-before-match-cancel-${fixture.matchId}`,
+      }
+    );
+    const cancelledAt = Date.now();
+    const cancellationArgs = {
+      matchId: fixture.matchId,
+      cancelledAt,
+      actorServiceId: "contract-test",
+      correlationId: `match-cancel-${fixture.matchId}`,
+    };
+
+    await expect(
+      t.run(async (ctx) =>
+        await cancelRefereeWorkflowForMatch(ctx, cancellationArgs)
+      )
+    ).resolves.toEqual({
+      matchWasAlreadyCancelled: false,
+      needsCancelled: 1,
+      offersWithdrawn: 1,
+      assignmentsCancelled: 1,
+    });
+
+    const state = await t.run(async (ctx) => ({
+      match: await ctx.db.get(fixture.matchId),
+      need: await ctx.db.get(fixture.need.needId),
+      offer: await ctx.db.get(sent.offerId),
+      assignment: await ctx.db.get(confirmed.assignmentId),
+      audit: await ctx.db
+        .query("assignmentAuditEvents")
+        .withIndex("by_match_and_created_at", (q) =>
+          q.eq("matchId", fixture.matchId)
+        )
+        .take(100),
+    }));
+    expect(state.match?.cancelledAt).toBe(cancelledAt);
+    expect(state.need?.status).toBe("cancelled");
+    expect(state.offer?.status).toBe("withdrawn");
+    expect(state.assignment?.status).toBe("cancelled");
+    expect(
+      state.audit.filter((event) => event.eventType === "offer_withdrawn")
+    ).toHaveLength(1);
+    expect(
+      state.audit.filter((event) => event.eventType === "assignment_cancelled")
+    ).toHaveLength(1);
+    expect(
+      state.audit.filter((event) => event.eventType === "match_cancelled")
+    ).toHaveLength(1);
+
+    await expect(
+      t.run(async (ctx) =>
+        await cancelRefereeWorkflowForMatch(ctx, cancellationArgs)
+      )
+    ).resolves.toEqual({
+      matchWasAlreadyCancelled: true,
+      needsCancelled: 0,
+      offersWithdrawn: 0,
+      assignmentsCancelled: 0,
+    });
+    const replayAudit = await t.run(async (ctx) =>
+      await ctx.db
+        .query("assignmentAuditEvents")
+        .withIndex("by_match_and_created_at", (q) =>
+          q.eq("matchId", fixture.matchId)
+        )
+        .take(100)
+    );
+    expect(
+      replayAudit.filter((event) => event.eventType === "match_cancelled")
+    ).toHaveLength(1);
   });
 });

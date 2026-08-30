@@ -129,6 +129,7 @@ export const listPlannerQueue = authenticatedQuery({
         const offers = await ctx.db
           .query("refereeOffers")
           .withIndex("by_need", (q) => q.eq("needId", need._id))
+          .order("desc")
           .take(50);
         const offerRows = await Promise.all(
           offers.map(async (offer) => {

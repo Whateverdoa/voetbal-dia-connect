@@ -239,11 +239,21 @@ export const sendOffer = authenticatedMutation({
     if (need.responseDeadline && args.expiresAt > need.responseDeadline) {
       throw new Error("VALIDATION_ERROR");
     }
-    const activeOffer = await ctx.db
-      .query("refereeOffers")
-      .withIndex("by_need", (q) => q.eq("needId", need._id))
-      .take(100);
-    if (activeOffer.some((offer) => ["pending", "accepted"].includes(offer.status))) {
+    const [pendingOffer, acceptedOffer] = await Promise.all([
+      ctx.db
+        .query("refereeOffers")
+        .withIndex("by_need_and_status", (q) =>
+          q.eq("needId", need._id).eq("status", "pending")
+        )
+        .first(),
+      ctx.db
+        .query("refereeOffers")
+        .withIndex("by_need_and_status", (q) =>
+          q.eq("needId", need._id).eq("status", "accepted")
+        )
+        .first(),
+    ]);
+    if (pendingOffer || acceptedOffer) {
       throw new Error("ACTIVE_OFFER_EXISTS");
     }
     const eligibility = await evaluateRefereeEligibility(ctx, need, profile);
@@ -523,10 +533,18 @@ export const confirmAssignment = authenticatedMutation({
       await ctx.db.patch(offer.matchId, { refereeId: profile.legacyRefereeId });
     }
 
-    const competingOffers = await ctx.db
-      .query("refereeOffers")
-      .withIndex("by_need", (q) => q.eq("needId", need._id))
-      .take(100);
+    const competingOffers = (
+      await Promise.all(
+        (["pending", "accepted"] as const).map((status) =>
+          ctx.db
+            .query("refereeOffers")
+            .withIndex("by_need_and_status", (q) =>
+              q.eq("needId", need._id).eq("status", status)
+            )
+            .take(100)
+        )
+      )
+    ).flat();
     for (const competingOffer of competingOffers) {
       if (
         competingOffer._id === offer._id ||

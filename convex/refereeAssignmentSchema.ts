@@ -309,6 +309,7 @@ export const refereeOffersTable = defineTable({
   version: v.number(),
 })
   .index("by_need", ["needId"])
+  .index("by_need_and_status", ["needId", "status"])
   .index("by_need_and_referee", ["needId", "refereeProfileId"])
   .index("by_referee_and_status", ["refereeProfileId", "status"])
   .index("by_club_and_status", ["clubId", "status"])

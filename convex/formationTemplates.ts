@@ -2,7 +2,9 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { validateFormationSlots } from "./lib/formationTemplateValidate";
 import type { Id } from "./_generated/dataModel";
-import type { DatabaseReader } from "./_generated/server";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+import { getCurrentUserAccess } from "./lib/userAccess";
+import { hasAdminRole } from "./lib/adminOverride";
 
 const slotValidator = v.object({
   id: v.number(),
@@ -16,39 +18,35 @@ const linkValidator = v.object({
   to: v.number(),
 });
 
-async function assertCoachOwnsTeam(
-  ctx: { auth: { getUserIdentity: () => Promise<unknown> }; db: DatabaseReader },
+async function canAccessTeamFormations(
+  ctx: QueryCtx | MutationCtx,
   teamId: Id<"teams">
-) {
-  const identity = await ctx.auth.getUserIdentity();
-  const email =
-    identity && typeof identity === "object" && "email" in identity
-      ? String((identity as { email?: string }).email ?? "").trim().toLowerCase()
-      : "";
-  if (!email) throw new Error("Niet ingelogd");
+): Promise<boolean> {
+  const access = await getCurrentUserAccess(ctx);
+  if (!access) return false;
+  if (hasAdminRole(access)) return true;
 
+  const email = access.email;
   const coach = await ctx.db
     .query("coaches")
     .withIndex("by_email", (q) => q.eq("email", email))
     .first();
-  if (!coach || !coach.teamIds.includes(teamId)) {
+  return !!coach && coach.teamIds.includes(teamId);
+}
+
+async function assertCoachOwnsTeam(
+  ctx: QueryCtx | MutationCtx,
+  teamId: Id<"teams">
+) {
+  if (!(await canAccessTeamFormations(ctx, teamId))) {
     throw new Error("Geen toegang tot dit team");
   }
-  return coach;
 }
 
 export const listForTeam = query({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const email = identity?.email?.trim().toLowerCase() ?? "";
-    if (!email) return [];
-
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-    if (!coach || !coach.teamIds.includes(args.teamId)) {
+    if (!(await canAccessTeamFormations(ctx, args.teamId))) {
       return [];
     }
 
@@ -76,15 +74,7 @@ export const getById = query({
     const doc = await ctx.db.get(args.templateId);
     if (!doc || !doc.active) return null;
 
-    const identity = await ctx.auth.getUserIdentity();
-    const email = identity?.email?.trim().toLowerCase() ?? "";
-    if (!email) return null;
-
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-    if (!coach || !coach.teamIds.includes(doc.teamId)) {
+    if (!(await canAccessTeamFormations(ctx, doc.teamId))) {
       return null;
     }
 

@@ -1,6 +1,3 @@
-/**
- * Privacy-filtered queries for desktop/TV presentation modes.
- */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { redactPlayerForPublic } from "./lib/privacyFilter";
@@ -10,6 +7,10 @@ import {
   presentationPlanValidator,
 } from "./lib/presentationSubstitutionPlans";
 import { pickPresentMatch } from "./lib/pickPresentMatch";
+import {
+  customFormationValidator,
+  loadCustomFormationForMatch,
+} from "./lib/presentationFormation";
 
 export const getTeamPresentation = query({
   args: { teamSlug: v.string() },
@@ -96,6 +97,7 @@ export const getMatchPresentation = query({
         v.id("formationTemplates"),
         v.null()
       ),
+      customFormation: customFormationValidator,
       showLineup: v.boolean(),
       quarterStartedAt: v.union(v.number(), v.null()),
       pausedAt: v.union(v.number(), v.null()),
@@ -208,6 +210,7 @@ export const getMatchPresentation = query({
       quarterCount: match.quarterCount,
       formationId: match.formationId ?? null,
       customFormationTemplateId: match.customFormationTemplateId ?? null,
+      customFormation: await loadCustomFormationForMatch(ctx, match),
       showLineup: match.showLineup,
       quarterStartedAt: match.quarterStartedAt ?? null,
       pausedAt: match.pausedAt ?? null,

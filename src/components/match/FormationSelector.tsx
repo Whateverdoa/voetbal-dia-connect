@@ -14,9 +14,11 @@ interface FormationSelectorProps {
   teamId: Id<"teams">;
   formationId: string | undefined;
   customFormationTemplateId: Id<"formationTemplates"> | undefined;
-  lineupView: LineupView;
-  onLineupViewChange: (view: LineupView) => void;
+  lineupView?: LineupView;
+  onLineupViewChange?: (view: LineupView) => void;
   canEdit?: boolean;
+  showLineupToggle?: boolean;
+  variant?: "light" | "dark";
 }
 
 export function FormationSelector({
@@ -24,9 +26,11 @@ export function FormationSelector({
   teamId,
   formationId,
   customFormationTemplateId,
-  lineupView,
+  lineupView = "veld",
   onLineupViewChange,
   canEdit = true,
+  showLineupToggle = true,
+  variant = "light",
 }: FormationSelectorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const setMatchFormation = useMutation(api.matchActions.setMatchFormation);
@@ -45,14 +49,34 @@ export function FormationSelector({
     void setMatchFormation({ matchId, formationId: raw });
   };
 
+  const isDark = variant === "dark";
+
   return (
-    <div className="bg-white rounded-xl shadow-md p-3 flex flex-wrap gap-2 items-center relative z-10">
-      <label className="text-sm font-medium text-gray-700">Formatie</label>
+    <div
+      className={
+        isDark
+          ? "bg-slate-800 text-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center relative z-10"
+          : "bg-white rounded-xl shadow-md p-3 flex flex-wrap gap-2 items-center relative z-10"
+      }
+    >
+      <label
+        className={
+          isDark
+            ? "text-sm font-medium text-slate-200"
+            : "text-sm font-medium text-gray-700"
+        }
+      >
+        Formatie
+      </label>
       <select
         value={selectValue}
         disabled={!canEdit}
         onChange={(e) => handleSelectChange(e.target.value)}
-        className="px-3 py-2 border rounded-lg text-sm flex-1 min-w-[140px]"
+        className={
+          isDark
+            ? "px-3 py-2 border border-slate-600 rounded-lg text-sm flex-1 min-w-[140px] bg-slate-900 text-white"
+            : "px-3 py-2 border rounded-lg text-sm flex-1 min-w-[140px]"
+        }
       >
         <option value="">Geen (lijst)</option>
         {FORMATION_GROUPS.map((group) => (
@@ -78,27 +102,33 @@ export function FormationSelector({
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="text-sm font-medium text-dia-black border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+          className={
+            isDark
+              ? "text-sm font-medium text-dia-yellow border border-dia-yellow rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+              : "text-sm font-medium text-dia-black border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+          }
         >
           + Eigen formatie
         </button>
       )}
-      <div className="flex rounded-lg overflow-hidden border border-gray-300">
-        <button
-          type="button"
-          onClick={() => onLineupViewChange("veld")}
-          className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
-        >
-          Veld
-        </button>
-        <button
-          type="button"
-          onClick={() => onLineupViewChange("lijst")}
-          className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
-        >
-          Lijst
-        </button>
-      </div>
+      {showLineupToggle && onLineupViewChange ? (
+        <div className="flex rounded-lg overflow-hidden border border-gray-300">
+          <button
+            type="button"
+            onClick={() => onLineupViewChange("veld")}
+            className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
+          >
+            Veld
+          </button>
+          <button
+            type="button"
+            onClick={() => onLineupViewChange("lijst")}
+            className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
+          >
+            Lijst
+          </button>
+        </div>
+      ) : null}
 
       {showCreate && (
         <CreateFormationModal

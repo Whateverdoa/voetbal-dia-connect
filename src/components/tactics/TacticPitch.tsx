@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { FieldLines } from "@/components/match/FieldLines";
+import { PitchFitFrame } from "@/components/presentation/PitchFitFrame";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { getFormation } from "@/lib/formations";
 import { formatFieldLabel } from "@/lib/cards/formatCardName";
@@ -101,8 +102,8 @@ export function TacticPitch({
   const bench = displayTokens.filter((token) => !token.onBoard);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 items-center">
+    <div className="h-full min-h-0 flex flex-col gap-3">
+      <div className="shrink-0 flex flex-wrap gap-2 items-center">
         <p className="text-sm text-slate-300">
           Sleep spelers vrij over het veld. Label: voornaam + nummer.
         </p>
@@ -126,16 +127,8 @@ export function TacticPitch({
           </button>
         ) : null}
       </div>
-      <div className="w-full flex justify-center">
-        <div
-          ref={pitchRef}
-          className="relative w-full max-w-4xl touch-none overflow-hidden border-2 rounded-md shadow-2xl"
-          style={{
-            background: "#2d7a3a",
-            borderColor: "#1e5c28",
-            aspectRatio: `${cfg.w} / ${cfg.h}`,
-          }}
-        >
+      <div className="flex-1 min-h-0">
+        <PitchFitFrame aspectW={cfg.w} aspectH={cfg.h} fill pitchRef={pitchRef}>
           <FieldLines cfg={cfg} />
           {onField.map((token) => (
             <TacticToken
@@ -145,10 +138,10 @@ export function TacticPitch({
               onPointerDown={(event) => startDrag(token.playerId, event)}
             />
           ))}
-        </div>
+        </PitchFitFrame>
       </div>
       {bench.length > 0 ? (
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="shrink-0 flex flex-wrap gap-2 justify-center">
           {bench.map((token) => (
             <button
               key={token.playerId}

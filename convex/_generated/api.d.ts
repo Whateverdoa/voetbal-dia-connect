@@ -73,6 +73,7 @@ import type * as lib_opsAuth from "../lib/opsAuth.js";
 import type * as lib_pickPresentMatch from "../lib/pickPresentMatch.js";
 import type * as lib_playWeek from "../lib/playWeek.js";
 import type * as lib_positionZones from "../lib/positionZones.js";
+import type * as lib_presentationFormation from "../lib/presentationFormation.js";
 import type * as lib_presentationSubstitutionPlans from "../lib/presentationSubstitutionPlans.js";
 import type * as lib_privacyFilter from "../lib/privacyFilter.js";
 import type * as lib_publicRefereeDisplay from "../lib/publicRefereeDisplay.js";
@@ -221,6 +222,7 @@ declare const fullApi: ApiFromModules<{
   "lib/pickPresentMatch": typeof lib_pickPresentMatch;
   "lib/playWeek": typeof lib_playWeek;
   "lib/positionZones": typeof lib_positionZones;
+  "lib/presentationFormation": typeof lib_presentationFormation;
   "lib/presentationSubstitutionPlans": typeof lib_presentationSubstitutionPlans;
   "lib/privacyFilter": typeof lib_privacyFilter;
   "lib/publicRefereeDisplay": typeof lib_publicRefereeDisplay;

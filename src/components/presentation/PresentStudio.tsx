@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import {
   PresentTacticsBoard,
   type KleedkamerMatch,
@@ -16,7 +15,6 @@ import { canPresentTactics } from "@/lib/auth/roles";
 export type StudioTab = "tactiek" | "kleedkamer" | "kaarten";
 
 export type StudioMatch = KleedkamerMatch & {
-  matchId: Id<"matches">;
   isSelectionTeam: boolean;
 };
 
@@ -50,9 +48,11 @@ export function PresentStudio({
   const canEdit = canPresentTactics(access?.roles ?? []) && !kiosk;
   const q = kiosk ? "?kiosk=1" : "";
 
+  const pitchTab = tab === "tactiek" || tab === "kleedkamer";
+
   return (
-    <>
-      <div className="flex flex-wrap gap-2 mb-6">
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="shrink-0 flex flex-wrap gap-2 mb-4">
         <TabButton active={tab === "tactiek"} onClick={() => setTab("tactiek")}>
           Tactiek
         </TabButton>
@@ -73,29 +73,37 @@ export function PresentStudio({
         </Link>
       </div>
 
-      {tab === "tactiek" ? (
-        <TacticPitch
-          matchId={match.matchId}
-          formationId={match.formationId}
-          players={match.players}
-          canEdit={canEdit}
-        />
-      ) : null}
+      <div
+        className={
+          pitchTab
+            ? "flex-1 min-h-0 overflow-hidden"
+            : "flex-1 min-h-0 overflow-auto"
+        }
+      >
+        {tab === "tactiek" ? (
+          <TacticPitch
+            matchId={match.matchId}
+            formationId={match.formationId}
+            players={match.players}
+            canEdit={canEdit}
+          />
+        ) : null}
 
-      {tab === "kleedkamer" ? (
-        <PresentTacticsBoard match={match} kiosk={kiosk} />
-      ) : null}
+        {tab === "kleedkamer" ? (
+          <PresentTacticsBoard match={match} kiosk={kiosk} />
+        ) : null}
 
-      {tab === "kaarten" ? (
-        match.isSelectionTeam ? (
-          <TeamDeckGrid players={deck ?? []} />
-        ) : (
-          <p className="text-slate-400 text-center py-16">
-            Spelerskaarten zijn er alleen voor selectieteams.
-          </p>
-        )
-      ) : null}
-    </>
+        {tab === "kaarten" ? (
+          match.isSelectionTeam ? (
+            <TeamDeckGrid players={deck ?? []} />
+          ) : (
+            <p className="text-slate-400 text-center py-16">
+              Spelerskaarten zijn er alleen voor selectieteams.
+            </p>
+          )
+        ) : null}
+      </div>
+    </div>
   );
 }
 

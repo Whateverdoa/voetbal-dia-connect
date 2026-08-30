@@ -18,7 +18,7 @@ export function PresentationShell({
 }: PresentationShellProps) {
   return (
     <main
-      className={`min-h-screen bg-dia-black text-white flex flex-col ${kiosk ? "select-none" : ""}`}
+      className={`h-dvh bg-dia-black text-white flex flex-col overflow-hidden ${kiosk ? "select-none" : ""}`}
     >
       <header className="shrink-0 px-6 py-4 bg-dia-yellow text-black border-b border-dia-black/20 flex items-end justify-between gap-4">
         <div>
@@ -31,7 +31,9 @@ export function PresentationShell({
           ) : null}
         </div>
       </header>
-      <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden p-4 md:p-6 flex flex-col">
+        {children}
+      </div>
     </main>
   );
 }

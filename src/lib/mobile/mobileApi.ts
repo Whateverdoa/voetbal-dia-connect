@@ -238,4 +238,31 @@ export function optionalString(
   return normalized || undefined;
 }
 
+function optionalTimestamp(request: NextRequest, key: "from" | "to") {
+  const value = request.nextUrl.searchParams.get(key)?.trim();
+  if (!value) return undefined;
+  const isoTimestamp =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
+  const timestamp = Date.parse(value);
+  if (!isoTimestamp.test(value) || !Number.isFinite(timestamp)) {
+    throw new MobileApiError(
+      "VALIDATION_ERROR",
+      `${key} must be an ISO 8601 timestamp`
+    );
+  }
+  return timestamp;
+}
+
+export function optionalDateRange(request: NextRequest) {
+  const from = optionalTimestamp(request, "from");
+  const to = optionalTimestamp(request, "to");
+  if (from !== undefined && to !== undefined && from > to) {
+    throw new MobileApiError(
+      "VALIDATION_ERROR",
+      "from must be earlier than or equal to to"
+    );
+  }
+  return { from, to };
+}
+
 export const testHelpers = { bodyValue, errorCode };

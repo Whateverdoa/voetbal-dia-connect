@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import {
   MobileApiError,
+  optionalDateRange,
   requiredCorrelationId,
   requiredVersion,
   optionalString,
@@ -83,6 +84,37 @@ describe("mobile API envelope", () => {
     expect(() => optionalString({ note: "x".repeat(1_001) }, "note")).toThrow(
       "at most 1000"
     );
+  });
+
+  it("validates optional assignment date boundaries", () => {
+    const request = new NextRequest(
+      "https://example.test/v1/mobile/referee/assignments?from=2026-09-01T08%3A00%3A00.000Z&to=2026-09-02T08%3A00%3A00.000Z"
+    );
+    expect(optionalDateRange(request)).toEqual({
+      from: Date.UTC(2026, 8, 1, 8),
+      to: Date.UTC(2026, 8, 2, 8),
+    });
+    expect(() =>
+      optionalDateRange(
+        new NextRequest(
+          "https://example.test/v1/mobile/referee/assignments?from=not-a-date"
+        )
+      )
+    ).toThrow("ISO 8601");
+    expect(() =>
+      optionalDateRange(
+        new NextRequest(
+          "https://example.test/v1/mobile/referee/assignments?from=2026-09-01"
+        )
+      )
+    ).toThrow("ISO 8601");
+    expect(() =>
+      optionalDateRange(
+        new NextRequest(
+          "https://example.test/v1/mobile/referee/assignments?from=2026-09-03T08%3A00%3A00.000Z&to=2026-09-02T08%3A00%3A00.000Z"
+        )
+      )
+    ).toThrow("from must be earlier");
   });
 
   it("normalizes Convex errors without exposing their raw message", () => {

@@ -6,6 +6,7 @@ import {
   withMobileRequest,
 } from "@/lib/mobile/mobileApi";
 import { refereeOfferDto } from "@/lib/mobile/refereeDtos";
+import { sortRefereeOffersByUrgency } from "@/lib/mobile/refereeOrdering";
 
 const OFFER_STATUSES = [
   "pending",
@@ -27,6 +28,9 @@ export async function GET(request: NextRequest) {
       api.refereeAssignmentQueries.listMyOffers,
       status ? { clubId, status } : { clubId }
     );
-    return { items: offers.map(refereeOfferDto), nextCursor: null };
+    return {
+      items: sortRefereeOffersByUrgency(offers).map(refereeOfferDto),
+      nextCursor: null,
+    };
   });
 }

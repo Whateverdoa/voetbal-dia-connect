@@ -8,6 +8,7 @@ import {
   refereeAssignmentDto,
   refereeOfferDto,
 } from "@/lib/mobile/refereeDtos";
+import { sortRefereeOffersByUrgency } from "@/lib/mobile/refereeOrdering";
 
 export async function GET(request: NextRequest) {
   return await withMobileRequest(request, async ({ convex }) => {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       )[0];
     return {
       pendingOfferCount: offers.length,
-      pendingOffers: offers.map(refereeOfferDto),
+      pendingOffers: sortRefereeOffersByUrgency(offers).map(refereeOfferDto),
       nextAssignment: nextAssignment
         ? refereeAssignmentDto(nextAssignment)
         : null,

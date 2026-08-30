@@ -2,10 +2,15 @@ import type { NextRequest } from "next/server";
 import { api } from "@/convex/_generated/api";
 import {
   MobileApiError,
+  optionalDateRange,
   resolveRefereeClubId,
   withMobileRequest,
 } from "@/lib/mobile/mobileApi";
 import { refereeAssignmentDto } from "@/lib/mobile/refereeDtos";
+import {
+  filterRefereeAssignmentsByRange,
+  sortRefereeAssignmentsForList,
+} from "@/lib/mobile/refereeOrdering";
 
 const ASSIGNMENT_STATUSES = [
   "confirmed",
@@ -16,6 +21,7 @@ const ASSIGNMENT_STATUSES = [
 
 export async function GET(request: NextRequest) {
   return await withMobileRequest(request, async ({ convex }) => {
+    const range = optionalDateRange(request);
     const clubId = await resolveRefereeClubId(request, convex);
     const rawStatus = request.nextUrl.searchParams.get("status");
     const status = rawStatus
@@ -26,6 +32,15 @@ export async function GET(request: NextRequest) {
       api.refereeAssignmentQueries.listMyAssignments,
       status ? { clubId, status } : { clubId }
     );
-    return { items: assignments.map(refereeAssignmentDto), nextCursor: null };
+    const visibleAssignments = filterRefereeAssignmentsByRange(
+      assignments,
+      range
+    );
+    return {
+      items: sortRefereeAssignmentsForList(visibleAssignments).map(
+        refereeAssignmentDto
+      ),
+      nextCursor: null,
+    };
   });
 }

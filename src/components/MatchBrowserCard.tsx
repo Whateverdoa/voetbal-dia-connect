@@ -6,15 +6,22 @@ import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
 import { TeamLogo } from "@/components/TeamLogo";
 import { resolveLogoUrl } from "@/lib/logos";
+import {
+  browserListGroup,
+  isScheduledKickoffOverdue,
+} from "@/lib/matchBrowserFilters";
 
 type Props = {
   match: PublicMatch;
+  now?: number;
 };
 
 /** Full-width list row for the homepage match browser (single column stack). */
-export function MatchBrowserCard({ match }: Props) {
+export function MatchBrowserCard({ match, now = Date.now() }: Props) {
   const isLive = match.status === "live" || match.status === "halftime";
-  const showScore = match.status !== "scheduled";
+  const listGroup = browserListGroup(match, now);
+  const awaitingOfficial = isScheduledKickoffOverdue(match, now);
+  const showScore = match.status !== "scheduled" && !awaitingOfficial;
   const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
 
   const homeName = match.isHome ? match.teamName : match.opponent;
@@ -30,12 +37,12 @@ export function MatchBrowserCard({ match }: Props) {
           {match.status === "halftime" ? "Rust" : `K${match.currentQuarter}`}
         </span>
       </div>
-    ) : match.status === "scheduled" && match.scheduledAt ? (
+    ) : listGroup === "scheduled" && match.scheduledAt ? (
       <div className="flex flex-col gap-0.5 text-[11px] leading-tight text-gray-600">
         <span className="font-medium tabular-nums">{formatMatchDate(match.scheduledAt)}</span>
         <span className="text-[10px] text-gray-400">Gepland</span>
       </div>
-    ) : match.status === "finished" && match.scheduledAt ? (
+    ) : listGroup === "finished" && match.scheduledAt ? (
       <div className="flex flex-col gap-0.5 text-[11px] leading-tight text-gray-500">
         <span className="tabular-nums">{formatMatchDate(match.scheduledAt)}</span>
         <span className="text-[10px]">Afgelopen</span>
@@ -72,6 +79,8 @@ export function MatchBrowserCard({ match }: Props) {
               >
                 {match.homeScore} - {match.awayScore}
               </span>
+            ) : awaitingOfficial ? (
+              <span className="text-[10px] font-medium text-gray-400">geen Sportlink-uitslag</span>
             ) : (
               <span className="text-sm font-medium text-gray-300">vs</span>
             )}

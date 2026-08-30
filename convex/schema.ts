@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { cardProfileValidator, playerConsentsTable, wedstrijdenTable } from "./schemaFragments";
+import { cardProfileValidator, playerConsentsTable, tacticBoardsTable, wedstrijdenTable } from "./schemaFragments";
 
 export default defineSchema({
   clubs: defineTable({
@@ -358,4 +358,5 @@ export default defineSchema({
   // VoetbalAssist / Sportlink staged fixtures
   wedstrijden: wedstrijdenTable,
   playerConsents: playerConsentsTable,
+  tacticBoards: tacticBoardsTable,
 });

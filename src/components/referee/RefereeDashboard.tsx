@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RefereeOpenMatchCard } from "./RefereeOpenMatchCard";
-import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
 import Link from "next/link";
 
 type Tab = "beschikbaar" | "mijn" | "meldingen";
@@ -124,7 +123,6 @@ export function RefereeDashboard({
 
       {(viewingAsAdmin || toolbar) && (
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
-          {viewingAsAdmin && <AdminPhaseBanner />}
           {toolbar}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  browserListGroup,
   filterMatchesForBrowser,
   getCalendarWeekRange,
   getWeekendWindow,
@@ -66,6 +67,24 @@ describe("filterMatchesForBrowser", () => {
     const out = filterMatchesForBrowser(matches, "", "all", "away", now);
     expect(out).toHaveLength(1);
     expect(out[0]._id).toBe("a");
+  });
+});
+
+describe("browserListGroup", () => {
+  it("moves overdue scheduled matches out of Gepland", () => {
+    const now = Date.parse("2026-08-30T15:00:00+02:00");
+    const kickoff = Date.parse("2026-08-29T08:30:00+02:00");
+    expect(
+      browserListGroup({ status: "scheduled", scheduledAt: kickoff }, now),
+    ).toBe("finished");
+  });
+
+  it("keeps upcoming scheduled matches in Gepland", () => {
+    const now = Date.parse("2026-08-30T15:00:00+02:00");
+    const kickoff = Date.parse("2026-09-05T08:30:00+02:00");
+    expect(
+      browserListGroup({ status: "scheduled", scheduledAt: kickoff }, now),
+    ).toBe("scheduled");
   });
 });
 

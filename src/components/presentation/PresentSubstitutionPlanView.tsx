@@ -115,8 +115,8 @@ export function PresentSubstitutionPlanView({
               onClick={() => setSelectedQuarter(quarter)}
               className={`min-h-[44px] rounded-lg px-4 py-2 font-semibold ${
                 selectedQuarter === quarter
-                  ? "bg-white text-slate-900"
-                  : "bg-slate-800 text-slate-200"
+                  ? "bg-dia-black text-dia-yellow ring-2 ring-dia-yellow"
+                  : "bg-dia-yellow text-black"
               }`}
             >
               {quarterCount === 2 ? `H${quarter}` : `K${quarter}`}

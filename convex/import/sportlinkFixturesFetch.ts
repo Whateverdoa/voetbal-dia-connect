@@ -10,10 +10,16 @@ import {
   type RawSportlinkFixture,
   type SportlinkWedstrijdDoc,
 } from "./sportlinkFixturesMapper";
+import {
+  programmaPastWeekOffsets,
+  programmaWeekOffsets,
+  uitslagenWeekOffsets,
+} from "./sportlinkWeekOffsets";
 
 const DEFAULT_BASE = "https://data.sportlink.com";
 const BATCH_SIZE = 100;
 const PROGRAMMA_WEEKS_FORWARD = 12;
+const PROGRAMMA_WEEKS_BACK = 2;
 const UITSLAGEN_WEEKS_BACK = 20;
 
 export type SportlinkImportSummary = {
@@ -79,14 +85,20 @@ async function collectAllFixtures(
   let uitslagenPages = 0;
   let emptyUitslagenStreak = 0;
 
-  for (let w = 0; w <= PROGRAMMA_WEEKS_FORWARD; w++) {
+  for (const w of programmaWeekOffsets(PROGRAMMA_WEEKS_FORWARD)) {
     const page = await fetchArticle(baseUrl, clientId, "programma", w);
     programmaPages++;
     rows.push(...page);
     if (page.length === 0) break;
   }
 
-  for (let w = -1; w >= -UITSLAGEN_WEEKS_BACK; w--) {
+  for (const w of programmaPastWeekOffsets(PROGRAMMA_WEEKS_BACK)) {
+    const page = await fetchArticle(baseUrl, clientId, "programma", w);
+    programmaPages++;
+    rows.push(...page);
+  }
+
+  for (const w of uitslagenWeekOffsets(UITSLAGEN_WEEKS_BACK)) {
     const page = await fetchArticle(baseUrl, clientId, "uitslagen", w);
     uitslagenPages++;
     rows.push(...page);

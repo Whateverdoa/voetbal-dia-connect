@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LogOut, Plus, Users } from "lucide-react";
-import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
 import {
   DashboardMatchCard,
   type DashboardMatch,
@@ -56,6 +55,12 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
             </div>
             <div className="flex items-center gap-1">
               <Link
+                href="/coach/presenteren"
+                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"
+              >
+                Presenteren
+              </Link>
+              <Link
                 href="/help/coach"
                 className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"
               >
@@ -75,7 +80,6 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
       </header>
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
-        {data.viewingAsAdmin && <AdminPhaseBanner />}
         {toolbar}
         {liveMatches.length > 0 && (
           <section className="bg-dia-green-light border-2 border-dia-yellow-deep/40 rounded-2xl p-4">

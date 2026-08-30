@@ -1,4 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
+import { firstNameOf } from "@/lib/cards/formatCardName";
 import type {
   MatchPlayer,
   SubstitutionPlanKind,
@@ -56,9 +57,11 @@ export function timingLabel(
 export function presentRowLabel(
   row: Pick<PresentPlanRow, "kind" | "outDisplayName" | "inDisplayName">
 ): string {
+  const outName = firstNameOf(row.outDisplayName);
+  const inName = firstNameOf(row.inDisplayName);
   return row.kind === "positionSwap"
-    ? `${row.outDisplayName} ↔ ${row.inDisplayName}`
-    : `${row.outDisplayName} → ${row.inDisplayName}`;
+    ? `${outName} ↔ ${inName}`
+    : `${outName} → ${inName}`;
 }
 
 export function toMatchPlayers(players: PresentPlanPlayer[]): MatchPlayer[] {

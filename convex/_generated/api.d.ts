@@ -45,6 +45,7 @@ import type * as import_sportlinkFixturesMapper from "../import/sportlinkFixture
 import type * as import_sportlinkRosterMutations from "../import/sportlinkRosterMutations.js";
 import type * as import_sportlinkRosterSync from "../import/sportlinkRosterSync.js";
 import type * as import_sportlinkUpsert from "../import/sportlinkUpsert.js";
+import type * as import_sportlinkWeekOffsets from "../import/sportlinkWeekOffsets.js";
 import type * as import_syncCleanupGhosts from "../import/syncCleanupGhosts.js";
 import type * as import_syncScoreApply from "../import/syncScoreApply.js";
 import type * as import_syncWedstrijdenToMatches from "../import/syncWedstrijdenToMatches.js";
@@ -69,6 +70,7 @@ import type * as lib_matchLogoFields from "../lib/matchLogoFields.js";
 import type * as lib_matchTiming from "../lib/matchTiming.js";
 import type * as lib_matchesInPlayWeek from "../lib/matchesInPlayWeek.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
+import type * as lib_pickPresentMatch from "../lib/pickPresentMatch.js";
 import type * as lib_playWeek from "../lib/playWeek.js";
 import type * as lib_positionZones from "../lib/positionZones.js";
 import type * as lib_presentationSubstitutionPlans from "../lib/presentationSubstitutionPlans.js";
@@ -143,6 +145,7 @@ import type * as seed_seedPlayers from "../seed/seedPlayers.js";
 import type * as stats from "../stats.js";
 import type * as stoppageActions from "../stoppageActions.js";
 import type * as substitutionPlans from "../substitutionPlans.js";
+import type * as tacticBoards from "../tacticBoards.js";
 import type * as teams from "../teams.js";
 import type * as userQueries from "../userQueries.js";
 
@@ -190,6 +193,7 @@ declare const fullApi: ApiFromModules<{
   "import/sportlinkRosterMutations": typeof import_sportlinkRosterMutations;
   "import/sportlinkRosterSync": typeof import_sportlinkRosterSync;
   "import/sportlinkUpsert": typeof import_sportlinkUpsert;
+  "import/sportlinkWeekOffsets": typeof import_sportlinkWeekOffsets;
   "import/syncCleanupGhosts": typeof import_syncCleanupGhosts;
   "import/syncScoreApply": typeof import_syncScoreApply;
   "import/syncWedstrijdenToMatches": typeof import_syncWedstrijdenToMatches;
@@ -214,6 +218,7 @@ declare const fullApi: ApiFromModules<{
   "lib/matchTiming": typeof lib_matchTiming;
   "lib/matchesInPlayWeek": typeof lib_matchesInPlayWeek;
   "lib/opsAuth": typeof lib_opsAuth;
+  "lib/pickPresentMatch": typeof lib_pickPresentMatch;
   "lib/playWeek": typeof lib_playWeek;
   "lib/positionZones": typeof lib_positionZones;
   "lib/presentationSubstitutionPlans": typeof lib_presentationSubstitutionPlans;
@@ -288,6 +293,7 @@ declare const fullApi: ApiFromModules<{
   stats: typeof stats;
   stoppageActions: typeof stoppageActions;
   substitutionPlans: typeof substitutionPlans;
+  tacticBoards: typeof tacticBoards;
   teams: typeof teams;
   userQueries: typeof userQueries;
 }>;

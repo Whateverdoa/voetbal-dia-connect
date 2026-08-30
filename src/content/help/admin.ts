@@ -66,7 +66,6 @@ export const helpAdminPage: HelpPageDef = {
       bullets: [
         "Bovenaan: Bekijk als Admin of Coach/Scheidsrechter.",
         "Als admin: zoek op team, tegenstander of code, en filter op status.",
-        "Je ziet een gele balk als je in admin-overzicht zit.",
         "Gewone coaches en scheidsrechters blijven alleen hun eigen wedstrijden zien.",
       ],
     },

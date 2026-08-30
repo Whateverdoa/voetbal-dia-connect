@@ -10,6 +10,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
+import { canPresentTactics } from "@/lib/auth/roles";
 
 /**
  * Global auth nav: Sign In / Sign Up when signed out, UserButton when signed in.
@@ -46,6 +47,11 @@ export function ClerkNav() {
             {(isCoach || isAdmin) ? (
               <Link href="/coach" className="font-medium text-dia-black hover:text-dia-black">
                 Coach
+              </Link>
+            ) : null}
+            {access && canPresentTactics(roles) ? (
+              <Link href="/coach/presenteren" className="font-medium text-dia-black hover:text-dia-black">
+                Presenteren
               </Link>
             ) : null}
             {(isReferee || isAdmin) ? (

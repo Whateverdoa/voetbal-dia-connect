@@ -22,8 +22,8 @@ describe('CoachDashboard', () => {
           onLogout={mockOnLogout}
         />
       );
-      expect(screen.getByText('Je bekijkt dit als admin')).toBeInTheDocument();
       expect(screen.getByText('Alle teams · dit seizoen')).toBeInTheDocument();
+      expect(screen.queryByText('Je bekijkt dit als admin')).not.toBeInTheDocument();
     });
 
     it('shows an empty filter message when admin has no matching teams', () => {

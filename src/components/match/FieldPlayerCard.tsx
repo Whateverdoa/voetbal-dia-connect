@@ -4,6 +4,10 @@
  */
 import { getRoleColor, getRoleLabel } from "@/lib/roleColors";
 import { useCardSize, type CardSizeMode } from "@/hooks/useCardSize";
+import {
+  formatFieldLabel,
+  type CardNameMode,
+} from "@/lib/cards/formatCardName";
 
 interface FieldPlayerCardProps {
   name: string;
@@ -17,6 +21,7 @@ interface FieldPlayerCardProps {
   onClick: () => void;
   photoUrl?: string | null;
   sizeMode?: CardSizeMode;
+  nameDisplay?: CardNameMode;
 }
 
 function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
@@ -40,6 +45,7 @@ export function FieldPlayerCard({
   onClick,
   photoUrl,
   sizeMode = "auto",
+  nameDisplay = "first",
 }: FieldPlayerCardProps) {
   const sz = useCardSize(sizeMode);
   const rc = getRoleColor(position);
@@ -69,9 +75,9 @@ export function FieldPlayerCard({
     );
   }
 
-  const firstName = name.trim().split(/\s+/)[0] || name;
-  const displayName = firstName.slice(0, 10).toUpperCase();
+  const fieldLabel = formatFieldLabel(name, number);
   const displayNumber = number != null ? String(number) : "?";
+  const isPresentation = sizeMode === "presentation";
 
   return (
     <div
@@ -118,14 +124,17 @@ export function FieldPlayerCard({
           </span>
         </div>
 
-        <div className="mt-3 mb-0.5">
+        <div className="relative mt-3 mb-0.5">
           <div
-            className="rounded-full flex items-center justify-center overflow-hidden"
+            className="relative rounded-full flex items-center justify-center overflow-hidden"
             style={{
               width: sz.avatar,
               height: sz.avatar,
               background: `linear-gradient(135deg, ${rc.bg}40, ${rc.bg}15)`,
-              border: `1.5px solid ${rc.bg}50`,
+              border: isPresentation
+                ? "2px solid #FFE713"
+                : `1.5px solid ${rc.bg}50`,
+              boxShadow: isPresentation ? "0 0 10px rgba(255,231,19,0.35)" : undefined,
             }}
           >
             {photoUrl ? (
@@ -139,14 +148,28 @@ export function FieldPlayerCard({
               <PlayerIcon size={sz.icon} color={rc.bg} />
             )}
           </div>
+          {isPresentation ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/logos/dia.png"
+              alt=""
+              className="pointer-events-none absolute -bottom-1 -right-1 rounded-full bg-dia-black/80 p-0.5"
+              style={{ width: sz.avatar * 0.38, height: sz.avatar * 0.38, objectFit: "contain" }}
+            />
+          ) : null}
         </div>
 
-        <div className="w-full py-1 text-center" style={{ background: rc.bg }}>
+        <div className="w-full py-1 px-0.5 text-center" style={{ background: rc.bg }}>
           <span
-            className="font-bold uppercase tracking-wide"
-            style={{ color: rc.text, fontSize: sz.nameFont, letterSpacing: "0.08em" }}
+            className="font-bold leading-tight block"
+            style={{
+              color: rc.text,
+              fontSize: nameDisplay === "full" ? Math.max(9, sz.nameFont - 2) : sz.nameFont,
+              letterSpacing: nameDisplay === "full" ? "0.02em" : "0.08em",
+              textTransform: nameDisplay === "full" ? "none" : "uppercase",
+            }}
           >
-            {displayName}
+            {fieldLabel}
           </span>
         </div>
       </div>

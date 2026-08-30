@@ -6,9 +6,10 @@ import { v } from "convex/values";
 import { redactPlayerForPublic } from "./lib/privacyFilter";
 import type { ConsentRow } from "./lib/privacyFilter";
 import {
-  listPresentationSubstitutionPlans,
+  listStaffPresentationSubstitutionPlans,
   presentationPlanValidator,
 } from "./lib/presentationSubstitutionPlans";
+import { pickPresentMatch } from "./lib/pickPresentMatch";
 
 export const getTeamPresentation = query({
   args: { teamSlug: v.string() },
@@ -47,9 +48,7 @@ export const getTeamPresentation = query({
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
-    const live = matches.find(
-      (m) => m.status === "live" || m.status === "halftime" || m.status === "lineup"
-    );
+    const live = pickPresentMatch(matches);
 
     return {
       teamId: team._id,
@@ -188,7 +187,7 @@ export const getMatchPresentation = query({
       });
     }
 
-    const substitutionPlans = await listPresentationSubstitutionPlans(
+    const substitutionPlans = await listStaffPresentationSubstitutionPlans(
       ctx,
       match._id
     );

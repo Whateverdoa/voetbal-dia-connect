@@ -19,6 +19,7 @@ import {
   requireCoachForMatch,
 } from "./lib/userAccess";
 import { hasAdminRole } from "./lib/adminOverride";
+import { redactPlayerForPublic, type ConsentRow } from "./lib/privacyFilter";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -91,24 +92,20 @@ export const getByPublicCode = query({
             .query("playerConsents")
             .withIndex("by_player", (q) => q.eq("playerId", player._id))
             .collect();
-          const publicOk = consents.some(
-            (c) => c.consentType === "public_display" && c.status === "granted"
+          const redacted = redactPlayerForPublic(
+            {
+              _id: String(player._id),
+              name: player.name,
+              number: player.number,
+              photoUrl: player.photoUrl,
+            },
+            consents as ConsentRow[]
           );
-          const photoOk =
-            publicOk &&
-            consents.some((c) => c.consentType === "photo" && c.status === "granted");
 
-          // Non-selection teams: show name as today (no consent table required).
           const selection = team?.isSelectionTeam === true;
-          const displayName =
-            !selection || publicOk
-              ? player.name
-              : player.name
-                  .trim()
-                  .split(/\s+/)
-                  .map((p) => p[0] ?? "")
-                  .join("")
-                  .toUpperCase() || "?";
+          const displayName = selection
+            ? redacted.displayName
+            : player.name.split(/\s+/).filter(Boolean)[0] ?? player.name;
 
           return {
             id: mp.playerId,
@@ -117,7 +114,9 @@ export const getByPublicCode = query({
             onField: mp.onField,
             isKeeper: mp.isKeeper,
             fieldSlotIndex: mp.fieldSlotIndex,
-            photoUrl: selection ? (photoOk ? player.photoUrl : undefined) : player.photoUrl,
+            photoUrl: selection
+              ? (redacted.photoUrl ?? undefined)
+              : player.photoUrl,
           };
         })
       );

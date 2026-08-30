@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { redactPlayerForPublic, type ConsentRow } from "./privacyFilter";
+import { getCurrentUserAccess } from "./userAccess";
 
 export const presentationPlanValidator = v.object({
   _id: v.id("substitutionPlans"),
@@ -102,4 +103,17 @@ export async function listPresentationSubstitutionPlans(
     });
   }
   return out;
+}
+
+/** Wisselplan is staff-only; public presentation queries get an empty list. */
+export async function listStaffPresentationSubstitutionPlans(
+  ctx: QueryCtx,
+  matchId: Id<"matches">
+): Promise<PresentationSubstitutionPlan[]> {
+  const access = await getCurrentUserAccess(ctx);
+  const roles = access?.roles ?? [];
+  if (!roles.includes("admin") && !roles.includes("coach")) {
+    return [];
+  }
+  return listPresentationSubstitutionPlans(ctx, matchId);
 }

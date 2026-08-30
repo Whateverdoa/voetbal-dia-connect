@@ -59,6 +59,13 @@ describe("presentPlanAdapters", () => {
       "B.",
     ]);
     expect(presentRowLabel(plans[0]!)).toBe("A. → B.");
+    expect(
+      presentRowLabel({
+        kind: "substitution",
+        outDisplayName: "Jan Jansen",
+        inDisplayName: "Piet Pietersen",
+      })
+    ).toBe("Jan → Piet");
     expect(timingLabel(plans[0]!, 4)).toBe("start kwart 2");
   });
 

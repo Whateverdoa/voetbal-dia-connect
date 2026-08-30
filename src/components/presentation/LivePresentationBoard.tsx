@@ -65,7 +65,9 @@ export function LivePresentationBoard({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <p className="text-dia-yellow font-bold tracking-[0.3em] text-sm">{statusLabel}</p>
+        <p className="inline-block bg-dia-yellow text-black font-bold tracking-[0.3em] text-sm px-3 py-1 rounded">
+          {statusLabel}
+        </p>
         <div className="flex items-center justify-center gap-6 md:gap-12">
           <div className="text-right min-w-[120px]">
             <p className="text-lg md:text-2xl font-semibold truncate max-w-[200px] md:max-w-xs">

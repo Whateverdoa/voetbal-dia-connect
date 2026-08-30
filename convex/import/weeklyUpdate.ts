@@ -90,7 +90,10 @@ export const runIfMatchesEnded = internalAction({
   args: {},
   handler: async (ctx): Promise<WeeklyCronResult> => {
     const now = Date.now();
-    const { dayStart, dayEnd } = amsterdamDayBoundsFromNow(now);
+    const { dayStart: todayStart, dayEnd } = amsterdamDayBoundsFromNow(now);
+    // Include yesterday: Saturday official scores often land after Saturday
+    // hourly cron stops (22:00 NL) and before Sunday's first kickoff.
+    const dayStart = todayStart - 36 * 60 * 60 * 1000;
     const shouldRun = await ctx.runQuery(
       internal.import.weeklyUpdate.anyMatchEndedOnAmsterdamDay,
       { dayStart, dayEnd, now },

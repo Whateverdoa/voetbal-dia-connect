@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { createCorrelationId } from "@/lib/correlationId";
+import { formatFieldLabel } from "@/lib/cards/formatCardName";
 import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
@@ -64,10 +65,8 @@ export function PitchView({
   const slotOfPlayer = (id: Id<"players">): number | undefined =>
     onField.find((player) => player.playerId === id)?.fieldSlotIndex ?? undefined;
 
-  const nameLabel = (player: MatchPlayer): string => {
-    const firstName = player.name.trim().split(/\s+/)[0] || player.name;
-    return firstName.slice(0, 12);
-  };
+  const nameLabel = (player: MatchPlayer): string =>
+    formatFieldLabel(player.name, player.number ?? null);
 
   const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
     if (!canEdit) return;

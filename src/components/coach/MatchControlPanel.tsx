@@ -26,8 +26,6 @@ import { resolveLogoUrl } from "@/lib/logos";
 import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
-import { AdminPhaseBanner } from "@/components/AdminPhaseBanner";
-
 type ViewTab = "opstelling" | "wisselplan" | "speeltijd";
 type LineupView = "veld" | "lijst";
 
@@ -109,6 +107,18 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
             >
               Live view
             </Link>
+            <Link
+              href={`/present/match/${match.publicCode}/tactiek`}
+              className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
+            >
+              Tactiek
+            </Link>
+            <Link
+              href={`/present/match/${match.publicCode}/kleedkamer`}
+              className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
+            >
+              Kleedkamer
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             {!isConnected && (
@@ -121,12 +131,6 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           </div>
         </div>
       </nav>
-
-      {match.viewingAsAdmin && (
-        <div className="max-w-2xl mx-auto px-4 pt-3">
-          <AdminPhaseBanner />
-        </div>
-      )}
 
       <ScoreDisplay
         homeScore={match.homeScore}

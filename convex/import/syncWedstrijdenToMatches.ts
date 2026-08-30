@@ -296,6 +296,8 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     }
 
     const isFinished = wedstrijd.status === "gespeeld";
+    const hasOfficialScore =
+      wedstrijd.thuis_goals !== undefined && wedstrijd.uit_goals !== undefined;
     const homeGoals = wedstrijd.thuis_goals ?? 0;
     const awayGoals = wedstrijd.uit_goals ?? 0;
     const activePlayerIds = activePlayerIdsByTeamId.get(team._id) ?? [];
@@ -402,6 +404,11 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         matchPlayerCountByMatchId.set(existingMatch._id, activePlayerIds.length);
       }
 
+      if (isFinished && !hasOfficialScore) {
+        skippedExisting++;
+        continue;
+      }
+
       if (isFinished) {
         const { result, patch } = buildFinishedScorePatch(
           existingMatch,
@@ -465,16 +472,16 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
         ...(venueField ? { venueField } : {}),
         seasonKey: seasonKeyFromMs(wedstrijd.datum_ms),
         ...(sportlinkCode ? { sportlinkWedstrijdcode: sportlinkCode } : {}),
-        status: isFinished ? "finished" : "scheduled",
-        currentQuarter: isFinished ? 4 : 1,
+        status: isFinished && hasOfficialScore ? "finished" : "scheduled",
+        currentQuarter: isFinished && hasOfficialScore ? 4 : 1,
         quarterCount: 4,
-        homeScore: isFinished ? homeGoals : 0,
-        awayScore: isFinished ? awayGoals : 0,
+        homeScore: isFinished && hasOfficialScore ? homeGoals : 0,
+        awayScore: isFinished && hasOfficialScore ? awayGoals : 0,
         showLineup: false,
         useBreakClock: true,
         breakClockAutoStart: true,
-        startedAt: isFinished ? wedstrijd.datum_ms : undefined,
-        finishedAt: isFinished ? wedstrijd.datum_ms + 3600000 : undefined,
+        startedAt: isFinished && hasOfficialScore ? wedstrijd.datum_ms : undefined,
+        finishedAt: isFinished && hasOfficialScore ? wedstrijd.datum_ms + 3600000 : undefined,
         createdAt: Date.now(),
       });
 

@@ -23,49 +23,43 @@ const player = {
 };
 
 describe("redactPlayerForPublic", () => {
-  it("hides name, photo and XP without public_display", () => {
-    const consents: ConsentRow[] = [
-      { consentType: "photo", status: "granted" },
-      { consentType: "gamification", status: "granted" },
-    ];
-    const out = redactPlayerForPublic(player, consents);
-    expect(out.displayName).toBe("JJ");
+  it("shows first name without last name when consents are pending", () => {
+    const out = redactPlayerForPublic(player, []);
+    expect(out.displayName).toBe("Jan");
+    expect(out.showFullIdentity).toBe(false);
     expect(out.photoUrl).toBeNull();
     expect(out.cardProfile).toBeNull();
-    expect(out.showFullIdentity).toBe(false);
     expect(out.number).toBe(7);
   });
 
-  it("shows name but not photo/XP when only public_display granted", () => {
+  it("shows photo and XP when those consents are granted", () => {
     const consents: ConsentRow[] = [
-      { consentType: "public_display", status: "granted" },
-    ];
-    const out = redactPlayerForPublic(player, consents);
-    expect(out.displayName).toBe("Jan Jansen");
-    expect(out.photoUrl).toBeNull();
-    expect(out.cardProfile).toBeNull();
-    expect(out.showFullIdentity).toBe(true);
-  });
-
-  it("shows photo and XP when all consents granted", () => {
-    const consents: ConsentRow[] = [
-      { consentType: "public_display", status: "granted" },
       { consentType: "photo", status: "granted" },
       { consentType: "gamification", status: "granted" },
     ];
     const out = redactPlayerForPublic(player, consents);
+    expect(out.displayName).toBe("Jan");
     expect(out.photoUrl).toBe(player.photoUrl);
     expect(out.cardProfile?.xp).toBe(100);
-    expect(out.showFullIdentity).toBe(true);
+    expect(out.showFullIdentity).toBe(false);
   });
 
-  it("treats revoked as not granted", () => {
+  it("keeps first name only even with public_display granted", () => {
+    const consents: ConsentRow[] = [
+      { consentType: "public_display", status: "granted" },
+    ];
+    const out = redactPlayerForPublic(player, consents);
+    expect(out.displayName).toBe("Jan");
+    expect(out.showFullIdentity).toBe(false);
+  });
+
+  it("falls back to initials when public_display is revoked", () => {
     const consents: ConsentRow[] = [
       { consentType: "public_display", status: "revoked" },
       { consentType: "photo", status: "granted" },
     ];
     const out = redactPlayerForPublic(player, consents);
     expect(out.displayName).toBe("JJ");
-    expect(out.photoUrl).toBeNull();
+    expect(out.photoUrl).toBe(player.photoUrl);
   });
 });

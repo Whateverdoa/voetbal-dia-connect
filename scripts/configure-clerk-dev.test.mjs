@@ -30,6 +30,18 @@ describe("Clerk development configuration guard", () => {
     );
   });
 
+  it("needs only the development publishable key", () => {
+    const key = developmentKey("wanted.clerk.accounts.dev");
+
+    assert.deepEqual(
+      validateClerkDevelopmentConfiguration({ publishableKey: key }),
+      {
+        publishableKey: key,
+        issuer: "https://wanted.clerk.accounts.dev",
+      }
+    );
+  });
+
   it("rejects a production key for the isolated development deployment", () => {
     assert.throws(
       () =>
@@ -74,7 +86,6 @@ describe("Clerk development configuration guard", () => {
     configureClerkDevelopment(
       {
         publishableKey: developmentKey("wanted.clerk.accounts.dev"),
-        issuer,
       },
       { run, log: () => {} }
     );

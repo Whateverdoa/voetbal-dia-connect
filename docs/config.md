@@ -32,14 +32,15 @@ andere het oude project, productie-deployments en een lokale Sportlink client ID
 
 Configureer Clerk pas nadat in het Clerk Dashboard een aparte development-app
 is aangemaakt, Native API is ingeschakeld en de Apple bundle is geregistreerd.
-De configurator accepteert uitsluitend een `pk_test_` publishable key, leidt het
-bijbehorende issuer-domein uit die sleutel af en weigert een afwijkende issuer.
+De configurator accepteert uitsluitend een `pk_test_` publishable key en leidt
+het bijbehorende issuer-domein uit die sleutel af. Een optioneel meegegeven
+`CLERK_JWT_ISSUER_DOMAIN` wordt als kruiscontrole gebruikt en bij afwijking
+geweigerd.
 Daarna draait hij de targetcontrole en schrijft hij alleen
 `CLERK_JWT_ISSUER_DOMAIN` naar `brainy-buffalo-707`:
 
 ```bash
 JEUGDVOETBAL_CLERK_PUBLISHABLE_KEY='pk_test_...' \
-CLERK_JWT_ISSUER_DOMAIN='https://...clerk.accounts.dev' \
 npm run configure:clerk-dev
 ```
 

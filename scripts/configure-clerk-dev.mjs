@@ -55,8 +55,8 @@ export function validateClerkDevelopmentConfiguration({
   publishableKey,
   issuer,
 }) {
-  const normalizedIssuer = normalizeIssuer(issuer);
   const keyIssuer = issuerFromDevelopmentPublishableKey(publishableKey);
+  const normalizedIssuer = issuer?.trim() ? normalizeIssuer(issuer) : keyIssuer;
   if (normalizedIssuer !== keyIssuer) {
     throw new Error(
       `Clerk issuer mismatch: publishable key belongs to ${keyIssuer}, received ${normalizedIssuer}`

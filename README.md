@@ -74,6 +74,12 @@ with the guarded workflow documented in `docs/config.md`. It verifies the
 `pk_test_` key/issuer pair and the isolated Convex target before changing the
 development deployment.
 
+Before a physical sandbox push test, configure APNs with the guarded workflow
+in `docs/config.md`. It validates the Apple identifiers, exact app bundle,
+sandbox environment, and P-256 private key before writing only to the isolated
+development deployment. Secret values are piped to the Convex CLI rather than
+placed in shell arguments.
+
 After the reviewed schema/functions have been pushed and both synthetic seeds
 exist, run the backend portion of the M2 live exit check with:
 

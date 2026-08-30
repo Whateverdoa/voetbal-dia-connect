@@ -47,6 +47,29 @@ npm run configure:clerk-dev
 De publishable key is clientconfiguratie en wordt door dit script niet naar Git
 of Convex geschreven. Een Clerk secret key is voor deze stap niet nodig.
 
+## APNs voor de Apple development-app
+
+Gebruik uitsluitend een sandbox APNs-sleutel die toegang heeft tot App ID
+`com.jeugdvoetbal.app`. Bewaar het gedownloade `.p8`-bestand buiten Git. De
+configurator accepteert alleen Apple key/team-ID's van tien hoofdletters of
+cijfers, de exacte bundle-ID, `sandbox`, en een parseerbare P-256 privésleutel.
+Hij controleert eerst opnieuw het geïsoleerde Convex-doel en schrijft de waarden
+via stdin, zodat de privésleutel niet in shell-argumenten of succeslogs staat:
+
+```bash
+APNS_KEY_ID='ABCDEFGHIJ' \
+APNS_TEAM_ID='KLMNOPQRST' \
+APNS_PRIVATE_KEY_FILE='/absolute/path/AuthKey_ABCDEFGHIJ.p8' \
+APNS_BUNDLE_ID='com.jeugdvoetbal.app' \
+APNS_ENVIRONMENT='sandbox' \
+npm run configure:apns-dev
+```
+
+Gebruik `APNS_PRIVATE_KEY` alleen in een secret-enabled CI-omgeving. Geef nooit
+tegelijk `APNS_PRIVATE_KEY` en `APNS_PRIVATE_KEY_FILE` mee. De configurator leest
+alle vijf waarden na het schrijven terug en meldt alleen welke variabelen zijn
+geverifieerd, nooit hun inhoud.
+
 ## Sportlink
 
 De importcode voor programma, uitslagen en rosters gebruikt de client ID vanuit

@@ -19,7 +19,7 @@ queries of mutations.
 - Lokaal configuratiebestand: `.env.local` (door Git genegeerd)
 - Targetcontrole: `npm run verify:new-app-target`
 - Bewaakte Clerk-koppeling: `npm run configure:clerk-dev`
-- M1 seed na de bestaande seed: `npm run seed:new-app`
+- Zelfstandige synthetische M1/M2-seed: `npm run seed:new-app`
 
 Voor een cloud development deployment moeten `.env.local` of de CI-secretset
 ook exact bevatten:
@@ -29,6 +29,9 @@ ook exact bevatten:
 
 De targetcontrole vereist exact het bevestigde team en project en weigert onder
 andere het oude project, productie-deployments en een lokale Sportlink client ID.
+De nieuwe-app-seed maakt uitsluitend een minimale developmentclub, testteam,
+lokale scheidsrechters en M1/M2-workflowrecords. Hij importeert geen spelers,
+coachcontacten, Sportlinkdata of records uit de bestaande `seed:init`.
 
 Configureer Clerk pas nadat in het Clerk Dashboard een aparte development-app
 is aangemaakt, Native API is ingeschakeld en de Apple bundle is geregistreerd.

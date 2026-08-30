@@ -1,7 +1,14 @@
 import { v } from "convex/values";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { action } from "../_generated/server";
+
+type SyntheticBaseResult = {
+  clubId: Id<"clubs">;
+  clubCreated: boolean;
+  teamCreated: boolean;
+  refereesCreated: number;
+};
 
 type FoundationResult = {
   usersCreated: number;
@@ -21,6 +28,7 @@ type MigrationBatchResult = {
 };
 
 type RefereeFirstSeedResult = {
+  base: SyntheticBaseResult;
   foundation: FoundationResult;
   migration: {
     scanned: number;
@@ -41,6 +49,12 @@ const foundationResultValidator = v.object({
 export const init = action({
   args: {},
   returns: v.object({
+    base: v.object({
+      clubId: v.id("clubs"),
+      clubCreated: v.boolean(),
+      teamCreated: v.boolean(),
+      refereesCreated: v.number(),
+    }),
     foundation: foundationResultValidator,
     migration: v.object({
       scanned: v.number(),
@@ -49,17 +63,14 @@ export const init = action({
     }),
   }),
   handler: async (ctx): Promise<RefereeFirstSeedResult> => {
-    const club: { _id: Id<"clubs"> } | null = await ctx.runQuery(
-      api.admin.getClubBySlug,
-      { slug: "dia" }
+    const base: SyntheticBaseResult = await ctx.runMutation(
+      internal.seed.refereeFirstMutations.ensureSyntheticBase,
+      {}
     );
-    if (!club) {
-      throw new Error("Run seed:init before seed/refereeFirst:init");
-    }
 
     const foundation: FoundationResult = await ctx.runMutation(
       internal.seed.refereeFirstMutations.seedFoundation,
-      { clubId: club._id }
+      { clubId: base.clubId }
     );
     let cursor: string | null = null;
     let isDone = false;
@@ -80,6 +91,7 @@ export const init = action({
     }
 
     return {
+      base,
       foundation,
       migration: { scanned, migrated, skipped },
     };

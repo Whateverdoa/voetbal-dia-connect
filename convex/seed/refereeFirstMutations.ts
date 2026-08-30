@@ -3,6 +3,74 @@ import { internalMutation } from "../_generated/server";
 import type { ClubRole } from "../lib/clubAccess";
 import { REFEREE_CONFIGS } from "./seedData";
 
+export const ensureSyntheticBase = internalMutation({
+  args: {},
+  returns: v.object({
+    clubId: v.id("clubs"),
+    clubCreated: v.boolean(),
+    teamCreated: v.boolean(),
+    refereesCreated: v.number(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    let club = await ctx.db
+      .query("clubs")
+      .withIndex("by_slug", (q) => q.eq("slug", "dia"))
+      .unique();
+    let clubCreated = false;
+    if (!club) {
+      const clubId = await ctx.db.insert("clubs", {
+        name: "DIA Development Testclub",
+        slug: "dia",
+        createdAt: now,
+      });
+      club = await ctx.db.get(clubId);
+      clubCreated = true;
+    }
+    if (!club) throw new Error("Synthetic club could not be created");
+
+    const existingTeam = await ctx.db
+      .query("teams")
+      .withIndex("by_slug", (q) =>
+        q.eq("clubId", club._id).eq("slug", "jo12-1")
+      )
+      .unique();
+    let teamCreated = false;
+    if (!existingTeam) {
+      await ctx.db.insert("teams", {
+        clubId: club._id,
+        name: "JO12-1 Testteam",
+        slug: "jo12-1",
+        createdAt: now,
+      });
+      teamCreated = true;
+    }
+
+    let refereesCreated = 0;
+    for (const referee of REFEREE_CONFIGS) {
+      const existingReferee = await ctx.db
+        .query("referees")
+        .withIndex("by_email", (q) => q.eq("email", referee.email))
+        .unique();
+      if (existingReferee) continue;
+      await ctx.db.insert("referees", {
+        name: referee.name,
+        email: referee.email,
+        active: true,
+        createdAt: now,
+      });
+      refereesCreated += 1;
+    }
+
+    return {
+      clubId: club._id,
+      clubCreated,
+      teamCreated,
+      refereesCreated,
+    };
+  },
+});
+
 export const seedFoundation = internalMutation({
   args: { clubId: v.id("clubs") },
   returns: v.object({

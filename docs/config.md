@@ -13,7 +13,8 @@ queries of mutations.
 
 ## Nieuwe Apple-app deployment
 
-- Convex-team: `Whateverdoa`
+- Convex-team: `mike-ten-hoonte` (confirmed owner account signed in through the
+  `Whateverdoa` GitHub account)
 - Convex-project: `jeugdvoetbal-apple-dev`
 - Lokaal configuratiebestand: `.env.local` (door Git genegeerd)
 - Targetcontrole: `npm run verify:new-app-target`
@@ -22,11 +23,11 @@ queries of mutations.
 Voor een cloud development deployment moeten `.env.local` of de CI-secretset
 ook exact bevatten:
 
-- `JEUGDVOETBAL_CONVEX_TEAM=Whateverdoa`
+- `JEUGDVOETBAL_CONVEX_TEAM=mike-ten-hoonte`
 - `JEUGDVOETBAL_CONVEX_PROJECT=jeugdvoetbal-apple-dev`
 
-De targetcontrole weigert onder andere het oude project, een persoonlijke
-teamnaam, productie-deployments en een lokale Sportlink client ID.
+De targetcontrole vereist exact het bevestigde team en project en weigert onder
+andere het oude project, productie-deployments en een lokale Sportlink client ID.
 
 ## Sportlink
 

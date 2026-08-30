@@ -19,8 +19,9 @@ Do not use it for development or staging of the new Apple app.
 - Verify `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` before running any
   schema push, import, seed, cron, or deployment command.
 
-The new-app development project is `Whateverdoa/jeugdvoetbal-apple-dev`.
-Do not create or select this project under a personal Convex team. Run
+The confirmed new-app development target is
+`mike-ten-hoonte/jeugdvoetbal-apple-dev`, deployment `brainy-buffalo-707`. The
+owner authenticated Convex through the `Whateverdoa` GitHub account. Run
 `npm run verify:new-app-target` before new-app seed or migration commands.
 
 If `CONVEX_DEPLOYMENT` is unset, `convex dev` asks which project to configure.

@@ -64,7 +64,9 @@ describe("CoachPage", () => {
 
   it("shows no-access state when the signed-in user has no coach role", async () => {
     const { CoachPage, mockUseQuery } = await loadCoachPage(true);
-    mockUseQuery.mockReturnValue(null);
+    mockUseQuery
+      .mockReturnValueOnce({ roles: [] })
+      .mockReturnValueOnce(null);
 
     render(<CoachPage />);
 
@@ -80,24 +82,26 @@ describe("CoachPage", () => {
 
   it("renders the coach dashboard for a linked coach account", async () => {
     const { CoachPage, mockUseQuery } = await loadCoachPage(true);
-    mockUseQuery.mockReturnValue({
-      coach: { id: "coach-1", name: "Coach Mike" },
-      teams: [{ id: "team-1", name: "JO12-1" }],
-      matches: [
-        {
-          _id: "match-1",
-          teamId: "team-1",
-          opponent: "VV Oranje",
-          isHome: true,
-          status: "scheduled",
-          publicCode: "ABC123",
-          homeScore: 0,
-          awayScore: 0,
-          currentQuarter: 1,
-          scheduledAt: Date.now() + 86400000,
-        },
-      ],
-    });
+    mockUseQuery
+      .mockReturnValueOnce({ roles: ["coach"] })
+      .mockReturnValueOnce({
+        coach: { id: "coach-1", name: "Coach Mike" },
+        teams: [{ id: "team-1", name: "JO12-1" }],
+        matches: [
+          {
+            _id: "match-1",
+            teamId: "team-1",
+            opponent: "VV Oranje",
+            isHome: true,
+            status: "scheduled",
+            publicCode: "ABC123",
+            homeScore: 0,
+            awayScore: 0,
+            currentQuarter: 1,
+            scheduledAt: Date.now() + 86400000,
+          },
+        ],
+      });
 
     render(<CoachPage />);
 
@@ -107,4 +111,3 @@ describe("CoachPage", () => {
     expect(screen.getByText(/VV Oranje/)).toBeInTheDocument();
   });
 });
-

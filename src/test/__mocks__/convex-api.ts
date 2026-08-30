@@ -2,6 +2,9 @@
 // This replaces @/convex/_generated/api in tests
 
 export const api = {
+  userQueries: {
+    getMyRoles: "userQueries:getMyRoles",
+  },
   matches: {
     verifyCoachAccess: "matches:verifyCoachAccess",
     getByPublicCode: "matches:getByPublicCode",

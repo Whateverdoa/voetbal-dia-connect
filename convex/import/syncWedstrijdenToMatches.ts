@@ -226,7 +226,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   let createdMatchPlayers = 0;
   let backfilledMatchRosters = 0;
   let skippedExisting = 0;
-  let skippedExistingWithResult = 0;
+  const skippedExistingWithResult = 0;
   let skippedNoDiaTeam = 0;
   let skippedUnknownTeam = 0;
   let skippedCancelled = 0;

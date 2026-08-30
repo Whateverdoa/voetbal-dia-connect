@@ -17,10 +17,10 @@ export function BreakClock({ scheduledBreakEndAt, autoStart = true }: BreakClock
     return () => clearInterval(interval);
   }, []);
 
-  if (scheduledBreakEndAt == null) return null;
-
-  const remainingMs = Math.max(0, scheduledBreakEndAt - now);
-  const isDone = remainingMs === 0;
+  const remainingMs = scheduledBreakEndAt == null
+    ? 0
+    : Math.max(0, scheduledBreakEndAt - now);
+  const isDone = scheduledBreakEndAt != null && remainingMs === 0;
 
   useEffect(() => {
     if (!isDone) {
@@ -34,6 +34,8 @@ export function BreakClock({ scheduledBreakEndAt, autoStart = true }: BreakClock
       navigator.vibrate([120, 80, 120]);
     }
   }, [autoStart, isDone]);
+
+  if (scheduledBreakEndAt == null) return null;
 
   return (
     <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-center">

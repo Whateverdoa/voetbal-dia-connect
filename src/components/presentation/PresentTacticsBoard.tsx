@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PresentationPitchView } from "@/components/presentation/PresentationPitchView";
@@ -16,6 +17,14 @@ import type {
 } from "@/lib/substitutions/presentPlanAdapters";
 
 type Tab = "opstelling" | "wisselplan";
+
+/**
+ * `?view=` selects the tab inside this board, while `?tab=` on the page selects
+ * which studio tab is open. A deep link needs both levels to land on the plan.
+ */
+function parseBoardTab(value: string | null): Tab {
+  return value === "wisselplan" ? "wisselplan" : "opstelling";
+}
 
 export type KleedkamerMatch = {
   matchId: Id<"matches">;
@@ -39,7 +48,8 @@ export function PresentTacticsBoard({
   match,
   kiosk = false,
 }: PresentTacticsBoardProps) {
-  const [tab, setTab] = useState<Tab>("opstelling");
+  const search = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => parseBoardTab(search.get("view")));
   const access = useQuery(api.userQueries.getMyRoles);
   const canEditFormation = canPresentTactics(access?.roles ?? []) && !kiosk;
   const showWisselplan = canEditFormation;
@@ -48,7 +58,13 @@ export function PresentTacticsBoard({
     match?.customFormation
   );
   const customKind = match?.customFormation?.kind;
-  const visibleTab = tab === "wisselplan" && !showWisselplan ? "opstelling" : tab;
+  // Without this a `?view=wisselplan` link shows the opstelling until the roles
+  // arrive, and a coach tapping in that window loses the link's intent.
+  const wisselplanPending = tab === "wisselplan" && !kiosk && access === undefined;
+  const visibleTab =
+    tab === "wisselplan" && !showWisselplan && !wisselplanPending
+      ? "opstelling"
+      : tab;
 
   return (
     <div className="flex-1 h-full min-h-0 flex flex-col overflow-hidden">
@@ -56,7 +72,7 @@ export function PresentTacticsBoard({
         <TabButton active={visibleTab === "opstelling"} onClick={() => setTab("opstelling")}>
           Opstelling
         </TabButton>
-        {showWisselplan ? (
+        {showWisselplan || wisselplanPending ? (
           <TabButton active={visibleTab === "wisselplan"} onClick={() => setTab("wisselplan")}>
             Wisselplan
           </TabButton>
@@ -105,8 +121,10 @@ export function PresentTacticsBoard({
           )
         ) : null}
 
-        {visibleTab === "wisselplan" && showWisselplan ? (
-          match ? (
+        {visibleTab === "wisselplan" ? (
+          wisselplanPending ? (
+            <p className="text-slate-400 text-center py-16">Toegang controleren…</p>
+          ) : match ? (
             <PresentSubstitutionPlanView
               players={match.players}
               plans={match.substitutionPlans}

@@ -124,10 +124,10 @@ export function DashboardMatchCard({
       </Link>
       {match.status !== "finished" ? (
         <Link
-          href={`/present/match/${match.publicCode}/tactiek`}
+          href={`/present/match/${match.publicCode}/kleedkamer?view=wisselplan`}
           className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-dia-black px-3 py-2 text-sm font-semibold text-dia-yellow"
         >
-          Toon tactiek
+          Toon wisselplan
         </Link>
       ) : null}
     </div>

@@ -108,10 +108,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               Live view
             </Link>
             <Link
-              href={`/present/match/${match.publicCode}/tactiek`}
+              href={`/present/match/${match.publicCode}/kleedkamer?view=wisselplan`}
               className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
             >
-              Tactiek
+              Wisselplan
             </Link>
             <Link
               href={`/present/match/${match.publicCode}/kleedkamer`}

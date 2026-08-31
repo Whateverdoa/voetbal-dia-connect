@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PresentationPitchView } from "@/components/presentation/PresentationPitchView";
@@ -16,6 +17,10 @@ import type {
 } from "@/lib/substitutions/presentPlanAdapters";
 
 type Tab = "opstelling" | "wisselplan";
+
+function parseBoardTab(value: string | null): Tab {
+  return value === "wisselplan" ? "wisselplan" : "opstelling";
+}
 
 export type KleedkamerMatch = {
   matchId: Id<"matches">;
@@ -39,7 +44,8 @@ export function PresentTacticsBoard({
   match,
   kiosk = false,
 }: PresentTacticsBoardProps) {
-  const [tab, setTab] = useState<Tab>("opstelling");
+  const search = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => parseBoardTab(search.get("view")));
   const access = useQuery(api.userQueries.getMyRoles);
   const canEditFormation = canPresentTactics(access?.roles ?? []) && !kiosk;
   const showWisselplan = canEditFormation;

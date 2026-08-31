@@ -101,10 +101,10 @@ export default function CoachPresenterenPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Link
-                    href={`/present/match/${code}/tactiek`}
+                    href={`/present/match/${code}/kleedkamer?view=wisselplan`}
                     className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-black"
                   >
-                    Toon tactiek
+                    Toon wisselplan
                   </Link>
                   <Link
                     href={`/present/match/${code}/kleedkamer`}

@@ -48,6 +48,22 @@ describe("inspectTemplate", () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it("rejects a literal that merely mentions the shortcode name", () => {
+    const result = inspectTemplate({
+      ...validTemplate,
+      claims: { ...TEMPLATE_CLAIMS, email: "primary_email" },
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("accepts the shortcode with padding inside the braces", () => {
+    const result = inspectTemplate({
+      ...validTemplate,
+      claims: { ...TEMPLATE_CLAIMS, email: "{{ user.primary_email_address }}" },
+    });
+    expect(result.ok).toBe(true);
+  });
 });
 
 describe("parseEnvFile", () => {

@@ -19,10 +19,15 @@ const isProduction = vercelEnv === "production";
 
 // A `convex` JWT template without the email claim silently strips every
 // role-gated link from the nav bar, so block the deploy instead of shipping it.
-execSync(
-  `node scripts/check-clerk-convex-jwt.mjs${isProduction ? " --strict" : ""}`,
-  { stdio: "inherit" },
-);
+// The guard prints its own diagnosis; a stack trace on top only hides it.
+try {
+  execSync(
+    `node scripts/check-clerk-convex-jwt.mjs${isProduction ? " --strict" : ""}`,
+    { stdio: "inherit" },
+  );
+} catch {
+  process.exit(1);
+}
 
 if (deployKey && isProduction) {
   console.log("🚀 Production build: deploying Convex functions + Next.js build");

@@ -10,6 +10,9 @@ import path from "node:path";
 
 export const TEMPLATE_NAME = "convex";
 
+/** Only Clerk's shortcode resolves per user; a literal value would be shared. */
+const EMAIL_SHORTCODE = /\{\{\s*user\.primary_email_address\s*\}\}/;
+
 export const TEMPLATE_CLAIMS = {
   aud: "convex",
   email: "{{user.primary_email_address}}",
@@ -107,7 +110,7 @@ export function inspectTemplate(template) {
   }
 
   const email = typeof claims.email === "string" ? claims.email : "";
-  if (!email.includes("primary_email")) {
+  if (!EMAIL_SHORTCODE.test(email)) {
     problems.push(
       `claim "email" is ${JSON.stringify(claims.email ?? null)} and must use the {{user.primary_email_address}} shortcode`,
     );

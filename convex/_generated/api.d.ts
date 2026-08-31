@@ -60,6 +60,7 @@ import type * as lib_coachNameMatch from "../lib/coachNameMatch.js";
 import type * as lib_commandIdempotency from "../lib/commandIdempotency.js";
 import type * as lib_diaFields from "../lib/diaFields.js";
 import type * as lib_formationTemplateValidate from "../lib/formationTemplateValidate.js";
+import type * as lib_identityEmail from "../lib/identityEmail.js";
 import type * as lib_lateMatchRoster from "../lib/lateMatchRoster.js";
 import type * as lib_localLogos from "../lib/localLogos.js";
 import type * as lib_matchBreaks from "../lib/matchBreaks.js";
@@ -209,6 +210,7 @@ declare const fullApi: ApiFromModules<{
   "lib/commandIdempotency": typeof lib_commandIdempotency;
   "lib/diaFields": typeof lib_diaFields;
   "lib/formationTemplateValidate": typeof lib_formationTemplateValidate;
+  "lib/identityEmail": typeof lib_identityEmail;
   "lib/lateMatchRoster": typeof lib_lateMatchRoster;
   "lib/localLogos": typeof lib_localLogos;
   "lib/matchBreaks": typeof lib_matchBreaks;

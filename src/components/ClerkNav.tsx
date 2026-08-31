@@ -5,7 +5,11 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
-import { canPresentTactics } from "@/lib/auth/roles";
+import {
+  canPresentTactics,
+  parseRolesFromMetadata,
+  type AppRole,
+} from "@/lib/auth/roles";
 
 /**
  * Global auth nav. Uses useUser() instead of Clerk <Show/>, which is a
@@ -15,7 +19,12 @@ export function ClerkNav() {
   const { signOut } = useClerk();
   const { user, isSignedIn } = useUser();
   const access = useQuery(api.userQueries.getMyRoles);
-  const roles = access?.roles ?? [];
+  const clerkRoles = parseRolesFromMetadata(user?.publicMetadata);
+  const convexRoles = access?.roles ?? [];
+  const roles: AppRole[] = [...clerkRoles];
+  for (const role of convexRoles) {
+    if (!roles.includes(role)) roles.push(role);
+  }
   const isAdmin = roles.includes("admin");
   const isCoach = roles.includes("coach");
   const isReferee = roles.includes("referee");
@@ -33,7 +42,7 @@ export function ClerkNav() {
                 Coach
               </Link>
             ) : null}
-            {access && canPresentTactics(roles) ? (
+            {canPresentTactics(roles) ? (
               <Link
                 href="/coach/presenteren"
                 className="font-medium text-dia-black hover:text-dia-black"

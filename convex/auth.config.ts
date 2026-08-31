@@ -28,11 +28,18 @@ function getClerkIssuerDomain() {
   );
 }
 
+const issuer = getClerkIssuerDomain();
+
 export default {
   providers: [
     {
-      domain: getClerkIssuerDomain(),
+      domain: issuer,
       applicationID: "convex",
+    },
+    // Default Clerk session tokens use the Frontend API URL as `aud`.
+    {
+      domain: issuer,
+      applicationID: issuer,
     },
   ],
 } satisfies AuthConfig;

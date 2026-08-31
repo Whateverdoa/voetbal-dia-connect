@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { FieldLines } from "@/components/match/FieldLines";
 import { FormationLines } from "@/components/match/FormationLines";
 import { FieldPlayerCard } from "@/components/match/FieldPlayerCard";
+import { PitchFitFrame } from "@/components/presentation/PitchFitFrame";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import type { Formation } from "@/lib/formations/types";
+import type { CardSizeMode } from "@/hooks/useCardSize";
 
 export type PresentationPlayer = {
   playerId: string;
@@ -20,6 +23,9 @@ interface PresentationPitchViewProps {
   players: PresentationPlayer[];
   formationId: string | undefined;
   resolvedFormation: Formation | undefined;
+  customFormationKind?: "8v8" | "11v11";
+  /** Letterbox the pitch into the parent so the whole field stays visible. */
+  fill?: boolean;
 }
 
 /** Large flat pitch for TV / desktop presentation (read-only). */
@@ -27,10 +33,17 @@ export function PresentationPitchView({
   players,
   formationId,
   resolvedFormation,
+  customFormationKind,
+  fill = false,
 }: PresentationPitchViewProps) {
+  const [pitchWidth, setPitchWidth] = useState(0);
   const formation = resolvedFormation;
-  const fieldMode = fieldModeFromFormation(formationId, {});
+  const fieldMode = fieldModeFromFormation(formationId, {
+    customKind: customFormationKind,
+  });
   const cfg = FIELDS[fieldMode];
+  const sizeMode: CardSizeMode =
+    fill && pitchWidth > 0 && pitchWidth < 720 ? "auto" : "presentation";
 
   if (!formation) {
     return (
@@ -45,37 +58,33 @@ export function PresentationPitchView({
     onField.find((p) => Number(p.fieldSlotIndex) === Number(slotId));
 
   return (
-    <div className="w-full flex justify-center">
-      <div
-        className="relative w-full max-w-4xl overflow-hidden border-2 rounded-md shadow-2xl"
-        style={{
-          background: "#2d7a3a",
-          borderColor: "#1e5c28",
-          aspectRatio: `${cfg.w} / ${cfg.h}`,
-        }}
-      >
-        <FieldLines cfg={cfg} />
-        <FormationLines slots={formation.slots} links={formation.links} />
-        {formation.slots.map((slot) => {
-          const player = playerInSlot(slot.id);
-          return (
-            <FieldPlayerCard
-              key={slot.id}
-              name={player?.displayName ?? ""}
-              number={player?.number}
-              position={slot.position}
-              photoUrl={player?.photoUrl}
-              sizeMode="presentation"
-              x={slot.x}
-              y={slot.y}
-              isSelected={false}
-              isDimmed={false}
-              isEmpty={!player}
-              onClick={() => undefined}
-            />
-          );
-        })}
-      </div>
-    </div>
+    <PitchFitFrame
+      aspectW={cfg.w}
+      aspectH={cfg.h}
+      fill={fill}
+      onWidth={setPitchWidth}
+    >
+      <FieldLines cfg={cfg} />
+      <FormationLines slots={formation.slots} links={formation.links} />
+      {formation.slots.map((slot) => {
+        const player = playerInSlot(slot.id);
+        return (
+          <FieldPlayerCard
+            key={slot.id}
+            name={player?.displayName ?? ""}
+            number={player?.number}
+            position={slot.position}
+            photoUrl={player?.photoUrl}
+            sizeMode={sizeMode}
+            x={slot.x}
+            y={slot.y}
+            isSelected={false}
+            isDimmed={false}
+            isEmpty={!player}
+            onClick={() => undefined}
+          />
+        );
+      })}
+    </PitchFitFrame>
   );
 }

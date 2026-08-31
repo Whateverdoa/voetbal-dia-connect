@@ -2,34 +2,33 @@
 
 import { useQuery } from "convex/react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
-import { PresentationPitchView } from "@/components/presentation/PresentationPitchView";
-import { PresentSubstitutionPlanView } from "@/components/presentation/PresentSubstitutionPlanView";
-import { TeamDeckGrid } from "@/components/cards/TeamDeckGrid";
-import { getFormation } from "@/lib/formations";
-import Link from "next/link";
-
-type Tab = "opstelling" | "wisselplan" | "deck";
+import { PresentTacticsBoard } from "@/components/presentation/PresentTacticsBoard";
+import {
+  PresentStudio,
+  parseStudioTab,
+} from "@/components/presentation/PresentStudio";
 
 export default function PresentTeamPage() {
   const params = useParams();
   const search = useSearchParams();
   const slug = String(params.slug ?? "");
   const kiosk = search.get("kiosk") === "1";
-  const [tab, setTab] = useState<Tab>("opstelling");
+  const pinnedCode = search.get("code")?.trim().toUpperCase() ?? "";
+  const initialTab = parseStudioTab(search.get("tab"), "kleedkamer");
 
   const team = useQuery(api.presentationQueries.getTeamPresentation, {
     teamSlug: slug,
   });
-  const deck = useQuery(api.presentationQueries.getTeamDeckPublic, {
-    teamSlug: slug,
-  });
-  const matchCode = team?.liveMatch?.publicCode;
+  const matchCode = pinnedCode || team?.liveMatch?.publicCode || "";
   const match = useQuery(
     api.presentationQueries.getMatchPresentation,
     matchCode ? { publicCode: matchCode } : "skip"
+  );
+  const deck = useQuery(
+    api.presentationQueries.getTeamDeckPublic,
+    match ? { teamSlug: match.teamSlug } : "skip"
   );
 
   if (team === undefined) {
@@ -48,97 +47,26 @@ export default function PresentTeamPage() {
     );
   }
 
-  const formation = getFormation(match?.formationId ?? undefined);
-
   return (
     <PresentationShell
       title={team.teamName}
       subtitle={
-        team.liveMatch
-          ? `vs ${team.liveMatch.opponent} · ${team.liveMatch.status}`
-          : "Kleedkamer — tactiekbord"
+        match
+          ? `vs ${match.opponent} · ${match.status}`
+          : "Kies een wedstrijd via Coach → Presenteren"
       }
       kiosk={kiosk}
     >
-      <div className="flex flex-wrap gap-2 mb-6">
-        <TabButton active={tab === "opstelling"} onClick={() => setTab("opstelling")}>
-          Opstelling
-        </TabButton>
-        <TabButton
-          active={tab === "wisselplan"}
-          onClick={() => setTab("wisselplan")}
-        >
-          Wisselplan
-        </TabButton>
-        {team.isSelectionTeam ? (
-          <TabButton active={tab === "deck"} onClick={() => setTab("deck")}>
-            Teamdeck
-          </TabButton>
-        ) : null}
-        {team.liveMatch ? (
-          <Link
-            href={`/present/team/${slug}/live${kiosk ? "?kiosk=1" : ""}`}
-            className="ml-auto px-4 py-2 rounded-lg bg-dia-yellow text-black hover:bg-dia-yellow-deep font-semibold min-h-[48px] flex items-center"
-          >
-            Kantine live →
-          </Link>
-        ) : null}
-      </div>
-
-      {tab === "opstelling" ? (
-        match ? (
-          <PresentationPitchView
-            players={match.players}
-            formationId={match.formationId ?? undefined}
-            resolvedFormation={formation}
-          />
-        ) : (
-          <p className="text-slate-400 text-center py-16">
-            Geen actieve wedstrijd voor dit team. Start of open een wedstrijd als coach.
-          </p>
-        )
-      ) : null}
-
-      {tab === "wisselplan" ? (
-        match ? (
-          <PresentSubstitutionPlanView
-            players={match.players}
-            plans={match.substitutionPlans}
-            quarterCount={match.quarterCount}
-            formationId={match.formationId ?? undefined}
-            resolvedFormation={formation}
-          />
-        ) : (
-          <p className="text-slate-400 text-center py-16">
-            Geen actieve wedstrijd — wisselplan verschijnt zodra er een wedstrijd live
-            of in opstelling staat.
-          </p>
-        )
-      ) : null}
-
-      {tab === "deck" ? <TeamDeckGrid players={deck ?? []} /> : null}
+      {match ? (
+        <PresentStudio
+          match={match}
+          deck={deck}
+          kiosk={kiosk}
+          initialTab={initialTab}
+        />
+      ) : (
+        <PresentTacticsBoard match={null} kiosk={kiosk} />
+      )}
     </PresentationShell>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-4 py-2 rounded-lg font-semibold min-h-[48px] ${
-        active ? "bg-white text-slate-900" : "bg-slate-800 text-slate-200"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

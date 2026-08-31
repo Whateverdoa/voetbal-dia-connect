@@ -63,9 +63,11 @@ export function LivePresentationBoard({
             : "GEPLAND";
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <p className="text-dia-yellow font-bold tracking-[0.3em] text-sm">{statusLabel}</p>
+    <div className="flex-1 min-h-0 flex flex-col gap-4">
+      <div className="shrink-0 text-center space-y-2">
+        <p className="inline-block bg-dia-yellow text-black font-bold tracking-[0.3em] text-sm px-3 py-1 rounded">
+          {statusLabel}
+        </p>
         <div className="flex items-center justify-center gap-6 md:gap-12">
           <div className="text-right min-w-[120px]">
             <p className="text-lg md:text-2xl font-semibold truncate max-w-[200px] md:max-w-xs">
@@ -95,11 +97,14 @@ export function LivePresentationBoard({
         </div>
       </div>
 
-      <PresentationPitchView
-        players={players.filter((p) => !p.absent)}
-        formationId={formationId ?? undefined}
-        resolvedFormation={formation}
-      />
+      <div className="flex-1 min-h-0">
+        <PresentationPitchView
+          players={players.filter((p) => !p.absent)}
+          formationId={formationId ?? undefined}
+          resolvedFormation={formation}
+          fill
+        />
+      </div>
     </div>
   );
 }

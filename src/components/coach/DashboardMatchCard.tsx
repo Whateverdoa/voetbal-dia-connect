@@ -53,14 +53,17 @@ export function DashboardMatchCard({
   };
 
   return (
-    <Link
-      href={`/coach/match/${match._id}`}
-      className={`block rounded-xl border-2 transition-all active:scale-[0.98] touch-manipulation ${
+    <div
+      className={`rounded-xl border-2 ${
         isActive
-          ? "border-dia-yellow-deep/50 bg-dia-green-light shadow-md hover:shadow-lg"
-          : "border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300"
+          ? "border-dia-yellow-deep/50 bg-dia-green-light shadow-md"
+          : "border-gray-200 bg-white shadow-sm"
       } ${compact ? "p-3" : "p-4"}`}
     >
+      <Link
+        href={`/coach/match/${match._id}`}
+        className="block active:scale-[0.98] touch-manipulation"
+      >
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="mb-2">
@@ -118,6 +121,15 @@ export function DashboardMatchCard({
           )}
         </div>
       </div>
-    </Link>
+      </Link>
+      {match.status !== "finished" ? (
+        <Link
+          href={`/present/match/${match.publicCode}/tactiek`}
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-dia-black px-3 py-2 text-sm font-semibold text-dia-yellow"
+        >
+          Toon tactiek
+        </Link>
+      ) : null}
+    </div>
   );
 }

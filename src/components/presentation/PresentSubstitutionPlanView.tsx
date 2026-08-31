@@ -19,6 +19,7 @@ interface PresentSubstitutionPlanViewProps {
   quarterCount: number;
   formationId: string | undefined;
   resolvedFormation: Formation | undefined;
+  customFormationKind?: "8v8" | "11v11";
 }
 
 /** Read-only wisselplan for kleedkamer / TV presentation. */
@@ -28,6 +29,7 @@ export function PresentSubstitutionPlanView({
   quarterCount,
   formationId,
   resolvedFormation,
+  customFormationKind,
 }: PresentSubstitutionPlanViewProps) {
   const [selectedQuarter, setSelectedQuarter] = useState(1);
 
@@ -115,8 +117,8 @@ export function PresentSubstitutionPlanView({
               onClick={() => setSelectedQuarter(quarter)}
               className={`min-h-[44px] rounded-lg px-4 py-2 font-semibold ${
                 selectedQuarter === quarter
-                  ? "bg-white text-slate-900"
-                  : "bg-slate-800 text-slate-200"
+                  ? "bg-dia-black text-dia-yellow ring-2 ring-dia-yellow"
+                  : "bg-dia-yellow text-black"
               }`}
             >
               {quarterCount === 2 ? `H${quarter}` : `K${quarter}`}
@@ -130,6 +132,7 @@ export function PresentSubstitutionPlanView({
           players={previewPlayers}
           formationId={formationId}
           resolvedFormation={resolvedFormation}
+          customFormationKind={customFormationKind}
         />
       ) : (
         <p className="text-center text-slate-400 py-8">

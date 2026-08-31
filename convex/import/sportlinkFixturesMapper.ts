@@ -72,7 +72,8 @@ function deriveStatus(raw: RawSportlinkFixture): "gespeeld" | "gepland" | "afgel
   if (
     status.includes("uitgespeeld") ||
     status.includes("gespeeld") ||
-    status.includes("gesloten")
+    status.includes("gesloten") ||
+    status.includes("gestaakt")
   ) {
     return "gespeeld";
   }

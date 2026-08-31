@@ -1,14 +1,16 @@
-/**
- * Privacy-filtered queries for desktop/TV presentation modes.
- */
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { redactPlayerForPublic } from "./lib/privacyFilter";
 import type { ConsentRow } from "./lib/privacyFilter";
 import {
-  listPresentationSubstitutionPlans,
+  listStaffPresentationSubstitutionPlans,
   presentationPlanValidator,
 } from "./lib/presentationSubstitutionPlans";
+import { pickPresentMatch } from "./lib/pickPresentMatch";
+import {
+  customFormationValidator,
+  loadCustomFormationForMatch,
+} from "./lib/presentationFormation";
 
 export const getTeamPresentation = query({
   args: { teamSlug: v.string() },
@@ -47,9 +49,7 @@ export const getTeamPresentation = query({
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
-    const live = matches.find(
-      (m) => m.status === "live" || m.status === "halftime" || m.status === "lineup"
-    );
+    const live = pickPresentMatch(matches);
 
     return {
       teamId: team._id,
@@ -97,6 +97,7 @@ export const getMatchPresentation = query({
         v.id("formationTemplates"),
         v.null()
       ),
+      customFormation: customFormationValidator,
       showLineup: v.boolean(),
       quarterStartedAt: v.union(v.number(), v.null()),
       pausedAt: v.union(v.number(), v.null()),
@@ -188,7 +189,7 @@ export const getMatchPresentation = query({
       });
     }
 
-    const substitutionPlans = await listPresentationSubstitutionPlans(
+    const substitutionPlans = await listStaffPresentationSubstitutionPlans(
       ctx,
       match._id
     );
@@ -209,6 +210,7 @@ export const getMatchPresentation = query({
       quarterCount: match.quarterCount,
       formationId: match.formationId ?? null,
       customFormationTemplateId: match.customFormationTemplateId ?? null,
+      customFormation: await loadCustomFormationForMatch(ctx, match),
       showLineup: match.showLineup,
       quarterStartedAt: match.quarterStartedAt ?? null,
       pausedAt: match.pausedAt ?? null,

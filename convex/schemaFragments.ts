@@ -74,3 +74,17 @@ export const wedstrijdenTable = defineTable({
   .index("by_datum", ["datum_ms"])
   .index("by_team", ["dia_team"])
   .index("by_sportlink_code", ["sportlink_wedstrijdcode"]);
+
+/** Free-drag tactic board tokens (independent of official lineup slots). */
+export const tacticBoardsTable = defineTable({
+  matchId: v.id("matches"),
+  tokens: v.array(
+    v.object({
+      playerId: v.id("players"),
+      x: v.number(),
+      y: v.number(),
+      onBoard: v.boolean(),
+    })
+  ),
+  updatedAt: v.number(),
+}).index("by_match", ["matchId"]);

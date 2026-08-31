@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { normalizeEmail, parseEmailList } from "../../src/lib/auth/adminAccess";
+import { emailFromIdentity } from "./identityEmail";
 import { hasAdminRole } from "./adminOverride";
 
 export type AccessRole = "admin" | "coach" | "referee";
@@ -20,7 +21,7 @@ export type RuntimeUserAccess = Pick<
 
 export async function getAuthenticatedEmail(ctx: ReaderCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  return normalizeEmail(identity?.email);
+  return emailFromIdentity(identity);
 }
 
 export async function getUserAccessByEmail(ctx: ReaderCtx, email?: string | null) {

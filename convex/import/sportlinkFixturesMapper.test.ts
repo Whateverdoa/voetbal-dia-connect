@@ -30,6 +30,38 @@ describe("mapSportlinkFixture", () => {
     expect(doc!.datum_ms).toBe(Date.parse("2026-08-29T08:30:00+02:00"));
   });
 
+  it("parses Sportlink +0200 offset without colon", () => {
+    const doc = mapSportlinkFixture({
+      wedstrijdcode: 20767975,
+      wedstrijddatum: "2026-08-29T10:30:00+0200",
+      aanvangstijd: "10:30",
+      thuisteam: "DIA O13-1",
+      uitteam: "TSV Gudok O13-1",
+      teamnaam: "DIA O13-1",
+      status: "Uitgespeeld",
+      competitiesoort: "regulier",
+      uitslag: "7 - 0",
+    });
+    expect(doc?.status).toBe("gespeeld");
+    expect(doc?.thuis_goals).toBe(7);
+    expect(doc?.uit_goals).toBe(0);
+    expect(doc?.dia_team).toBe("jo13-1");
+    expect(doc?.datum_ms).toBe(Date.parse("2026-08-29T10:30:00+02:00"));
+  });
+
+  it("maps gestaakt as gespeeld even without a score", () => {
+    const doc = mapSportlinkFixture({
+      wedstrijdcode: 20750001,
+      wedstrijddatum: "2026-08-29T09:00:00+0200",
+      thuisteam: "DIA O14-1",
+      uitteam: "Jong Brabant O14-1",
+      status: "Gestaakt",
+      competitiesoort: "regulier",
+    });
+    expect(doc?.status).toBe("gespeeld");
+    expect(doc?.thuis_goals).toBeUndefined();
+  });
+
   it("maps uitslagen scores", () => {
     const doc = mapSportlinkFixture({
       wedstrijdcode: 20515764,

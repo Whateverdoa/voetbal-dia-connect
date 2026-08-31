@@ -118,9 +118,10 @@ export const verifyCoachAccess = query({
       }
 
       const { coach } = await requireCoachAccess(ctx);
-      const teams = await Promise.all(coach.teamIds.map((teamId) => ctx.db.get(teamId)));
+      const teamIds = [...new Set(coach.teamIds)];
+      const teams = await Promise.all(teamIds.map((teamId) => ctx.db.get(teamId)));
       const matches = await Promise.all(
-        coach.teamIds.map((teamId) =>
+        teamIds.map((teamId) =>
           ctx.db
             .query("matches")
             .withIndex("by_team", (q) => q.eq("teamId", teamId))

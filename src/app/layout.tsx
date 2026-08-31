@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/AppProviders";
 import { ClerkNav } from "@/components/ClerkNav";
+import { SignedInRoleSync } from "@/components/SignedInRoleSync";
 
 const inter = Inter({ subsets: ["latin"] });
 const hasClerkPublishableKey = Boolean(
@@ -44,7 +45,12 @@ export default function RootLayout({
     <html lang="nl">
       <body className={inter.className}>
         <AppProviders>
-          {hasClerkPublishableKey ? <ClerkNav /> : null}
+          {hasClerkPublishableKey ? (
+            <>
+              <SignedInRoleSync />
+              <ClerkNav />
+            </>
+          ) : null}
           {children}
         </AppProviders>
       </body>

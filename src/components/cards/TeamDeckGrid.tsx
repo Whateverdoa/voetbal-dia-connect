@@ -40,15 +40,21 @@ export function TeamDeckGrid({ players }: TeamDeckGridProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {players.map((p) => (
-        <PlayerCardGamified
+        <button
           key={p.playerId}
-          displayName={p.displayName}
-          number={p.number}
-          positionPrimary={p.positionPrimary}
-          photoUrl={p.photoUrl}
-          cardProfile={p.cardProfile}
-          showFullIdentity={p.showFullIdentity}
-        />
+          type="button"
+          title="Details volgen later"
+          className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
+        >
+          <PlayerCardGamified
+            displayName={p.displayName}
+            number={p.number}
+            positionPrimary={p.positionPrimary}
+            photoUrl={p.photoUrl}
+            cardProfile={p.cardProfile}
+            showFullIdentity={p.showFullIdentity}
+          />
+        </button>
       ))}
     </div>
   );

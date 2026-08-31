@@ -100,7 +100,7 @@ export const helpClubRollenPage: HelpPageDef = {
     {
       heading: "Meerdere rollen",
       paragraphs: [
-        "Eén persoon kan admin én coach zijn, of coach én scheidsrechter. In het menu verschijnen dan meerdere links. Admin kan in deze fase ook alle wedstrijden openen via Coach of Scheidsrechter om te controleren; dat zie je aan de gele balk.",
+        "Eén persoon kan admin én coach zijn, of coach én scheidsrechter. In het menu verschijnen dan meerdere links. Als admin kies je bovenaan Bekijk als Admin (alle wedstrijden) of als Coach/Scheidsrechter (alleen jouw eigen).",
       ],
     },
   ],

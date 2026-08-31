@@ -49,6 +49,10 @@ function hasGranted(consents: ConsentRow[], type: ConsentType): boolean {
   return consents.some((c) => c.consentType === type && c.status === "granted");
 }
 
+function isRevoked(consents: ConsentRow[], type: ConsentType): boolean {
+  return consents.some((c) => c.consentType === type && c.status === "revoked");
+}
+
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -56,29 +60,36 @@ function initialsFromName(name: string): string {
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
 }
 
+function firstNameFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts[0]!;
+}
+
 /**
  * Redact a player for public/TV presentation based on consent rows.
- * Without public_display: only number + position (no name/photo/XP).
- * Without photo: no photoUrl.
- * Without gamification: no cardProfile.
+ * Public screens show first names only (no last names) unless public_display
+ * was revoked — then initials. Photo/XP follow their own granted flags.
  */
 export function redactPlayerForPublic(
   player: PlayerPrivacyInput,
   consents: ConsentRow[]
 ): RedactedPlayer {
-  const publicOk = hasGranted(consents, "public_display");
-  const photoOk = publicOk && hasGranted(consents, "photo");
-  const gameOk = publicOk && hasGranted(consents, "gamification");
+  const photoOk = hasGranted(consents, "photo");
+  const gameOk = hasGranted(consents, "gamification");
+  const hideName = isRevoked(consents, "public_display");
 
   return {
     playerId: player._id,
-    displayName: publicOk ? player.name : initialsFromName(player.name),
+    displayName: hideName
+      ? initialsFromName(player.name)
+      : firstNameFromName(player.name),
     number: player.number ?? null,
     positionPrimary: player.positionPrimary ?? null,
     positionSecondary: player.positionSecondary ?? null,
     photoUrl: photoOk ? player.photoUrl ?? null : null,
     cardProfile: gameOk ? player.cardProfile ?? null : null,
-    showFullIdentity: publicOk,
+    showFullIdentity: false,
   };
 }
 

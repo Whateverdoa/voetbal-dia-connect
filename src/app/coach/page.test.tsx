@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { api } from "@/convex/_generated/api";
 
 const mockSignOut = vi.fn();
 const mockUseClerk = vi.fn(() => ({ signOut: mockSignOut }));
@@ -25,6 +26,20 @@ async function loadCoachPage(clerkEnabled: boolean) {
     CoachPage: pageModule.default,
     mockUseQuery: vi.mocked(convex.useQuery),
   };
+}
+
+type QueryStub = {
+  mockImplementation: (fn: (query: unknown) => unknown) => void;
+};
+
+/** The page runs two queries: the role lookup first, then the coach dashboard. */
+function stubQueries(
+  mockUseQuery: unknown,
+  { roles, coachData }: { roles: string[]; coachData: unknown },
+) {
+  (mockUseQuery as QueryStub).mockImplementation((query: unknown) =>
+    query === api.userQueries.getMyRoles ? { roles } : coachData,
+  );
 }
 
 describe("CoachPage", () => {
@@ -64,7 +79,7 @@ describe("CoachPage", () => {
 
   it("shows no-access state when the signed-in user has no coach role", async () => {
     const { CoachPage, mockUseQuery } = await loadCoachPage(true);
-    mockUseQuery.mockReturnValue(null);
+    stubQueries(mockUseQuery, { roles: [], coachData: null });
 
     render(<CoachPage />);
 
@@ -80,23 +95,26 @@ describe("CoachPage", () => {
 
   it("renders the coach dashboard for a linked coach account", async () => {
     const { CoachPage, mockUseQuery } = await loadCoachPage(true);
-    mockUseQuery.mockReturnValue({
-      coach: { id: "coach-1", name: "Coach Mike" },
-      teams: [{ id: "team-1", name: "JO12-1" }],
-      matches: [
-        {
-          _id: "match-1",
-          teamId: "team-1",
-          opponent: "VV Oranje",
-          isHome: true,
-          status: "scheduled",
-          publicCode: "ABC123",
-          homeScore: 0,
-          awayScore: 0,
-          currentQuarter: 1,
-          scheduledAt: Date.now() + 86400000,
-        },
-      ],
+    stubQueries(mockUseQuery, {
+      roles: ["coach"],
+      coachData: {
+        coach: { id: "coach-1", name: "Coach Mike" },
+        teams: [{ id: "team-1", name: "JO12-1" }],
+        matches: [
+          {
+            _id: "match-1",
+            teamId: "team-1",
+            opponent: "VV Oranje",
+            isHome: true,
+            status: "scheduled",
+            publicCode: "ABC123",
+            homeScore: 0,
+            awayScore: 0,
+            currentQuarter: 1,
+            scheduledAt: Date.now() + 86400000,
+          },
+        ],
+      },
     });
 
     render(<CoachPage />);

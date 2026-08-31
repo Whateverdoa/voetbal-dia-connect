@@ -68,7 +68,7 @@ function CoachPageWithClerk() {
     );
   }
 
-  return <CoachPageReady roles={access.roles} />;
+  return <CoachPageReady roles={access?.roles ?? []} />;
 }
 
 function CoachPageReady({ roles }: { roles: string[] }) {

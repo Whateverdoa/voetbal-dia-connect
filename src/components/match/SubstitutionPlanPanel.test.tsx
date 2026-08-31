@@ -178,7 +178,7 @@ describe("SubstitutionPlanPanel", () => {
 
     fireEvent.click(screen.getByText("Planweergave"));
     fireEvent.click(screen.getByText("K2"));
-    fireEvent.click(screen.getByText("PIET"));
+    fireEvent.click(screen.getByText("Piet 7"));
     fireEvent.click(screen.getByText("JAN"));
 
     await waitFor(() => {
@@ -196,8 +196,8 @@ describe("SubstitutionPlanPanel", () => {
     renderPanel();
 
     fireEvent.click(screen.getByText("Planweergave"));
-    fireEvent.click(screen.getByText("PIET"));
-    fireEvent.click(screen.getByText("KEEPER"));
+    fireEvent.click(screen.getByText("Piet 7"));
+    fireEvent.click(screen.getByText("Keeper 1"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({

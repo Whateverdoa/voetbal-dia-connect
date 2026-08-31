@@ -69,6 +69,9 @@ export const api = {
     pauseClock: "matchActions:pauseClock",
     resumeClock: "matchActions:resumeClock",
   },
+  userQueries: {
+    getMyRoles: "userQueries:getMyRoles",
+  },
   substitutionPlans: {
     addPlanItem: "substitutionPlans:addPlanItem",
     updatePlanItem: "substitutionPlans:updatePlanItem",

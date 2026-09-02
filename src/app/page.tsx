@@ -42,13 +42,14 @@ export default function Home() {
         {/* Match browser — primary element */}
         <MatchBrowser />
 
-        {/* Vandaag live link */}
-        <div className="text-center">
-          <Link
-            href="/standen"
-            className="text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
-          >
+        {/* Vandaag live + teams */}
+        <div className="flex items-center justify-center gap-3 text-sm font-medium text-dia-black">
+          <Link href="/standen" className="transition-colors">
             Vandaag live
+          </Link>
+          <span className="text-gray-300">•</span>
+          <Link href="/teams" className="transition-colors">
+            Standen per team
           </Link>
         </div>
 

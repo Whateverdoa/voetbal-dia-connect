@@ -71,8 +71,8 @@ export default function CoachPresenterenPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <p className="text-sm text-gray-600">
-          Eén presentatie met tabs: Tactiek (vrij sleepbord), Kleedkamer
-          (opstelling en wisselplan) en Spelerskaarten. Kantine is de TV-weergave.
+          Eén presentatie met tabs: Spelerskaarten, Opstelling (veld en
+          wisselplan) en Tactiek. Kantine is de TV-weergave.
         </p>
 
         {matches.length === 0 ? (
@@ -101,16 +101,16 @@ export default function CoachPresenterenPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Link
-                    href={`/present/match/${code}/kleedkamer?view=wisselplan`}
+                    href={`/present/match/${code}/kleedkamer?tab=kaarten`}
                     className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-black"
                   >
-                    Toon wisselplan
+                    Spelerskaarten
                   </Link>
                   <Link
-                    href={`/present/match/${code}/kleedkamer`}
+                    href={`/present/match/${code}/kleedkamer?tab=opstelling`}
                     className="inline-flex min-h-[48px] items-center justify-center rounded-xl border-2 border-dia-black px-4 py-3 text-sm font-semibold text-dia-black"
                   >
-                    Toon kleedkamer
+                    Opstelling
                   </Link>
                   <Link
                     href={`/present/match/${code}`}

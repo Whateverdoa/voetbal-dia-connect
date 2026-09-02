@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { cardProfileValidator, playerConsentsTable, tacticBoardsTable, wedstrijdenTable } from "./schemaFragments";
+import { cardProfileValidator, playerConsentsTable, standingsTable, tacticBoardsTable, wedstrijdenTable } from "./schemaFragments";
 
 export default defineSchema({
   clubs: defineTable({
@@ -235,6 +235,8 @@ export default defineSchema({
     onField: v.boolean(), // Currently on field?
     // Absent: in squad but not physically present (e.g. called in sick). Cannot be subbed in.
     absent: v.optional(v.boolean()),
+    // Injured: unavailable for this match due to injury (mutually exclusive with absent).
+    injured: v.optional(v.boolean()),
     // Slot on pitch (0 = keeper, 1..N = outfield per formation); undefined = list-only
     fieldSlotIndex: v.optional(v.number()),
     // Playing time tracking
@@ -359,4 +361,5 @@ export default defineSchema({
   wedstrijden: wedstrijdenTable,
   playerConsents: playerConsentsTable,
   tacticBoards: tacticBoardsTable,
+  standings: standingsTable,
 });

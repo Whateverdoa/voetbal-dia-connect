@@ -14,7 +14,7 @@ export default function PresentMatchKleedkamerPage() {
   const search = useSearchParams();
   const code = String(params.code ?? "").toUpperCase();
   const kiosk = search.get("kiosk") === "1";
-  const initialTab = parseStudioTab(search.get("tab"), "kleedkamer");
+  const initialTab = parseStudioTab(search.get("tab"), "kaarten");
 
   const match = useQuery(api.presentationQueries.getMatchPresentation, {
     publicCode: code,
@@ -27,7 +27,7 @@ export default function PresentMatchKleedkamerPage() {
   if (match === undefined) {
     return (
       <PresentationShell title="Laden…">
-        <p className="text-slate-400">Kleedkamer laden…</p>
+        <p className="text-slate-400">Opstelling laden…</p>
       </PresentationShell>
     );
   }

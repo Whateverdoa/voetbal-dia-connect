@@ -11,7 +11,9 @@ import {
   buildSubstitutionPlanOrderAfterInsert,
   listEnrichedSubstitutionPlans,
   nextSubstitutionPlanSequence,
+  planRowsAfterClearPending,
 } from "./lib/substitutionPlanRows";
+import { throwIfUnavailable } from "./lib/matchPlayerAvailability";
 import { assertCanExecutePlannedSubstitution } from "./lib/substitutionPlanGuards";
 
 async function applyPlannedPositionSwap(
@@ -96,6 +98,8 @@ export const addPlanItem = mutation({
     if (!mpOut || !mpIn) {
       throw new Error("Speler zit niet in deze wedstrijd");
     }
+    throwIfUnavailable(mpOut, "plan");
+    throwIfUnavailable(mpIn, "plan");
 
     const now = Date.now();
     const seq = await nextSubstitutionPlanSequence(ctx, args.matchId);
@@ -205,6 +209,8 @@ export const updatePlanItem = mutation({
     if (!mpOut || !mpIn) {
       throw new Error("Speler zit niet in deze wedstrijd");
     }
+    throwIfUnavailable(mpOut, "plan");
+    throwIfUnavailable(mpIn, "plan");
 
     const now = Date.now();
     const patch: {
@@ -258,6 +264,36 @@ export const removePlanItem = mutation({
     for (let i = 0; i < rest.length; i += 1) {
       await ctx.db.patch(rest[i]._id, { sequence: i, updatedAt: now });
     }
+  },
+});
+
+/** Delete every pending plan row; executed/skipped history stays intact. */
+export const clearPendingPlan = mutation({
+  args: { matchId: v.id("matches") },
+  returns: v.object({ removed: v.number() }),
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    if (!(await verifyCoachTeamMembership(ctx, match))) {
+      throw new Error("Geen toegang");
+    }
+
+    const rows = await ctx.db
+      .query("substitutionPlans")
+      .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
+      .collect();
+    const pending = rows.filter((row) => row.status === "pending");
+    for (const row of pending) {
+      await ctx.db.delete(row._id);
+    }
+
+    const keepIds = planRowsAfterClearPending(rows);
+    const now = Date.now();
+    for (let i = 0; i < keepIds.length; i += 1) {
+      await ctx.db.patch(keepIds[i], { sequence: i, updatedAt: now });
+    }
+
+    return { removed: pending.length };
   },
 });
 

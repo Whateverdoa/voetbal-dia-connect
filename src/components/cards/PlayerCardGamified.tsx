@@ -24,6 +24,8 @@ interface PlayerCardGamifiedProps {
   photoUrl: string | null;
   cardProfile: CardProfile | null;
   showFullIdentity: boolean;
+  /** Coach-only; omit on public/parent/kiosk cards. */
+  showMinutes?: boolean;
 }
 
 const RARITY_FRAME: Record<string, string> = {
@@ -38,6 +40,7 @@ export function PlayerCardGamified({
   positionPrimary,
   photoUrl,
   cardProfile,
+  showMinutes = false,
 }: PlayerCardGamifiedProps) {
   const rarity = cardProfile?.rarity ?? "common";
   const progress = cardProfile
@@ -96,8 +99,12 @@ export function PlayerCardGamified({
         </h3>
         {cardProfile ? (
           <p className="text-xs text-dia-yellow/70">
-            {cardProfile.seasonStats.goals} doel · {cardProfile.seasonStats.assists}{" "}
-            assist · {cardProfile.seasonStats.matches} wedstr.
+            {showMinutes
+              ? `${cardProfile.seasonStats.minutes} min · `
+              : ""}
+            {cardProfile.seasonStats.goals} doel ·{" "}
+            {cardProfile.seasonStats.assists} assist ·{" "}
+            {cardProfile.seasonStats.matches} wedstr.
           </p>
         ) : (
           <p className="text-xs text-white/40">Geen gamificatie-toestemming</p>

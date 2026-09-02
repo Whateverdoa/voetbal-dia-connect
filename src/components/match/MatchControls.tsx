@@ -128,7 +128,7 @@ export function MatchControls({
         <button
           onClick={() => handleMutation(() => startMatch({ matchId }), "Start wedstrijd")}
           disabled={isLoading}
-          className="w-full py-4 bg-dia-green text-black text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-4 bg-dia-black text-dia-yellow text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
@@ -142,7 +142,7 @@ export function MatchControls({
                 <button
                   onClick={onGoalClick}
                   disabled={isLoading}
-                  className="py-5 bg-dia-green text-black text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="py-5 bg-dia-black text-dia-yellow text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-2xl">⚽</span>
                   <span>GOAL!</span>
@@ -266,7 +266,7 @@ export function MatchControls({
           <button
             onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
             disabled={isLoading}
-            className="w-full py-4 bg-dia-green text-black text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-dia-black text-dia-yellow text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Bezig..." : getResumeLabel()}
           </button>

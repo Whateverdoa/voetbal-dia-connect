@@ -4,6 +4,7 @@ import { buildEventGameTimeStamp, getEffectiveEventTime } from "./lib/matchEvent
 import { verifyCoachTeamMembership } from "./pinHelpers";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
+import { throwIfUnavailable } from "./lib/matchPlayerAvailability";
 
 function toMatchMs(gameSecond?: number): number | undefined {
   return gameSecond == null ? undefined : gameSecond * 1000;
@@ -154,9 +155,10 @@ export const confirmSubstitution = mutation({
     if (!mpOut.onField) {
       throw new Error("Wissel mislukt: speler die eruit gaat staat niet meer op het veld");
     }
-    if (mpIn.onField || mpIn.absent) {
+    if (mpIn.onField) {
       throw new Error("Wissel mislukt: speler die erin moet is niet beschikbaar op de bank");
     }
+    throwIfUnavailable(mpIn, "sub");
 
     const slotToTransfer = mpOut.fieldSlotIndex;
     const now = Date.now();

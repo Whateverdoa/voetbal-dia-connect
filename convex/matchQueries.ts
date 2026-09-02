@@ -99,6 +99,7 @@ export const getSuggestedSubstitutions = query({
           onField: mp.onField,
           isKeeper: mp.isKeeper,
           absent: mp.absent ?? false,
+          injured: mp.injured ?? false,
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,
         };
@@ -110,7 +111,7 @@ export const getSuggestedSubstitutions = query({
       .filter((p) => p.onField && !p.isKeeper)
       .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
     const onBench = validPlayers
-      .filter((p) => !p.onField && !p.absent)
+      .filter((p) => !p.onField && !p.absent && !p.injured)
       .sort((a, b) => a.minutesPlayed - b.minutesPlayed);
 
     function positionMatch(

@@ -9,6 +9,7 @@ import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
+import { PlanPitchMinuteBar } from "./plan/PlanPitchMinuteBar";
 import type { MatchPlayer } from "./types";
 
 interface ProjectedPitchPlannerProps {
@@ -20,13 +21,18 @@ interface ProjectedPitchPlannerProps {
   quarterlessPendingCount: number;
   canEdit: boolean;
   isBusy: boolean;
+  /** Override the pitch max-width; planscherm uses a wider value. */
+  pitchMaxWidthClass?: string;
+  seasonMinutesByPlayerId?: Map<string, number>;
   onCreatePlan: (
     playerOutId: Id<"players">,
-    playerInId: Id<"players">
+    playerInId: Id<"players">,
+    targetMinute?: number
   ) => Promise<boolean>;
   onCreatePositionSwap: (
     playerAId: Id<"players">,
-    playerBId: Id<"players">
+    playerBId: Id<"players">,
+    targetMinute?: number
   ) => Promise<boolean>;
 }
 
@@ -47,11 +53,14 @@ export function ProjectedPitchPlanner({
   quarterlessPendingCount,
   canEdit,
   isBusy,
+  pitchMaxWidthClass = "max-w-lg",
+  seasonMinutesByPlayerId,
   onCreatePlan,
   onCreatePositionSwap,
 }: ProjectedPitchPlannerProps) {
   const [selectedPlayerOutId, setSelectedPlayerOutId] =
     useState<Id<"players"> | null>(null);
+  const [minuteDraft, setMinuteDraft] = useState("");
   const cfg = formation.slots.length >= 11 ? FIELDS["11tal"] : FIELDS["8tal"];
   const onField = preview.projectedOnField;
   const onBench = preview.projectedBench;
@@ -92,6 +101,14 @@ export function ProjectedPitchPlanner({
     return `${label} geselecteerd - tik bankspeler voor wissel of veldspeler voor positiewissel`;
   };
 
+  const parsedMinute = (): number | undefined => {
+    const trimmed = minuteDraft.trim();
+    if (trimmed === "") return undefined;
+    const value = Number(trimmed);
+    if (!Number.isFinite(value) || value < 0) return undefined;
+    return value;
+  };
+
   const handleFieldPlayerClick = async (playerId: Id<"players">) => {
     if (!canEdit || isBusy) return;
     if (!effectiveSelectedPlayerOutId) {
@@ -104,7 +121,8 @@ export function ProjectedPitchPlanner({
     }
     const success = await onCreatePositionSwap(
       effectiveSelectedPlayerOutId,
-      playerId
+      playerId,
+      parsedMinute()
     );
     if (success) {
       setSelectedPlayerOutId(null);
@@ -113,7 +131,11 @@ export function ProjectedPitchPlanner({
 
   const handleBenchPlayerClick = async (playerId: Id<"players">) => {
     if (!canEdit || isBusy || !effectiveSelectedPlayerOutId) return;
-    const success = await onCreatePlan(effectiveSelectedPlayerOutId, playerId);
+    const success = await onCreatePlan(
+      effectiveSelectedPlayerOutId,
+      playerId,
+      parsedMinute()
+    );
     if (success) {
       setSelectedPlayerOutId(null);
     }
@@ -164,19 +186,17 @@ export function ProjectedPitchPlanner({
         </div>
       )}
 
-      <div className="h-5 flex items-center justify-center">
-        <span
-          className={`text-xs font-bold uppercase tracking-widest ${
-            selectedPlayerOutId ? "text-amber-500" : "text-slate-400"
-          }`}
-        >
-          {statusText()}
-        </span>
-      </div>
+      <PlanPitchMinuteBar
+        statusText={statusText()}
+        hasSelection={!!selectedPlayerOutId}
+        minuteDraft={minuteDraft}
+        onMinuteChange={setMinuteDraft}
+        canEdit={canEdit}
+      />
 
       <div className="w-full flex justify-center">
         <div
-          className="relative w-full max-w-lg overflow-hidden border rounded-sm shadow-md"
+          className={`relative w-full ${pitchMaxWidthClass} overflow-hidden border rounded-sm shadow-md`}
           style={{
             background: "#2d7a3a",
             borderColor: "#1e5c28",
@@ -220,6 +240,11 @@ export function ProjectedPitchPlanner({
                   (!player || effectiveSelectedPlayerOutId !== player.playerId)
                 }
                 isEmpty={!player}
+                seasonMinutes={
+                  player
+                    ? seasonMinutesByPlayerId?.get(String(player.playerId))
+                    : undefined
+                }
                 onClick={() => {
                   if (!player) return;
                   void handleFieldPlayerClick(player.playerId);
@@ -242,6 +267,7 @@ export function ProjectedPitchPlanner({
         }}
         onDeselect={() => setSelectedPlayerOutId(null)}
         nameLabel={nameLabel}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
       />
     </div>
   );

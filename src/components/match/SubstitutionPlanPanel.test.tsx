@@ -8,6 +8,34 @@ import { getFormation } from "@/lib/formations";
 import { SubstitutionPlanPanel } from "./SubstitutionPlanPanel";
 import type { MatchPlayer, SubstitutionPlanRow } from "./types";
 
+vi.mock("@/hooks/useSeasonMinutesMap", () => ({
+  useSeasonMinutesMap: () =>
+    new Map<string, number>([
+      ["a", 42],
+      ["b", 18],
+      ["gk", 90],
+    ]),
+}));
+
+const mockSetShowCardMinutes = vi.fn();
+
+vi.mock("@/hooks/useShowCardMinutes", () => ({
+  useShowCardMinutes: () => [true, mockSetShowCardMinutes],
+}));
+
+vi.mock("@/components/match/FormationSelector", () => ({
+  FormationSelector: () =>
+    require("react").createElement(
+      "label",
+      null,
+      "Formatie",
+      require("react").createElement("select", {
+        "aria-label": "Formatie",
+        defaultValue: "",
+      })
+    ),
+}));
+
 const mockUseMutation = vi.mocked(useMutation);
 
 beforeAll(() => {
@@ -30,6 +58,8 @@ describe("SubstitutionPlanPanel", () => {
   const mockSkipPlanItem = vi.fn().mockResolvedValue(undefined);
   const mockExecutePlanItem = vi.fn().mockResolvedValue(undefined);
   const mockRemovePlanItem = vi.fn().mockResolvedValue(undefined);
+  const mockClearPendingPlan = vi.fn().mockResolvedValue({ removed: 0 });
+  const mockUpdatePlanItem = vi.fn().mockResolvedValue(undefined);
 
   const players: MatchPlayer[] = [
     {
@@ -100,6 +130,7 @@ describe("SubstitutionPlanPanel", () => {
     return render(
       <SubstitutionPlanPanel
         matchId={matchId}
+        teamId={"team1" as Id<"teams">}
         status="lineup"
         quarterCount={4}
         plans={existingPlans}
@@ -125,6 +156,12 @@ describe("SubstitutionPlanPanel", () => {
       if (mutationId === api.substitutionPlans.skipPlanItem) return mockSkipPlanItem;
       if (mutationId === api.substitutionPlans.executePlanItem) return mockExecutePlanItem;
       if (mutationId === api.substitutionPlans.removePlanItem) return mockRemovePlanItem;
+      if (mutationId === api.substitutionPlans.clearPendingPlan) {
+        return mockClearPendingPlan;
+      }
+      if (mutationId === api.substitutionPlans.updatePlanItem) {
+        return mockUpdatePlanItem;
+      }
       return vi.fn().mockResolvedValue(undefined);
     });
   });
@@ -133,8 +170,20 @@ describe("SubstitutionPlanPanel", () => {
     renderPanel();
 
     const selects = screen.getAllByRole("combobox");
-    const outOptions = within(selects[0]).getAllByRole("option").map((option) => option.textContent);
-    const inOptions = within(selects[1]).getAllByRole("option").map((option) => option.textContent);
+    const outSelect = selects.find((el) =>
+      within(el).queryByRole("option", { name: "Eruit (veld)" })
+    );
+    const inSelect = selects.find((el) =>
+      within(el).queryByRole("option", { name: "Erin (bank)" })
+    );
+    expect(outSelect).toBeTruthy();
+    expect(inSelect).toBeTruthy();
+    const outOptions = within(outSelect!)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    const inOptions = within(inSelect!)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
 
     expect(outOptions).toContain("Henk");
     expect(outOptions).toContain("Piet");
@@ -144,12 +193,22 @@ describe("SubstitutionPlanPanel", () => {
     expect(inOptions).not.toContain("Henk");
   });
 
+  it("shows the minutes toggle and season minutes on plan-field cards", () => {
+    renderPanel();
+
+    expect(screen.getByLabelText("Minuten op kaart")).toBeInTheDocument();
+    expect(screen.getByLabelText("Formatie")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Planweergave"));
+    expect(screen.getByText("18′")).toBeInTheDocument();
+    expect(screen.getByText("90′")).toBeInTheDocument();
+  });
+
   it("disables field mode when no formation is available", () => {
     renderPanel({ resolvedFormation: undefined });
 
     expect(screen.getByText("Planweergave")).toBeDisabled();
     expect(
-      screen.getByText(/Kies eerst een formatie om Planweergave op het veld te gebruiken/)
+      screen.getByText(/Kies hierboven een formatie om Planweergave/)
     ).toBeInTheDocument();
   });
 
@@ -211,12 +270,40 @@ describe("SubstitutionPlanPanel", () => {
     });
   });
 
+  it("creates a field plan with a typed minute", async () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByText("Planweergave"));
+    fireEvent.change(screen.getByLabelText("Min"), {
+      target: { value: "14" },
+    });
+    fireEvent.click(screen.getByText("Piet 7"));
+    fireEvent.click(screen.getByText("JAN"));
+
+    await waitFor(() => {
+      expect(mockAddPlanItem).toHaveBeenCalledWith({
+        matchId,
+        playerOutId: "b",
+        playerInId: "a",
+        targetQuarter: 1,
+        targetMinute: 14,
+        insertAtQuarterBoundary: false,
+      });
+    });
+  });
+
   it("omits empty optional values when adding a row from list mode", async () => {
     renderPanel();
 
     const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0], { target: { value: "b" } });
-    fireEvent.change(selects[1], { target: { value: "d" } });
+    const outSelect = selects.find((el) =>
+      within(el).queryByRole("option", { name: "Eruit (veld)" })
+    );
+    const inSelect = selects.find((el) =>
+      within(el).queryByRole("option", { name: "Erin (bank)" })
+    );
+    fireEvent.change(outSelect!, { target: { value: "b" } });
+    fireEvent.change(inSelect!, { target: { value: "d" } });
     fireEvent.click(screen.getByRole("button", { name: "Toevoegen aan plan" }));
 
     await waitFor(() => {

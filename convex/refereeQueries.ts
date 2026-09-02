@@ -9,6 +9,7 @@ import {
 import { ADMIN_DISPLAY_NAME, hasAdminRole } from "./lib/adminOverride";
 import { listSeasonMatchesForAdminView } from "./lib/adminLiveView";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
+import { isUnavailable } from "./lib/matchPlayerAvailability";
 
 const REFEREE_STATUS_ORDER: Record<string, number> = {
   live: 0,
@@ -46,7 +47,7 @@ export const getForReferee = query({
 
       const diaPlayers = await Promise.all(
         matchPlayers
-          .filter((matchPlayer) => !matchPlayer.absent)
+          .filter((matchPlayer) => !isUnavailable(matchPlayer))
           .map(async (matchPlayer) => {
             const player = await ctx.db.get(matchPlayer.playerId);
             return {

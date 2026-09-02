@@ -68,11 +68,11 @@ export function ScoreDisplay({
   const quarterLabel = getQuarterLabel();
 
   return (
-    <div className="bg-dia-green text-black p-4 sm:p-6">
+    <div className="bg-dia-black text-dia-yellow p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Top row: public code and status */}
         <div className="flex items-center justify-between mb-4">
-          <span className="font-mono text-sm bg-white/20 px-2 py-1 rounded">
+          <span className="font-mono text-sm bg-dia-yellow/15 text-dia-yellow px-2 py-1 rounded">
             {publicCode}
           </span>
           <StatusBadge status={status} size="md" />
@@ -80,7 +80,7 @@ export function ScoreDisplay({
 
         {scheduledAt != null && (
           <p
-            className={`text-center text-sm text-white/90 tabular-nums ${
+            className={`text-center text-sm text-dia-yellow/80 tabular-nums ${
               isHome && venueField ? "mb-1" : "mb-3"
             }`}
           >
@@ -90,7 +90,7 @@ export function ScoreDisplay({
           </p>
         )}
         {isHome && venueField ? (
-          <p className="text-center text-sm text-white/85 mb-3">{venueField}</p>
+          <p className="text-center text-sm text-dia-yellow/75 mb-3">{venueField}</p>
         ) : null}
 
         {/* Score - HUGE and centered */}
@@ -124,7 +124,7 @@ export function ScoreDisplay({
               logoUrl={homeLogoUrl ?? null}
               teamName={isHome ? teamName : opponent}
               size="md"
-              className="ring-2 ring-white/30"
+              className="ring-2 ring-dia-yellow/40"
             />
             <p className="font-medium truncate w-full">{isHome ? teamName : opponent}</p>
             <p className="text-xs opacity-75">Thuis</p>
@@ -135,7 +135,7 @@ export function ScoreDisplay({
               logoUrl={awayLogoUrl ?? null}
               teamName={isHome ? opponent : teamName}
               size="md"
-              className="ring-2 ring-white/30"
+              className="ring-2 ring-dia-yellow/40"
             />
             <p className="font-medium truncate w-full">{isHome ? opponent : teamName}</p>
             <p className="text-xs opacity-75">Uit</p>

@@ -8,6 +8,7 @@ import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
 } from "./matchEventGameTime";
+import { throwIfUnavailable } from "./matchPlayerAvailability";
 
 export async function applyBenchSubstitutionWithSlotTransfer(
   ctx: MutationCtx,
@@ -51,9 +52,7 @@ export async function applyBenchSubstitutionWithSlotTransfer(
   if (mpIn.onField) {
     throw new Error("Speler die erin gaat moet op de bank staan");
   }
-  if (mpIn.absent) {
-    throw new Error("Afwezige speler kan niet worden ingewisseld");
-  }
+  throwIfUnavailable(mpIn, "sub");
 
   const slotToTransfer = mpOut.fieldSlotIndex;
 

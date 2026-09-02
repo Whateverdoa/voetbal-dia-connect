@@ -220,6 +220,7 @@ export const getForCoach = query({
           onField: mp.onField,
           isKeeper: mp.isKeeper,
           absent: mp.absent ?? false,
+          injured: mp.injured ?? false,
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,

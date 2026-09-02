@@ -105,7 +105,7 @@ export function FormationSelector({
           className={
             isDark
               ? "text-sm font-medium text-dia-yellow border border-dia-yellow rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
-              : "text-sm font-medium text-dia-black border border-dia-green rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
+              : "text-sm font-medium text-dia-yellow bg-dia-black border border-dia-black rounded-lg px-3 py-2 min-h-[44px] whitespace-nowrap"
           }
         >
           + Eigen formatie
@@ -116,14 +116,14 @@ export function FormationSelector({
           <button
             type="button"
             onClick={() => onLineupViewChange("veld")}
-            className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
+            className={`px-3 py-2 text-sm font-medium ${lineupView === "veld" ? "bg-dia-black text-dia-yellow" : "bg-gray-100 text-gray-700"}`}
           >
             Veld
           </button>
           <button
             type="button"
             onClick={() => onLineupViewChange("lijst")}
-            className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-green text-black" : "bg-gray-100 text-gray-700"}`}
+            className={`px-3 py-2 text-sm font-medium ${lineupView === "lijst" ? "bg-dia-black text-dia-yellow" : "bg-gray-100 text-gray-700"}`}
           >
             Lijst
           </button>

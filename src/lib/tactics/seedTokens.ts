@@ -2,6 +2,7 @@ export type SeedPlayer = {
   playerId: string;
   onField: boolean;
   absent: boolean;
+  injured?: boolean;
   fieldSlotIndex: number | null;
 };
 
@@ -25,7 +26,7 @@ export function seedTacticTokens(
   const tokens: SeedToken[] = [];
 
   for (const player of players) {
-    if (player.absent) continue;
+    if (player.absent || player.injured) continue;
     if (player.onField) {
       const slot =
         player.fieldSlotIndex != null

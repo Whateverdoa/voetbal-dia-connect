@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { TeamRosterEditor } from "@/components/coach/TeamRosterEditor";
+import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 
 export default function CoachTeamRosterPage() {
   const params = useParams();
@@ -56,16 +57,24 @@ export default function CoachTeamRosterPage() {
           </Link>
           <div>
             <h1 className="text-lg font-bold">{setup.team.name}</h1>
-            <p className="text-sm text-white/80">Rugnummer &amp; positie</p>
+            <p className="text-sm text-white/80">Selectie &amp; speelminuten</p>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
-        <p className="text-sm text-gray-600 mb-4">
-          Pas rugnummers en posities aan voor je selectie. Namen en actief/inactief blijven bij de admin.
-        </p>
-        <TeamRosterEditor players={setup.players} />
+      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
+        <TeamSeasonMinutesPanel teamId={teamId} />
+
+        <div>
+          <h2 className="font-bold text-lg text-gray-900 mb-1">
+            Rugnummer &amp; positie
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Pas rugnummers en posities aan voor je selectie. Namen en
+            actief/inactief blijven bij de admin.
+          </p>
+          <TeamRosterEditor players={setup.players} />
+        </div>
       </div>
     </main>
   );

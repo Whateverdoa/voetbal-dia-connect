@@ -136,6 +136,7 @@ export const getMatchPresentation = query({
           fieldSlotIndex: v.union(v.number(), v.null()),
           isKeeper: v.boolean(),
           absent: v.boolean(),
+          injured: v.boolean(),
         })
       ),
       substitutionPlans: v.array(presentationPlanValidator),
@@ -186,6 +187,7 @@ export const getMatchPresentation = query({
         fieldSlotIndex: mp.fieldSlotIndex ?? null,
         isKeeper: mp.isKeeper,
         absent: mp.absent ?? false,
+        injured: mp.injured ?? false,
       });
     }
 

@@ -32,7 +32,7 @@ export const helpCoachPage: HelpPageDef = {
       bullets: [
         "Open de wedstrijd ruim van tevoren, het liefst vanaf de zijlijn op je telefoon.",
         "Controleer datum, thuis/uit en speeltijd (bijvoorbeeld 4×15 of 2×30) onder de wedstrijdgegevens.",
-        "Zet de opstelling: wie staat op het veld, wie op de bank, wie is afwezig.",
+        "Zet de opstelling: wie staat op het veld, wie op de bank, wie is afwezig of geblesseerd.",
         "Je kunt kiezen tussen lijst en veldweergave, en een formatie kiezen. Dezelfde formatiekeuze staat ook op de kleedkamer-presentatie (niet in kiosk/TV).",
         "Zet Opstelling tonen aan als ouders de opstelling op de live-pagina mogen zien.",
         "Wijs een scheidsrechter toe als de club dat nog niet heeft gedaan.",

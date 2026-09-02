@@ -33,6 +33,22 @@ describe("seedTacticTokens", () => {
     );
     expect(tokens).toEqual([]);
   });
+
+  it("skips injured players", () => {
+    const tokens = seedTacticTokens(
+      [
+        {
+          playerId: "a",
+          onField: false,
+          absent: false,
+          injured: true,
+          fieldSlotIndex: null,
+        },
+      ],
+      []
+    );
+    expect(tokens).toEqual([]);
+  });
 });
 
 describe("clampPercent", () => {

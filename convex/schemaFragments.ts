@@ -88,3 +88,35 @@ export const tacticBoardsTable = defineTable({
   ),
   updatedAt: v.number(),
 }).index("by_match", ["matchId"]);
+
+/** One row of a bond poule standing, as published by Sportlink. */
+export const standingRowValidator = v.object({
+  position: v.number(),
+  teamName: v.string(),
+  clubLogoUrl: v.optional(v.string()),
+  played: v.number(),
+  won: v.number(),
+  drawn: v.number(),
+  lost: v.number(),
+  goalsFor: v.number(),
+  goalsAgainst: v.number(),
+  goalDifference: v.number(),
+  points: v.number(),
+  /** Sportlink marks every team of our own club, which may be more than one. */
+  isOwnClub: v.boolean(),
+});
+
+/**
+ * Cached bond standing per own team. One document per team slug, refreshed by
+ * the Sportlink cron; a poule holds at most ~16 teams so the rows live inline.
+ */
+export const standingsTable = defineTable({
+  teamSlug: v.string(),
+  poulecode: v.string(),
+  competitionName: v.string(),
+  klassepoule: v.string(),
+  /** Bond team name ("DIA O13-2JM"), used to highlight the exact row. */
+  sportlinkTeamName: v.string(),
+  rows: v.array(standingRowValidator),
+  fetchedAt: v.number(),
+}).index("by_team_slug", ["teamSlug"]);

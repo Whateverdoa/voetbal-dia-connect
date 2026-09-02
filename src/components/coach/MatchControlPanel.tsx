@@ -26,7 +26,11 @@ import { resolveLogoUrl } from "@/lib/logos";
 import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
-type ViewTab = "opstelling" | "wisselplan" | "speeltijd";
+import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
+import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
+import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
+import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
+type ViewTab = "opstelling" | "wisselplan" | "speeltijd" | "seizoen";
 type LineupView = "veld" | "lijst";
 
 interface MatchControlPanelProps {
@@ -40,6 +44,9 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
   const [lineupView, setLineupView] = useState<LineupView>("lijst");
   const [isConnected, setIsConnected] = useState(true);
   const lastUpdateRef = useRef(0);
+  const seasonMinutesByPlayerId = useSeasonMinutesMap(match.teamId);
+  const [showCardMinutes, setShowCardMinutes] = useShowCardMinutes();
+  const cardMinutes = showCardMinutes ? seasonMinutesByPlayerId : undefined;
 
   useEffect(() => {
     lastUpdateRef.current = Date.now();
@@ -61,10 +68,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
   const playersOnField = match.players.filter((p) => p.onField);
   const playersOnBench = match.players.filter(
-    (p) => !p.onField && !(p.absent ?? false)
+    (p) => !p.onField && !(p.absent ?? false) && !(p.injured ?? false)
   );
   const playersAbsent = match.players.filter(
-    (p) => !p.onField && (p.absent ?? false)
+    (p) => !p.onField && (p.absent ?? false) && !(p.injured ?? false)
+  );
+  const playersInjured = match.players.filter(
+    (p) => !p.onField && (p.injured ?? false)
   );
 
   const resolvedFormation = resolveMatchFormation(
@@ -92,7 +102,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
-      <nav className="bg-dia-green-dark text-white px-4 py-2 sticky top-0 z-20">
+      <nav className="bg-dia-yellow text-dia-black px-4 py-2 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Link
@@ -108,16 +118,16 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               Live view
             </Link>
             <Link
-              href={`/present/match/${match.publicCode}/kleedkamer?view=wisselplan`}
+              href={`/coach/match/${match._id}/wisselplan`}
               className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
             >
-              Wisselplan
+              Planscherm
             </Link>
             <Link
-              href={`/present/match/${match.publicCode}/kleedkamer`}
+              href={`/present/match/${match.publicCode}/kleedkamer?tab=opstelling`}
               className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
             >
-              Kleedkamer
+              Opstelling
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -208,6 +218,12 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
             icon="🔁"
             label="Wisselplan"
           />
+          <TabButton
+            active={activeTab === "seizoen"}
+            onClick={() => setActiveTab("seizoen")}
+            icon="📊"
+            label="Seizoen"
+          />
         </div>
 
         {activeTab === "opstelling" && (
@@ -226,6 +242,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               onLineupViewChange={setLineupView}
               canEdit={canEditLineup}
             />
+            <CardMinutesToggle
+              enabled={showCardMinutes}
+              onChange={setShowCardMinutes}
+            />
 
             {lineupView === "veld" ? (
               <PitchView
@@ -236,6 +256,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
                 customFormationKind={match.customFormationTemplate?.kind}
                 status={match.status}
                 canEdit={canEditLineup}
+                seasonMinutesByPlayerId={cardMinutes}
               />
             ) : (
               <PlayerList
@@ -243,8 +264,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
                 playersOnField={playersOnField}
                 playersOnBench={playersOnBench}
                 playersAbsent={playersAbsent}
+                playersInjured={playersInjured}
                 canEdit={canEditLineup}
-                canToggleAbsent={isPregame}
+                canToggleAvailability={isPregame}
+                seasonMinutesByPlayerId={cardMinutes}
               />
             )}
             <EventTimeline
@@ -264,21 +287,34 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
         {activeTab === "wisselplan" && (
           <>
+            <Link
+              href={`/coach/match/${match._id}/wisselplan`}
+              className="flex min-h-[48px] items-center justify-center rounded-xl bg-dia-yellow px-4 py-3 text-sm font-semibold text-dia-black"
+            >
+              Plannen op groot scherm
+            </Link>
             <StagedSubstitutionsPanel
               matchId={match._id}
               stagedSubstitutions={match.stagedSubstitutions ?? []}
             />
             <SubstitutionPlanPanel
               matchId={match._id}
+              teamId={match.teamId}
               status={match.status}
               quarterCount={match.quarterCount}
               plans={match.substitutionPlans ?? []}
               players={match.players}
+              formationId={match.formationId ?? undefined}
+              customFormationTemplateId={match.customFormationTemplate?._id}
               resolvedFormation={resolvedFormation}
               canEditPlan={canEditLineup}
               canExecute={canDoSubstitutions}
             />
           </>
+        )}
+
+        {activeTab === "seizoen" && (
+          <TeamSeasonMinutesPanel teamId={match.teamId} />
         )}
 
         {activeTab === "speeltijd" && (

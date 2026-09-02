@@ -16,7 +16,7 @@ export default function PresentTeamPage() {
   const slug = String(params.slug ?? "");
   const kiosk = search.get("kiosk") === "1";
   const pinnedCode = search.get("code")?.trim().toUpperCase() ?? "";
-  const initialTab = parseStudioTab(search.get("tab"), "kleedkamer");
+  const initialTab = parseStudioTab(search.get("tab"), "kaarten");
 
   const team = useQuery(api.presentationQueries.getTeamPresentation, {
     teamSlug: slug,

@@ -8,10 +8,18 @@ const PITCH_STYLE = {
   borderColor: "#1e5c28",
 } as const;
 
+/** Half-pitch 3D sits on dark chrome; flat grass here would show as a letterbox halo. */
+const HALF_PITCH_FRAME_STYLE = {
+  background: "transparent",
+  borderColor: "transparent",
+} as const;
+
 interface PitchFitFrameProps {
   aspectW: number;
   aspectH: number;
   fill?: boolean;
+  /** Allow children to paint outside the box (e.g. 3D-lifted half-pitch cards). */
+  allowOverflow?: boolean;
   pitchRef?: Ref<HTMLDivElement>;
   onWidth?: (width: number) => void;
   children: ReactNode;
@@ -22,14 +30,21 @@ export function PitchFitFrame({
   aspectW,
   aspectH,
   fill = false,
+  allowOverflow = false,
   pitchRef,
   onWidth,
   children,
 }: PitchFitFrameProps) {
+  const overflowClass = allowOverflow ? "overflow-visible" : "overflow-hidden";
+  const frameStyle = allowOverflow ? HALF_PITCH_FRAME_STYLE : PITCH_STYLE;
+  const borderClass = allowOverflow ? "border-0" : "border-2";
   const hostRef = useRef<HTMLDivElement>(null);
   const onWidthRef = useRef(onWidth);
-  onWidthRef.current = onWidth;
   const [box, setBox] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    onWidthRef.current = onWidth;
+  }, [onWidth]);
 
   useEffect(() => {
     if (!fill) return;
@@ -51,8 +66,8 @@ export function PitchFitFrame({
       <div className="w-full flex justify-center">
         <div
           ref={pitchRef}
-          className="relative w-full max-w-4xl touch-none overflow-hidden border-2 rounded-md shadow-2xl"
-          style={{ ...PITCH_STYLE, aspectRatio: `${aspectW} / ${aspectH}` }}
+          className={`relative w-full max-w-4xl touch-none ${overflowClass} ${borderClass} rounded-md shadow-2xl`}
+          style={{ ...frameStyle, aspectRatio: `${aspectW} / ${aspectH}` }}
         >
           {children}
         </div>
@@ -67,12 +82,13 @@ export function PitchFitFrame({
     >
       <div
         ref={pitchRef}
-        className="relative touch-none overflow-hidden border-2 rounded-md shadow-2xl"
+        className={`relative touch-none ${overflowClass} ${borderClass} rounded-md shadow-2xl`}
         style={{
-          ...PITCH_STYLE,
+          ...frameStyle,
           aspectRatio: `${aspectW} / ${aspectH}`,
           width: box.width > 0 ? box.width : "min(100%, 56rem)",
           height: box.height > 0 ? box.height : undefined,
+          maxHeight: "100%",
         }}
       >
         {children}

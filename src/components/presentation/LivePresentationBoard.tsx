@@ -3,6 +3,7 @@
 import { PresentationPitchView } from "@/components/presentation/PresentationPitchView";
 import { getFormation } from "@/lib/formations";
 import { MatchClock } from "@/components/match/MatchClock";
+import type { PitchLayout } from "@/lib/halfPitchLayout";
 
 type PresentPlayer = {
   playerId: string;
@@ -13,6 +14,7 @@ type PresentPlayer = {
   photoUrl?: string | null;
   isKeeper: boolean;
   absent: boolean;
+  injured?: boolean;
 };
 
 interface LivePresentationBoardProps {
@@ -30,6 +32,8 @@ interface LivePresentationBoardProps {
   accumulatedPauseTime: number | null;
   frozenClockMs: number | null;
   players: PresentPlayer[];
+  /** Full pitch or own-half perspective, same choice as the kleedkamer board. */
+  pitchLayout?: PitchLayout;
 }
 
 export function LivePresentationBoard({
@@ -47,6 +51,7 @@ export function LivePresentationBoard({
   accumulatedPauseTime,
   frozenClockMs,
   players,
+  pitchLayout = "full",
 }: LivePresentationBoardProps) {
   const formation = getFormation(formationId ?? undefined);
   const homeLabel = isHome ? teamName : opponent;
@@ -99,10 +104,12 @@ export function LivePresentationBoard({
 
       <div className="flex-1 min-h-0">
         <PresentationPitchView
-          players={players.filter((p) => !p.absent)}
+          players={players.filter((p) => !p.absent && !p.injured)}
           formationId={formationId ?? undefined}
           resolvedFormation={formation}
           fill
+          orientation="landscape"
+          pitchLayout={pitchLayout}
         />
       </div>
     </div>

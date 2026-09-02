@@ -5,12 +5,15 @@ import { useParams, useSearchParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
 import { LivePresentationBoard } from "@/components/presentation/LivePresentationBoard";
+import { PitchLayoutToggle } from "@/components/presentation/PitchLayoutToggle";
+import { usePitchLayout } from "@/hooks/usePitchLayout";
 
 export default function PresentMatchPage() {
   const params = useParams();
   const search = useSearchParams();
   const code = String(params.code ?? "").toUpperCase();
   const kiosk = search.get("kiosk") === "1";
+  const [pitchLayout, setPitchLayout] = usePitchLayout();
 
   const match = useQuery(api.presentationQueries.getMatchPresentation, {
     publicCode: code,
@@ -37,6 +40,9 @@ export default function PresentMatchPage() {
       title={`${match.teamName} vs ${match.opponent}`}
       subtitle={`Code ${match.publicCode}`}
       kiosk={kiosk}
+      actions={
+        <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
+      }
     >
       <LivePresentationBoard
         teamName={match.teamName}
@@ -53,6 +59,7 @@ export default function PresentMatchPage() {
         accumulatedPauseTime={match.accumulatedPauseTime}
         frozenClockMs={match.frozenClockMs}
         players={match.players}
+        pitchLayout={pitchLayout}
       />
     </PresentationShell>
   );

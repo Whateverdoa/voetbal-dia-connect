@@ -25,6 +25,7 @@ export type HalfPitchPlayer = {
   onField: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
+  seasonMinutes?: number;
 };
 
 interface HalfPitchPerspectiveProps {
@@ -34,6 +35,7 @@ interface HalfPitchPerspectiveProps {
   fill?: boolean;
   selectedPlayerId?: string | null;
   canEdit?: boolean;
+  sizeMode?: CardSizeMode;
   onPlayerClick?: (playerId: string) => void;
 }
 
@@ -48,13 +50,15 @@ export function HalfPitchPerspective({
   fill = false,
   selectedPlayerId = null,
   canEdit = false,
+  sizeMode: sizeModeProp,
   onPlayerClick,
 }: HalfPitchPerspectiveProps) {
   const [pitchWidth, setPitchWidth] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageHeight, setStageHeight] = useState(0);
   const sizeMode: CardSizeMode =
-    fill && pitchWidth > 0 && pitchWidth < 720 ? "auto" : "presentation";
+    sizeModeProp ??
+    (fill && pitchWidth > 0 && pitchWidth < 720 ? "auto" : "presentation");
 
   useEffect(() => {
     const el = stageRef.current;
@@ -145,6 +149,7 @@ export function HalfPitchPerspective({
                 isSelected={isSelected}
                 isDimmed={isDimmed}
                 isEmpty={!player}
+                seasonMinutes={player?.seasonMinutes}
                 onClick={() => {
                   if (!player || !canEdit || !onPlayerClick) return;
                   onPlayerClick(player.playerId);

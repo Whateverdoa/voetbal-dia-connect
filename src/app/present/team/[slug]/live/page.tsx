@@ -6,7 +6,9 @@ import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
 import { LivePresentationBoard } from "@/components/presentation/LivePresentationBoard";
 import { PitchLayoutToggle } from "@/components/presentation/PitchLayoutToggle";
+import { UnavailablePresentationSurface } from "@/components/presentation/UnavailablePresentationSurface";
 import { usePitchLayout } from "@/hooks/usePitchLayout";
+import { SHOW_KANTINE } from "@/lib/presentation/surfaces";
 
 export default function PresentTeamLivePage() {
   const params = useParams();
@@ -15,14 +17,24 @@ export default function PresentTeamLivePage() {
   const kiosk = search.get("kiosk") === "1";
   const [pitchLayout, setPitchLayout] = usePitchLayout();
 
-  const team = useQuery(api.presentationQueries.getTeamPresentation, {
-    teamSlug: slug,
-  });
+  const team = useQuery(
+    api.presentationQueries.getTeamPresentation,
+    SHOW_KANTINE ? { teamSlug: slug } : "skip"
+  );
   const matchCode = team?.liveMatch?.publicCode;
   const match = useQuery(
     api.presentationQueries.getMatchPresentation,
-    matchCode ? { publicCode: matchCode } : "skip"
+    SHOW_KANTINE && matchCode ? { publicCode: matchCode } : "skip"
   );
+
+  if (!SHOW_KANTINE) {
+    return (
+      <UnavailablePresentationSurface
+        title="Kantine"
+        body="Kantine-weergave is tijdelijk uitgeschakeld."
+      />
+    );
+  }
 
   if (team === undefined || (matchCode && match === undefined)) {
     return (

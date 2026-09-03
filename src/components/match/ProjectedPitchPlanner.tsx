@@ -4,11 +4,10 @@ import { useMemo, useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { FIELDS } from "@/lib/fieldConfig";
+import type { PitchLayout } from "@/lib/halfPitchLayout";
 import type { QuarterPreviewProjection } from "@/lib/substitutions/projectSubstitutionPlan";
-import { FieldLines } from "./FieldLines";
-import { FormationLines } from "./FormationLines";
-import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
+import { ProjectedPlannerPitch } from "./ProjectedPlannerPitch";
 import { PlanPitchMinuteBar } from "./plan/PlanPitchMinuteBar";
 import type { MatchPlayer } from "./types";
 
@@ -23,6 +22,7 @@ interface ProjectedPitchPlannerProps {
   isBusy: boolean;
   /** Override the pitch max-width; planscherm uses a wider value. */
   pitchMaxWidthClass?: string;
+  pitchLayout?: PitchLayout;
   seasonMinutesByPlayerId?: Map<string, number>;
   onCreatePlan: (
     playerOutId: Id<"players">,
@@ -54,6 +54,7 @@ export function ProjectedPitchPlanner({
   canEdit,
   isBusy,
   pitchMaxWidthClass = "max-w-lg",
+  pitchLayout = "full",
   seasonMinutesByPlayerId,
   onCreatePlan,
   onCreatePositionSwap,
@@ -78,9 +79,6 @@ export function ProjectedPitchPlanner({
     onField.some((player) => player.playerId === selectedPlayerOutId)
       ? selectedPlayerOutId
       : null;
-
-  const playerInSlot = (slotId: number): MatchPlayer | undefined =>
-    onField.find((player) => Number(player.fieldSlotIndex) === Number(slotId));
 
   const findPlayer = (playerId: Id<"players">): MatchPlayer | undefined =>
     [...onField, ...onBench].find((player) => player.playerId === playerId);
@@ -194,66 +192,19 @@ export function ProjectedPitchPlanner({
         canEdit={canEdit}
       />
 
-      <div className="w-full flex justify-center">
-        <div
-          className={`relative w-full ${pitchMaxWidthClass} overflow-hidden border rounded-sm shadow-md`}
-          style={{
-            background: "#2d7a3a",
-            borderColor: "#1e5c28",
-            aspectRatio: `${cfg.w} / ${cfg.h}`,
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.5) 20px, rgba(255,255,255,0.5) 21px)",
-            }}
-          />
-
-          <FieldLines cfg={cfg} />
-          <FormationLines slots={formation.slots} links={formation.links} />
-
-          {formation.slots.map((slot) => {
-            const player = playerInSlot(slot.id);
-
-            return (
-              <FieldPlayerCard
-                key={slot.id}
-                name={player?.name ?? ""}
-                number={player?.number}
-                position={slot.position}
-                x={slot.x}
-                y={slot.y}
-                isSelected={
-                  player ? effectiveSelectedPlayerOutId === player.playerId : false
-                }
-                isDimmed={
-                  effectiveSelectedPlayerOutId !== null &&
-                  (!player || effectiveSelectedPlayerOutId !== player.playerId)
-                }
-                isEmpty={!player}
-                seasonMinutes={
-                  player
-                    ? seasonMinutesByPlayerId?.get(String(player.playerId))
-                    : undefined
-                }
-                onClick={() => {
-                  if (!player) return;
-                  void handleFieldPlayerClick(player.playerId);
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      <ProjectedPlannerPitch
+        pitchLayout={pitchLayout}
+        formation={formation}
+        cfg={cfg}
+        onField={onField}
+        selectedPlayerId={effectiveSelectedPlayerOutId}
+        canEdit={canEdit}
+        pitchMaxWidthClass={pitchMaxWidthClass}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+        onFieldPlayerClick={(playerId) => {
+          void handleFieldPlayerClick(playerId);
+        }}
+      />
 
       <PitchBench
         onBench={onBench}

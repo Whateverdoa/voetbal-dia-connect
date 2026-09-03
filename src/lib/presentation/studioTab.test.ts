@@ -7,13 +7,13 @@ describe("parseStudioTab", () => {
     expect(parseStudioTab("kleedkamer", "kaarten")).toBe("kleedkamer");
   });
 
-  it("keeps kaarten and tactiek", () => {
-    expect(parseStudioTab("kaarten", "kleedkamer")).toBe("kaarten");
+  it("keeps tactiek and remaps hidden spelerskaarten to opstelling", () => {
+    expect(parseStudioTab("kaarten", "kleedkamer")).toBe("kleedkamer");
     expect(parseStudioTab("tactiek", "kaarten")).toBe("tactiek");
   });
 
   it("falls back for unknown or missing values", () => {
-    expect(parseStudioTab(null, "kaarten")).toBe("kaarten");
+    expect(parseStudioTab(null, "kaarten")).toBe("kleedkamer");
     expect(parseStudioTab("wisselplan", "kleedkamer")).toBe("kleedkamer");
   });
 });

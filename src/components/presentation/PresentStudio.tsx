@@ -18,6 +18,10 @@ import {
   studioTabToUrlParam,
   type StudioTab,
 } from "@/lib/presentation/studioTab";
+import {
+  SHOW_KANTINE,
+  SHOW_SPELERSKAARTEN,
+} from "@/lib/presentation/surfaces";
 
 export type { StudioTab };
 export { parseStudioTab, studioTabToUrlParam };
@@ -39,7 +43,7 @@ export function PresentStudio({
   match,
   deck,
   kiosk = false,
-  initialTab = "kaarten",
+  initialTab = "kleedkamer",
 }: PresentStudioProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -64,9 +68,14 @@ export function PresentStudio({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="shrink-0 flex flex-wrap gap-2 mb-4">
-        <TabButton active={tab === "kaarten"} onClick={() => setTab("kaarten")}>
-          Spelerskaarten
-        </TabButton>
+        {SHOW_SPELERSKAARTEN ? (
+          <TabButton
+            active={tab === "kaarten"}
+            onClick={() => setTab("kaarten")}
+          >
+            Spelerskaarten
+          </TabButton>
+        ) : null}
         <TabButton
           active={tab === "kleedkamer"}
           onClick={() => setTab("kleedkamer")}
@@ -90,21 +99,23 @@ export function PresentStudio({
             >
               Planscherm
             </Link>
-            <Link
-              href={`/present/match/${match.publicCode}${q}`}
-              className="px-4 py-2 rounded-lg bg-dia-black text-dia-yellow ring-2 ring-dia-yellow font-semibold min-h-[48px] flex items-center"
-            >
-              Kantine live →
-            </Link>
+            {SHOW_KANTINE ? (
+              <Link
+                href={`/present/match/${match.publicCode}${q}`}
+                className="px-4 py-2 rounded-lg bg-dia-black text-dia-yellow ring-2 ring-dia-yellow font-semibold min-h-[48px] flex items-center"
+              >
+                Kantine live →
+              </Link>
+            ) : null}
           </div>
-        ) : (
+        ) : SHOW_KANTINE ? (
           <Link
             href={`/present/match/${match.publicCode}${q}`}
             className="ml-auto px-4 py-2 rounded-lg bg-dia-black text-dia-yellow ring-2 ring-dia-yellow font-semibold min-h-[48px] flex items-center"
           >
             Kantine live →
           </Link>
-        )}
+        ) : null}
       </div>
 
       <div
@@ -127,7 +138,7 @@ export function PresentStudio({
           <PresentTacticsBoard match={match} kiosk={kiosk} />
         ) : null}
 
-        {tab === "kaarten" ? (
+        {SHOW_SPELERSKAARTEN && tab === "kaarten" ? (
           match.isSelectionTeam ? (
             <div className="space-y-3">
               {canEdit ? (

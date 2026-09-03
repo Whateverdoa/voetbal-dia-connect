@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { projectSubstitutionPlan } from "@/lib/substitutions/projectSubstitutionPlan";
+import type { PitchLayout } from "@/lib/halfPitchLayout";
 import { useSubstitutionPlanActions } from "@/hooks/useSubstitutionPlanActions";
 import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
 import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
@@ -12,6 +13,7 @@ import { ProjectedPitchPlanner } from "@/components/match/ProjectedPitchPlanner"
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
 import { FormationSelector } from "@/components/match/FormationSelector";
+import { PitchLayoutToggle } from "@/components/presentation/PitchLayoutToggle";
 import { PlanAddForm } from "@/components/match/plan/PlanAddForm";
 import { PlanBenchSummary } from "@/components/match/plan/PlanBenchSummary";
 import { PlanRowList } from "@/components/match/plan/PlanRowList";
@@ -64,6 +66,8 @@ export function SubstitutionPlanner({
   const cardMinutes = showCardMinutes ? seasonMinutesByPlayerId : undefined;
   const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [rightTab, setRightTab] = useState<"plan" | "seizoen">("plan");
+  const [pitchLayout, setPitchLayout] =
+    useState<PitchLayout>("halfPerspective");
 
   useEffect(() => {
     if (selectedQuarter > quarterCount) {
@@ -136,6 +140,7 @@ export function SubstitutionPlanner({
             enabled={showCardMinutes}
             onChange={setShowCardMinutes}
           />
+          <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
         </div>
       </header>
 
@@ -166,6 +171,7 @@ export function SubstitutionPlanner({
               canEdit={canEditPlan}
               isBusy={fieldBusy}
               pitchMaxWidthClass="max-w-3xl"
+              pitchLayout={pitchLayout}
               seasonMinutesByPlayerId={cardMinutes}
           onCreatePlan={(outId, inId, minute) =>
             actions.addSubstitution(outId, inId, selectedQuarter, minute)

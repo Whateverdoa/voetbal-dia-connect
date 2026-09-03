@@ -10,7 +10,7 @@ function player(
   name: string,
   onField: boolean,
   fieldSlotIndex?: number,
-  absent?: boolean
+  options?: { absent?: boolean; injured?: boolean }
 ): MatchPlayer {
   return {
     matchPlayerId: `mp-${id}` as Id<"matchPlayers">,
@@ -19,7 +19,8 @@ function player(
     onField,
     isKeeper: false,
     fieldSlotIndex,
-    absent,
+    absent: options?.absent,
+    injured: options?.injured,
   };
 }
 
@@ -54,7 +55,8 @@ describe("projectSubstitutionPlan", () => {
     player("b", "B", true, 2),
     player("c", "C", false),
     player("d", "D", false),
-    player("e", "E", false, undefined, true),
+    player("e", "E", false, undefined, { absent: true }),
+    player("f", "F", false, undefined, { injured: true }),
   ];
 
   it("moves the first planned substitute into the projected field and changes the bench", () => {
@@ -152,11 +154,29 @@ describe("projectSubstitutionPlan", () => {
     expect(names(result.projectedBench)).not.toContain("E");
   });
 
+  it("excludes injured players from projected candidates", () => {
+    const result = projectSubstitutionPlan(players, [plan(0, "a", "c")]);
+
+    expect(names(result.startingBench)).not.toContain("F");
+    expect(names(result.projectedBench)).not.toContain("F");
+  });
+
   it("transfers the field slot to the incoming player in projections", () => {
     const result = projectSubstitutionPlan(players, [plan(0, "a", "c")]);
     const incoming = result.projectedOnField.find((current) => current.name === "C");
 
     expect(incoming?.fieldSlotIndex).toBe(1);
+  });
+
+  it("applies pending rows in minute order even when sequence is reversed", () => {
+    const result = projectSubstitutionPlan(players, [
+      plan(0, "c", "d", { targetQuarter: 1, targetMinute: 20 }),
+      plan(1, "a", "c", { targetQuarter: 1, targetMinute: 10 }),
+    ]);
+
+    expect(result.warnings).toHaveLength(0);
+    expect(names(result.projectedOnField)).toEqual(["B", "D", "Keeper"]);
+    expect(names(result.projectedBench)).toEqual(["A", "C"]);
   });
 
   it("applies planned position swaps before later substitutions", () => {

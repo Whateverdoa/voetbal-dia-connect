@@ -92,7 +92,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
               <button
                 onClick={handleOurGoal}
                 disabled={isSubmitting}
-                className="w-full py-6 bg-dia-green text-black text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-6 bg-dia-green text-white text-2xl font-bold rounded-xl min-h-[80px] active:scale-[0.98] transition-transform hover:bg-dia-green-dark shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <span className="text-3xl">⚽</span>
                 <span>GOAL!</span>
@@ -177,7 +177,7 @@ export function GoalModal({ matchId, playersOnField, onClose }: GoalModalProps) 
           <button
             onClick={handleSubmit}
             disabled={!scorer || isSubmitting}
-            className="flex-1 py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Bezig..." : "Registreren"}
           </button>

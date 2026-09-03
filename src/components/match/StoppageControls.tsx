@@ -49,10 +49,10 @@ export function StoppageControls({
           )
         }
         disabled={isLoading}
-        className={`w-full min-h-[48px] rounded-xl py-3 font-semibold text-white shadow-md transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`w-full min-h-[48px] rounded-xl py-3 font-semibold shadow-md transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
           isActive
-            ? "bg-dia-green hover:bg-dia-green-light"
-            : "bg-orange-500 hover:bg-orange-600"
+            ? "bg-dia-black text-dia-yellow hover:bg-neutral-800"
+            : "bg-orange-500 text-white hover:bg-orange-600"
         }`}
       >
         {isLoading ? "Bezig..." : isActive ? "Spel hervat" : "Onderbreking starten"}

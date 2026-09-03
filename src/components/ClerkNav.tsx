@@ -4,7 +4,9 @@ import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import { useRef } from "react";
 import { api } from "@/convex/_generated/api";
+import { useAppNavHeight } from "@/hooks/useAppNavHeight";
 import {
   canPresentTactics,
   parseRolesFromMetadata,
@@ -16,6 +18,8 @@ import {
  * server component in @clerk/nextjs v7 and renders nothing in this client header.
  */
 export function ClerkNav() {
+  const headerRef = useRef<HTMLElement>(null);
+  useAppNavHeight(headerRef);
   const { signOut } = useClerk();
   const { user, isSignedIn } = useUser();
   const access = useQuery(api.userQueries.getMyRoles);
@@ -30,7 +34,10 @@ export function ClerkNav() {
   const isReferee = roles.includes("referee");
 
   return (
-    <header className="border-b border-gray-200 bg-white/95 sticky top-0 z-10">
+    <header
+      ref={headerRef}
+      className="border-b border-gray-200 bg-white/95 sticky top-0 z-10"
+    >
       <div className="max-w-4xl mx-auto px-4 min-h-12 py-2 flex items-center justify-between gap-3">
         {isSignedIn ? (
           <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm">
@@ -114,7 +121,7 @@ export function ClerkNav() {
               <SignUpButton mode="modal">
                 <button
                   type="button"
-                  className="text-sm font-medium text-black bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-yellow-deep"
+                  className="text-sm font-medium text-white bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-green-dark"
                 >
                   Registreren
                 </button>

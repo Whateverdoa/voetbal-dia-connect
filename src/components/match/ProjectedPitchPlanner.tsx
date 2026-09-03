@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { FIELDS } from "@/lib/fieldConfig";
+import type { PitchLayout } from "@/lib/halfPitchLayout";
 import type { QuarterPreviewProjection } from "@/lib/substitutions/projectSubstitutionPlan";
-import { FieldLines } from "./FieldLines";
-import { FormationLines } from "./FormationLines";
-import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
+import { ProjectedPlannerPitch } from "./ProjectedPlannerPitch";
+import { PlanPitchMinuteBar } from "./plan/PlanPitchMinuteBar";
 import type { MatchPlayer } from "./types";
 
 interface ProjectedPitchPlannerProps {
@@ -20,13 +20,19 @@ interface ProjectedPitchPlannerProps {
   quarterlessPendingCount: number;
   canEdit: boolean;
   isBusy: boolean;
+  /** Override the pitch max-width; planscherm uses a wider value. */
+  pitchMaxWidthClass?: string;
+  pitchLayout?: PitchLayout;
+  seasonMinutesByPlayerId?: Map<string, number>;
   onCreatePlan: (
     playerOutId: Id<"players">,
-    playerInId: Id<"players">
+    playerInId: Id<"players">,
+    targetMinute?: number
   ) => Promise<boolean>;
   onCreatePositionSwap: (
     playerAId: Id<"players">,
-    playerBId: Id<"players">
+    playerBId: Id<"players">,
+    targetMinute?: number
   ) => Promise<boolean>;
 }
 
@@ -47,11 +53,15 @@ export function ProjectedPitchPlanner({
   quarterlessPendingCount,
   canEdit,
   isBusy,
+  pitchMaxWidthClass = "max-w-lg",
+  pitchLayout = "full",
+  seasonMinutesByPlayerId,
   onCreatePlan,
   onCreatePositionSwap,
 }: ProjectedPitchPlannerProps) {
   const [selectedPlayerOutId, setSelectedPlayerOutId] =
     useState<Id<"players"> | null>(null);
+  const [minuteDraft, setMinuteDraft] = useState("");
   const cfg = formation.slots.length >= 11 ? FIELDS["11tal"] : FIELDS["8tal"];
   const onField = preview.projectedOnField;
   const onBench = preview.projectedBench;
@@ -69,9 +79,6 @@ export function ProjectedPitchPlanner({
     onField.some((player) => player.playerId === selectedPlayerOutId)
       ? selectedPlayerOutId
       : null;
-
-  const playerInSlot = (slotId: number): MatchPlayer | undefined =>
-    onField.find((player) => Number(player.fieldSlotIndex) === Number(slotId));
 
   const findPlayer = (playerId: Id<"players">): MatchPlayer | undefined =>
     [...onField, ...onBench].find((player) => player.playerId === playerId);
@@ -92,6 +99,14 @@ export function ProjectedPitchPlanner({
     return `${label} geselecteerd - tik bankspeler voor wissel of veldspeler voor positiewissel`;
   };
 
+  const parsedMinute = (): number | undefined => {
+    const trimmed = minuteDraft.trim();
+    if (trimmed === "") return undefined;
+    const value = Number(trimmed);
+    if (!Number.isFinite(value) || value < 0) return undefined;
+    return value;
+  };
+
   const handleFieldPlayerClick = async (playerId: Id<"players">) => {
     if (!canEdit || isBusy) return;
     if (!effectiveSelectedPlayerOutId) {
@@ -104,7 +119,8 @@ export function ProjectedPitchPlanner({
     }
     const success = await onCreatePositionSwap(
       effectiveSelectedPlayerOutId,
-      playerId
+      playerId,
+      parsedMinute()
     );
     if (success) {
       setSelectedPlayerOutId(null);
@@ -113,7 +129,11 @@ export function ProjectedPitchPlanner({
 
   const handleBenchPlayerClick = async (playerId: Id<"players">) => {
     if (!canEdit || isBusy || !effectiveSelectedPlayerOutId) return;
-    const success = await onCreatePlan(effectiveSelectedPlayerOutId, playerId);
+    const success = await onCreatePlan(
+      effectiveSelectedPlayerOutId,
+      playerId,
+      parsedMinute()
+    );
     if (success) {
       setSelectedPlayerOutId(null);
     }
@@ -130,7 +150,7 @@ export function ProjectedPitchPlanner({
               onClick={() => onQuarterChange(quarter)}
               className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold ${
                 selectedQuarter === quarter
-                  ? "border-dia-green bg-dia-green text-black"
+                  ? "border-dia-green bg-dia-green text-white"
                   : "border-gray-300 bg-white text-gray-700"
               }`}
             >
@@ -164,71 +184,27 @@ export function ProjectedPitchPlanner({
         </div>
       )}
 
-      <div className="h-5 flex items-center justify-center">
-        <span
-          className={`text-xs font-bold uppercase tracking-widest ${
-            selectedPlayerOutId ? "text-amber-500" : "text-slate-400"
-          }`}
-        >
-          {statusText()}
-        </span>
-      </div>
+      <PlanPitchMinuteBar
+        statusText={statusText()}
+        hasSelection={!!selectedPlayerOutId}
+        minuteDraft={minuteDraft}
+        onMinuteChange={setMinuteDraft}
+        canEdit={canEdit}
+      />
 
-      <div className="w-full flex justify-center">
-        <div
-          className="relative w-full max-w-lg overflow-hidden border rounded-sm shadow-md"
-          style={{
-            background: "#2d7a3a",
-            borderColor: "#1e5c28",
-            aspectRatio: `${cfg.w} / ${cfg.h}`,
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.08) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.5) 20px, rgba(255,255,255,0.5) 21px)",
-            }}
-          />
-
-          <FieldLines cfg={cfg} />
-          <FormationLines slots={formation.slots} links={formation.links} />
-
-          {formation.slots.map((slot) => {
-            const player = playerInSlot(slot.id);
-
-            return (
-              <FieldPlayerCard
-                key={slot.id}
-                name={player?.name ?? ""}
-                number={player?.number}
-                position={slot.position}
-                x={slot.x}
-                y={slot.y}
-                isSelected={
-                  player ? effectiveSelectedPlayerOutId === player.playerId : false
-                }
-                isDimmed={
-                  effectiveSelectedPlayerOutId !== null &&
-                  (!player || effectiveSelectedPlayerOutId !== player.playerId)
-                }
-                isEmpty={!player}
-                onClick={() => {
-                  if (!player) return;
-                  void handleFieldPlayerClick(player.playerId);
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      <ProjectedPlannerPitch
+        pitchLayout={pitchLayout}
+        formation={formation}
+        cfg={cfg}
+        onField={onField}
+        selectedPlayerId={effectiveSelectedPlayerOutId}
+        canEdit={canEdit}
+        pitchMaxWidthClass={pitchMaxWidthClass}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+        onFieldPlayerClick={(playerId) => {
+          void handleFieldPlayerClick(playerId);
+        }}
+      />
 
       <PitchBench
         onBench={onBench}
@@ -242,6 +218,7 @@ export function ProjectedPitchPlanner({
         }}
         onDeselect={() => setSelectedPlayerOutId(null)}
         nameLabel={nameLabel}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
       />
     </div>
   );

@@ -132,7 +132,7 @@ export function RefereesFilterBar({
                 onClick={() => toggleRequiredTag(tag)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   active
-                    ? "bg-dia-green text-black"
+                    ? "bg-dia-green text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >

@@ -22,6 +22,10 @@ interface FieldPlayerCardProps {
   photoUrl?: string | null;
   sizeMode?: CardSizeMode;
   nameDisplay?: CardNameMode;
+  /** Season total minutes (coach card toggle). */
+  seasonMinutes?: number;
+  /** Appended after the centering translate/scale (e.g. counter-rotation). */
+  extraTransform?: string;
 }
 
 function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
@@ -46,11 +50,22 @@ export function FieldPlayerCard({
   photoUrl,
   sizeMode = "auto",
   nameDisplay = "first",
+  seasonMinutes,
+  extraTransform,
 }: FieldPlayerCardProps) {
   const sz = useCardSize(sizeMode);
   const rc = getRoleColor(position);
   const posLabel = getRoleLabel(position);
   const scale = isSelected ? 1.08 : 1;
+  const emptyTransform = extraTransform
+    ? `translate(-50%, -50%) ${extraTransform}`
+    : "translate(-50%, -50%)";
+  const cardTransform = extraTransform
+    ? `translate(-50%, -50%) scale(${scale}) ${extraTransform}`
+    : `translate(-50%, -50%) scale(${scale})`;
+  const preserve3d = extraTransform
+    ? ({ transformStyle: "preserve-3d" } as const)
+    : undefined;
 
   if (isEmpty) {
     return (
@@ -62,7 +77,8 @@ export function FieldPlayerCard({
           top: `${y}%`,
           width: sz.card,
           height: sz.card,
-          transform: "translate(-50%, -50%)",
+          transform: emptyTransform,
+          ...preserve3d,
           background: "rgba(255,255,255,0.06)",
           borderColor: "rgba(255,255,255,0.12)",
           transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -86,7 +102,8 @@ export function FieldPlayerCard({
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: `translate(-50%, -50%) scale(${scale})`,
+        transform: cardTransform,
+        ...preserve3d,
         zIndex: isSelected ? 100 : Math.round(y),
         transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: isDimmed ? 0.4 : 1,
@@ -119,7 +136,7 @@ export function FieldPlayerCard({
         </div>
 
         <div className="absolute top-1 right-1">
-          <span className="font-mono font-bold text-white/30" style={{ fontSize: sz.numFont }}>
+          <span className="font-mono font-bold text-white" style={{ fontSize: sz.numFont }}>
             {displayNumber}
           </span>
         </div>
@@ -171,6 +188,17 @@ export function FieldPlayerCard({
           >
             {fieldLabel}
           </span>
+          {seasonMinutes !== undefined ? (
+            <span
+              className="block tabular-nums opacity-90"
+              style={{
+                color: rc.text,
+                fontSize: Math.max(8, sz.nameFont - 1),
+              }}
+            >
+              {seasonMinutes}&prime;
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

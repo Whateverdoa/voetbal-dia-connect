@@ -28,6 +28,50 @@ export const getBySlug = query({
   },
 });
 
+/** Public team directory for the parent-facing team lookup. */
+export const listPublicTeams = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.id("teams"),
+      name: v.string(),
+      slug: v.string(),
+      clubName: v.string(),
+      logoUrl: v.union(v.string(), v.null()),
+      hasStanding: v.boolean(),
+    })
+  ),
+  handler: async (ctx) => {
+    const teams = await ctx.db.query("teams").collect();
+    const clubs = new Map<Id<"clubs">, string>();
+
+    const standingSlugs = new Set(
+      (await ctx.db.query("standings").collect()).map((doc) => doc.teamSlug)
+    );
+
+    const enriched = await Promise.all(
+      teams.map(async (team) => {
+        if (!clubs.has(team.clubId)) {
+          const club = await ctx.db.get(team.clubId);
+          clubs.set(team.clubId, club?.name ?? "Club");
+        }
+        return {
+          id: team._id,
+          name: team.name,
+          slug: team.slug,
+          clubName: clubs.get(team.clubId) ?? "Club",
+          logoUrl: team.logoUrl ?? null,
+          hasStanding: standingSlugs.has(team.slug),
+        };
+      })
+    );
+
+    return enriched.sort((a, b) =>
+      a.name.localeCompare(b.name, "nl", { numeric: true })
+    );
+  },
+});
+
 // Finished matches for one season, first kickoff of the season first.
 export const getMatchHistory = query({
   args: {

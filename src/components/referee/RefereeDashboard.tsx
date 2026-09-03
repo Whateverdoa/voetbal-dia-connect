@@ -142,7 +142,7 @@ export function RefereeDashboard({
               onClick={() => setTab(key)}
               className={`min-h-[44px] rounded-xl px-2 text-xs font-semibold ${
                 tab === key
-                  ? "bg-dia-green text-black"
+                  ? "bg-dia-green text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >

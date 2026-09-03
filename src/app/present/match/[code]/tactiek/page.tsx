@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { useParams, useSearchParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
+import { StaffAccessFallback } from "@/components/presentation/StaffAccessFallback";
 import {
   PresentStudio,
   parseStudioTab,
 } from "@/components/presentation/PresentStudio";
-import { canPresentTactics } from "@/lib/auth/roles";
+import { useStaffPresentationAccess } from "@/hooks/useStaffPresentationAccess";
+import { SHOW_SPELERSKAARTEN } from "@/lib/presentation/surfaces";
 
 export default function PresentMatchTacticsPage() {
   const params = useParams();
@@ -18,46 +18,25 @@ export default function PresentMatchTacticsPage() {
   const code = String(params.code ?? "").toUpperCase();
   const kiosk = search.get("kiosk") === "1";
   const initialTab = parseStudioTab(search.get("tab"), "tactiek");
+  const { rolesReady, allowed } = useStaffPresentationAccess();
 
-  const { isLoaded, isSignedIn } = useUser();
-  const access = useQuery(api.userQueries.getMyRoles);
-  const rolesReady = isLoaded && access !== undefined;
-  const allowed =
-    isSignedIn === true && canPresentTactics(access?.roles ?? []);
   const match = useQuery(
     api.presentationQueries.getMatchPresentation,
     !rolesReady || !allowed ? "skip" : { publicCode: code }
   );
   const deck = useQuery(
     api.presentationQueries.getTeamDeckPublic,
-    match ? { teamSlug: match.teamSlug } : "skip"
+    SHOW_SPELERSKAARTEN && match ? { teamSlug: match.teamSlug } : "skip"
   );
 
-  if (!rolesReady) {
-    return (
-      <PresentationShell title="Laden…">
-        <p className="text-slate-400">Toegang controleren…</p>
-      </PresentationShell>
-    );
-  }
-
-  if (!allowed) {
-    return (
-      <PresentationShell title="Geen toegang">
-        <p className="text-slate-400 text-center py-8">
-          Tactiek is alleen voor coaches en admins.
-        </p>
-        <div className="flex justify-center">
-          <Link
-            href="/sign-in"
-            className="inline-flex min-h-[48px] items-center rounded-xl bg-dia-yellow px-5 py-3 font-semibold text-black"
-          >
-            Inloggen
-          </Link>
-        </div>
-      </PresentationShell>
-    );
-  }
+  const accessScreen = (
+    <StaffAccessFallback
+      rolesReady={rolesReady}
+      allowed={allowed}
+      deniedBody="Tactiek is alleen voor coaches en admins."
+    />
+  );
+  if (!rolesReady || !allowed) return accessScreen;
 
   if (match === undefined) {
     return (

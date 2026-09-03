@@ -15,6 +15,7 @@ export { enrichGoal } from "./matchGoalEnrichmentActions";
 export {
   togglePlayerOnField,
   toggleKeeper,
+  setPlayerAvailability,
   togglePlayerAbsent,
   toggleShowLineup,
   assignPlayerToSlot,

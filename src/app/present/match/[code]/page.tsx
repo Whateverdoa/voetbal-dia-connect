@@ -5,16 +5,31 @@ import { useParams, useSearchParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { PresentationShell } from "@/components/presentation/PresentationShell";
 import { LivePresentationBoard } from "@/components/presentation/LivePresentationBoard";
+import { PitchLayoutToggle } from "@/components/presentation/PitchLayoutToggle";
+import { UnavailablePresentationSurface } from "@/components/presentation/UnavailablePresentationSurface";
+import { usePitchLayout } from "@/hooks/usePitchLayout";
+import { SHOW_KANTINE } from "@/lib/presentation/surfaces";
 
 export default function PresentMatchPage() {
   const params = useParams();
   const search = useSearchParams();
   const code = String(params.code ?? "").toUpperCase();
   const kiosk = search.get("kiosk") === "1";
+  const [pitchLayout, setPitchLayout] = usePitchLayout();
 
-  const match = useQuery(api.presentationQueries.getMatchPresentation, {
-    publicCode: code,
-  });
+  const match = useQuery(
+    api.presentationQueries.getMatchPresentation,
+    SHOW_KANTINE ? { publicCode: code } : "skip"
+  );
+
+  if (!SHOW_KANTINE) {
+    return (
+      <UnavailablePresentationSurface
+        title="Kantine"
+        body="Kantine-weergave is tijdelijk uitgeschakeld."
+      />
+    );
+  }
 
   if (match === undefined) {
     return (
@@ -37,6 +52,13 @@ export default function PresentMatchPage() {
       title={`${match.teamName} vs ${match.opponent}`}
       subtitle={`Code ${match.publicCode}`}
       kiosk={kiosk}
+      actions={
+        <PitchLayoutToggle
+          value={pitchLayout}
+          onChange={setPitchLayout}
+          variant="dark"
+        />
+      }
     >
       <LivePresentationBoard
         teamName={match.teamName}
@@ -53,6 +75,7 @@ export default function PresentMatchPage() {
         accumulatedPauseTime={match.accumulatedPauseTime}
         frozenClockMs={match.frozenClockMs}
         players={match.players}
+        pitchLayout={pitchLayout}
       />
     </PresentationShell>
   );

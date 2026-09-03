@@ -84,7 +84,6 @@ export const TEAM_COACH_DATA_PART_1: TeamCoachSeed[] = [
   {
     teamSlug: "jo12-1",
     coaches: [
-      { name: "Remco Hendriks", email: "rrrremcobreda@gmail.com" },
       { name: "Martin Nieuwenhuizen", email: "martinnieuwenhuizen@hotmail.com" },
       { name: "Mike ten Hoonte", email: "miketenhoonte@gmail.com" },
       { name: "Serdar Sarica", email: "serdar.sarica1@gmail.com" },

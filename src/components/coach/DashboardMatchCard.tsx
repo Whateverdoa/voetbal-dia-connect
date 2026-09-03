@@ -56,7 +56,7 @@ export function DashboardMatchCard({
     <div
       className={`rounded-xl border-2 ${
         isActive
-          ? "border-dia-yellow-deep/50 bg-dia-green-light shadow-md"
+          ? "border-dia-green/40 bg-dia-green-light shadow-md"
           : "border-gray-200 bg-white shadow-sm"
       } ${compact ? "p-3" : "p-4"}`}
     >
@@ -124,10 +124,10 @@ export function DashboardMatchCard({
       </Link>
       {match.status !== "finished" ? (
         <Link
-          href={`/present/match/${match.publicCode}/kleedkamer?view=wisselplan`}
-          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-dia-black px-3 py-2 text-sm font-semibold text-dia-yellow"
+          href={`/present/match/${match.publicCode}/kleedkamer?tab=opstelling`}
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-dia-green px-3 py-2 text-sm font-semibold text-white"
         >
-          Toon wisselplan
+          Toon opstelling
         </Link>
       ) : null}
     </div>

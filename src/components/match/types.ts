@@ -12,6 +12,7 @@ export interface MatchPlayer {
   onField: boolean;
   isKeeper: boolean;
   absent?: boolean; // In squad but not physically present (e.g. called in sick)
+  injured?: boolean; // Unavailable this match due to injury (mutually exclusive with absent)
   minutesPlayed?: number;
   positionPrimary?: string;
   positionSecondary?: string;

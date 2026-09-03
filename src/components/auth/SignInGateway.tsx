@@ -22,7 +22,7 @@ export function SignInGateway({
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/admin"
-              className="rounded-full bg-dia-green px-5 py-3 text-sm font-semibold text-black transition hover:bg-dia-green-light"
+              className="rounded-full bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-dark"
             >
               Naar admin
             </Link>

@@ -13,6 +13,7 @@ import {
   getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
 import { assistKindValidator } from "./lib/assistKind";
+import { throwIfUnavailable } from "./lib/matchPlayerAvailability";
 
 // Record a goal
 export const addGoal = mutation({
@@ -137,9 +138,7 @@ export const substitute = mutation({
     if (mpIn.onField) {
       throw new Error("Speler die erin gaat moet op de bank staan");
     }
-    if (mpIn.absent) {
-      throw new Error("Afwezige speler kan niet worden ingewisseld");
-    }
+    throwIfUnavailable(mpIn, "sub");
 
     // Player going OFF - record their playing time
     if (mpOut.lastSubbedInAt) {

@@ -107,7 +107,7 @@ export function MatchLeadBadge({
               <button
                 onClick={handleClaim}
                 disabled={isLoading}
-                className="w-full py-2 bg-dia-green text-black font-medium rounded-xl min-h-[44px] active:scale-[0.98] transition-transform hover:bg-dia-green/90 disabled:opacity-50 text-sm"
+                className="w-full py-2 bg-dia-black text-dia-yellow font-medium rounded-xl min-h-[44px] active:scale-[0.98] transition-transform hover:bg-neutral-800 disabled:opacity-50 text-sm"
               >
                 {isLoading ? "Bezig..." : "Neem de leiding"}
               </button>

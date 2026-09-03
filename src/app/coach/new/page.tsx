@@ -163,7 +163,7 @@ function NewMatchContent() {
 
   return (
     <main className="min-h-screen pb-32">
-      <header className="bg-dia-green text-black p-4 sticky top-0 z-10">
+      <header className="bg-dia-green text-white p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto">
           <Link
             href="/coach"
@@ -304,7 +304,7 @@ function CreateMatchFooter({
         <button
           onClick={onCreate}
           disabled={!canCreate || isCreating}
-          className="w-full py-4 bg-dia-green text-black font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
+          className="w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
         >
           {isCreating ? (
             <span className="flex items-center justify-center gap-2">

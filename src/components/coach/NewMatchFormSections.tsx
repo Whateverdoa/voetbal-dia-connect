@@ -117,7 +117,7 @@ export function CreateMatchFooter({
         <button
           onClick={onCreate}
           disabled={!canCreate || isCreating}
-          className="w-full py-4 bg-dia-green text-black font-semibold rounded-xl hover:bg-dia-green-light disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
+          className="w-full py-4 bg-dia-green text-white font-semibold rounded-xl hover:bg-dia-green-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[56px] text-lg active:scale-[0.98]"
         >
           {isCreating ? (
             <span className="flex items-center justify-center gap-2">

@@ -1,5 +1,7 @@
 import type { MatchPlayer, SubstitutionPlanRow } from "@/components/match/types";
 import type { Id } from "@/convex/_generated/dataModel";
+import { isUnavailable } from "@/lib/matchPlayerAvailability";
+import { comparePlanTiming } from "./comparePlanTiming";
 
 export interface ProjectedPlanWarning {
   planId: Id<"substitutionPlans">;
@@ -27,13 +29,13 @@ export interface ProjectedSubstitutionPlan {
 
 type PlayerState = Map<string, MatchPlayer>;
 
-function bySequence(a: SubstitutionPlanRow, b: SubstitutionPlanRow): number {
-  return a.sequence - b.sequence || String(a._id).localeCompare(String(b._id));
+function byPlanOrder(a: SubstitutionPlanRow, b: SubstitutionPlanRow): number {
+  return comparePlanTiming(a, b);
 }
 
 function cloneEligiblePlayers(players: MatchPlayer[]): MatchPlayer[] {
   return players
-    .filter((player) => !(player.absent ?? false))
+    .filter((player) => !isUnavailable(player))
     .map((player) => ({ ...player }));
 }
 
@@ -132,7 +134,8 @@ function applyPlanRow(
   return true;
 }
 
-function runProjection(
+/** Shared projection motor: apply every pending row that passes `shouldApply`. */
+export function runProjection(
   players: MatchPlayer[],
   plans: SubstitutionPlanRow[],
   shouldApply: (plan: SubstitutionPlanRow) => boolean
@@ -157,7 +160,9 @@ export function projectSubstitutionPlan(
   plans: SubstitutionPlanRow[],
   selectedQuarter?: number
 ): ProjectedSubstitutionPlan {
-  const pendingPlans = plans.filter((row) => row.status === "pending").sort(bySequence);
+  const pendingPlans = plans
+    .filter((row) => row.status === "pending")
+    .sort(byPlanOrder);
   const quarterlessPendingRows = pendingPlans.filter((row) => row.targetQuarter == null);
   const starting = snapshotPlayers(
     cloneEligiblePlayers(players),

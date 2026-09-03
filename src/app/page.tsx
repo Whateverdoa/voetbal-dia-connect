@@ -42,13 +42,14 @@ export default function Home() {
         {/* Match browser — primary element */}
         <MatchBrowser />
 
-        {/* Vandaag live link */}
-        <div className="text-center">
-          <Link
-            href="/standen"
-            className="text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
-          >
+        {/* Vandaag live + teams */}
+        <div className="flex items-center justify-center gap-3 text-sm font-medium text-dia-black">
+          <Link href="/standen" className="transition-colors">
             Vandaag live
+          </Link>
+          <span className="text-gray-300">•</span>
+          <Link href="/teams" className="transition-colors">
+            Standen per team
           </Link>
         </div>
 
@@ -77,7 +78,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={code.length !== 6}
-                  className="px-4 py-2 bg-dia-green text-black font-semibold rounded-lg hover:bg-dia-yellow-deep disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-dia-green text-white font-semibold rounded-lg hover:bg-dia-green-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   Ga
                 </button>

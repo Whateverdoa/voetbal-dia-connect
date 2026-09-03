@@ -159,7 +159,7 @@ export function GoalEnrichmentPanel({
       <button
         onClick={onSave}
         disabled={busy || !targetId}
-        className="w-full py-3 min-h-[48px] bg-dia-green text-black rounded-lg text-base font-medium disabled:opacity-50"
+        className="w-full py-3 min-h-[48px] bg-dia-black text-dia-yellow rounded-lg text-base font-medium disabled:opacity-50"
       >
         {busy ? "Bezig..." : "Opslaan"}
       </button>

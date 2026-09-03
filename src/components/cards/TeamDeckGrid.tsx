@@ -1,34 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { PlayerCardGamified } from "@/components/cards/PlayerCardGamified";
+import {
+  PlayerCardDetailModal,
+  type DeckPlayer,
+} from "@/components/cards/PlayerCardDetailModal";
 
-type DeckPlayer = {
-  playerId: string;
-  displayName: string;
-  number: number | null;
-  positionPrimary: string | null;
-  photoUrl: string | null;
-  cardProfile: {
-    xp: number;
-    level: number;
-    rarity: "common" | "rare" | "epic";
-    seasonStats: {
-      matches: number;
-      minutes: number;
-      goals: number;
-      assists: number;
-      cleanSheets: number;
-    };
-    badges?: string[];
-  } | null;
-  showFullIdentity: boolean;
-};
+export type { DeckPlayer };
 
 interface TeamDeckGridProps {
   players: DeckPlayer[];
+  /** Season minutes on the card face; off for parents/kiosk. */
+  showMinutes?: boolean;
 }
 
-export function TeamDeckGrid({ players }: TeamDeckGridProps) {
+/** Dense overview of all team spelerskaarten; tap opens season-stat detail. */
+export function TeamDeckGrid({
+  players,
+  showMinutes = false,
+}: TeamDeckGridProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = players.find((p) => p.playerId === selectedId) ?? null;
+
   if (players.length === 0) {
     return (
       <p className="text-slate-400 text-center py-12">
@@ -38,24 +32,36 @@ export function TeamDeckGrid({ players }: TeamDeckGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {players.map((p) => (
-        <button
-          key={p.playerId}
-          type="button"
-          title="Details volgen later"
-          className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
-        >
-          <PlayerCardGamified
-            displayName={p.displayName}
-            number={p.number}
-            positionPrimary={p.positionPrimary}
-            photoUrl={p.photoUrl}
-            cardProfile={p.cardProfile}
-            showFullIdentity={p.showFullIdentity}
-          />
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 sm:gap-3">
+        {players.map((p) => (
+          <button
+            key={p.playerId}
+            type="button"
+            onClick={() => setSelectedId(p.playerId)}
+            aria-label={`Details ${p.displayName}`}
+            className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
+          >
+            <PlayerCardGamified
+              displayName={p.displayName}
+              number={p.number}
+              positionPrimary={p.positionPrimary}
+              photoUrl={p.photoUrl}
+              cardProfile={p.cardProfile}
+              showFullIdentity={p.showFullIdentity}
+              showMinutes={showMinutes}
+            />
+          </button>
+        ))}
+      </div>
+
+      {selected ? (
+        <PlayerCardDetailModal
+          player={selected}
+          showMinutes={showMinutes}
+          onClose={() => setSelectedId(null)}
+        />
+      ) : null}
+    </>
   );
 }

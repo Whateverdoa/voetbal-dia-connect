@@ -34,7 +34,7 @@ export function PlayerSelectionGrid({
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-gray-500" />
           <h2 className="font-semibold text-lg">Selectie</h2>
-          <span className="bg-dia-green text-black text-sm px-2 py-0.5 rounded-full">
+          <span className="bg-dia-green text-white text-sm px-2 py-0.5 rounded-full">
             {selectedPlayers.size}
           </span>
         </div>
@@ -75,7 +75,7 @@ export function PlayerSelectionGrid({
                     <span
                       className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors ${
                         isSelected
-                          ? "bg-dia-green text-black"
+                          ? "bg-dia-green text-white"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >

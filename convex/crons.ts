@@ -33,6 +33,22 @@ crons.cron(
   internal.import.weeklyUpdate.runIfMatchesEnded,
 );
 
+/**
+ * Bond poulestanden. Na de weekendronde (zo 20:00 UTC) en midweek als vangnet,
+ * zodat ouders maandagochtend de bijgewerkte stand zien.
+ */
+crons.cron(
+  "sportlink-standings-weekend",
+  "0 20 * * 0",
+  internal.import.sportlinkStandingsFetch.syncStandings,
+);
+
+crons.cron(
+  "sportlink-standings-midweek",
+  "0 20 * * 3",
+  internal.import.sportlinkStandingsFetch.syncStandings,
+);
+
 /** Auto-close expired claim windows + optional closing reminders (daily 12:00 UTC). */
 crons.cron(
   "referee-claim-window-daily",

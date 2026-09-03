@@ -169,7 +169,7 @@ export function ClaimWindowStrip({
                 type="button"
                 disabled={busy}
                 onClick={() => void handleOpen()}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 Open claimronde
               </button>

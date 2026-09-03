@@ -242,7 +242,7 @@ export function PlayersTab({ teams }: { teams: Team[] | undefined }) {
               type="button"
               onClick={() => void handleCreate()}
               disabled={!newName.trim()}
-              className="px-4 py-2 bg-dia-green text-black rounded-lg disabled:bg-gray-300"
+              className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
             >
               Toevoegen
             </button>

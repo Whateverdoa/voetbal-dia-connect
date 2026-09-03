@@ -72,8 +72,8 @@ export function CreateFormationModal({
           onChange={(e) => setKind(e.target.value as "8v8" | "11v11")}
           className="w-full px-3 py-2 border rounded-lg text-sm"
         >
-          <option value="8v8">8-tal</option>
           <option value="11v11">11-tal</option>
+          <option value="8v8">8-tal</option>
         </select>
         <label className="block text-sm font-medium text-gray-700">Opbouw (streepjes)</label>
         <input
@@ -94,7 +94,7 @@ export function CreateFormationModal({
             type="button"
             disabled={busy}
             onClick={() => void handleSubmit()}
-            className="flex-1 py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
+            className="flex-1 py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
           >
             {busy ? "Bezig..." : "Opslaan"}
           </button>

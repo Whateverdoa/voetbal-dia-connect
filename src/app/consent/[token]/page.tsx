@@ -143,7 +143,7 @@ export default function ConsentPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full bg-dia-green text-black font-bold rounded-xl py-3 min-h-[48px] disabled:opacity-50"
+          className="w-full bg-dia-green text-white font-bold rounded-xl py-3 min-h-[48px] disabled:opacity-50"
         >
           {busy ? "Opslaan…" : "Keuzes opslaan"}
         </button>

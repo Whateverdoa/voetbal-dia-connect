@@ -24,7 +24,7 @@ export default function CoachPage() {
   if (!hasClerkPublishableKey) {
     return (
       <main className="min-h-screen flex flex-col bg-gray-50">
-        <header className="bg-dia-green text-black p-4">
+        <header className="bg-dia-green text-white p-4">
           <div className="max-w-md mx-auto flex items-center gap-3">
             <Link
               href="/"
@@ -45,7 +45,7 @@ export default function CoachPage() {
             <p className="text-sm text-gray-600">
               Deze omgeving verwacht Clerk-login via e-mail en rollen. Configureer Clerk om coachtoegang te gebruiken.
             </p>
-            <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black">
+            <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white">
               Terug naar home
             </Link>
           </div>
@@ -114,7 +114,7 @@ function CoachPageReady({ roles }: { roles: string[] }) {
   if (!filteredData) {
     return (
       <main className="min-h-screen flex flex-col bg-gray-50">
-        <header className="bg-dia-green text-black p-4">
+        <header className="bg-dia-green text-white p-4">
           <div className="max-w-md mx-auto flex items-center gap-3">
             <Link
               href="/"
@@ -144,7 +144,7 @@ function CoachPageReady({ roles }: { roles: string[] }) {
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link
                   href="/sign-in"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white"
                 >
                   Naar inloggen
                 </Link>

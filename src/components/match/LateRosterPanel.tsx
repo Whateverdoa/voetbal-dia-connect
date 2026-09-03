@@ -80,7 +80,7 @@ export function LateRosterPanel({ matchId }: LateRosterPanelProps) {
             type="button"
             onClick={() => void onAddExisting()}
             disabled={busy || !addPlayerId}
-            className="px-4 min-h-[48px] bg-dia-green text-black rounded-lg text-sm font-medium disabled:bg-gray-300"
+            className="px-4 min-h-[48px] bg-dia-black text-dia-yellow rounded-lg text-sm font-medium disabled:bg-gray-300"
           >
             Toevoegen
           </button>

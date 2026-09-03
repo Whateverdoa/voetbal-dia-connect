@@ -63,7 +63,7 @@ function NotFoundScreen({ code }: { code: string }) {
         </p>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-dia-green text-black rounded-lg font-medium"
+          className="inline-block px-6 py-3 bg-dia-green text-white rounded-lg font-medium"
         >
           Andere code invoeren
         </Link>

@@ -30,7 +30,7 @@ export function QualificationTagPicker({
               onClick={() => onToggleTag(tag)}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? "bg-dia-green text-black"
+                  ? "bg-dia-green text-white"
                   : "bg-white text-slate-500 hover:bg-slate-100"
               }`}
             >

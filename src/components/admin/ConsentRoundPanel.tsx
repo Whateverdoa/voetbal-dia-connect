@@ -72,7 +72,7 @@ export function ConsentRoundPanel({ teamId, onStatus }: ConsentRoundPanelProps) 
                 setBusy(false);
               }
             }}
-            className="px-3 py-2 rounded-lg bg-dia-green text-black font-semibold min-h-[44px]"
+            className="px-3 py-2 rounded-lg bg-dia-green text-white font-semibold min-h-[44px]"
           >
             Start toestemmingsronde
           </button>

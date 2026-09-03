@@ -22,6 +22,7 @@ interface PitchViewProps {
   customFormationKind?: "8v8" | "11v11";
   status: MatchStatus;
   canEdit?: boolean;
+  seasonMinutesByPlayerId?: Map<string, number>;
 }
 
 export function PitchView({
@@ -32,6 +33,7 @@ export function PitchView({
   customFormationKind,
   status,
   canEdit = true,
+  seasonMinutesByPlayerId,
 }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
@@ -48,7 +50,12 @@ export function PitchView({
   const cfg = FIELDS[fieldMode];
 
   const onField = players.filter((player) => player.onField);
-  const onBench = players.filter((player) => !player.onField && !(player.absent ?? false));
+  const onBench = players.filter(
+    (player) =>
+      !player.onField &&
+      !(player.absent ?? false) &&
+      !(player.injured ?? false)
+  );
   const onFieldUnassigned = onField.filter(
     (player) => player.fieldSlotIndex === undefined || player.fieldSlotIndex === null
   );
@@ -203,6 +210,11 @@ export function PitchView({
                 isSelected={player ? selectedPlayerId === player.playerId : false}
                 isDimmed={selectedPlayerId !== null && (!player || selectedPlayerId !== player.playerId)}
                 isEmpty={isEmpty}
+                seasonMinutes={
+                  player
+                    ? seasonMinutesByPlayerId?.get(String(player.playerId))
+                    : undefined
+                }
                 onClick={() =>
                   player
                     ? handleFieldPlayerClick(player, slot.id)
@@ -221,6 +233,7 @@ export function PitchView({
         onPlayerClick={handleBenchPlayerClick}
         onDeselect={() => setSelectedPlayerId(null)}
         nameLabel={nameLabel}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
       />
     </div>
   );

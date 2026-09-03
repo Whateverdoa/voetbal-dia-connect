@@ -17,6 +17,7 @@ interface PitchBenchProps {
   onUnassignedPlayerClick?: (playerId: Id<"players">) => void;
   onDeselect: () => void;
   nameLabel: (p: MatchPlayer) => string;
+  seasonMinutesByPlayerId?: Map<string, number>;
 }
 
 function MiniCard({
@@ -25,12 +26,14 @@ function MiniCard({
   isDimmed,
   onClick,
   nameLabel,
+  seasonMinutes,
 }: {
   player: MatchPlayer;
   isSelected: boolean;
   isDimmed: boolean;
   onClick: () => void;
   nameLabel: (p: MatchPlayer) => string;
+  seasonMinutes?: number;
 }) {
   const sz = useCardSize();
   const rc = getRoleColor(player.positionPrimary);
@@ -61,7 +64,10 @@ function MiniCard({
         }}
       >
         <div className="py-1.5 flex flex-col items-center">
-          <span className="font-mono font-bold text-white/40" style={{ fontSize: sz.numFont }}>
+          <span
+            className="font-mono font-bold text-white"
+            style={{ fontSize: sz.numFont }}
+          >
             {player.number ?? "?"}
           </span>
           <div
@@ -81,11 +87,19 @@ function MiniCard({
         </div>
         <div className="w-full py-0.5 text-center" style={{ background: rc.bg }}>
           <span
-            className="font-bold uppercase"
+            className="font-bold uppercase block"
             style={{ color: rc.text, fontSize: sz.nameFont, letterSpacing: "0.06em" }}
           >
             {nameLabel(player).toUpperCase()}
           </span>
+          {seasonMinutes !== undefined ? (
+            <span
+              className="block tabular-nums opacity-90"
+              style={{ color: rc.text, fontSize: Math.max(8, sz.nameFont - 1) }}
+            >
+              {seasonMinutes}&prime;
+            </span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -101,6 +115,7 @@ export function PitchBench({
   onUnassignedPlayerClick,
   onDeselect,
   nameLabel,
+  seasonMinutesByPlayerId,
 }: PitchBenchProps) {
   const handleBenchPlayerClick = onBenchPlayerClick ?? onPlayerClick;
   const handleUnassignedPlayerClick =
@@ -153,6 +168,7 @@ export function PitchBench({
                 isDimmed={selectedPlayerId !== null && selectedPlayerId !== p.playerId}
                 onClick={() => handleBenchPlayerClick?.(p.playerId)}
                 nameLabel={nameLabel}
+                seasonMinutes={seasonMinutesByPlayerId?.get(String(p.playerId))}
               />
             ))}
           </div>

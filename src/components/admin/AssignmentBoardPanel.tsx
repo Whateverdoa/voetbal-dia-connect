@@ -185,10 +185,10 @@ export function AssignmentBoardPanel({
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-600">Thuis / Uit</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => setIsHome(true)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", isHome ? "bg-dia-green text-black" : "bg-white text-slate-600")}>
+                      <button type="button" onClick={() => setIsHome(true)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", isHome ? "bg-dia-green text-white" : "bg-white text-slate-600")}>
                         Thuis
                       </button>
-                      <button type="button" onClick={() => setIsHome(false)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", !isHome ? "bg-dia-green text-black" : "bg-white text-slate-600")}>
+                      <button type="button" onClick={() => setIsHome(false)} className={clsx("rounded-2xl px-4 py-3 text-sm font-semibold transition", !isHome ? "bg-dia-green text-white" : "bg-white text-slate-600")}>
                         Uit
                       </button>
                     </div>
@@ -304,7 +304,7 @@ export function AssignmentBoardPanel({
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Acties</h3>
 
               <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" onClick={handleSave} disabled={saving || !opponent.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-black transition hover:bg-dia-green-light disabled:bg-slate-300">
+                <button type="button" onClick={handleSave} disabled={saving || !opponent.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-dark disabled:bg-slate-300">
                   <Save size={16} />
                   {saving ? "Opslaan..." : "Opslaan"}
                 </button>

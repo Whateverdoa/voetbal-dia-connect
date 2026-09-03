@@ -146,7 +146,7 @@ export function TeamRosterEditor({ players }: { players: RosterPlayer[] }) {
               type="button"
               disabled={busy}
               onClick={() => void handleSave(player)}
-              className="w-full min-h-[44px] rounded-xl bg-dia-green text-black font-semibold disabled:opacity-60"
+              className="w-full min-h-[44px] rounded-xl bg-dia-green text-white font-semibold disabled:opacity-60"
             >
               {busy ? "Opslaan…" : "Opslaan"}
             </button>

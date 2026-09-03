@@ -78,7 +78,7 @@ export function CoachListRow({
               onClick={() => onToggleTeam(team._id)}
               className={`px-2 py-1 text-xs rounded ${
                 editTeamIds.includes(team._id)
-                  ? "bg-dia-green text-black"
+                  ? "bg-dia-green text-white"
                   : "bg-gray-200 text-gray-700"
               }`}
             >

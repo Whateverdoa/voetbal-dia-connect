@@ -190,7 +190,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
                   onClick={() => toggleTeam(team._id, newTeamIds, setNewTeamIds)}
                   className={`px-2 py-1 text-xs rounded ${
                     newTeamIds.includes(team._id)
-                      ? "bg-dia-green text-black"
+                      ? "bg-dia-green text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
@@ -206,7 +206,7 @@ export function CoachesTab({ teams }: { teams: Team[] | undefined }) {
             type="button"
             onClick={() => void handleCreate()}
             disabled={!newName.trim() || !newEmail.trim()}
-            className="px-4 py-2 bg-dia-green text-black rounded-lg disabled:bg-gray-300"
+            className="px-4 py-2 bg-dia-green text-white rounded-lg disabled:bg-gray-300"
           >
             Toevoegen
           </button>

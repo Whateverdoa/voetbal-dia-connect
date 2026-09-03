@@ -1,5 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
-import { firstNameOf } from "@/lib/cards/formatCardName";
+import { formatFieldLabel } from "@/lib/cards/formatCardName";
 import type {
   MatchPlayer,
   SubstitutionPlanKind,
@@ -14,6 +14,7 @@ export type PresentPlanPlayer = {
   fieldSlotIndex: number | null;
   isKeeper: boolean;
   absent: boolean;
+  injured?: boolean;
   photoUrl?: string | null;
   positionPrimary?: string | null;
 };
@@ -37,6 +38,15 @@ export function periodWord(quarterCount: number): string {
   return quarterCount === 2 ? "helft" : "kwart";
 }
 
+/**
+ * Dutch name for a plan kind. Single source for both the coach panel and the TV
+ * sidebar, so the two can't drift apart on the one distinction that decides
+ * whether a player leaves the pitch or only moves on it.
+ */
+export function planKindLabel(kind: SubstitutionPlanKind | undefined): string {
+  return kind === "positionSwap" ? "Positiewissel" : "Wissel";
+}
+
 export function timingLabel(
   row: Pick<PresentPlanRow, "targetQuarter" | "targetMinute">,
   quarterCount: number
@@ -54,14 +64,61 @@ export function timingLabel(
   return `start ${period}`;
 }
 
+/**
+ * Map every player standing in a formation slot to that slot's position.
+ * Players without a slot (bench, or on the field but unassigned) are absent, so
+ * callers can tell "plays CB" apart from "has no position yet".
+ */
+export function fieldPositionLookup(
+  onField: readonly Pick<MatchPlayer, "playerId" | "fieldSlotIndex">[],
+  slots: readonly { id: number; position: string }[]
+): Map<string, string> {
+  const positionBySlot = new Map(slots.map((slot) => [slot.id, slot.position]));
+  const lookup = new Map<string, string>();
+  for (const player of onField) {
+    if (player.fieldSlotIndex == null) continue;
+    const position = positionBySlot.get(Number(player.fieldSlotIndex));
+    if (position) lookup.set(String(player.playerId), position);
+  }
+  return lookup;
+}
+
 export function presentRowLabel(
-  row: Pick<PresentPlanRow, "kind" | "outDisplayName" | "inDisplayName">
+  row: Pick<PresentPlanRow, "kind" | "outDisplayName" | "inDisplayName"> & {
+    playerOutId?: PresentPlanRow["playerOutId"];
+    playerInId?: PresentPlanRow["playerInId"];
+  },
+  numberByPlayerId?: ReadonlyMap<string, number | null>,
+  positionByPlayerId?: ReadonlyMap<string, string>
 ): string {
-  const outName = firstNameOf(row.outDisplayName);
-  const inName = firstNameOf(row.inDisplayName);
+  const outName = playerToken(
+    row.outDisplayName,
+    row.playerOutId,
+    numberByPlayerId,
+    positionByPlayerId
+  );
+  const inName = playerToken(
+    row.inDisplayName,
+    row.playerInId,
+    numberByPlayerId,
+    positionByPlayerId
+  );
   return row.kind === "positionSwap"
     ? `${outName} ↔ ${inName}`
     : `${outName} → ${inName}`;
+}
+
+function playerToken(
+  displayName: string,
+  playerId: Id<"players"> | undefined,
+  numberByPlayerId?: ReadonlyMap<string, number | null>,
+  positionByPlayerId?: ReadonlyMap<string, string>
+): string {
+  const key = playerId != null ? String(playerId) : undefined;
+  const number = key ? numberByPlayerId?.get(key) : undefined;
+  const label = formatFieldLabel(displayName, number ?? null);
+  const position = key ? positionByPlayerId?.get(key) : undefined;
+  return position ? `${label} (${position})` : label;
 }
 
 export function toMatchPlayers(players: PresentPlanPlayer[]): MatchPlayer[] {
@@ -73,6 +130,7 @@ export function toMatchPlayers(players: PresentPlanPlayer[]): MatchPlayer[] {
     onField: player.onField,
     isKeeper: player.isKeeper,
     absent: player.absent,
+    injured: player.injured ?? false,
     positionPrimary: player.positionPrimary ?? undefined,
     fieldSlotIndex: player.fieldSlotIndex ?? undefined,
   }));

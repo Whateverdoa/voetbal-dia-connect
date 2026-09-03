@@ -42,7 +42,7 @@ export default function CoachPresenterenPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-dia-green text-black p-4">
+      <header className="bg-dia-green text-white p-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -54,7 +54,7 @@ export default function CoachPresenterenPage() {
             </Link>
             <div className="min-w-0">
               <h1 className="text-xl font-bold">Presenteren</h1>
-              <p className="text-sm text-black/70">Kies welke wedstrijd je toont</p>
+              <p className="text-sm text-white/80">Kies welke wedstrijd je toont</p>
             </div>
           </div>
           <button
@@ -71,8 +71,8 @@ export default function CoachPresenterenPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <p className="text-sm text-gray-600">
-          Eén presentatie met tabs: Tactiek (vrij sleepbord), Kleedkamer
-          (opstelling en wisselplan) en Spelerskaarten. Kantine is de TV-weergave.
+          Toon de opstelling (veld en wisselplan) op een groot scherm. Alleen
+          coaches en admins.
         </p>
 
         {matches.length === 0 ? (
@@ -99,24 +99,12 @@ export default function CoachPresenterenPage() {
                     <p className="text-xs font-mono text-gray-500 mt-1">{code}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   <Link
-                    href={`/present/match/${code}/kleedkamer?view=wisselplan`}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-black"
+                    href={`/present/match/${code}/kleedkamer?tab=opstelling`}
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-white"
                   >
-                    Toon wisselplan
-                  </Link>
-                  <Link
-                    href={`/present/match/${code}/kleedkamer`}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl border-2 border-dia-black px-4 py-3 text-sm font-semibold text-dia-black"
-                  >
-                    Toon kleedkamer
-                  </Link>
-                  <Link
-                    href={`/present/match/${code}`}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl border-2 border-gray-300 px-4 py-3 text-sm font-semibold text-gray-800"
-                  >
-                    Kantine / TV
+                    Toon opstelling
                   </Link>
                 </div>
               </article>

@@ -19,6 +19,7 @@ type LineupPlayer = {
   number: number | null;
   onField: boolean;
   absent?: boolean;
+  injured?: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
 };
@@ -52,6 +53,7 @@ export function TacticPitch({
       playerId: player.playerId,
       onField: player.onField,
       absent: player.absent === true,
+      injured: player.injured === true,
       fieldSlotIndex: player.fieldSlotIndex,
     })),
     formation?.slots ?? []

@@ -29,7 +29,7 @@ export function TeamTabs({ active, onSelect }: TeamTabsProps) {
             aria-current={isActive ? "page" : undefined}
             className={`min-h-[48px] flex-1 rounded-xl px-4 text-sm font-semibold transition-colors ${
               isActive
-                ? "bg-dia-black text-dia-yellow"
+                ? "bg-dia-green text-white"
                 : "bg-white text-gray-700 shadow-sm hover:bg-gray-50"
             }`}
           >

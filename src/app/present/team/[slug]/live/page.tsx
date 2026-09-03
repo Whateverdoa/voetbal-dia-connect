@@ -60,7 +60,11 @@ export default function PresentTeamLivePage() {
       subtitle="Kantine · live"
       kiosk={kiosk}
       actions={
-        <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
+        <PitchLayoutToggle
+          value={pitchLayout}
+          onChange={setPitchLayout}
+          variant="dark"
+        />
       }
     >
       <LivePresentationBoard

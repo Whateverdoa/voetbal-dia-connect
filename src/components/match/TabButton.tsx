@@ -16,7 +16,7 @@ export function TabButton({ active, onClick, icon, label, badge }: TabButtonProp
         "flex-1 py-3 px-4 rounded-lg font-semibold transition-all",
         "min-h-[48px] active:scale-[0.98] flex items-center justify-center gap-2",
         active
-          ? "bg-dia-black text-dia-yellow shadow-md"
+          ? "bg-dia-green text-white shadow-md"
           : "bg-transparent text-gray-600 hover:bg-gray-100"
       )}
     >

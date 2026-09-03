@@ -150,7 +150,7 @@ export function ProjectedPitchPlanner({
               onClick={() => onQuarterChange(quarter)}
               className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold ${
                 selectedQuarter === quarter
-                  ? "border-dia-green bg-dia-green text-black"
+                  ? "border-dia-green bg-dia-green text-white"
                   : "border-gray-300 bg-white text-gray-700"
               }`}
             >

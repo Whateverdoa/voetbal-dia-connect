@@ -102,7 +102,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
-      <nav className="bg-dia-yellow text-dia-black px-4 py-2 sticky top-0 z-20">
+      <nav className="bg-dia-green text-white px-4 py-2 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Link
@@ -289,7 +289,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           <>
             <Link
               href={`/coach/match/${match._id}/wisselplan`}
-              className="flex min-h-[48px] items-center justify-center rounded-xl bg-dia-yellow px-4 py-3 text-sm font-semibold text-dia-black"
+              className="flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-white"
             >
               Plannen op groot scherm
             </Link>

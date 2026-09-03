@@ -55,7 +55,7 @@ function TabButton({
       className={clsx(
         "inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
         active
-          ? "border-dia-green bg-dia-green text-black"
+          ? "border-dia-green bg-dia-green text-white"
           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
       )}
     >
@@ -194,7 +194,7 @@ export function AssignmentBoard() {
             onStatusFilterChange={setStatusFilter}
           />
 
-          <button type="button" onClick={() => setIsCreateOpen(true)} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-black transition hover:bg-dia-green-light">
+          <button type="button" onClick={() => setIsCreateOpen(true)} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-dark">
             <Plus size={18} />
             Nieuwe wedstrijd
           </button>

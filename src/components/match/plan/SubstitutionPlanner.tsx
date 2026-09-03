@@ -100,7 +100,7 @@ export function SubstitutionPlanner({
 
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
-      <nav className="bg-dia-yellow text-dia-black border-b-2 border-dia-black px-4 py-2 sticky top-0 z-20">
+      <nav className="bg-dia-green text-white border-b-2 border-dia-green-dark px-4 py-2 sticky top-0 z-20">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1">
             <Link

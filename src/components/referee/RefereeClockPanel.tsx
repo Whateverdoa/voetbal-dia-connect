@@ -86,7 +86,7 @@ export function RefereeClockPanel({
         <button
           onClick={() => onClockAction(onStartMatch, onClockError)}
           disabled={isLoading}
-          className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-black shadow-lg transition-transform hover:bg-dia-green-light disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
+          className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-white shadow-lg transition-transform hover:bg-dia-green-dark disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
@@ -144,7 +144,7 @@ export function RefereeClockPanel({
           <button
             onClick={() => onClockAction(onResumeHalftime, onClockError)}
             disabled={isLoading}
-            className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-black shadow-lg transition-transform hover:bg-dia-green-light disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
+            className="w-full min-h-[52px] rounded-xl bg-dia-green py-3.5 text-base font-bold text-white shadow-lg transition-transform hover:bg-dia-green-dark disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-5 sm:text-xl"
           >
             {isLoading ? "Bezig..." : `Start ${quarterLabel} ${currentQuarter}`}
           </button>

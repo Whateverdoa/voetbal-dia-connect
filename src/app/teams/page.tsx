@@ -20,17 +20,17 @@ export default function TeamsPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-dia-green text-black">
+      <header className="bg-dia-green text-white">
         <div className="mx-auto max-w-lg px-4 py-4">
-          <nav className="mb-2 flex items-center gap-1 text-sm text-dia-black/70">
-            <Link href="/" className="hover:text-dia-black">
+          <nav className="mb-2 flex items-center gap-1 text-sm text-white/80">
+            <Link href="/" className="hover:text-white">
               Home
             </Link>
             <ChevronRight className="h-4 w-4" />
-            <span className="font-medium text-dia-black">Teams</span>
+            <span className="font-medium text-white">Teams</span>
           </nav>
           <h1 className="text-2xl font-bold">Teams</h1>
-          <p className="text-dia-black/70">
+          <p className="text-white/80">
             Zoek een team voor de stand en de gespeelde wedstrijden.
           </p>
         </div>

@@ -121,7 +121,7 @@ export function ClerkNav() {
               <SignUpButton mode="modal">
                 <button
                   type="button"
-                  className="text-sm font-medium text-black bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-yellow-deep"
+                  className="text-sm font-medium text-white bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-green-dark"
                 >
                   Registreren
                 </button>

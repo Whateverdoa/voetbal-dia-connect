@@ -38,7 +38,7 @@ export function PlayerCard({
         "p-3 rounded-xl border-2 transition-all",
         absent && "bg-amber-50 border-amber-400",
         injured && "bg-rose-50 border-rose-400",
-        !unavailable && onField && "bg-dia-green-light border-dia-yellow-deep",
+        !unavailable && onField && "bg-dia-green-light border-dia-green",
         !unavailable && !onField && "bg-gray-50 border-gray-200",
         isKeeper && !unavailable && "ring-2 ring-yellow-400 ring-offset-1"
       )}

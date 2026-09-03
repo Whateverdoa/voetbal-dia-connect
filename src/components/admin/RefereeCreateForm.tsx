@@ -95,7 +95,7 @@ export function RefereeCreateForm({
           type="button"
           onClick={onSubmit}
           disabled={!name.trim() || !email.trim()}
-          className="rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-black disabled:bg-slate-300"
+          className="rounded-2xl bg-dia-green px-5 py-3 text-sm font-semibold text-white disabled:bg-slate-300"
         >
           Toevoegen
         </button>

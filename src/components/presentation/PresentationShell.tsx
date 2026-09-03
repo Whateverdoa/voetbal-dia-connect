@@ -24,14 +24,14 @@ export function PresentationShell({
       className={`bg-dia-black text-white flex flex-col overflow-hidden ${kiosk ? "select-none" : ""}`}
       style={{ height: "calc(100dvh - var(--app-nav-height, 0px))" }}
     >
-      <header className="shrink-0 px-6 py-4 bg-dia-yellow text-black border-b border-dia-black/20 flex items-end justify-between gap-4">
+      <header className="shrink-0 px-6 py-4 bg-dia-green text-white border-b border-dia-green-dark flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-black font-semibold">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">
             DIA Live Presentatie
           </p>
-          <h1 className="text-2xl md:text-4xl font-bold mt-1 text-black">{title}</h1>
+          <h1 className="text-2xl md:text-4xl font-bold mt-1">{title}</h1>
           {subtitle ? (
-            <p className="text-black/70 text-sm md:text-base mt-1">{subtitle}</p>
+            <p className="text-white/80 text-sm md:text-base mt-1">{subtitle}</p>
           ) : null}
         </div>
         {actions && !kiosk ? <div className="shrink-0">{actions}</div> : null}

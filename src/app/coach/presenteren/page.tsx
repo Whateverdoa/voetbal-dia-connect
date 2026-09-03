@@ -42,7 +42,7 @@ export default function CoachPresenterenPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-dia-green text-black p-4">
+      <header className="bg-dia-green text-white p-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -54,7 +54,7 @@ export default function CoachPresenterenPage() {
             </Link>
             <div className="min-w-0">
               <h1 className="text-xl font-bold">Presenteren</h1>
-              <p className="text-sm text-black/70">Kies welke wedstrijd je toont</p>
+              <p className="text-sm text-white/80">Kies welke wedstrijd je toont</p>
             </div>
           </div>
           <button
@@ -102,7 +102,7 @@ export default function CoachPresenterenPage() {
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href={`/present/match/${code}/kleedkamer?tab=opstelling`}
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-black"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-white"
                   >
                     Toon opstelling
                   </Link>

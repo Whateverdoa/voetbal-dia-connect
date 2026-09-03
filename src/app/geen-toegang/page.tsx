@@ -24,7 +24,7 @@ export default async function GeenToegangPage({
         <div className="flex gap-3 pt-2">
           <Link
             href="/"
-            className="px-4 py-2 rounded-lg bg-dia-green text-black text-sm font-medium hover:bg-dia-yellow-deep"
+            className="px-4 py-2 rounded-lg bg-dia-green text-white text-sm font-medium hover:bg-dia-green-dark"
           >
             Naar start
           </Link>

@@ -51,11 +51,15 @@ export function PresentTacticsBoard({
   return (
     <div className="flex-1 h-full min-h-0 flex flex-col overflow-hidden">
       <div className="shrink-0 flex flex-wrap items-center gap-2 mb-4">
-        <span className="px-4 py-2 rounded-lg font-semibold min-h-[48px] flex items-center bg-dia-black text-dia-yellow ring-2 ring-dia-yellow">
+        <span className="px-4 py-2 rounded-lg font-semibold min-h-[48px] flex items-center bg-dia-green text-white">
           Opstelling
         </span>
         <div className="ml-auto">
-          <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
+          <PitchLayoutToggle
+            value={pitchLayout}
+            onChange={setPitchLayout}
+            variant="dark"
+          />
         </div>
       </div>
 

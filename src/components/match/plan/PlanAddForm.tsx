@@ -139,7 +139,7 @@ export function PlanAddForm({
         type="button"
         disabled={!playerOut || !playerIn || isBusy}
         onClick={() => void handleAdd()}
-        className="w-full py-3 bg-dia-green text-black rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
+        className="w-full py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
       >
         {isBusy ? "Bezig..." : "Toevoegen aan plan"}
       </button>

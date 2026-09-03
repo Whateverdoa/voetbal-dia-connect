@@ -76,7 +76,7 @@ export function DiaScorerPrompt({
         <button
           onClick={onConfirm}
           disabled={isLoading || !selectedPlayerId}
-          className="flex-1 py-3 bg-dia-green text-black text-sm font-medium rounded-lg hover:bg-dia-green-light disabled:opacity-50"
+          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium rounded-lg hover:bg-dia-green-dark disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Opslaan"}
         </button>
@@ -145,8 +145,8 @@ export function ShirtNumberPrompt({
         <button
           onClick={onConfirm}
           disabled={isLoading || !shirtNumber}
-          className="flex-1 py-3 bg-dia-green text-black text-sm font-medium
-                     rounded-lg hover:bg-dia-green-light disabled:opacity-50"
+          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium
+                     rounded-lg hover:bg-dia-green-dark disabled:opacity-50"
         >
           {isLoading ? "Bezig..." : "Opslaan"}
         </button>
@@ -192,9 +192,9 @@ export function ScoreColumn({
         <button
           onClick={() => onIncrement(team)}
           disabled={isLoading}
-          className="flex-1 py-3 bg-dia-green text-black text-xl font-bold rounded-lg
+          className="flex-1 py-3 bg-dia-green text-white text-xl font-bold rounded-lg
                      min-h-[48px] active:scale-[0.96] transition-transform
-                     hover:bg-dia-green-light disabled:opacity-50"
+                     hover:bg-dia-green-dark disabled:opacity-50"
           aria-label={`${teamName} score +1`}
         >
           +

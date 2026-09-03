@@ -34,7 +34,7 @@ function WorkspaceToggle({
       onClick={onClick}
       className={`inline-flex min-h-[48px] items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
         active
-          ? "bg-dia-green text-black"
+          ? "bg-dia-green text-white"
           : "bg-white text-slate-600 hover:bg-slate-100"
       }`}
     >

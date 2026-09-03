@@ -59,7 +59,7 @@ export function RefereeOpenMatchCard({
         type="button"
         disabled={busy}
         onClick={onClaim}
-        className="w-full min-h-[48px] bg-dia-green text-black text-sm font-semibold disabled:opacity-60"
+        className="w-full min-h-[48px] bg-dia-green text-white text-sm font-semibold disabled:opacity-60"
       >
         Claim deze wedstrijd
       </button>

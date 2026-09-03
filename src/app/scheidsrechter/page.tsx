@@ -28,7 +28,7 @@ export default function ScheidsrechterPage() {
           <p className="text-sm text-gray-600">
             Deze omgeving verwacht Clerk-login via e-mail en rollen.
           </p>
-          <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black">
+          <Link href="/" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white">
             Terug naar home
           </Link>
         </div>
@@ -111,7 +111,7 @@ function RefereePageReady({ roles }: { roles: string[] }) {
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/sign-in"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-black"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white"
               >
                 Naar inloggen
               </Link>

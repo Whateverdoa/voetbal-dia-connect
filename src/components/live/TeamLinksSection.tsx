@@ -19,7 +19,7 @@ export function TeamLinksSection({
       <div className="grid grid-cols-2 gap-2">
         <Link
           href={`/team/${teamSlug}?tab=stand`}
-          className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl bg-dia-green px-3 py-2 text-center text-sm font-semibold text-black"
+          className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl bg-dia-green px-3 py-2 text-center text-sm font-semibold text-white"
         >
           <Trophy className="h-5 w-5" />
           Stand

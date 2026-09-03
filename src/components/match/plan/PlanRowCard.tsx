@@ -128,7 +128,7 @@ export function PlanRowCard({
               type="button"
               disabled={isBusy}
               onClick={() => onExecute(row._id)}
-              className="shrink-0 rounded-lg bg-dia-green px-2.5 text-sm font-semibold text-black min-h-[44px]"
+              className="shrink-0 rounded-lg bg-dia-green px-2.5 text-sm font-semibold text-white min-h-[44px]"
             >
               Bevestigen
             </button>

@@ -32,29 +32,29 @@ export default function TeamPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-dia-green text-black">
+      <header className="bg-dia-green text-white">
         <div className="mx-auto max-w-lg px-4 py-4">
-          <nav className="mb-2 flex items-center gap-1 text-sm text-dia-black/70">
-            <Link href="/" className="hover:text-dia-black">
+          <nav className="mb-2 flex items-center gap-1 text-sm text-white/80">
+            <Link href="/" className="hover:text-white">
               Home
             </Link>
             <ChevronRight className="h-4 w-4" />
-            <Link href="/teams" className="hover:text-dia-black">
+            <Link href="/teams" className="hover:text-white">
               Teams
             </Link>
             <ChevronRight className="h-4 w-4" />
-            <span className="font-medium text-dia-black">{team.name}</span>
+            <span className="font-medium text-white">{team.name}</span>
           </nav>
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold">{team.name}</h1>
-              <p className="text-dia-black/70">
+              <p className="text-white/80">
                 {team.clubName} · seizoen {seasonKey}
               </p>
             </div>
             <Link
               href="/teams"
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-dia-black px-3 text-sm font-semibold text-dia-yellow"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-white/15 px-3 text-sm font-semibold text-white"
             >
               <Users className="h-4 w-4" />
               Ander team
@@ -101,7 +101,7 @@ function NotFoundScreen({ slug }: { slug: string }) {
         </p>
         <Link
           href="/teams"
-          className="inline-block rounded-lg bg-dia-green px-6 py-3 font-medium text-black"
+          className="inline-block rounded-lg bg-dia-green px-6 py-3 font-medium text-white"
         >
           Alle teams
         </Link>

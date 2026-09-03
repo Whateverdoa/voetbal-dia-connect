@@ -19,7 +19,7 @@ export function UnavailablePresentationSurface({
       <div className="flex justify-center">
         <Link
           href="/coach/presenteren"
-          className="inline-flex min-h-[48px] items-center rounded-xl bg-dia-yellow px-5 py-3 font-semibold text-black"
+          className="inline-flex min-h-[48px] items-center rounded-xl bg-dia-green px-5 py-3 font-semibold text-white"
         >
           Naar presenteren
         </Link>

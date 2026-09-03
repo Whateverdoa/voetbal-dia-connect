@@ -37,7 +37,7 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-dia-green text-black sticky top-0 z-40 shadow-md">
+      <header className="bg-dia-green text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         {toolbar}
         {liveMatches.length > 0 && (
-          <section className="bg-dia-green-light border-2 border-dia-yellow-deep/40 rounded-2xl p-4">
+          <section className="bg-dia-green-light border-2 border-dia-green/30 rounded-2xl p-4">
             <h2 className="text-lg font-bold text-dia-black mb-3 flex items-center gap-2">
               <span className="w-3 h-3 bg-dia-yellow rounded-full animate-pulse" />
               Actieve wedstrijden
@@ -151,7 +151,7 @@ function TeamSection({
       <div className="p-4 space-y-4">
         <Link
           href={`/coach/new?teamId=${team.id}`}
-          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-black font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-light"
+          className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-dia-green text-white font-semibold rounded-xl text-lg min-h-[56px] active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:bg-dia-green-dark"
         >
           <Plus className="w-5 h-5" />
           Nieuwe wedstrijd

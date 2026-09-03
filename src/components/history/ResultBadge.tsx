@@ -11,7 +11,7 @@ interface ResultBadgeProps {
 const config = {
   W: {
     label: "W",
-    className: "bg-dia-yellow text-white",
+    className: "bg-dia-green text-white",
   },
   D: {
     label: "G",

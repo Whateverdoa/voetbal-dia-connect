@@ -29,7 +29,7 @@ export default function CoachTeamRosterPage() {
   if (setup === null) {
     return (
       <main className="min-h-screen flex flex-col bg-gray-50">
-        <header className="bg-dia-green text-black p-4">
+        <header className="bg-dia-green text-white p-4">
           <div className="max-w-2xl mx-auto flex items-center gap-3">
             <Link href="/coach" className="p-2 -ml-2 rounded-lg hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center">
               <ArrowLeft className="w-5 h-5" />
@@ -46,7 +46,7 @@ export default function CoachTeamRosterPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-dia-green text-black sticky top-0 z-40 shadow-md">
+      <header className="bg-dia-green text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link
             href="/coach"

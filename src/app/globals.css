@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  /* RKVV DIA brand — bannergeel + zwart (rkvvdia.nl gele menubalk #FFE713) */
-  --color-dia-green: #FFE713; /* bannergeel primary (token name kept for existing classes) */
-  --color-dia-green-light: #FFF493; /* soft yellow wash / hover */
-  --color-dia-green-dark: #0A0A0A; /* club black for dark chrome */
+  /* RKVV DIA — clubgroen as the calm operational primary; yellow stays an accent. */
+  --color-dia-green: #1B5E20;
+  --color-dia-green-light: #E8F5E9; /* wash for cards / panels */
+  --color-dia-green-dark: #0D3D14;
   --color-dia-yellow: #FFE713;
-  --color-dia-yellow-deep: #DFC800; /* darker yellow for pressed/hover */
+  --color-dia-yellow-deep: #DFC800;
   --color-dia-black: #0A0A0A;
   --color-dia-white: #FFFFFF;
 }
 
 :root {
   /* Legacy CSS variable for backwards compatibility */
-  --dia-green: #FFE713;
+  --dia-green: #1B5E20;
   --dia-black: #0A0A0A;
 }
 
@@ -24,8 +24,7 @@ body {
 }
 
 body {
-  /* Light operational UI; accent is black + banner yellow (not green). */
-  @apply bg-[#FCFBF2] min-h-screen;
+  @apply bg-gray-50 min-h-screen;
 }
 
 /* Score display animation */
@@ -75,7 +74,7 @@ body {
 }
 
 .player-card.on-field {
-  @apply border-dia-yellow-deep bg-dia-green-light;
+  @apply border-dia-green bg-dia-green-light;
 }
 
 .player-card.is-keeper {

@@ -89,13 +89,13 @@ export function PresentStudio({
           <div className="ml-auto flex flex-wrap gap-2">
             <Link
               href={`/coach/match/${match.matchId}`}
-              className="px-4 py-2 rounded-lg bg-dia-yellow text-black font-semibold min-h-[48px] flex items-center"
+              className="px-4 py-2 rounded-lg bg-dia-green text-white font-semibold min-h-[48px] flex items-center"
             >
               ← Coach
             </Link>
             <Link
               href={`/coach/match/${match.matchId}/wisselplan`}
-              className="px-4 py-2 rounded-lg bg-dia-yellow text-black font-semibold min-h-[48px] flex items-center"
+              className="px-4 py-2 rounded-lg bg-dia-green text-white font-semibold min-h-[48px] flex items-center"
             >
               Planscherm
             </Link>
@@ -179,8 +179,8 @@ function TabButton({
       onClick={onClick}
       className={`px-4 py-2 rounded-lg font-semibold min-h-[48px] ${
         active
-          ? "bg-dia-black text-dia-yellow ring-2 ring-dia-yellow"
-          : "bg-dia-yellow text-black"
+          ? "bg-dia-black text-white ring-2 ring-dia-green"
+          : "bg-dia-green text-white"
       }`}
     >
       {children}

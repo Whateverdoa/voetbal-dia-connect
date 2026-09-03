@@ -53,7 +53,11 @@ export default function PresentMatchPage() {
       subtitle={`Code ${match.publicCode}`}
       kiosk={kiosk}
       actions={
-        <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
+        <PitchLayoutToggle
+          value={pitchLayout}
+          onChange={setPitchLayout}
+          variant="dark"
+        />
       }
     >
       <LivePresentationBoard

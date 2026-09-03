@@ -36,7 +36,7 @@ export function RoleViewToggle({
           disabled={!hasOwnRole}
           className={`min-h-[44px] rounded-xl px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${
             viewMode === "own"
-              ? "bg-dia-green text-black"
+              ? "bg-dia-green text-white"
               : "bg-white text-gray-700 border border-gray-200"
           }`}
         >

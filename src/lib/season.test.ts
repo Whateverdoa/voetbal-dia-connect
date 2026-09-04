@@ -13,8 +13,20 @@ describe("season helpers", () => {
     expect(seasonKeyFromMs(Date.UTC(2026, 7, 1))).toBe("2026-2027");
   });
 
-  it("keeps legacy matches without seasonKey visible", () => {
-    expect(isActiveSeasonMatch({}, "2025-2026")).toBe(true);
+  it("infers season from kickoff when seasonKey is missing", () => {
+    expect(
+      isActiveSeasonMatch(
+        { scheduledAt: Date.UTC(2026, 2, 15) },
+        "2025-2026"
+      )
+    ).toBe(true);
+    expect(
+      isActiveSeasonMatch(
+        { scheduledAt: Date.UTC(2026, 2, 15) },
+        "2026-2027"
+      )
+    ).toBe(false);
+    expect(isActiveSeasonMatch({}, "2026-2027")).toBe(false);
   });
 
   it("filters other seasons", () => {

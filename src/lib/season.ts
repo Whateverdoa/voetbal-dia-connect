@@ -17,9 +17,13 @@ export function activeSeasonKey(nowMs: number = Date.now()): string {
 }
 
 export function isActiveSeasonMatch(
-  match: { seasonKey?: string },
+  match: { seasonKey?: string; scheduledAt?: number; createdAt?: number },
   activeKey: string
 ): boolean {
-  if (!match.seasonKey) return true;
-  return match.seasonKey === activeKey;
+  const inferredFrom = match.scheduledAt ?? match.createdAt;
+  const key =
+    match.seasonKey ??
+    (inferredFrom != null ? seasonKeyFromMs(inferredFrom) : undefined);
+  if (!key) return false;
+  return key === activeKey;
 }

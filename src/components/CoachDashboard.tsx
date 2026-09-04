@@ -7,11 +7,12 @@ import {
   DashboardMatchCard,
   type DashboardMatch,
 } from "@/components/coach/DashboardMatchCard";
+import { coachStandenHref } from "@/lib/coachStandenHref";
 
 interface CoachDashboardProps {
   data: {
     coach: { id: string; name: string };
-    teams: { id: string; name: string }[];
+    teams: { id: string; name: string; slug?: string }[];
     matches: DashboardMatch[];
     viewingAsAdmin?: boolean;
   };
@@ -34,6 +35,9 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
   const liveMatches = data.matches.filter(
     (m) => m.status === "live" || m.status === "halftime" || m.status === "lineup"
   );
+  const standenHref = data.viewingAsAdmin
+    ? "/teams"
+    : coachStandenHref(data.teams);
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
@@ -61,10 +65,10 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
                 Presenteren
               </Link>
               <Link
-                href="/help/coach"
+                href={standenHref}
                 className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"
               >
-                Handleiding
+                Standen
               </Link>
               <button
                 onClick={onLogout}

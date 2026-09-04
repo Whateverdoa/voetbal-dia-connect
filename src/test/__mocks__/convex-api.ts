@@ -71,6 +71,7 @@ export const api = {
   },
   userQueries: {
     getMyRoles: "userQueries:getMyRoles",
+    getMyCoachTeams: "userQueries:getMyCoachTeams",
   },
   substitutionPlans: {
     addPlanItem: "substitutionPlans:addPlanItem",

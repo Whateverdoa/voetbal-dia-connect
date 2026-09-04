@@ -26,32 +26,27 @@ export default function Home() {
             Wedstrijduitslagen Live
           </h1>
           <p className="text-gray-600">Volg de wedstrijd live</p>
-          <div>
+          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-dia-black">
             <Link
-              href="/help"
-              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-dia-black hover:text-dia-black underline underline-offset-4"
+              href="/standen"
+              className="inline-flex min-h-[44px] items-center underline underline-offset-4"
             >
-              Handleiding
+              Vandaag live
             </Link>
-            <span className="text-xs text-gray-500 block mt-1">
-              Coach, scheidsrechter en admin — meekijken kan zonder account.
+            <span className="text-gray-300" aria-hidden>
+              •
             </span>
+            <Link
+              href="/teams"
+              className="inline-flex min-h-[44px] items-center underline underline-offset-4"
+            >
+              Standen per team
+            </Link>
           </div>
         </div>
 
         {/* Match browser — primary element */}
         <MatchBrowser />
-
-        {/* Vandaag live + teams */}
-        <div className="flex items-center justify-center gap-3 text-sm font-medium text-dia-black">
-          <Link href="/standen" className="transition-colors">
-            Vandaag live
-          </Link>
-          <span className="text-gray-300">•</span>
-          <Link href="/teams" className="transition-colors">
-            Standen per team
-          </Link>
-        </div>
 
         {/* Collapsible code input for edge cases */}
         <div className="text-center">

@@ -106,6 +106,7 @@ import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
 import type * as ops_completeTscJo132Q4 from "../ops/completeTscJo132Q4.js";
 import type * as ops_correctTscJo132Guests from "../ops/correctTscJo132Guests.js";
+import type * as ops_deleteMatchByCode from "../ops/deleteMatchByCode.js";
 import type * as ops_equalizeTscJo132Minutes from "../ops/equalizeTscJo132Minutes.js";
 import type * as ops_setJo132ActiveRoster from "../ops/setJo132ActiveRoster.js";
 import type * as pinHelpers from "../pinHelpers.js";
@@ -263,6 +264,7 @@ declare const fullApi: ApiFromModules<{
   matches: typeof matches;
   "ops/completeTscJo132Q4": typeof ops_completeTscJo132Q4;
   "ops/correctTscJo132Guests": typeof ops_correctTscJo132Guests;
+  "ops/deleteMatchByCode": typeof ops_deleteMatchByCode;
   "ops/equalizeTscJo132Minutes": typeof ops_equalizeTscJo132Minutes;
   "ops/setJo132ActiveRoster": typeof ops_setJo132ActiveRoster;
   pinHelpers: typeof pinHelpers;

@@ -156,7 +156,7 @@ export const verifyCoachAccess = query({
         coach: { id: coach._id, name: coach.name },
         teams: teams
           .filter((team): team is NonNullable<typeof team> => team !== null)
-          .map((team) => ({ id: team._id, name: team.name })),
+          .map((team) => ({ id: team._id, name: team.name, slug: team.slug })),
         matches: enriched,
         viewingAsAdmin: false,
       };

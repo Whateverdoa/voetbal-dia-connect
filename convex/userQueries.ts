@@ -22,3 +22,30 @@ export const getMyRoles = query({
     return { roles: access?.roles ?? [] };
   },
 });
+
+/** Teams linked to the signed-in coach (empty when not a coach). */
+export const getMyCoachTeams = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.id("teams"),
+      name: v.string(),
+      slug: v.string(),
+    })
+  ),
+  handler: async (ctx) => {
+    const access = await getCurrentUserAccess(ctx);
+    if (!access?.coachId) return [];
+    const coach = await ctx.db.get(access.coachId);
+    if (!coach) return [];
+    const teamIds = [...new Set(coach.teamIds)];
+    const teams = await Promise.all(teamIds.map((id) => ctx.db.get(id)));
+    return teams
+      .filter((team): team is NonNullable<typeof team> => team !== null)
+      .map((team) => ({
+        id: team._id,
+        name: team.name,
+        slug: team.slug,
+      }));
+  },
+});

@@ -99,7 +99,7 @@ describe("CoachPage", () => {
       roles: ["coach"],
       coachData: {
         coach: { id: "coach-1", name: "Coach Mike" },
-        teams: [{ id: "team-1", name: "JO12-1" }],
+        teams: [{ id: "team-1", name: "JO12-1", slug: "jo12-1" }],
         matches: [
           {
             _id: "match-1",

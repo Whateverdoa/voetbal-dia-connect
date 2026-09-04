@@ -23,11 +23,16 @@ export function activeSeasonKey(nowMs: number): string {
   return seasonKeyFromMs(nowMs);
 }
 
-/** Keep match if it has no seasonKey (legacy) or matches the active season. */
+/** Current-season only. Infer from kickoff/created when seasonKey is missing. */
 export function isActiveSeasonMatch(
-  match: { seasonKey?: string },
+  match: { seasonKey?: string; scheduledAt?: number; createdAt?: number },
   activeKey: string
 ): boolean {
-  if (!match.seasonKey) return true;
-  return match.seasonKey === activeKey;
+  const inferredFrom =
+    match.scheduledAt ?? match.createdAt;
+  const key =
+    match.seasonKey ??
+    (inferredFrom != null ? seasonKeyFromMs(inferredFrom) : undefined);
+  if (!key) return false;
+  return key === activeKey;
 }

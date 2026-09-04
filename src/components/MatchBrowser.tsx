@@ -12,6 +12,7 @@ import {
   type VenueFilter,
 } from "@/lib/matchBrowserFilters";
 import { MatchBrowserCard } from "@/components/MatchBrowserCard";
+import { activeSeasonKey } from "@/lib/season";
 
 const statusGroups = [
   {
@@ -73,7 +74,9 @@ function sortMatchesInGroup(
 }
 
 export function MatchBrowser() {
-  const matches = useQuery(api.matches.listPublicMatches);
+  const matches = useQuery(api.matches.listPublicMatches, {
+    seasonKey: activeSeasonKey(),
+  });
   const connection = useConvexConnectionState();
   const [showConnectionIssue, setShowConnectionIssue] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");

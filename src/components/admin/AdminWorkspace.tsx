@@ -88,12 +88,6 @@ export function AdminWorkspace({ onLogout }: { onLogout: () => void }) {
             <h1 className="mt-1 text-2xl font-semibold text-slate-900">Admin werkplek</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/help/admin"
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 min-h-[44px] inline-flex items-center"
-            >
-              Handleiding
-            </Link>
             <button
               type="button"
               onClick={onLogout}

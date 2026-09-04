@@ -4,19 +4,25 @@
  * Referee names are only included when referees.showPublicName is true; coach identity is never exposed.
  */
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
+import { isActiveSeasonMatch } from "./lib/season";
 
 // List all publicly visible matches, enriched with team/club names.
 export const listPublicMatches = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { seasonKey: v.string() },
+  handler: async (ctx, args) => {
     // Note: acceptable for small club. Paginate if match count grows.
     const allMatches = await ctx.db.query("matches").collect();
 
     // Exclude "lineup" — that's pre-match setup, not public
     const visibleStatuses = new Set(["scheduled", "live", "halftime", "finished"]);
-    const matches = allMatches.filter((m) => visibleStatuses.has(m.status));
+    const matches = allMatches.filter(
+      (m) =>
+        visibleStatuses.has(m.status) &&
+        isActiveSeasonMatch(m, args.seasonKey)
+    );
 
     // Enrich each match with team name and club name
     const enriched = await Promise.all(

@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RefereeOpenMatchCard } from "./RefereeOpenMatchCard";
-import Link from "next/link";
 
 type Tab = "beschikbaar" | "mijn" | "meldingen";
 
@@ -95,17 +94,9 @@ export function RefereeDashboard({
           >
             ← Uitloggen
           </button>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/help/scheidsrechter"
-              className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 inline-flex items-center"
-            >
-              Handleiding
-            </Link>
-            <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-              Scheidsrechter
-            </span>
-          </div>
+          <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+            Scheidsrechter
+          </span>
         </div>
       </nav>
 

@@ -11,6 +11,7 @@ import {
   browserListGroup,
   isScheduledKickoffOverdue,
 } from "@/lib/matchBrowserFilters";
+import { activeSeasonKey } from "@/lib/season";
 
 function isToday(ts: number): boolean {
   const d = new Date(ts);
@@ -99,7 +100,9 @@ function StandenContent() {
   const showAll = params.get("alle") === "true";
   const hasFilter = teamFilter !== "";
 
-  const raw = useQuery(api.matches.listPublicMatches);
+  const raw = useQuery(api.matches.listPublicMatches, {
+    seasonKey: activeSeasonKey(),
+  });
 
   if (raw === undefined) {
     return <p className="text-center text-gray-400 py-16 text-lg">Laden...</p>;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { MatchPlayer } from "@/components/match/types";
+import type { MatchPlayer, SubstitutionPlanKind } from "@/components/match/types";
 import { formatFieldLabel } from "@/lib/cards/formatCardName";
 import { periodWord } from "./planLabels";
 import type { PlanAddFormPayload } from "@/hooks/useSubstitutionPlanActions";
@@ -24,7 +24,7 @@ interface PlanAddFormProps {
   onAdd: (payload: PlanAddFormPayload) => Promise<boolean>;
 }
 
-/** Dropdown form to append one planned substitution (list mode). */
+/** Dropdown form to append one planned substitution or position swap. */
 export function PlanAddForm({
   quarterCount,
   regulationDurationMinutes = 60,
@@ -33,11 +33,16 @@ export function PlanAddForm({
   isBusy,
   onAdd,
 }: PlanAddFormProps) {
+  const [kind, setKind] = useState<SubstitutionPlanKind>("substitution");
   const [playerOut, setPlayerOut] = useState<Id<"players"> | "">("");
   const [playerIn, setPlayerIn] = useState<Id<"players"> | "">("");
   const [targetQuarter, setTargetQuarter] = useState<number | null>(null);
   const [targetMinute, setTargetMinute] = useState("");
   const [note, setNote] = useState("");
+
+  const isSwap = kind === "positionSwap";
+  const leftPool = projectedOnField;
+  const rightPool = isSwap ? projectedOnField : projectedBench;
 
   const parsedMinute = (() => {
     const trimmed = targetMinute.trim();
@@ -56,6 +61,12 @@ export function PlanAddForm({
         )
       : null;
 
+  const setKindAndResetPlayers = (next: SubstitutionPlanKind) => {
+    setKind(next);
+    setPlayerOut("");
+    setPlayerIn("");
+  };
+
   const handleMinuteChange = (raw: string) => {
     setTargetMinute(raw);
     const trimmed = raw.trim();
@@ -68,10 +79,11 @@ export function PlanAddForm({
   };
 
   const handleAdd = async () => {
-    if (!playerOut || !playerIn) return;
+    if (!playerOut || !playerIn || playerOut === playerIn) return;
     const payload: PlanAddFormPayload = {
       playerOutId: playerOut,
       playerInId: playerIn,
+      kind,
     };
     if (targetQuarter != null) payload.targetQuarter = targetQuarter;
     if (parsedMinute != null) payload.targetMinute = parsedMinute;
@@ -89,6 +101,38 @@ export function PlanAddForm({
   return (
     <div className="border border-gray-200 rounded-xl p-3 space-y-2">
       <p className="text-sm font-semibold">Regel toevoegen</p>
+
+      <div
+        className="grid grid-cols-2 gap-1"
+        role="group"
+        aria-label="Soort regel"
+      >
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={() => setKindAndResetPlayers("substitution")}
+          className={`min-h-[44px] rounded-lg px-2 text-sm font-semibold disabled:opacity-50 ${
+            !isSwap
+              ? "bg-dia-green text-white"
+              : "border border-gray-200 bg-white text-gray-700"
+          }`}
+        >
+          Wissel
+        </button>
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={() => setKindAndResetPlayers("positionSwap")}
+          className={`min-h-[44px] rounded-lg px-2 text-sm font-semibold disabled:opacity-50 ${
+            isSwap
+              ? "bg-dia-green text-white"
+              : "border border-gray-200 bg-white text-gray-700"
+          }`}
+        >
+          Positiewissel
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <select
           value={playerOut === "" ? "" : String(playerOut)}
@@ -99,11 +143,14 @@ export function PlanAddForm({
           }
           className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
         >
-          <option value="">Eruit (veld)</option>
-          {projectedOnField.map((player) => (
+          <option value="">
+            {isSwap ? "Speler A (veld)" : "Eruit (veld)"}
+          </option>
+          {leftPool.map((player) => (
             <option
               key={String(player.playerId)}
               value={String(player.playerId)}
+              disabled={player.playerId === playerIn}
             >
               {optionLabel(player.name, player.number)}
             </option>
@@ -118,17 +165,25 @@ export function PlanAddForm({
           }
           className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
         >
-          <option value="">Erin (bank)</option>
-          {projectedBench.map((player) => (
+          <option value="">
+            {isSwap ? "Speler B (veld)" : "Erin (bank)"}
+          </option>
+          {rightPool.map((player) => (
             <option
               key={String(player.playerId)}
               value={String(player.playerId)}
+              disabled={player.playerId === playerOut}
             >
               {optionLabel(player.name, player.number)}
             </option>
           ))}
         </select>
       </div>
+      {isSwap ? (
+        <p className="text-xs text-gray-500">
+          Beide spelers blijven op het veld; alleen hun posities wisselen.
+        </p>
+      ) : null}
 
       <div className="space-y-1.5">
         <label className="text-xs text-gray-600">
@@ -197,11 +252,17 @@ export function PlanAddForm({
       />
       <button
         type="button"
-        disabled={!playerOut || !playerIn || isBusy}
+        disabled={
+          !playerOut || !playerIn || playerOut === playerIn || isBusy
+        }
         onClick={() => void handleAdd()}
         className="w-full py-3 bg-dia-green text-white rounded-xl font-semibold min-h-[48px] disabled:opacity-50"
       >
-        {isBusy ? "Bezig..." : "Toevoegen aan plan"}
+        {isBusy
+          ? "Bezig..."
+          : isSwap
+            ? "Positiewissel toevoegen"
+            : "Wissel toevoegen"}
       </button>
     </div>
   );

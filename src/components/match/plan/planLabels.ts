@@ -45,19 +45,19 @@ export function rowKind(row: SubstitutionPlanRow): SubstitutionPlanKind {
   return row.kind ?? "substitution";
 }
 
-/** First name + shirt number for both sides (e.g. "Sem 7 → Krijn 12"). */
+/** Bank → veld with role labels (e.g. "b: Krijn 12 → v: Sem 7"). */
 export function rowLabel(row: SubstitutionPlanRow): string {
-  const left =
-    formatFieldLabel(row.outName ?? "", row.outNumber) ||
-    firstNameOf(row.outName ?? "") ||
-    "?";
-  const right =
+  const fromBank =
     formatFieldLabel(row.inName ?? "", row.inNumber) ||
     firstNameOf(row.inName ?? "") ||
     "?";
+  const fromField =
+    formatFieldLabel(row.outName ?? "", row.outNumber) ||
+    firstNameOf(row.outName ?? "") ||
+    "?";
   return rowKind(row) === "positionSwap"
-    ? `${left} ↔ ${right}`
-    : `${left} → ${right}`;
+    ? `${fromField} ↔ ${fromBank}`
+    : `b: ${fromBank} → v: ${fromField}`;
 }
 
 export function rowBadge(row: SubstitutionPlanRow): string {

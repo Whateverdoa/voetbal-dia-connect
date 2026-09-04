@@ -9,6 +9,7 @@ import { createCorrelationId } from "@/lib/correlationId";
 export type PlanAddFormPayload = {
   playerOutId: Id<"players">;
   playerInId: Id<"players">;
+  kind?: "substitution" | "positionSwap";
   targetQuarter?: number;
   targetMinute?: number;
   note?: string;
@@ -55,6 +56,9 @@ export function useSubstitutionPlanActions(matchId: Id<"matches">) {
         payload.targetQuarter !== undefined &&
         payload.targetMinute === undefined,
     };
+    if (payload.kind !== undefined) {
+      body.kind = payload.kind;
+    }
     if (payload.targetQuarter !== undefined) {
       body.targetQuarter = payload.targetQuarter;
     }

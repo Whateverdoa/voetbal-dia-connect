@@ -95,7 +95,7 @@ describe("planLabels", () => {
     });
 
     expect(rowKind(sub)).toBe("substitution");
-    expect(rowLabel(sub)).toBe("Jody 4 → Luc 1");
+    expect(rowLabel(sub)).toBe("b: Luc 1 → v: Jody 4");
     expect(rowBadge(sub)).toBe("Wissel");
     expect(rowBadgeClass(sub)).toContain("amber");
 

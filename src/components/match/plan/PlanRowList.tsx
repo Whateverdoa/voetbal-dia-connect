@@ -11,6 +11,7 @@ interface PlanRowListProps {
   pending: SubstitutionPlanRow[];
   done: SubstitutionPlanRow[];
   quarterCount: number;
+  regulationDurationMinutes?: number;
   warningByPlanId: Map<string, string>;
   canEditPlan: boolean;
   canPressExecute: boolean;
@@ -30,6 +31,7 @@ export function PlanRowList({
   pending,
   done,
   quarterCount,
+  regulationDurationMinutes = 60,
   warningByPlanId,
   canEditPlan,
   canPressExecute,
@@ -56,6 +58,10 @@ export function PlanRowList({
   return (
     <div className="space-y-2">
       <p className="text-sm font-semibold">Openstaand ({pending.length})</p>
+      <p className="text-xs text-gray-500">
+        Voor de wedstrijd: plan en helft/minuut opslaan. Na aftrap: “Wissel
+        uitvoeren” om de wissel echt te doen.
+      </p>
       {pending.length === 0 ? (
         <p className="text-sm text-gray-500">Geen regels in het plan.</p>
       ) : (
@@ -65,6 +71,7 @@ export function PlanRowList({
             row={row}
             displayIndex={index + 1}
             quarterCount={quarterCount}
+            regulationDurationMinutes={regulationDurationMinutes}
             warning={warningByPlanId.get(String(row._id))}
             canEditPlan={canEditPlan}
             canPressExecute={canPressExecute}

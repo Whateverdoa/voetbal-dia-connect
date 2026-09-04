@@ -63,7 +63,7 @@ export function PitchFitFrame({
 
   if (!fill) {
     return (
-      <div className="w-full flex justify-center">
+      <div className="w-full max-w-full overflow-x-clip flex justify-center">
         <div
           ref={pitchRef}
           className={`relative w-full max-w-4xl touch-none ${overflowClass} ${borderClass} rounded-md shadow-2xl`}
@@ -78,7 +78,7 @@ export function PitchFitFrame({
   return (
     <div
       ref={hostRef}
-      className="w-full h-full min-h-0 grid place-items-center"
+      className="w-full max-w-full h-full min-h-0 overflow-x-clip grid place-items-center"
     >
       <div
         ref={pitchRef}

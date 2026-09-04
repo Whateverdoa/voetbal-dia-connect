@@ -302,6 +302,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               teamId={match.teamId}
               status={match.status}
               quarterCount={match.quarterCount}
+              regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
               plans={match.substitutionPlans ?? []}
               players={match.players}
               formationId={match.formationId ?? undefined}

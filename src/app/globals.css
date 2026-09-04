@@ -20,11 +20,17 @@
 html,
 body {
   min-height: 100dvh;
+  max-width: 100%;
   -webkit-text-size-adjust: 100%;
+  /* Pitch-side phones: block sideways page drag from wide pitch/3D cards. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
   @apply bg-gray-50 min-h-screen;
+  position: relative;
+  width: 100%;
 }
 
 /* Score display animation */

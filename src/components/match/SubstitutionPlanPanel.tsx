@@ -26,6 +26,7 @@ interface SubstitutionPlanPanelProps {
   teamId: Id<"teams">;
   status: MatchStatus;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   plans: SubstitutionPlanRow[];
   players: MatchPlayer[];
   formationId?: string;
@@ -40,6 +41,7 @@ export function SubstitutionPlanPanel({
   teamId,
   status,
   quarterCount,
+  regulationDurationMinutes = 60,
   plans,
   players,
   formationId,
@@ -160,6 +162,7 @@ export function SubstitutionPlanPanel({
       {mode === "list" && canEditPlan ? (
         <PlanAddForm
           quarterCount={quarterCount}
+          regulationDurationMinutes={regulationDurationMinutes}
           projectedOnField={projection.projectedOnField}
           projectedBench={projection.projectedBench}
           isBusy={actions.busy === "add"}
@@ -198,6 +201,7 @@ export function SubstitutionPlanPanel({
         pending={pending}
         done={done}
         quarterCount={quarterCount}
+        regulationDurationMinutes={regulationDurationMinutes}
         warningByPlanId={warningByPlanId}
         canEditPlan={canEditPlan}
         canPressExecute={canPressExecute}

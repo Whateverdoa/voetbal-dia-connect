@@ -163,7 +163,7 @@ describe("SubstitutionPlanner", () => {
       screen.getByText(/Wisselplan · JO13-2 vs TSC/)
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Formatie")).toBeInTheDocument();
-    expect(screen.getByText("K1")).toBeInTheDocument();
+    expect(screen.getAllByText("K1").length).toBeGreaterThan(0);
     expect(screen.getByText(/Openstaand \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Jan → Henk/)).toBeInTheDocument();
     expect(screen.getByText("Plan leegmaken")).toBeInTheDocument();
@@ -228,12 +228,43 @@ describe("SubstitutionPlanner", () => {
 
     const minuteInputs = screen.getAllByPlaceholderText("min");
     fireEvent.change(minuteInputs[0]!, { target: { value: "18" } });
-    fireEvent.click(screen.getByRole("button", { name: "Zetten" }));
+    fireEvent.click(screen.getByRole("button", { name: "Minuut opslaan" }));
 
     await waitFor(() => {
       expect(mockUpdatePlanItem).toHaveBeenCalledWith({
         planId: "plan-1",
         targetMinute: 18,
+      });
+    });
+  });
+
+  it("saves the period immediately when a helft/kwart chip is tapped", async () => {
+    renderPlanner();
+
+    // Pitch K1/K2… plus plan-row chips — pick a row chip for K2 (not yet active).
+    const k2Buttons = screen.getAllByRole("button", { name: "K2" });
+    fireEvent.click(k2Buttons[k2Buttons.length - 1]!);
+
+    await waitFor(() => {
+      expect(mockUpdatePlanItem).toHaveBeenCalledWith({
+        planId: "plan-1",
+        targetQuarter: 2,
+      });
+    });
+  });
+
+  it("offers to also save the period implied by the typed minute", async () => {
+    renderPlanner();
+
+    const minuteInputs = screen.getAllByPlaceholderText("min");
+    fireEvent.change(minuteInputs[0]!, { target: { value: "35" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ook K3" }));
+
+    await waitFor(() => {
+      expect(mockUpdatePlanItem).toHaveBeenCalledWith({
+        planId: "plan-1",
+        targetMinute: 35,
+        targetQuarter: 3,
       });
     });
   });

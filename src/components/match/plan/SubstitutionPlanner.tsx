@@ -31,6 +31,7 @@ interface SubstitutionPlannerProps {
   opponent: string;
   status: MatchStatus;
   quarterCount: number;
+  regulationDurationMinutes?: number;
   plans: SubstitutionPlanRow[];
   players: MatchPlayer[];
   formationId?: string;
@@ -52,6 +53,7 @@ export function SubstitutionPlanner({
   opponent,
   status,
   quarterCount,
+  regulationDurationMinutes = 60,
   plans,
   players,
   formationId,
@@ -219,6 +221,7 @@ export function SubstitutionPlanner({
               {canEditPlan ? (
                 <PlanAddForm
                   quarterCount={quarterCount}
+                  regulationDurationMinutes={regulationDurationMinutes}
                   projectedOnField={
                     projection.quarterPreview?.projectedOnField ??
                     projection.projectedOnField
@@ -242,6 +245,7 @@ export function SubstitutionPlanner({
                 pending={pending}
                 done={done}
                 quarterCount={quarterCount}
+                regulationDurationMinutes={regulationDurationMinutes}
                 warningByPlanId={warningByPlanId}
                 canEditPlan={canEditPlan}
                 canPressExecute={canPressExecute}

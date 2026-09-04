@@ -71,6 +71,7 @@ export default function CoachWisselplanPage() {
       opponent={match.opponent}
       status={match.status}
       quarterCount={match.quarterCount}
+      regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
       plans={match.substitutionPlans ?? []}
       players={players}
       formationId={match.formationId ?? undefined}

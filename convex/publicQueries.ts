@@ -11,18 +11,18 @@ import { isActiveSeasonMatch } from "./lib/season";
 
 // List all publicly visible matches, enriched with team/club names.
 export const listPublicMatches = query({
-  args: { seasonKey: v.string() },
+  args: { seasonKey: v.optional(v.string()) },
   handler: async (ctx, args) => {
     // Note: acceptable for small club. Paginate if match count grows.
     const allMatches = await ctx.db.query("matches").collect();
 
     // Exclude "lineup" — that's pre-match setup, not public
     const visibleStatuses = new Set(["scheduled", "live", "halftime", "finished"]);
-    const matches = allMatches.filter(
-      (m) =>
-        visibleStatuses.has(m.status) &&
-        isActiveSeasonMatch(m, args.seasonKey)
-    );
+    const matches = allMatches.filter((m) => {
+      if (!visibleStatuses.has(m.status)) return false;
+      if (args.seasonKey) return isActiveSeasonMatch(m, args.seasonKey);
+      return true;
+    });
 
     // Enrich each match with team name and club name
     const enriched = await Promise.all(

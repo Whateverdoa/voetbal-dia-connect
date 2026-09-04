@@ -10,5 +10,6 @@ describe("coachStandenHref", () => {
 
   it("falls back to the team directory", () => {
     expect(coachStandenHref([])).toBe("/teams");
+    expect(coachStandenHref([{ slug: undefined }])).toBe("/teams");
   });
 });

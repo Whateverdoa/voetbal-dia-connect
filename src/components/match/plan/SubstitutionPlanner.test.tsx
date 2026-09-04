@@ -156,6 +156,15 @@ describe("SubstitutionPlanner", () => {
     );
   }
 
+  /** Pitch/bench cards share labels with <option>s — click the non-select node. */
+  function clickPitchLabel(label: string | RegExp) {
+    const node = screen
+      .getAllByText(label)
+      .find((el) => el.closest("select") == null && el.closest("option") == null);
+    expect(node).toBeTruthy();
+    fireEvent.click(node!);
+  }
+
   it("renders pitch and plan columns together", () => {
     renderPlanner();
 
@@ -165,15 +174,15 @@ describe("SubstitutionPlanner", () => {
     expect(screen.getByLabelText("Formatie")).toBeInTheDocument();
     expect(screen.getAllByText("K1").length).toBeGreaterThan(0);
     expect(screen.getByText(/Openstaand \(1\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Jan → Henk/)).toBeInTheDocument();
+    expect(screen.getByText(/b: Henk → v: Jan/)).toBeInTheDocument();
     expect(screen.getByText("Plan leegmaken")).toBeInTheDocument();
   });
 
   it("creates a plan row from pitch taps", async () => {
     renderPlanner();
 
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("JAN"));
+    clickPitchLabel("Piet 7");
+    clickPitchLabel("JAN");
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({
@@ -208,8 +217,8 @@ describe("SubstitutionPlanner", () => {
     fireEvent.change(screen.getByLabelText("Min"), {
       target: { value: "12" },
     });
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("JAN"));
+    clickPitchLabel("Piet 7");
+    clickPitchLabel("JAN");
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({

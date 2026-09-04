@@ -105,16 +105,18 @@ export function PlanRowCard({
 
   return (
     <div className="border border-gray-200 rounded-xl p-2.5 flex flex-col gap-2">
-      <div className="flex min-w-0 items-baseline gap-2">
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${rowBadgeClass(row)}`}
-        >
-          {rowBadge(row)}
-        </span>
-        <p className="min-w-0 truncate text-sm font-medium">
-          {displayIndex}. {rowLabel(row)}
-        </p>
-        <span className="ml-auto shrink-0 text-xs text-gray-500">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex min-w-0 items-start gap-2">
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${rowBadgeClass(row)}`}
+          >
+            {rowBadge(row)}
+          </span>
+          <p className="min-w-0 flex-1 text-sm font-semibold leading-snug break-words">
+            {displayIndex}. {rowLabel(row)}
+          </p>
+        </div>
+        <span className="pl-0.5 text-xs font-medium tabular-nums text-gray-500">
           {timingLabel(row, quarterCount)}
         </span>
       </div>

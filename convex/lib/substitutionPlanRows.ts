@@ -19,6 +19,8 @@ export type EnrichedSubstitutionPlan = {
   updatedAt: number;
   outName?: string;
   inName?: string;
+  outNumber?: number;
+  inNumber?: number;
 };
 
 export type SortableSubstitutionPlanRow<TId extends string = string> = {
@@ -138,6 +140,8 @@ export async function listEnrichedSubstitutionPlans(
       updatedAt: row.updatedAt,
       outName: playerOut?.name,
       inName: playerIn?.name,
+      outNumber: playerOut?.number,
+      inNumber: playerIn?.number,
     });
   }
   return enriched;

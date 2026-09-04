@@ -3,12 +3,17 @@
 import { useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { MatchPlayer } from "@/components/match/types";
+import { formatFieldLabel } from "@/lib/cards/formatCardName";
 import { periodWord } from "./planLabels";
 import type { PlanAddFormPayload } from "@/hooks/useSubstitutionPlanActions";
 import {
   periodChipLabel,
   suggestPeriodFromMinute,
 } from "@/lib/substitutions/suggestPeriodFromMinute";
+
+function optionLabel(name: string, number?: number): string {
+  return formatFieldLabel(name, number) || name;
+}
 
 interface PlanAddFormProps {
   quarterCount: number;
@@ -100,7 +105,7 @@ export function PlanAddForm({
               key={String(player.playerId)}
               value={String(player.playerId)}
             >
-              {player.name}
+              {optionLabel(player.name, player.number)}
             </option>
           ))}
         </select>
@@ -119,7 +124,7 @@ export function PlanAddForm({
               key={String(player.playerId)}
               value={String(player.playerId)}
             >
-              {player.name}
+              {optionLabel(player.name, player.number)}
             </option>
           ))}
         </select>

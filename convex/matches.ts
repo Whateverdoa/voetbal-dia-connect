@@ -323,6 +323,8 @@ export const getForCoach = query({
           updatedAt: r.updatedAt,
           outName: po?.name,
           inName: pi?.name,
+          outNumber: po?.number,
+          inNumber: pi?.number,
         };
       })
     );

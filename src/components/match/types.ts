@@ -70,6 +70,8 @@ export interface SubstitutionPlanRow {
   updatedAt: number;
   outName?: string;
   inName?: string;
+  outNumber?: number;
+  inNumber?: number;
 }
 
 export interface StagedSubstitution {

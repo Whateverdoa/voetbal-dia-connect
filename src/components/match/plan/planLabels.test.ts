@@ -36,19 +36,21 @@ describe("planLabels", () => {
       {
         matchPlayerId: "mp1" as Id<"matchPlayers">,
         playerId: "a" as Id<"players">,
-        name: "Jan",
+        name: "Jan Jansen",
+        number: 7,
         onField: true,
         isKeeper: false,
       },
       {
         matchPlayerId: "mp2" as Id<"matchPlayers">,
         playerId: "b" as Id<"players">,
-        name: "Piet",
+        name: "Piet Pieters",
+        number: 12,
         onField: false,
         isKeeper: false,
       },
     ];
-    expect(names(players)).toBe("Jan, Piet");
+    expect(names(players)).toBe("Jan 7, Piet 12");
     expect(names([])).toBe("geen");
   });
 
@@ -57,40 +59,48 @@ describe("planLabels", () => {
     expect(periodWord(4)).toBe("kwart");
   });
 
-  it("builds timing labels for quarter, minute, both, and neither", () => {
+  it("builds compact timing labels for quarter, minute, both, and neither", () => {
     expect(
       timingLabel(plan({ _id: "1" as Id<"substitutionPlans">, kind: "substitution", status: "pending", targetQuarter: 2, targetMinute: 15 }), 4)
-    ).toBe("kwart 2 · min ~15");
+    ).toBe("K2 · ~15");
     expect(
       timingLabel(plan({ _id: "2" as Id<"substitutionPlans">, kind: "substitution", status: "pending", targetQuarter: 1 }), 2)
-    ).toBe("start helft 1");
+    ).toBe("H1");
     expect(
       timingLabel(plan({ _id: "3" as Id<"substitutionPlans">, kind: "substitution", status: "pending", targetMinute: 40 }), 4)
-    ).toBe("min ~40");
+    ).toBe("~40'");
     expect(
       timingLabel(plan({ _id: "4" as Id<"substitutionPlans">, kind: "substitution", status: "pending" }), 4)
-    ).toBe("start kwart");
+    ).toBe("—");
   });
 
-  it("labels substitutions and position swaps distinctly", () => {
+  it("labels substitutions and position swaps with first names and numbers", () => {
     const sub = plan({
       _id: "s" as Id<"substitutionPlans">,
       kind: "substitution",
       status: "pending",
+      outName: "Jody van der Bijl",
+      inName: "Luc van Hapsert",
+      outNumber: 4,
+      inNumber: 1,
     });
     const swap = plan({
       _id: "p" as Id<"substitutionPlans">,
       kind: "positionSwap",
       status: "pending",
+      outName: "Jan Jansen",
+      inName: "Piet Pieters",
+      outNumber: 7,
+      inNumber: 12,
     });
 
     expect(rowKind(sub)).toBe("substitution");
-    expect(rowLabel(sub)).toBe("Jan → Piet");
+    expect(rowLabel(sub)).toBe("Jody 4 → Luc 1");
     expect(rowBadge(sub)).toBe("Wissel");
     expect(rowBadgeClass(sub)).toContain("amber");
 
     expect(rowKind(swap)).toBe("positionSwap");
-    expect(rowLabel(swap)).toBe("Jan ↔ Piet");
+    expect(rowLabel(swap)).toBe("Jan 7 ↔ Piet 12");
     expect(rowBadge(swap)).toBe("Positiewissel");
     expect(rowBadgeClass(swap)).toContain("sky");
   });

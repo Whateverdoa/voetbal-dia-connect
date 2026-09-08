@@ -60,7 +60,7 @@ export const create = mutation({
         .first();
     }
 
-    const quarterCount = args.quarterCount ?? 4;
+    const quarterCount = args.quarterCount ?? 2;
     const regulationMinutes = args.regulationDurationMinutes ?? 60;
     assertValidMatchTiming(quarterCount, regulationMinutes);
     const seasonBase = args.scheduledAt ?? Date.now();

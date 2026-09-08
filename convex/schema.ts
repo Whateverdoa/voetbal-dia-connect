@@ -142,6 +142,8 @@ export default defineSchema({
     coachPin: v.optional(v.string()), // Legacy PIN to control this match
     coachId: v.optional(v.id("coaches")),
     
+    mobileCreationId: v.optional(v.string()),
+
     // Match info
     opponent: v.string(),
     opponentLogoUrl: v.optional(v.string()),
@@ -225,6 +227,7 @@ export default defineSchema({
     .index("by_refereeId", ["refereeId"])
     .index("by_season", ["seasonKey"])
     .index("by_team_and_season", ["teamId", "seasonKey"])
+    .index("by_team_mobile_creation", ["teamId", "mobileCreationId"])
     .index("by_sportlink_code", ["sportlinkWedstrijdcode"]),
 
   // Match lineup - which players are in this match
@@ -351,6 +354,7 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
     executedAt: v.optional(v.number()),
+    executedGameSecond: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

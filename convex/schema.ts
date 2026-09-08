@@ -354,6 +354,7 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
     executedAt: v.optional(v.number()),
+    executedGameSecond: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

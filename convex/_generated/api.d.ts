@@ -105,6 +105,7 @@ import type * as matchPregameActions from "../matchPregameActions.js";
 import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
 import type * as mobileMatchActions from "../mobileMatchActions.js";
+import type * as mobileSubstitutionPlans from "../mobileSubstitutionPlans.js";
 import type * as ops_completeTscJo132Q4 from "../ops/completeTscJo132Q4.js";
 import type * as ops_correctTscJo132Guests from "../ops/correctTscJo132Guests.js";
 import type * as ops_deleteMatchByCode from "../ops/deleteMatchByCode.js";
@@ -264,6 +265,7 @@ declare const fullApi: ApiFromModules<{
   matchQueries: typeof matchQueries;
   matches: typeof matches;
   mobileMatchActions: typeof mobileMatchActions;
+  mobileSubstitutionPlans: typeof mobileSubstitutionPlans;
   "ops/completeTscJo132Q4": typeof ops_completeTscJo132Q4;
   "ops/correctTscJo132Guests": typeof ops_correctTscJo132Guests;
   "ops/deleteMatchByCode": typeof ops_deleteMatchByCode;

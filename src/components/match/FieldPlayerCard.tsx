@@ -4,10 +4,7 @@
  */
 import { getRoleColor, getRoleLabel } from "@/lib/roleColors";
 import { useCardSize, type CardSizeMode } from "@/hooks/useCardSize";
-import {
-  formatFieldLabel,
-  type CardNameMode,
-} from "@/lib/cards/formatCardName";
+import { firstNameOf, type CardNameMode } from "@/lib/cards/formatCardName";
 import type { DisciplineBadge } from "@/lib/cards/cardRules";
 import { DisciplineCardMark } from "./DisciplineCardMark";
 
@@ -96,7 +93,8 @@ export function FieldPlayerCard({
     );
   }
 
-  const fieldLabel = formatFieldLabel(name, number);
+  const fieldLabel =
+    nameDisplay === "full" ? name.trim() : firstNameOf(name);
   const displayNumber = number != null ? String(number) : "?";
   const isPresentation = sizeMode === "presentation";
 

@@ -59,8 +59,11 @@ export default function CoachWisselplanPage() {
   );
 
   const isPregame = match.status === "scheduled" || match.status === "lineup";
-  const canEditPlan = isPregame || (match.isCurrentCoachLead ?? false);
-  const canExecute = match.isCurrentCoachLead ?? false;
+  const isLive = match.status === "live" || match.status === "halftime";
+  const isLead = match.isCurrentCoachLead ?? false;
+  const canEditPlan = isPregame || isLead;
+  // Executing live swaps only while the match is still running.
+  const canExecute = isLive && isLead;
 
   return (
     <SubstitutionPlanner

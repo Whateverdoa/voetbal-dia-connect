@@ -9,6 +9,10 @@ interface LateRosterPanelProps {
   matchId: Id<"matches">;
 }
 
+/**
+ * Match-leadership utility: add a player who was missing from the selection.
+ * Kept collapsed so it does not dominate pitch-side live control.
+ */
 export function LateRosterPanel({ matchId }: LateRosterPanelProps) {
   const playersNotInMatch = useQuery(api.matches.listTeamPlayersNotInMatch, {
     matchId,
@@ -54,62 +58,72 @@ export function LateRosterPanel({ matchId }: LateRosterPanelProps) {
   };
 
   return (
-    <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
-      <h2 className="font-bold text-lg">Speler later toevoegen</h2>
-      <p className="text-sm text-gray-600">
-        Iemand erbij gekomen die niet in de selectie stond? Voeg die hier toe,
-        ook na de aftrap of na afloop. Daarna kun je een doelpunt nog aanvullen.
-      </p>
+    <details className="rounded-lg border border-slate-200 bg-slate-50/80 text-slate-700">
+      <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-slate-500 marker:content-none [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex w-full items-center justify-between gap-2">
+          <span>Wedstrijdleiding · Speler later toevoegen</span>
+          <span className="text-slate-400" aria-hidden>
+            ▾
+          </span>
+        </span>
+      </summary>
 
-      {playersNotInMatch && playersNotInMatch.length > 0 && (
+      <div className="space-y-3 border-t border-slate-200 px-3 py-3">
+        <p className="text-xs text-slate-500">
+          Alleen als iemand ontbreekt in deze wedstrijdselectie — ook na aftrap
+          of na afloop. Daarna kun je een doelpunt nog aanvullen.
+        </p>
+
+        {playersNotInMatch && playersNotInMatch.length > 0 && (
+          <div className="flex gap-2">
+            <select
+              value={addPlayerId}
+              onChange={(e) => setAddPlayerId(e.target.value)}
+              className="min-h-[44px] flex-1 rounded-lg border border-slate-300 bg-white p-2 text-sm"
+            >
+              <option value="">Bestaande speler…</option>
+              {playersNotInMatch.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.number ? `${player.number}. ` : ""}
+                  {player.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void onAddExisting()}
+              disabled={busy || !addPlayerId}
+              className="min-h-[44px] rounded-lg bg-slate-800 px-3 text-sm font-medium text-white disabled:bg-slate-300"
+            >
+              Toevoegen
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-2">
-          <select
-            value={addPlayerId}
-            onChange={(e) => setAddPlayerId(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg p-3 min-h-[48px] text-base"
-          >
-            <option value="">Bestaande speler…</option>
-            {playersNotInMatch.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.number ? `${player.number}. ` : ""}
-                {player.name}
-              </option>
-            ))}
-          </select>
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Naam nieuwe speler"
+            className="min-h-[44px] flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
           <button
             type="button"
-            onClick={() => void onAddExisting()}
-            disabled={busy || !addPlayerId}
-            className="px-4 min-h-[48px] bg-dia-black text-dia-yellow rounded-lg text-sm font-medium disabled:bg-gray-300"
+            onClick={() => void onCreate()}
+            disabled={busy || !newName.trim()}
+            className="min-h-[44px] rounded-lg bg-slate-700 px-3 text-sm font-medium text-white disabled:bg-slate-300"
           >
-            Toevoegen
+            Nieuw
           </button>
         </div>
-      )}
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Naam nieuwe speler"
-          className="flex-1 px-3 py-3 border rounded-lg text-base min-h-[48px]"
-        />
-        <button
-          type="button"
-          onClick={() => void onCreate()}
-          disabled={busy || !newName.trim()}
-          className="px-4 min-h-[48px] bg-slate-800 text-white rounded-lg text-sm font-medium disabled:bg-gray-300"
-        >
-          Nieuw
-        </button>
+        {error ? (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error}
+          </p>
+        ) : null}
       </div>
-
-      {error && (
-        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-          {error}
-        </p>
-      )}
-    </section>
+    </details>
   );
 }

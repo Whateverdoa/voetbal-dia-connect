@@ -7,7 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { createCorrelationId } from "@/lib/correlationId";
-import { formatFieldLabel } from "@/lib/cards/formatCardName";
+import { firstNameOf } from "@/lib/cards/formatCardName";
 import { disciplineBadgeByPlayerId } from "@/lib/cards/cardRules";
 import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
@@ -83,7 +83,7 @@ export function PitchView({
     onField.find((player) => player.playerId === id)?.fieldSlotIndex ?? undefined;
 
   const nameLabel = (player: MatchPlayer): string =>
-    formatFieldLabel(player.name, player.number ?? null);
+    firstNameOf(player.name) || player.name;
 
   const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
     if (!canEdit) return;

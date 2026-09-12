@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useAppNavHeight } from "@/hooks/useAppNavHeight";
-import { useCoachStandenHref } from "@/hooks/useCoachStandenHref";
 import {
   canPresentTactics,
   parseRolesFromMetadata,
@@ -24,7 +23,6 @@ export function ClerkNav() {
   const { signOut } = useClerk();
   const { user, isSignedIn } = useUser();
   const access = useQuery(api.userQueries.getMyRoles);
-  const standenHref = useCoachStandenHref();
   const clerkRoles = parseRolesFromMetadata(user?.publicMetadata);
   const convexRoles = access?.roles ?? [];
   const roles: AppRole[] = [...clerkRoles];
@@ -58,11 +56,6 @@ export function ClerkNav() {
                 title="Presenteren op laptop of TV"
               >
                 Presenteren
-              </Link>
-            ) : null}
-            {isCoach || isAdmin ? (
-              <Link href={standenHref} className="font-medium text-dia-black hover:text-dia-black">
-                Standen
               </Link>
             ) : null}
             {isReferee || isAdmin ? (

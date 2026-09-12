@@ -27,6 +27,12 @@ export async function applyBenchSubstitutionWithSlotTransfer(
   if (!match) {
     throw new Error("Wedstrijd niet gevonden");
   }
+  if (match.status === "finished") {
+    throw new Error("Wissels zijn gesloten — wedstrijd is afgelopen");
+  }
+  if (match.status !== "live" && match.status !== "halftime") {
+    throw new Error("Wisselen kan alleen tijdens de wedstrijd");
+  }
 
   const now = Date.now();
   const effectiveEventTime = getEffectiveEventTime(match, now);

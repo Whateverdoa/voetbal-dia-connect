@@ -1,6 +1,10 @@
 "use client";
 
-import { assistKindLabel, formatAssistLine } from "@/lib/assistKind";
+import {
+  assistKindLabel,
+  describeGoalEnrichment,
+  formatAssistLine,
+} from "@/lib/assistKind";
 import type { MatchEvent } from "./types";
 
 interface EventTimelineProps {
@@ -87,7 +91,11 @@ function getEventText(
     case "substitution_cancelled":
       return `Klaargezette wissel geannuleerd`;
     case "goal_enrichment":
-      return "Scorer en assist toegevoegd";
+      return describeGoalEnrichment({
+        scorerName: event.playerName,
+        assistName: event.relatedPlayerName,
+        assistKind: event.assistKind,
+      });
     case "quarter_start":
       return `Kwart ${event.quarter} gestart`;
     case "quarter_end":

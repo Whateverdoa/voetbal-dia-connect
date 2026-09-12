@@ -39,3 +39,30 @@ export function resolveAssistKindForSubmit(
   if (kind === "pass" && playerId) return "pass";
   return undefined;
 }
+
+/** Timeline copy for a goal_enrichment event — reflects what was actually saved. */
+export function describeGoalEnrichment(args: {
+  scorerName?: string | null;
+  assistName?: string | null;
+  assistKind?: AssistKind | null;
+}): string {
+  const scorer = args.scorerName?.trim() || null;
+  const assist = args.assistName?.trim() || null;
+  const kind = args.assistKind ?? null;
+  const setPiece = kind === "corner" || kind === "free_kick";
+  const setPieceLabel = setPiece ? ASSIST_KIND_LABELS[kind] : null;
+
+  if (!scorer && !assist && setPieceLabel) {
+    return `${setPieceLabel} genoteerd`;
+  }
+
+  const parts: string[] = [];
+  if (scorer) parts.push(`scorer ${scorer}`);
+  if (assist && setPieceLabel) parts.push(`${setPieceLabel.toLowerCase()} ${assist}`);
+  else if (assist) parts.push(`assist ${assist}`);
+  else if (setPieceLabel) parts.push(setPieceLabel.toLowerCase());
+
+  if (parts.length === 0) return "Doelpunt aangevuld";
+  if (scorer && assist && !setPiece) return "Scorer en assist toegevoegd";
+  return `Doelpunt aangevuld: ${parts.join(" · ")}`;
+}

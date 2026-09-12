@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  describeGoalEnrichment,
   formatAssistLine,
   resolveAssistKindForSubmit,
 } from "./assistKind";
@@ -33,5 +34,26 @@ describe("resolveAssistKindForSubmit", () => {
     expect(resolveAssistKindForSubmit("pass", "p1")).toBe("pass");
     expect(resolveAssistKindForSubmit("pass", null)).toBeUndefined();
     expect(resolveAssistKindForSubmit(null, "p1")).toBeUndefined();
+  });
+});
+
+describe("describeGoalEnrichment", () => {
+  it("describes a corner-only note without claiming scorer/assist", () => {
+    expect(describeGoalEnrichment({ assistKind: "corner" })).toBe(
+      "Hoekschop genoteerd"
+    );
+    expect(describeGoalEnrichment({ assistKind: "free_kick" })).toBe(
+      "Vrije trap genoteerd"
+    );
+  });
+
+  it("keeps the classic scorer+assist wording when both players are set", () => {
+    expect(
+      describeGoalEnrichment({
+        scorerName: "Jan",
+        assistName: "Piet",
+        assistKind: "pass",
+      })
+    ).toBe("Scorer en assist toegevoegd");
   });
 });

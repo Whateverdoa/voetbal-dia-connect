@@ -15,4 +15,10 @@ describe("assertCanExecutePlannedSubstitution", () => {
     expect(() => assertCanExecutePlannedSubstitution("live")).not.toThrow();
     expect(() => assertCanExecutePlannedSubstitution("halftime")).not.toThrow();
   });
+
+  it("rejects planned substitutions after the match ends", () => {
+    expect(() => assertCanExecutePlannedSubstitution("finished")).toThrow(
+      "Wissels zijn gesloten — wedstrijd is afgelopen"
+    );
+  });
 });

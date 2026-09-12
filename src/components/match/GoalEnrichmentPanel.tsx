@@ -83,7 +83,8 @@ export function GoalEnrichmentPanel({
     <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
       <h2 className="font-bold text-lg">Doelpunt aanvullen</h2>
       <p className="text-sm text-gray-600">
-        Kies een doelpunt en vul scorer/assist in of pas deze achteraf aan.
+        Kies een doelpunt. Je mag alleen &quot;Hoekschop&quot; of &quot;Vrije
+        trap&quot; zetten — scorer en assist zijn optioneel.
       </p>
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -149,8 +150,8 @@ export function GoalEnrichmentPanel({
           }
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base sm:col-span-2"
         >
-          <option value="">Soort (optioneel)</option>
-          <option value="pass">Assist</option>
+          <option value="">Hoe ontstond het doelpunt? (optioneel)</option>
+          <option value="pass">Pass / assist</option>
           <option value="corner">Hoekschop</option>
           <option value="free_kick">Vrije trap</option>
         </select>

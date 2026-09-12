@@ -93,8 +93,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
   const isLive = match.status === "live" || match.status === "halftime";
   const isPregame = match.status === "scheduled" || match.status === "lineup";
-  const canEditLineup = isPregame || (match.isCurrentCoachLead ?? false);
-  const canDoSubstitutions = match.isCurrentCoachLead ?? false;
+  const isLead = match.isCurrentCoachLead ?? false;
+  // After the match ends, lineup moves and live subs stay closed.
+  const canEditLineup = isPregame || (isLive && isLead);
+  const canDoSubstitutions = isLive && isLead;
   const canControlClock = match.canControlClock ?? true;
 
   const diaLogo = resolveLogoUrl(match.teamLogoUrl, match.clubLogoUrl);
@@ -198,7 +200,6 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         />
 
         {isPregame && <MatchSettingsEdit match={match} />}
-        {!isPregame && <LateRosterPanel matchId={match._id} />}
 
         <MatchLeadBadge
           matchId={match._id}
@@ -344,6 +345,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
             />
           </>
         )}
+
+        {!isPregame && isLead ? (
+          <LateRosterPanel matchId={match._id} />
+        ) : null}
       </div>
 
       {showGoalModal && (

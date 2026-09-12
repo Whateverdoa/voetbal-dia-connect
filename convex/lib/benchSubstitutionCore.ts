@@ -9,6 +9,7 @@ import {
   getEffectiveEventTime,
 } from "./matchEventGameTime";
 import { throwIfUnavailable } from "./matchPlayerAvailability";
+import { markMatchingPendingPlanExecuted } from "./markMatchingPendingPlanExecuted";
 
 export async function applyBenchSubstitutionWithSlotTransfer(
   ctx: MutationCtx,
@@ -18,6 +19,8 @@ export async function applyBenchSubstitutionWithSlotTransfer(
     playerInId: Id<"players">;
     correlationId?: string;
     commandType: string;
+    /** When false, caller already reconciled the plan row (e.g. executePlanItem). */
+    reconcilePlan?: boolean;
   }
 ): Promise<void> {
   const match = await ctx.db.get(args.matchId);
@@ -107,4 +110,13 @@ export async function applyBenchSubstitutionWithSlotTransfer(
     ...substitutionStamp,
     createdAt: now,
   });
+
+  if (args.reconcilePlan !== false) {
+    await markMatchingPendingPlanExecuted(ctx, {
+      matchId: args.matchId,
+      playerOutId: args.playerOutId,
+      playerInId: args.playerInId,
+      kind: "substitution",
+    });
+  }
 }

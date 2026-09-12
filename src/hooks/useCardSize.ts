@@ -3,6 +3,9 @@
 /**
  * Responsive card dimensions for field and bench player cards.
  * Phone / tablet / presentation (TV) breakpoints.
+ *
+ * Phone vs tablet uses the *short* viewport side so landscape phones
+ * stay on compact cards (width alone hits 640px+ and used to jump to TABLET).
  */
 
 import { useState, useEffect } from "react";
@@ -16,10 +19,11 @@ export interface CardSize {
   posFont: number;
 }
 
+/** Compact phone cards to reduce pitch overlap; fonts stay readable. */
 export const PHONE: CardSize = {
-  card: 70,
-  avatar: 34,
-  icon: 22,
+  card: 48,
+  avatar: 24,
+  icon: 14,
   nameFont: 9,
   numFont: 11,
   posFont: 8,
@@ -44,22 +48,33 @@ export const PRESENTATION: CardSize = {
   posFont: 12,
 };
 
-const BREAKPOINT = "(min-width: 640px)";
+/** Compact when the shorter side is phone-sized (covers portrait + landscape). */
+const COMPACT_MAX_SHORT_SIDE = 520;
 
 export type CardSizeMode = "auto" | "presentation";
 
+function isCompactViewport(): boolean {
+  if (typeof window === "undefined") return true;
+  return Math.min(window.innerWidth, window.innerHeight) < COMPACT_MAX_SHORT_SIDE;
+}
+
 export function useCardSize(mode: CardSizeMode = "auto"): CardSize {
-  const [isWide, setIsWide] = useState(false);
+  const [compact, setCompact] = useState(true);
 
   useEffect(() => {
     if (mode === "presentation") return;
-    const mql = window.matchMedia(BREAKPOINT);
-    setIsWide(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsWide(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
+
+    const update = () => setCompact(isCompactViewport());
+    update();
+
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
   }, [mode]);
 
   if (mode === "presentation") return PRESENTATION;
-  return isWide ? TABLET : PHONE;
+  return compact ? PHONE : TABLET;
 }

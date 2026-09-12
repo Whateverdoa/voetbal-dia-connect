@@ -391,6 +391,7 @@ export const executePlanItem = mutation({
         playerInId: plan.playerInId,
         correlationId: args.correlationId,
         commandType: "EXECUTE_SUBSTITUTION_PLAN",
+        reconcilePlan: false,
       });
     }
 

@@ -54,7 +54,8 @@ export function ClerkNav() {
             {canPresentTactics(roles) ? (
               <Link
                 href="/coach/presenteren"
-                className="font-medium text-dia-black hover:text-dia-black"
+                className="hidden md:inline font-medium text-dia-black hover:text-dia-black"
+                title="Presenteren op laptop of TV"
               >
                 Presenteren
               </Link>

@@ -70,10 +70,13 @@ export default function CoachPresenterenPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-        <p className="text-sm text-gray-600">
-          Toon de opstelling (veld en wisselplan) op een groot scherm. Alleen
-          coaches en admins.
-        </p>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-gray-700 space-y-2">
+          <p className="font-semibold text-gray-900">Alleen voor laptop, Mac of TV</p>
+          <p>
+            Presenteren is losgekoppeld van de telefoon-coachapp. Open deze
+            pagina op een groot scherm om opstelling en wisselplan te tonen.
+          </p>
+        </div>
 
         {matches.length === 0 ? (
           <p className="text-center text-gray-500 py-12">

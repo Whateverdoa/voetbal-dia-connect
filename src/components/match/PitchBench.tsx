@@ -6,7 +6,9 @@
 import { Id } from "@/convex/_generated/dataModel";
 import { getRoleColor } from "@/lib/roleColors";
 import { useCardSize } from "@/hooks/useCardSize";
+import type { DisciplineBadge } from "@/lib/cards/cardRules";
 import type { MatchPlayer } from "./types";
+import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface PitchBenchProps {
   onBench: MatchPlayer[];
@@ -18,6 +20,7 @@ interface PitchBenchProps {
   onDeselect: () => void;
   nameLabel: (p: MatchPlayer) => string;
   seasonMinutesByPlayerId?: Map<string, number>;
+  disciplineByPlayerId?: Map<string, DisciplineBadge>;
 }
 
 function MiniCard({
@@ -27,6 +30,7 @@ function MiniCard({
   onClick,
   nameLabel,
   seasonMinutes,
+  disciplineBadge,
 }: {
   player: MatchPlayer;
   isSelected: boolean;
@@ -34,6 +38,7 @@ function MiniCard({
   onClick: () => void;
   nameLabel: (p: MatchPlayer) => string;
   seasonMinutes?: number;
+  disciplineBadge?: DisciplineBadge;
 }) {
   const sz = useCardSize();
   const rc = getRoleColor(player.positionPrimary);
@@ -49,7 +54,7 @@ function MiniCard({
       }}
     >
       <div
-        className="rounded-xl flex flex-col items-center overflow-hidden"
+        className="relative rounded-xl flex flex-col items-center overflow-hidden"
         style={{
           width: sz.card,
           background: isSelected
@@ -63,6 +68,11 @@ function MiniCard({
             : "0 4px 16px rgba(0,0,0,0.4)",
         }}
       >
+        {disciplineBadge ? (
+          <div className="absolute top-1 right-1 z-10">
+            <DisciplineCardMark badge={disciplineBadge} size="sm" />
+          </div>
+        ) : null}
         <div className="py-1.5 flex flex-col items-center">
           <span
             className="font-mono font-bold text-white"
@@ -116,6 +126,7 @@ export function PitchBench({
   onDeselect,
   nameLabel,
   seasonMinutesByPlayerId,
+  disciplineByPlayerId,
 }: PitchBenchProps) {
   const handleBenchPlayerClick = onBenchPlayerClick ?? onPlayerClick;
   const handleUnassignedPlayerClick =
@@ -169,6 +180,7 @@ export function PitchBench({
                 onClick={() => handleBenchPlayerClick?.(p.playerId)}
                 nameLabel={nameLabel}
                 seasonMinutes={seasonMinutesByPlayerId?.get(String(p.playerId))}
+                disciplineBadge={disciplineByPlayerId?.get(String(p.playerId))}
               />
             ))}
           </div>

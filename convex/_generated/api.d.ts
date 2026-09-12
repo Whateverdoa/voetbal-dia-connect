@@ -83,6 +83,7 @@ import type * as lib_presentationSubstitutionPlans from "../lib/presentationSubs
 import type * as lib_privacyFilter from "../lib/privacyFilter.js";
 import type * as lib_publicRefereeDisplay from "../lib/publicRefereeDisplay.js";
 import type * as lib_refereeClaimPool from "../lib/refereeClaimPool.js";
+import type * as lib_sandboxTeam from "../lib/sandboxTeam.js";
 import type * as lib_season from "../lib/season.js";
 import type * as lib_seasonPlayingTime from "../lib/seasonPlayingTime.js";
 import type * as lib_sportlinkRoster from "../lib/sportlinkRoster.js";
@@ -92,6 +93,7 @@ import type * as lib_substitutionPlanRows from "../lib/substitutionPlanRows.js";
 import type * as lib_timezone from "../lib/timezone.js";
 import type * as lib_userAccess from "../lib/userAccess.js";
 import type * as matchActions from "../matchActions.js";
+import type * as matchCardActions from "../matchCardActions.js";
 import type * as matchEvents from "../matchEvents.js";
 import type * as matchGoalEnrichmentActions from "../matchGoalEnrichmentActions.js";
 import type * as matchLeadActions from "../matchLeadActions.js";
@@ -107,6 +109,7 @@ import type * as matches from "../matches.js";
 import type * as ops_completeTscJo132Q4 from "../ops/completeTscJo132Q4.js";
 import type * as ops_correctTscJo132Guests from "../ops/correctTscJo132Guests.js";
 import type * as ops_deleteMatchByCode from "../ops/deleteMatchByCode.js";
+import type * as ops_ensureSandboxTeam from "../ops/ensureSandboxTeam.js";
 import type * as ops_equalizeTscJo132Minutes from "../ops/equalizeTscJo132Minutes.js";
 import type * as ops_setJo132ActiveRoster from "../ops/setJo132ActiveRoster.js";
 import type * as pinHelpers from "../pinHelpers.js";
@@ -241,6 +244,7 @@ declare const fullApi: ApiFromModules<{
   "lib/privacyFilter": typeof lib_privacyFilter;
   "lib/publicRefereeDisplay": typeof lib_publicRefereeDisplay;
   "lib/refereeClaimPool": typeof lib_refereeClaimPool;
+  "lib/sandboxTeam": typeof lib_sandboxTeam;
   "lib/season": typeof lib_season;
   "lib/seasonPlayingTime": typeof lib_seasonPlayingTime;
   "lib/sportlinkRoster": typeof lib_sportlinkRoster;
@@ -250,6 +254,7 @@ declare const fullApi: ApiFromModules<{
   "lib/timezone": typeof lib_timezone;
   "lib/userAccess": typeof lib_userAccess;
   matchActions: typeof matchActions;
+  matchCardActions: typeof matchCardActions;
   matchEvents: typeof matchEvents;
   matchGoalEnrichmentActions: typeof matchGoalEnrichmentActions;
   matchLeadActions: typeof matchLeadActions;
@@ -265,6 +270,7 @@ declare const fullApi: ApiFromModules<{
   "ops/completeTscJo132Q4": typeof ops_completeTscJo132Q4;
   "ops/correctTscJo132Guests": typeof ops_correctTscJo132Guests;
   "ops/deleteMatchByCode": typeof ops_deleteMatchByCode;
+  "ops/ensureSandboxTeam": typeof ops_ensureSandboxTeam;
   "ops/equalizeTscJo132Minutes": typeof ops_equalizeTscJo132Minutes;
   "ops/setJo132ActiveRoster": typeof ops_setJo132ActiveRoster;
   pinHelpers: typeof pinHelpers;

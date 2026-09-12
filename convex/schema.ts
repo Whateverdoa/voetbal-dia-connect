@@ -296,6 +296,8 @@ export default defineSchema({
     matchMs: v.optional(v.number()), // Milliseconds from match start (derived from gameSecond)
     isOwnGoal: v.optional(v.boolean()),
     isOpponentGoal: v.optional(v.boolean()), // Goal by opponent
+    /** Card shown to the opponent (admin/timeline only; no own-team time penalty). */
+    isOpponentCard: v.optional(v.boolean()),
     stagedEventId: v.optional(v.id("matchEvents")), // For staged sub confirm/cancel events
     targetEventId: v.optional(v.id("matchEvents")), // For enrichment events
     correlationId: v.optional(v.string()), // Required for UI-initiated writes

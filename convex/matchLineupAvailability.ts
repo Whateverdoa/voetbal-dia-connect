@@ -9,6 +9,7 @@ import {
   availabilityStatus,
   type PlayerAvailabilityStatus,
 } from "./lib/matchPlayerAvailability";
+import { recordPlayingTime } from "./playingTimeHelpers";
 
 const availabilityStatusValidator = v.union(
   v.literal("available"),
@@ -16,9 +17,18 @@ const availabilityStatusValidator = v.union(
   v.literal("injured")
 );
 
+function isPregame(status: string): boolean {
+  return status === "scheduled" || status === "lineup";
+}
+
+function isInPlay(status: string): boolean {
+  return status === "live" || status === "halftime";
+}
+
 /**
  * Set player availability for this match (available | absent | injured).
- * Only before kickoff. Unavailable players are moved off the field.
+ * Absent only before kickoff. Injured may also be set during live/halftime.
+ * Unavailable players are moved off the field.
  */
 export const setPlayerAvailability = mutation({
   args: {
@@ -32,13 +42,24 @@ export const setPlayerAvailability = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status !== "scheduled" && match.status !== "lineup") {
-      throw new Error(
-        "Beschikbaarheid kan alleen vóór de aftrap worden gewijzigd"
-      );
-    }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
+    }
+
+    const pregame = isPregame(match.status);
+    const inPlay = isInPlay(match.status);
+    if (!pregame && !inPlay) {
+      throw new Error("Beschikbaarheid kan niet meer worden gewijzigd");
+    }
+    if (args.status === "absent" && !pregame) {
+      throw new Error("Afwezigheid kan alleen vóór de aftrap worden gewijzigd");
+    }
+    if (
+      !pregame &&
+      args.status !== "injured" &&
+      args.status !== "available"
+    ) {
+      throw new Error("Tijdens de wedstrijd alleen blessure of beschikbaar");
     }
 
     const mp = await ctx.db
@@ -51,16 +72,25 @@ export const setPlayerAvailability = mutation({
     if (!mp) throw new Error("Speler niet in deze wedstrijd");
 
     const flags = availabilityFlagsForStatus(args.status);
+    const now = Date.now();
+    const leavingField = args.status !== "available" && mp.onField;
+
+    if (leavingField && inPlay && mp.lastSubbedInAt) {
+      await recordPlayingTime(ctx, mp, now);
+    }
+
     const updates: {
       absent: boolean;
       injured: boolean;
       onField?: boolean;
-      fieldSlotIndex?: number;
+      fieldSlotIndex?: undefined;
+      lastSubbedInAt?: undefined;
     } = { ...flags };
 
-    if (args.status !== "available" && mp.onField) {
+    if (leavingField) {
       updates.onField = false;
       updates.fieldSlotIndex = undefined;
+      updates.lastSubbedInAt = undefined;
     }
 
     await ctx.db.patch(mp._id, updates);
@@ -83,7 +113,7 @@ export const togglePlayerAbsent = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (match.status !== "scheduled" && match.status !== "lineup") {
+    if (!isPregame(match.status)) {
       throw new Error("Afwezigheid kan alleen vóór de aftrap worden gewijzigd");
     }
     if (!(await verifyCoachTeamMembership(ctx, match))) {
@@ -107,7 +137,7 @@ export const togglePlayerAbsent = mutation({
       absent: boolean;
       injured: boolean;
       onField?: boolean;
-      fieldSlotIndex?: number;
+      fieldSlotIndex?: undefined;
     } = { ...flags };
 
     if (next !== "available" && mp.onField) {

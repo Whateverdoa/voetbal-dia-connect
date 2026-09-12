@@ -93,9 +93,19 @@ function getEventText(
     case "quarter_end":
       return `Kwart ${event.quarter} afgelopen`;
     case "yellow_card":
-      return `Gele kaart ${event.playerName || ""}`;
+      if (event.isOpponentCard) {
+        return `Gele kaart ${opponentName || "Tegenstander"}`;
+      }
+      return event.note
+        ? `Gele kaart ${event.playerName || ""} · ${event.note}`
+        : `Gele kaart ${event.playerName || ""}`;
     case "red_card":
-      return `Rode kaart ${event.playerName || ""}`;
+      if (event.isOpponentCard) {
+        return `Rode kaart ${opponentName || "Tegenstander"}`;
+      }
+      return event.note
+        ? `Rode kaart ${event.playerName || ""} · ${event.note}`
+        : `Rode kaart ${event.playerName || ""}`;
     default:
       return event.type;
   }

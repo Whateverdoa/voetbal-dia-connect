@@ -124,10 +124,10 @@ export function DashboardMatchCard({
       </Link>
       {match.status !== "finished" ? (
         <Link
-          href={`/present/match/${match.publicCode}/kleedkamer?tab=opstelling`}
-          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-dia-green px-3 py-2 text-sm font-semibold text-white"
+          href={`/coach/match/${match._id}/wisselplan`}
+          className="mt-3 hidden md:inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-dia-green px-3 py-2 text-sm font-semibold text-dia-green"
         >
-          Toon opstelling
+          Planscherm (laptop)
         </Link>
       ) : null}
     </div>

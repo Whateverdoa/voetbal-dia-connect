@@ -8,6 +8,8 @@ import {
   formatFieldLabel,
   type CardNameMode,
 } from "@/lib/cards/formatCardName";
+import type { DisciplineBadge } from "@/lib/cards/cardRules";
+import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface FieldPlayerCardProps {
   name: string;
@@ -24,6 +26,8 @@ interface FieldPlayerCardProps {
   nameDisplay?: CardNameMode;
   /** Season total minutes (coach card toggle). */
   seasonMinutes?: number;
+  /** Yellow/red discipline mark on the shield. */
+  disciplineBadge?: DisciplineBadge;
   /** Appended after the centering translate/scale (e.g. counter-rotation). */
   extraTransform?: string;
 }
@@ -51,6 +55,7 @@ export function FieldPlayerCard({
   sizeMode = "auto",
   nameDisplay = "first",
   seasonMinutes,
+  disciplineBadge,
   extraTransform,
 }: FieldPlayerCardProps) {
   const sz = useCardSize(sizeMode);
@@ -135,7 +140,10 @@ export function FieldPlayerCard({
           </span>
         </div>
 
-        <div className="absolute top-1 right-1">
+        <div className="absolute top-1 right-1 flex items-start gap-0.5">
+          {disciplineBadge ? (
+            <DisciplineCardMark badge={disciplineBadge} size="md" />
+          ) : null}
           <span className="font-mono font-bold text-white" style={{ fontSize: sz.numFont }}>
             {displayNumber}
           </span>

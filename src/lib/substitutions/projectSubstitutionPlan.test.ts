@@ -89,8 +89,16 @@ describe("projectSubstitutionPlan", () => {
     );
 
     expect(result.quarterPreview).toBeDefined();
-    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual(["B", "C", "Keeper"]);
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["C", "D", "Keeper"]);
+    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual([
+      "B",
+      "C",
+      "Keeper",
+    ]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "C",
+      "D",
+      "Keeper",
+    ]);
     expect(names(result.quarterPreview!.quarterStartBench)).toEqual(["A", "D"]);
     expect(names(result.quarterPreview!.projectedBench)).toEqual(["A", "B"]);
   });
@@ -105,7 +113,11 @@ describe("projectSubstitutionPlan", () => {
       2
     );
 
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["B", "C", "Keeper"]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "B",
+      "C",
+      "Keeper",
+    ]);
     expect(names(result.quarterPreview!.projectedBench)).toEqual(["A", "D"]);
   });
 
@@ -117,6 +129,24 @@ describe("projectSubstitutionPlan", () => {
 
     expect(names(result.projectedOnField)).toEqual(["A", "B", "Keeper"]);
     expect(names(result.projectedBench)).toEqual(["C", "D"]);
+  });
+
+  it("treats already-applied live substitutions as no-ops without warnings", () => {
+    const afterLive = [
+      player("gk", "Keeper", true, 0),
+      player("a", "A", false),
+      player("b", "B", true, 2),
+      player("c", "C", true, 1),
+      player("d", "D", false),
+    ];
+    const result = projectSubstitutionPlan(afterLive, [
+      plan(0, "a", "c"),
+      plan(1, "b", "d"),
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(names(result.projectedOnField)).toEqual(["C", "D", "Keeper"]);
+    expect(names(result.projectedBench)).toEqual(["A", "B"]);
   });
 
   it("warns for stale rows and continues from the last valid state", () => {
@@ -135,16 +165,21 @@ describe("projectSubstitutionPlan", () => {
   it("excludes quarterless rows from the quarter preview and reports them separately", () => {
     const result = projectSubstitutionPlan(
       players,
-      [
-        plan(0, "a", "c"),
-        plan(1, "b", "d", { targetQuarter: 2 }),
-      ],
+      [plan(0, "a", "c"), plan(1, "b", "d", { targetQuarter: 2 })],
       2
     );
 
     expect(result.quarterlessPendingRows).toHaveLength(1);
-    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual(["A", "B", "Keeper"]);
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["A", "D", "Keeper"]);
+    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual([
+      "A",
+      "B",
+      "Keeper",
+    ]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "A",
+      "D",
+      "Keeper",
+    ]);
   });
 
   it("excludes absent players from projected candidates", () => {

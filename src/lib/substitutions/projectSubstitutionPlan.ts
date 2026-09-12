@@ -109,6 +109,11 @@ function applyPlanRow(
     return true;
   }
 
+  // Live sub already applied: out on bench, in on field → no-op (keep plan pending-safe).
+  if (!playerOut.onField && playerIn.onField) {
+    return true;
+  }
+
   if (!playerOut.onField) {
     warnings.push({
       planId: plan._id,

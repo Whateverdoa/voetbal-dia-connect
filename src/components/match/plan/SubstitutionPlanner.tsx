@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { projectSubstitutionPlan } from "@/lib/substitutions/projectSubstitutionPlan";
-import type { PitchLayout } from "@/lib/halfPitchLayout";
 import { useSubstitutionPlanActions } from "@/hooks/useSubstitutionPlanActions";
 import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
 import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
@@ -13,7 +12,6 @@ import { ProjectedPitchPlanner } from "@/components/match/ProjectedPitchPlanner"
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
 import { FormationSelector } from "@/components/match/FormationSelector";
-import { PitchLayoutToggle } from "@/components/presentation/PitchLayoutToggle";
 import { PlanAddForm } from "@/components/match/plan/PlanAddForm";
 import { PlanBenchSummary } from "@/components/match/plan/PlanBenchSummary";
 import { PlanRowList } from "@/components/match/plan/PlanRowList";
@@ -68,8 +66,6 @@ export function SubstitutionPlanner({
   const cardMinutes = showCardMinutes ? seasonMinutesByPlayerId : undefined;
   const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [rightTab, setRightTab] = useState<"plan" | "seizoen">("plan");
-  const [pitchLayout, setPitchLayout] =
-    useState<PitchLayout>("halfPerspective");
 
   useEffect(() => {
     if (selectedQuarter > quarterCount) {
@@ -129,6 +125,10 @@ export function SubstitutionPlanner({
         <p className="mt-1 text-sm text-gray-600">
           Tik op het veld om te plannen. Rechts zie je het plan live meegroeien.
         </p>
+        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 lg:hidden">
+          Dit planscherm is bedoeld voor laptop of TV. Op telefoon kun je beter
+          de live-coach gebruiken.
+        </p>
         <div className="mt-3 flex flex-col gap-3">
           <FormationSelector
             matchId={matchId}
@@ -142,7 +142,6 @@ export function SubstitutionPlanner({
             enabled={showCardMinutes}
             onChange={setShowCardMinutes}
           />
-          <PitchLayoutToggle value={pitchLayout} onChange={setPitchLayout} />
         </div>
       </header>
 
@@ -173,14 +172,14 @@ export function SubstitutionPlanner({
               canEdit={canEditPlan}
               isBusy={fieldBusy}
               pitchMaxWidthClass="max-w-3xl"
-              pitchLayout={pitchLayout}
+              pitchLayout="halfPerspective"
               seasonMinutesByPlayerId={cardMinutes}
-          onCreatePlan={(outId, inId, minute) =>
-            actions.addSubstitution(outId, inId, selectedQuarter, minute)
-          }
-          onCreatePositionSwap={(aId, bId, minute) =>
-            actions.addPositionSwap(aId, bId, selectedQuarter, minute)
-          }
+              onCreatePlan={(outId, inId, minute) =>
+                actions.addSubstitution(outId, inId, selectedQuarter, minute)
+              }
+              onCreatePositionSwap={(aId, bId, minute) =>
+                actions.addPositionSwap(aId, bId, selectedQuarter, minute)
+              }
             />
           )}
         </section>

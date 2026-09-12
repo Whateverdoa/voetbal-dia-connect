@@ -8,11 +8,12 @@ import type { Formation } from "@/lib/formations/types";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { createCorrelationId } from "@/lib/correlationId";
 import { formatFieldLabel } from "@/lib/cards/formatCardName";
+import { disciplineBadgeByPlayerId } from "@/lib/cards/cardRules";
 import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
-import type { MatchPlayer, MatchStatus } from "./types";
+import type { MatchEvent, MatchPlayer, MatchStatus } from "./types";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
@@ -23,6 +24,7 @@ interface PitchViewProps {
   status: MatchStatus;
   canEdit?: boolean;
   seasonMinutesByPlayerId?: Map<string, number>;
+  events?: MatchEvent[];
 }
 
 export function PitchView({
@@ -34,6 +36,7 @@ export function PitchView({
   status,
   canEdit = true,
   seasonMinutesByPlayerId,
+  events = [],
 }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
@@ -42,6 +45,13 @@ export function PitchView({
   const substituteFromField = useMutation(api.matchActions.substituteFromField);
 
   const isLiveOrHalftime = status === "live" || status === "halftime";
+  const disciplineByPlayer = disciplineBadgeByPlayerId(
+    events.map((e) => ({
+      type: e.type,
+      playerId: e.playerId ? String(e.playerId) : undefined,
+      isOpponentCard: e.isOpponentCard,
+    }))
+  );
 
   const formation = resolvedFormation;
   const fieldMode = fieldModeFromFormation(formationId, {
@@ -215,6 +225,11 @@ export function PitchView({
                     ? seasonMinutesByPlayerId?.get(String(player.playerId))
                     : undefined
                 }
+                disciplineBadge={
+                  player
+                    ? disciplineByPlayer.get(String(player.playerId))
+                    : undefined
+                }
                 onClick={() =>
                   player
                     ? handleFieldPlayerClick(player, slot.id)
@@ -234,6 +249,7 @@ export function PitchView({
         onDeselect={() => setSelectedPlayerId(null)}
         nameLabel={nameLabel}
         seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+        disciplineByPlayerId={disciplineByPlayer}
       />
     </div>
   );

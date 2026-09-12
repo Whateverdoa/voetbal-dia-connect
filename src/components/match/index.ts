@@ -6,6 +6,8 @@ export { BreakClock } from "./BreakClock";
 export { MatchControls } from "./MatchControls";
 export { UndoGoalButton } from "./UndoGoalButton";
 export { GoalModal } from "./GoalModal";
+export { CardModal } from "./CardModal";
+export { TimePenaltyPanel } from "./TimePenaltyPanel";
 export { SubstitutionPanel } from "./SubstitutionPanel";
 export { StagedSubstitutionsPanel } from "./StagedSubstitutionsPanel";
 export { GoalEnrichmentPanel } from "./GoalEnrichmentPanel";

@@ -7,6 +7,7 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
+import { isSandboxTeamSlug } from "./lib/sandboxTeam";
 import { isActiveSeasonMatch } from "./lib/season";
 
 // List all publicly visible matches, enriched with team/club names.
@@ -28,6 +29,7 @@ export const listPublicMatches = query({
     const enriched = await Promise.all(
       matches.map(async (m) => {
         const team = await ctx.db.get(m.teamId);
+        if (team && isSandboxTeamSlug(team.slug)) return null;
         const club = team ? await ctx.db.get(team.clubId) : null;
         const refFields = await getPublicRefereeFields(ctx, m.refereeId);
         const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, m._id, Date.now());
@@ -60,6 +62,8 @@ export const listPublicMatches = query({
       }),
     );
 
+    const visible = enriched.filter((row): row is NonNullable<typeof row> => row !== null);
+
     // Sort: live/halftime first, then scheduled (newest first), then finished
     const statusOrder: Record<string, number> = {
       live: 0,
@@ -68,13 +72,13 @@ export const listPublicMatches = query({
       finished: 3,
     };
 
-    enriched.sort((a, b) => {
+    visible.sort((a, b) => {
       const orderDiff = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
       if (orderDiff !== 0) return orderDiff;
       // Within the same status group, newest scheduledAt first
       return (b.scheduledAt ?? 0) - (a.scheduledAt ?? 0);
     });
 
-    return enriched;
+    return visible;
   },
 });

@@ -60,7 +60,8 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
             <div className="flex items-center gap-1">
               <Link
                 href="/coach/presenteren"
-                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"
+                className="hidden md:inline-flex px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] items-center text-sm font-medium"
+                title="Presenteren op laptop of TV"
               >
                 Presenteren
               </Link>

@@ -117,3 +117,18 @@ Notities:
 1.
 2.
 3.
+
+## TEST Sandbox — wisselplan (laptop)
+
+Doel: plannen en live wissels blijven synchroon zonder JO13-2 te raken.
+
+```bash
+npx convex run ops/ensureSandboxTeam:apply '{"opsSecret":"<CONVEX_OPS_SECRET>","coachEmail":"<jouw-email>"}'
+```
+
+1. Open TEST Sandbox-wedstrijd op telefoon (live bedienen).
+2. Open `/coach/match/<id>/wisselplan` op laptop.
+3. Plan 2–3 wissels (bij voorkeur bankspelers met lage seizoensminuten).
+4. Voer de eerste wissel live uit op de telefoon (veld of wissel-modal).
+5. Vernieuw planscherm: eerste regel moet als uitgevoerd/weg zijn; veld toont nieuwe opstelling; volgende regels blijven plannen/uitvoerbaar.
+6. Geautomatiseerd: `npx vitest run src/lib/substitutions/sandboxWisselPlan.scenarios.test.ts src/lib/substitutions/matchPendingPlan.test.ts`

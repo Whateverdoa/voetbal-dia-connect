@@ -2,6 +2,8 @@
 
 import clsx from "clsx";
 import type { PlayerAvailabilityStatus } from "@/lib/matchPlayerAvailability";
+import type { DisciplineBadge } from "@/lib/cards/cardRules";
+import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface PlayerCardProps {
   name: string;
@@ -12,9 +14,12 @@ interface PlayerCardProps {
   availability?: PlayerAvailabilityStatus;
   /** Season total minutes, shown as e.g. 42′ next to the name. */
   seasonMinutes?: number;
+  disciplineBadge?: DisciplineBadge;
   onToggleField?: () => void;
   onToggleKeeper?: () => void;
   onSetAvailability?: (status: PlayerAvailabilityStatus) => void;
+  /** When availability toggles are shown, which buttons to offer. */
+  availabilityActions?: Array<"absent" | "injured">;
 }
 
 export function PlayerCard({
@@ -24,13 +29,17 @@ export function PlayerCard({
   onField,
   availability = "available",
   seasonMinutes,
+  disciplineBadge,
   onToggleField,
   onToggleKeeper,
   onSetAvailability,
+  availabilityActions = ["absent", "injured"],
 }: PlayerCardProps) {
   const unavailable = availability !== "available";
   const absent = availability === "absent";
   const injured = availability === "injured";
+  const showAbsent = availabilityActions.includes("absent");
+  const showInjured = availabilityActions.includes("injured");
   const hasActions = !!(onToggleField || onToggleKeeper || onSetAvailability);
 
   return (
@@ -48,7 +57,7 @@ export function PlayerCard({
         {number !== undefined && (
           <span
             className={clsx(
-              "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
+              "relative w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
               absent && "bg-amber-200 text-amber-800",
               injured && "bg-rose-200 text-rose-800",
               !unavailable && onField && "bg-dia-green text-white",
@@ -56,11 +65,19 @@ export function PlayerCard({
             )}
           >
             {number}
+            {disciplineBadge ? (
+              <span className="absolute -top-1 -right-1">
+                <DisciplineCardMark badge={disciplineBadge} size="sm" />
+              </span>
+            ) : null}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <span className="font-medium text-sm text-gray-900 break-words">
+          <span className="font-medium text-sm text-gray-900 break-words inline-flex items-center gap-1.5">
             {name}
+            {number === undefined && disciplineBadge ? (
+              <DisciplineCardMark badge={disciplineBadge} size="sm" />
+            ) : null}
           </span>
           {seasonMinutes !== undefined ? (
             <span className="block text-xs text-gray-500 tabular-nums mt-0.5">
@@ -84,40 +101,44 @@ export function PlayerCard({
         <div className="flex flex-wrap gap-1 items-center">
           {onSetAvailability ? (
             <>
-              <button
-                type="button"
-                onClick={() =>
-                  onSetAvailability(absent ? "available" : "absent")
-                }
-                className={clsx(
-                  "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
-                  absent
-                    ? "bg-amber-200 text-amber-800 hover:bg-amber-300"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                )}
-                aria-label={absent ? "Markeer beschikbaar" : "Markeer afwezig"}
-                title={absent ? "Beschikbaar" : "Afwezig"}
-              >
-                {absent ? "✓" : "Afw"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  onSetAvailability(injured ? "available" : "injured")
-                }
-                className={clsx(
-                  "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
-                  injured
-                    ? "bg-rose-200 text-rose-800 hover:bg-rose-300"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                )}
-                aria-label={
-                  injured ? "Markeer beschikbaar" : "Markeer geblesseerd"
-                }
-                title={injured ? "Beschikbaar" : "Geblesseerd"}
-              >
-                {injured ? "✓" : "Bles"}
-              </button>
+              {showAbsent ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetAvailability(absent ? "available" : "absent")
+                  }
+                  className={clsx(
+                    "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
+                    absent
+                      ? "bg-amber-200 text-amber-800 hover:bg-amber-300"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  aria-label={absent ? "Markeer beschikbaar" : "Markeer afwezig"}
+                  title={absent ? "Beschikbaar" : "Afwezig"}
+                >
+                  {absent ? "✓" : "Afw"}
+                </button>
+              ) : null}
+              {showInjured ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetAvailability(injured ? "available" : "injured")
+                  }
+                  className={clsx(
+                    "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
+                    injured
+                      ? "bg-rose-200 text-rose-800 hover:bg-rose-300"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  aria-label={
+                    injured ? "Markeer beschikbaar" : "Markeer geblesseerd"
+                  }
+                  title={injured ? "Beschikbaar" : "Geblesseerd"}
+                >
+                  {injured ? "✓" : "Bles"}
+                </button>
+              ) : null}
             </>
           ) : null}
 

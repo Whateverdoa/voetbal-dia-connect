@@ -60,6 +60,7 @@ export const api = {
     substituteFromField: "matchActions:substituteFromField",
     stageSubstitution: "matchActions:stageSubstitution",
     removeLastGoal: "matchActions:removeLastGoal",
+    addCard: "matchActions:addCard",
     assignPlayerToSlot: "matchActions:assignPlayerToSlot",
     togglePlayerOnField: "matchActions:togglePlayerOnField",
     swapFieldPositions: "matchActions:swapFieldPositions",

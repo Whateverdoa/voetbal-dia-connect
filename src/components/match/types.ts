@@ -45,6 +45,7 @@ export interface MatchEvent {
   matchMs?: number;
   isOwnGoal?: boolean;
   isOpponentGoal?: boolean;
+  isOpponentCard?: boolean;
   note?: string;
   correlationId?: string;
   commandType?: string;

@@ -3,6 +3,7 @@
  */
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { normalizeQualificationTags } from "../src/lib/admin/assignmentBoard";
 import {
@@ -15,28 +16,49 @@ import { hasAdminRole, ADMIN_DISPLAY_NAME } from "./lib/adminOverride";
 import { listSeasonMatchesForAdminView } from "./lib/adminLiveView";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 
+export async function readActiveReferees(ctx: QueryCtx) {
+  const access = await getCurrentUserAccess(ctx);
+  if (!hasAdminRole(access)) await requireCoachAccess(ctx);
+  const all = await ctx.db.query("referees").withIndex("by_creation_time").take(501);
+  if (all.length > 500) throw new Error("Te veel scheidsrechters om in één overzicht te laden");
+  return all.filter((referee) => referee.active).map((referee) => ({
+    id: referee._id,
+    name: referee.name,
+    qualificationTags: normalizeQualificationTags(referee.qualificationTags),
+  }));
+}
+
 export const listActiveReferees = query({
-  handler: async (ctx) => {
-    const all = await ctx.db.query("referees").collect();
-    return all
-      .filter((referee) => referee.active)
-      .map((referee) => ({
-        id: referee._id,
-        name: referee.name,
-        qualificationTags: normalizeQualificationTags(referee.qualificationTags),
-      }));
-  },
+  args: {},
+  returns: v.array(v.object({ id: v.id("referees"), name: v.string(), qualificationTags: v.array(v.string()) })),
+  handler: readActiveReferees,
 });
+
+export async function readMatchesByTeam(ctx: QueryCtx, teamId: Id<"teams">) {
+  const access = await getCurrentUserAccess(ctx);
+  if (!hasAdminRole(access)) await requireCoachForTeam(ctx, teamId);
+  const matches = await ctx.db.query("matches")
+    .withIndex("by_team", (q) => q.eq("teamId", teamId)).order("desc").take(250);
+  return matches.map((match) => ({
+    _id: match._id, _creationTime: match._creationTime, teamId: match.teamId,
+    publicCode: match.publicCode, opponent: match.opponent, isHome: match.isHome,
+    status: match.status, currentQuarter: match.currentQuarter, quarterCount: match.quarterCount,
+    regulationDurationMinutes: match.regulationDurationMinutes,
+    homeScore: match.homeScore, awayScore: match.awayScore, showLineup: match.showLineup,
+    scheduledAt: match.scheduledAt, createdAt: match.createdAt,
+  }));
+}
 
 export const listByTeam = query({
   args: { teamId: v.id("teams") },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("matches")
-      .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
-      .order("desc")
-      .collect();
-  },
+  returns: v.array(v.object({
+    _id: v.id("matches"), _creationTime: v.number(), teamId: v.id("teams"),
+    publicCode: v.string(), opponent: v.string(), isHome: v.boolean(),
+    status: v.union(v.literal("scheduled"), v.literal("lineup"), v.literal("live"), v.literal("halftime"), v.literal("finished")),
+    currentQuarter: v.number(), quarterCount: v.number(), regulationDurationMinutes: v.optional(v.number()),
+    homeScore: v.number(), awayScore: v.number(), showLineup: v.boolean(), scheduledAt: v.optional(v.number()), createdAt: v.number(),
+  })),
+  handler: (ctx, args) => readMatchesByTeam(ctx, args.teamId),
 });
 
 export const getCoachTeamSetup = query({
@@ -142,6 +164,8 @@ export const verifyCoachAccess = query({
             isHome: match.isHome,
             status: match.status,
             currentQuarter: match.currentQuarter,
+            quarterCount: match.quarterCount,
+            regulationDurationMinutes: match.regulationDurationMinutes,
             homeScore: match.homeScore,
             awayScore: match.awayScore,
             publicCode: match.publicCode,
@@ -176,6 +200,8 @@ async function buildAdminCoachDashboard(ctx: QueryCtx, seasonKey: string) {
     isHome: match.isHome,
     status: match.status,
     currentQuarter: match.currentQuarter,
+    quarterCount: match.quarterCount,
+    regulationDurationMinutes: match.regulationDurationMinutes,
     homeScore: match.homeScore,
     awayScore: match.awayScore,
     publicCode: match.publicCode,

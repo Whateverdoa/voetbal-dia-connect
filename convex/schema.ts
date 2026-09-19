@@ -151,6 +151,8 @@ export default defineSchema({
     coachPin: v.optional(v.string()), // Legacy PIN to control this match
     coachId: v.optional(v.id("coaches")),
     
+    mobileCreationId: v.optional(v.string()),
+
     // Match info
     opponent: v.string(),
     opponentLogoUrl: v.optional(v.string()),
@@ -232,8 +234,11 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
     .index("by_refereeId", ["refereeId"])
+    .index("by_coachId", ["coachId"])
+    .index("by_leadCoachId", ["leadCoachId"])
     .index("by_season", ["seasonKey"])
     .index("by_team_and_season", ["teamId", "seasonKey"])
+    .index("by_team_mobile_creation", ["teamId", "mobileCreationId"])
     .index("by_sportlink_code", ["sportlinkWedstrijdcode"]),
 
   // Match lineup - which players are in this match
@@ -269,6 +274,15 @@ export default defineSchema({
     "correlationId",
   ]),
 
+  // Admin command retries must survive creation and later match state changes.
+  mobileAdminCommandDedupes: defineTable({
+    actorEmail: v.string(),
+    correlationId: v.string(),
+    payloadHash: v.string(),
+    resultId: v.string(),
+    createdAt: v.number(),
+  }).index("by_actor_correlation", ["actorEmail", "correlationId"]),
+
   matchStoppages: defineTable({
     matchId: v.id("matches"),
     quarter: v.number(),
@@ -294,10 +308,17 @@ export default defineSchema({
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
-      v.literal("red_card")
+      v.literal("red_card"),
+      v.literal("corner"),
+      v.literal("free_kick")
     ),
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
+    side: v.optional(v.union(v.literal("dia"), v.literal("opponent"))),
+    opponentNumber: v.optional(v.number()),
+    cardReason: v.optional(v.union(v.literal("direct"), v.literal("second_yellow"))),
+    assistStatus: v.optional(v.union(v.literal("none"), v.literal("unknown"), v.literal("player"))),
+    replacesGoalDetails: v.optional(v.boolean()),
     assistKind: v.optional(
       v.union(v.literal("pass"), v.literal("corner"), v.literal("free_kick"))
     ),
@@ -362,6 +383,7 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
     executedAt: v.optional(v.number()),
+    executedGameSecond: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

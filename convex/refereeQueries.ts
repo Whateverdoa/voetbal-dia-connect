@@ -64,7 +64,16 @@ export const getForReferee = query({
         Date.now(),
       );
 
+      const eventRows = await ctx.db.query("matchEvents")
+        .withIndex("by_match", q => q.eq("matchId", match._id)).order("desc").take(300);
+      const events = await Promise.all(eventRows.reverse().map(async event => ({
+        ...event,
+        playerName: event.playerId ? (await ctx.db.get(event.playerId))?.name : undefined,
+        relatedPlayerName: event.relatedPlayerId ? (await ctx.db.get(event.relatedPlayerId))?.name : undefined,
+      })));
       return {
+        events,
+        canControlClock: true,
         id: match._id,
         opponent: match.opponent,
         isHome: match.isHome,
@@ -128,6 +137,7 @@ export const getMatchesForReferee = query({
             status: match.status,
             currentQuarter: match.currentQuarter,
             quarterCount: match.quarterCount,
+            regulationDurationMinutes: match.regulationDurationMinutes,
             homeScore: match.homeScore,
             awayScore: match.awayScore,
             scheduledAt: match.scheduledAt,
@@ -170,6 +180,7 @@ async function buildAdminRefereeDashboard(ctx: QueryCtx, seasonKey: string) {
     status: match.status,
     currentQuarter: match.currentQuarter,
     quarterCount: match.quarterCount,
+    regulationDurationMinutes: match.regulationDurationMinutes,
     homeScore: match.homeScore,
     awayScore: match.awayScore,
     scheduledAt: match.scheduledAt,

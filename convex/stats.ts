@@ -229,7 +229,7 @@ export const getPlayerStats = query({
         events.forEach((e) => {
           if (e.playerId === args.playerId) {
             if (e.type === "goal" && !e.isOpponentGoal) goals++;
-            if (e.type === "yellow_card") yellowCards++;
+            if (e.type === "yellow_card" || e.cardReason === "second_yellow") yellowCards++;
             if (e.type === "red_card") redCards++;
           }
           // Count assists (player is relatedPlayerId on goal events)

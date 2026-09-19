@@ -4,6 +4,7 @@ import { api } from "./_generated/api";
 import { verifyClockPin } from "./pinHelpers";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 import { requireCoachForTeam } from "./lib/userAccess";
+import { removeGoalRelations } from "./mobileMatchEvents";
 
 const status = v.union(v.literal("scheduled"), v.literal("lineup"), v.literal("live"), v.literal("halftime"), v.literal("finished"));
 export const commandArgs = {
@@ -72,13 +73,15 @@ export async function executeCommand(ctx: MutationCtx, args: CommandArgs): Promi
       if (match.status !== "live" && match.status !== "halftime") throw new Error("De wedstrijd is niet actief");
       const goal = await ctx.db.query("matchEvents").withIndex("by_match_type", q => q.eq("matchId", matchId).eq("type", "goal")).order("desc").first();
       if (!goal || goal._id !== args.goalId) throw new Error("Het laatste doelpunt is gewijzigd. Controleer het verloop.");
-      // Lightweight score goals have no linked assist rows to undo.
-      if (goal.commandType !== "ADJUST_SCORE") throw new Error("Corrigeer dit uitgebreide doelpunt in DIA web");
+      if (goal.commandType !== "ADJUST_SCORE" && goal.commandType !== "MOBILE_EVENT") throw new Error("Corrigeer dit uitgebreide doelpunt in DIA web");
       const opponent = goal.isOpponentGoal || goal.isOwnGoal;
       const home = opponent ? !match.isHome : match.isHome;
-      await ctx.db.patch(matchId, home ? { homeScore: Math.max(0, match.homeScore - 1) } : { awayScore: Math.max(0, match.awayScore - 1) });
-      const enrichments = await ctx.db.query("matchEvents").withIndex("by_match_type", q => q.eq("matchId", matchId).eq("type", "goal_enrichment")).take(100);
-      for (const event of enrichments) if (event.targetEventId === goal._id) await ctx.db.delete(event._id);
+      const score = home ? match.homeScore : match.awayScore;
+      if (score < 1) throw new Error("Stand en verloop komen niet overeen; controleer de wedstrijd");
+      await ctx.db.patch(matchId, home ? { homeScore: score - 1 } : { awayScore: score - 1 });
+      const events = await ctx.db.query("matchEvents").withIndex("by_match", q => q.eq("matchId", matchId)).take(501);
+      if (events.length > 500) throw new Error("Deze wedstrijd heeft te veel registraties voor mobiele bewerking");
+      await removeGoalRelations(ctx, goal, events);
       await ctx.db.delete(goal._id);
       break;
     }

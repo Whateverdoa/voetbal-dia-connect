@@ -288,10 +288,17 @@ export default defineSchema({
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
-      v.literal("red_card")
+      v.literal("red_card"),
+      v.literal("corner"),
+      v.literal("free_kick")
     ),
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
+    side: v.optional(v.union(v.literal("dia"), v.literal("opponent"))),
+    opponentNumber: v.optional(v.number()),
+    cardReason: v.optional(v.union(v.literal("direct"), v.literal("second_yellow"))),
+    assistStatus: v.optional(v.union(v.literal("none"), v.literal("unknown"), v.literal("player"))),
+    replacesGoalDetails: v.optional(v.boolean()),
     assistKind: v.optional(
       v.union(v.literal("pass"), v.literal("corner"), v.literal("free_kick"))
     ),

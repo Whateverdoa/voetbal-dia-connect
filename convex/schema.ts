@@ -225,6 +225,8 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
     .index("by_refereeId", ["refereeId"])
+    .index("by_coachId", ["coachId"])
+    .index("by_leadCoachId", ["leadCoachId"])
     .index("by_season", ["seasonKey"])
     .index("by_team_and_season", ["teamId", "seasonKey"])
     .index("by_team_mobile_creation", ["teamId", "mobileCreationId"])
@@ -262,6 +264,15 @@ export default defineSchema({
     "commandType",
     "correlationId",
   ]),
+
+  // Admin command retries must survive creation and later match state changes.
+  mobileAdminCommandDedupes: defineTable({
+    actorEmail: v.string(),
+    correlationId: v.string(),
+    payloadHash: v.string(),
+    resultId: v.string(),
+    createdAt: v.number(),
+  }).index("by_actor_correlation", ["actorEmail", "correlationId"]),
 
   matchStoppages: defineTable({
     matchId: v.id("matches"),

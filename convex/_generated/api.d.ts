@@ -105,6 +105,7 @@ import type * as matchPhase3Actions from "../matchPhase3Actions.js";
 import type * as matchPregameActions from "../matchPregameActions.js";
 import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
+import type * as mobileAdmin from "../mobileAdmin.js";
 import type * as mobileMatchActions from "../mobileMatchActions.js";
 import type * as mobileMatchEvents from "../mobileMatchEvents.js";
 import type * as mobileSubstitutionPlans from "../mobileSubstitutionPlans.js";
@@ -267,6 +268,7 @@ declare const fullApi: ApiFromModules<{
   matchPregameActions: typeof matchPregameActions;
   matchQueries: typeof matchQueries;
   matches: typeof matches;
+  mobileAdmin: typeof mobileAdmin;
   mobileMatchActions: typeof mobileMatchActions;
   mobileMatchEvents: typeof mobileMatchEvents;
   mobileSubstitutionPlans: typeof mobileSubstitutionPlans;

@@ -34,15 +34,16 @@ crons.cron(
 );
 
 /**
- * Bond poulestanden. Na de weekendronde (zo 20:00 UTC) en midweek als vangnet,
- * zodat ouders maandagochtend de bijgewerkte stand zien.
+ * Bond poulestanden in het weekend: elke 15 min (UTC 10-20, za+zo) ná afgelopen
+ * wedstrijden, tot Sportlink een nieuwe stand publiceert. Daarna stop voor die dag.
  */
 crons.cron(
-  "sportlink-standings-weekend",
-  "0 20 * * 0",
-  internal.import.sportlinkStandingsFetch.syncStandings,
+  "sportlink-standings-weekend-poll",
+  "*/15 10-20 * * 6,0",
+  internal.import.sportlinkStandingsFetch.syncStandingsWeekendPoll,
 );
 
+/** Lichte midweek-vangnet (wo 20:00 UTC) — geen kwartier-poll doordeweeks. */
 crons.cron(
   "sportlink-standings-midweek",
   "0 20 * * 3",

@@ -120,3 +120,15 @@ export const standingsTable = defineTable({
   rows: v.array(standingRowValidator),
   fetchedAt: v.number(),
 }).index("by_team_slug", ["teamSlug"]);
+
+/**
+ * Weekend standings poll cursor: keep fetching after matches until Sportlink
+ * publishes a new table, then stop for that Amsterdam play day.
+ */
+export const standingsPollStateTable = defineTable({
+  key: v.literal("weekend"),
+  amsterdamDate: v.string(),
+  baselineFingerprint: v.string(),
+  sawUpdate: v.boolean(),
+  updatedAt: v.number(),
+}).index("by_key", ["key"]);

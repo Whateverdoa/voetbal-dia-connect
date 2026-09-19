@@ -9,6 +9,7 @@
  */
 import { internalAction, type ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { parseAmsterdamTimestamp } from "../lib/timezone";
 import {
   mapPouleAssignments,
   mapStandingRows,
@@ -28,6 +29,7 @@ export type StandingsSyncSummary = {
   skippedUnknownTeams: string[];
   prunedTeams: number;
   failedPoules: string[];
+  contentChanged: boolean;
 };
 
 function sportlinkConfig(): { clientId: string; baseUrl: string } {
@@ -120,14 +122,21 @@ async function runStandingsSync(
   }
 
   const writtenSlugs: string[] = [];
+  let contentChanged = false;
   for (const assignment of wanted) {
     const rows = rowsByPoule.get(assignment.poulecode);
     if (!rows || rows.length === 0) continue;
 
-    await ctx.runMutation(internal.import.standingsWrite.upsertStanding, {
-      ...assignment,
-      rows,
-    });
+    const result = await ctx.runMutation(
+      internal.import.standingsWrite.upsertStanding,
+      {
+        ...assignment,
+        rows,
+      }
+    );
+    if (result === "created" || result === "updated") {
+      contentChanged = true;
+    }
     writtenSlugs.push(assignment.teamSlug);
   }
 
@@ -135,6 +144,9 @@ async function runStandingsSync(
     internal.import.standingsWrite.pruneStandings,
     { keepTeamSlugs: writtenSlugs }
   );
+  if (prunedTeams > 0) {
+    contentChanged = true;
+  }
 
   return {
     source: "sportlink",
@@ -144,6 +156,7 @@ async function runStandingsSync(
     skippedUnknownTeams,
     prunedTeams,
     failedPoules,
+    contentChanged,
   };
 }
 
@@ -151,4 +164,113 @@ async function runStandingsSync(
 export const syncStandings = internalAction({
   args: {},
   handler: async (ctx) => runStandingsSync(ctx),
+});
+
+function amsterdamDateKey(nowMs: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(nowMs));
+}
+
+type WeekendPollState = {
+  amsterdamDate: string;
+  baselineFingerprint: string;
+  sawUpdate: boolean;
+  updatedAt: number;
+} | null;
+
+type WeekendPollResult =
+  | { skipped: "already_fresh" | "no_matches_ended"; amsterdamDate: string }
+  | {
+      skipped: null;
+      amsterdamDate: string;
+      sawUpdate: boolean;
+      contentChanged: boolean;
+      sync: StandingsSyncSummary;
+    };
+
+/**
+ * Weekend poll: after matches end, sync every ~15 min until Sportlink shows a
+ * new table for that Amsterdam day; then stop. Weekdays stay on the midweek cron.
+ */
+export const syncStandingsWeekendPoll = internalAction({
+  args: {},
+  handler: async (ctx): Promise<WeekendPollResult> => {
+    const now = Date.now();
+    const amsterdamDate = amsterdamDateKey(now);
+
+    const pollState: WeekendPollState = await ctx.runQuery(
+      internal.import.standingsWrite.getWeekendPollState,
+      {}
+    );
+    if (
+      pollState &&
+      pollState.amsterdamDate === amsterdamDate &&
+      pollState.sawUpdate
+    ) {
+      console.log(
+        `[standingsWeekendPoll] skipped: already fresh for ${amsterdamDate}`
+      );
+      return { skipped: "already_fresh", amsterdamDate };
+    }
+
+    const todayStart = parseAmsterdamTimestamp(`${amsterdamDate}T00:00:00`);
+    let dayEnd = parseAmsterdamTimestamp(`${amsterdamDate}T23:59:59.999`);
+    if (!Number.isFinite(dayEnd) || Number.isNaN(dayEnd)) {
+      dayEnd = todayStart + 24 * 60 * 60 * 1000 - 1;
+    }
+
+    const matchesEnded: boolean = await ctx.runQuery(
+      internal.import.weeklyUpdate.anyMatchEndedOnAmsterdamDay,
+      {
+        // Include yesterday: Saturday scores often land late evening / Sunday morning.
+        dayStart: todayStart - 36 * 60 * 60 * 1000,
+        dayEnd,
+        now,
+      }
+    );
+    if (!matchesEnded) {
+      console.log("[standingsWeekendPoll] skipped: no matches ended yet");
+      return { skipped: "no_matches_ended", amsterdamDate };
+    }
+
+    const fingerprintBefore: string = await ctx.runQuery(
+      internal.import.standingsWrite.getStandingsFingerprint,
+      {}
+    );
+    const sync = await runStandingsSync(ctx);
+    const fingerprintAfter: string = await ctx.runQuery(
+      internal.import.standingsWrite.getStandingsFingerprint,
+      {}
+    );
+
+    const sameDay =
+      pollState !== null && pollState.amsterdamDate === amsterdamDate;
+    const baselineFingerprint: string = sameDay
+      ? pollState.baselineFingerprint
+      : fingerprintBefore;
+    const sawUpdate: boolean =
+      fingerprintAfter !== baselineFingerprint ||
+      (sameDay && pollState.sawUpdate);
+
+    await ctx.runMutation(internal.import.standingsWrite.saveWeekendPollState, {
+      amsterdamDate,
+      baselineFingerprint,
+      sawUpdate,
+    });
+
+    console.log(
+      `[standingsWeekendPoll] synced contentChanged=${sync.contentChanged} sawUpdate=${sawUpdate} teamsWritten=${sync.teamsWritten}`
+    );
+    return {
+      skipped: null,
+      amsterdamDate,
+      sawUpdate,
+      contentChanged: sync.contentChanged,
+      sync,
+    };
+  },
 });

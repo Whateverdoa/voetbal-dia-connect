@@ -1,6 +1,13 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { cardProfileValidator, playerConsentsTable, standingsTable, tacticBoardsTable, wedstrijdenTable } from "./schemaFragments";
+import {
+  cardProfileValidator,
+  playerConsentsTable,
+  standingsPollStateTable,
+  standingsTable,
+  tacticBoardsTable,
+  wedstrijdenTable,
+} from "./schemaFragments";
 
 export default defineSchema({
   clubs: defineTable({
@@ -364,4 +371,5 @@ export default defineSchema({
   playerConsents: playerConsentsTable,
   tacticBoards: tacticBoardsTable,
   standings: standingsTable,
+  standingsPollState: standingsPollStateTable,
 });

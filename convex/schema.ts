@@ -27,6 +27,8 @@ export default defineSchema({
     isSelectionTeam: v.optional(v.boolean()),
     /** Sportlink team code for bond import (optional). */
     sportlinkTeamCode: v.optional(v.string()),
+    /** false = not in the current youth season. Missing/true = visible. */
+    active: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_club", ["clubId"])

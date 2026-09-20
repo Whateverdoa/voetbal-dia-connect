@@ -8,7 +8,7 @@ import {
   buildClaimOpenEmail,
   buildUnassignedListWhatsApp,
 } from "@/lib/referee/messageTemplates";
-import { getDefaultClaimWindowClosesAt, getPlayWeekStartMs } from "@/lib/referee/playWeek";
+import { getPlayWeekBounds, getPlayWeekStartMs } from "@/lib/referee/playWeek";
 
 describe("referee eligibility", () => {
   it("allows geschikt tags only", () => {
@@ -50,12 +50,10 @@ describe("referee message templates", () => {
 });
 
 describe("play week", () => {
-  it("returns Monday start and Wed 18:00 close after Monday", () => {
-    // 2026-08-03 is a Monday in many TZ; use a fixed UTC noon Wednesday
-    const wed = Date.parse("2026-08-05T12:00:00+02:00");
-    const monday = getPlayWeekStartMs(wed);
-    const closes = getDefaultClaimWindowClosesAt(monday);
-    expect(closes).toBeGreaterThan(monday);
-    expect(closes - monday).toBeLessThan(4 * 24 * 60 * 60 * 1000);
+  it("keeps Saturday in the same play week as Monday", () => {
+    const saturday = Date.parse("2026-08-08T12:00:00+02:00");
+    const monday = Date.parse("2026-08-03T00:00:00+02:00");
+    expect(getPlayWeekStartMs(saturday)).toBe(monday);
+    expect(getPlayWeekBounds(saturday).weekEndMs).toBe(Date.parse("2026-08-10T00:00:00+02:00"));
   });
 });

@@ -11,6 +11,7 @@ import {
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
 } from "./lib/matchEventProjection";
+import { cardPersonDisplay } from "./lib/cardEntry";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
@@ -68,7 +69,9 @@ export const getByPublicCode = query({
 
     const enrichedEvents = events.map((e) => ({
       ...e,
-      playerName: e.playerId ? playerMap[e.playerId] : undefined,
+      playerName: e.playerId
+        ? playerMap[e.playerId]
+        : cardPersonDisplay(e),
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
@@ -249,7 +252,9 @@ export const getForCoach = query({
 
     const enrichedEvents = events.map((e) => ({
       ...e,
-      playerName: e.playerId ? playerMap[e.playerId] : undefined,
+      playerName: e.playerId
+        ? playerMap[e.playerId]
+        : cardPersonDisplay(e),
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
@@ -293,7 +298,8 @@ export const getForCoach = query({
     const isCurrentCoachLead =
       viewingAsAdmin || (coach !== null && match.leadCoachId === coach._id);
     const canControlClock =
-      viewingAsAdmin || !!match.refereeId || isCurrentCoachLead;
+      viewingAsAdmin ||
+      (!match.refereeId && isCurrentCoachLead);
 
     const planRows = await ctx.db
       .query("substitutionPlans")

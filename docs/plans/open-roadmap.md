@@ -1,8 +1,9 @@
 # DIA Live — open roadmap (inventaris)
 
 **Doel:** één plek met open plannen, todos en futures.  
-**Laatste sync:** 2026-08-29  
-**Gerelateerde plannen:** [tactiek-presentatie](./tactiek-presentatie.plan.md) · [heatmaps-future](./heatmaps-future.md) · [selectie-teamportaal](./selectie-teamportaal.plan.md)
+**Laatste sync:** 2026-09-20
+
+**Gerelateerde plannen:** [device-surfaces](./device-surfaces.plan.md) · [tactiek-presentatie](./tactiek-presentatie.plan.md) · [heatmaps-future](./heatmaps-future.md) · [selectie-teamportaal](./selectie-teamportaal.plan.md)
 
 ---
 
@@ -15,6 +16,7 @@
 | [avg-jo13-consent.md](./avg-jo13-consent.md) | Beleid klaar | JO13-2 consent-ronde gedaan; JO13-1 later |
 | [coach_scheids_admin_logos.plan.md](./coach_scheids_admin_logos.plan.md) | Deels gebouwd | Acceptatiecriteria afvinken |
 | Tactiekstudio (Fable fase 2 rest) | Presentatie-basis klaar | Wisselplan-tab op `/present` — zie [tactiek-presentatie](./tactiek-presentatie.plan.md) (in uitvoering) |
+| [Selectie-teamportaal](./selectie-teamportaal.plan.md) | Publieke teamhub gebouwd; fictief klikprototype `/demo/teamportaal` toegevoegd | Productvalidatie; echte speler-/guardian-koppeling, autorisatie en consent vóór integratie |
 
 ## B. Product backlog — prioriteit 1–3
 
@@ -30,7 +32,7 @@ Zie [product-backlog.md](./product-backlog.md):
 - Opstellingenlijst, meer formaties, live veld `/live`, foto’s+consent, plat veld overal
 - Pre-match kwart-planning (apart WAT+HOE)
 - Speelweek-model, logo storage
-- **[Selectie-teamportaal](./selectie-teamportaal.plan.md)** — JO13-2 eerst; uitbreidbaar
+- **[Selectie-teamportaal](./selectie-teamportaal.plan.md)** — prototype eerst valideren; echte JO13-2-integratie later
 - **[Heatmaps](./heatmaps-future.md)** — zones, geen GPS
 
 ## D. Andere open docs
@@ -53,12 +55,14 @@ Zie [product-backlog.md](./product-backlog.md):
 
 ## F. Nieuw (2026-08) — selectie-teamportaal
 
-Aparte team-ervaring voor `isSelectionTeam`: publieke landing + ingelogd SaaS-achtig gamificatie-gebied. Details: [selectie-teamportaal.plan.md](./selectie-teamportaal.plan.md).
+De publieke `/team/[slug]` met bondstand en gespeelde wedstrijden is gebouwd. Sinds 2026-09-19 staat de afzonderlijke speler-/ouder-/coachverkenning op `/demo/teamportaal`: fictieve data, ontwikkelgerichte coachfeedback en positieve waardering, lokaal opgeslagen. Alleen lokale development of expliciet ingeschakelde Vercel-preview; geen production-route of backendkoppeling. Echte member-toegang voor selectieteams volgt later. Details: [selectie-teamportaal.plan.md](./selectie-teamportaal.plan.md).
+
+Uitbreiding 2026-09-20: optionele professionele observaties, standaard uit, met een aparte coach-/scoutwerkplek. Geen observaties in de speler-/ouderweergave; echte vertrouwelijkheid vraagt later eigen accounts en serverautorisatie. De demo blijft uitsluitend voor fictieve gegevens.
 
 ## Voorgestelde volgorde
 
-1. Tactiek-presentatie (Wisselplan op `/present`) — **nu**
-2. Selectie-portaal P0–P1 (landing) — consent JO13-2 is gedaan
-3. Portaal P2–P3 (login + gamificatie-app)
-4. Pre-match WAT+HOE / admin UX
+1. **Device surfaces fase 0** — coach-mobile vs coach-pc (iPad = PC) — [device-surfaces.plan.md](./device-surfaces.plan.md)
+2. Spraak + oortjes (fase 1, alleen lead-coach)
+3. Social: spelers + ouders (fase 2)
+4. Referee-app mobile + pc (fase 3)
 5. Heatmaps (future)

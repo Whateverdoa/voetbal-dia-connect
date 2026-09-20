@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useAppNavHeight } from "@/hooks/useAppNavHeight";
+import { useDeviceSurface } from "@/hooks/useDeviceSurface";
 import {
   canPresentTactics,
   parseRolesFromMetadata,
@@ -32,6 +33,7 @@ export function ClerkNav() {
   const isAdmin = roles.includes("admin");
   const isCoach = roles.includes("coach");
   const isReferee = roles.includes("referee");
+  const isPc = useDeviceSurface() === "pc";
 
   return (
     <header
@@ -49,13 +51,22 @@ export function ClerkNav() {
                 Coach
               </Link>
             ) : null}
-            {canPresentTactics(roles) ? (
+            {canPresentTactics(roles) && isPc ? (
               <Link
                 href="/coach/presenteren"
-                className="hidden md:inline font-medium text-dia-black hover:text-dia-black"
-                title="Presenteren op laptop of TV"
+                className="font-medium text-dia-black hover:text-dia-black"
+                title="Presenteren op iPad, laptop of TV"
               >
                 Presenteren
+              </Link>
+            ) : null}
+            {canPresentTactics(roles) && isPc ? (
+              <Link
+                href="/coach/plannen"
+                className="font-medium text-dia-black hover:text-dia-black"
+                title="Wisselplan op iPad of laptop"
+              >
+                Plannen
               </Link>
             ) : null}
             {isReferee || isAdmin ? (

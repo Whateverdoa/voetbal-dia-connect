@@ -23,6 +23,10 @@ interface ProjectedPitchPlannerProps {
   /** Override the pitch max-width; planscherm uses a wider value. */
   pitchMaxWidthClass?: string;
   pitchLayout?: PitchLayout;
+  /** Letterbox the pitch so the whole field stays in the viewport. */
+  fill?: boolean;
+  /** Hide the bench strip; studio puts it beside the pitch. */
+  showBench?: boolean;
   seasonMinutesByPlayerId?: Map<string, number>;
   onCreatePlan: (
     playerOutId: Id<"players">,
@@ -55,6 +59,8 @@ export function ProjectedPitchPlanner({
   isBusy,
   pitchMaxWidthClass = "max-w-lg",
   pitchLayout = "full",
+  fill = false,
+  showBench = true,
   seasonMinutesByPlayerId,
   onCreatePlan,
   onCreatePositionSwap,
@@ -140,8 +146,8 @@ export function ProjectedPitchPlanner({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+    <div className={fill ? "flex h-full min-h-0 flex-col gap-2" : "space-y-3"}>
+      <div className="flex shrink-0 flex-wrap gap-2">
         {Array.from({ length: quarterCount }, (_, index) => index + 1).map(
           (quarter) => (
             <button
@@ -151,7 +157,9 @@ export function ProjectedPitchPlanner({
               className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold ${
                 selectedQuarter === quarter
                   ? "border-dia-green bg-dia-green text-white"
-                  : "border-gray-300 bg-white text-gray-700"
+                  : fill
+                    ? "border-white/30 bg-white/10 text-white"
+                    : "border-gray-300 bg-white text-gray-700"
               }`}
             >
               {periodButtonLabel(quarterCount, quarter)}
@@ -160,16 +168,18 @@ export function ProjectedPitchPlanner({
         )}
       </div>
 
-      <div className="rounded-xl bg-dia-green-light p-3 text-sm text-dia-black">
-        <span className="font-semibold">
-          Planweergave {periodLabel(quarterCount)} {selectedQuarter}:
-        </span>{" "}
-        dit veld toont de virtuele situatie volgens de openstaande regels in dit{" "}
-        {periodLabel(quarterCount)}.
-      </div>
+      {fill ? null : (
+        <div className="rounded-xl bg-dia-green-light p-3 text-sm text-dia-black">
+          <span className="font-semibold">
+            Planweergave {periodLabel(quarterCount)} {selectedQuarter}:
+          </span>{" "}
+          dit veld toont de virtuele situatie volgens de openstaande regels in
+          dit {periodLabel(quarterCount)}.
+        </div>
+      )}
 
       {quarterlessPendingCount > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className={`rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 ${fill ? "shrink-0" : ""}`}>
           {quarterlessPendingCount} openstaande{" "}
           {quarterlessPendingCount === 1 ? "regel telt" : "regels tellen"} niet
           mee in deze kwartweergave omdat er nog geen kwart/helft is gekozen.
@@ -177,49 +187,60 @@ export function ProjectedPitchPlanner({
       )}
 
       {warningMessages.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className={`rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 ${fill ? "shrink-0" : ""}`}>
           {warningMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}
         </div>
       )}
 
-      <PlanPitchMinuteBar
-        statusText={statusText()}
-        hasSelection={!!selectedPlayerOutId}
-        minuteDraft={minuteDraft}
-        onMinuteChange={setMinuteDraft}
-        canEdit={canEdit}
-      />
+      <div className={fill ? "shrink-0" : undefined}>
+        <PlanPitchMinuteBar
+          statusText={statusText()}
+          hasSelection={!!selectedPlayerOutId}
+          minuteDraft={minuteDraft}
+          onMinuteChange={setMinuteDraft}
+          canEdit={canEdit}
+          tone={fill ? "dark" : "light"}
+        />
+      </div>
 
-      <ProjectedPlannerPitch
-        pitchLayout={pitchLayout}
-        formation={formation}
-        cfg={cfg}
-        onField={onField}
-        selectedPlayerId={effectiveSelectedPlayerOutId}
-        canEdit={canEdit}
-        pitchMaxWidthClass={pitchMaxWidthClass}
-        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
-        onFieldPlayerClick={(playerId) => {
-          void handleFieldPlayerClick(playerId);
-        }}
-      />
-
-      <PitchBench
-        onBench={onBench}
-        onFieldUnassigned={onFieldUnassigned}
-        selectedPlayerId={null}
-        onBenchPlayerClick={(playerId) => {
-          void handleBenchPlayerClick(playerId);
-        }}
-        onUnassignedPlayerClick={(playerId) => {
-          void handleFieldPlayerClick(playerId);
-        }}
-        onDeselect={() => setSelectedPlayerOutId(null)}
-        nameLabel={nameLabel}
-        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
-      />
+      <div className={fill ? "flex min-h-0 flex-1 gap-2" : undefined}>
+        <div className={fill ? "min-h-0 min-w-0 flex-1" : undefined}>
+          <ProjectedPlannerPitch
+            pitchLayout={pitchLayout}
+            formation={formation}
+            cfg={cfg}
+            onField={onField}
+            selectedPlayerId={effectiveSelectedPlayerOutId}
+            canEdit={canEdit}
+            pitchMaxWidthClass={pitchMaxWidthClass}
+            seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+            fill={fill}
+            onFieldPlayerClick={(playerId) => {
+              void handleFieldPlayerClick(playerId);
+            }}
+          />
+        </div>
+        {showBench ? (
+          <div className={fill ? "w-28 shrink-0 overflow-y-auto" : undefined}>
+            <PitchBench
+              onBench={onBench}
+              onFieldUnassigned={onFieldUnassigned}
+              selectedPlayerId={null}
+              onBenchPlayerClick={(playerId) => {
+                void handleBenchPlayerClick(playerId);
+              }}
+              onUnassignedPlayerClick={(playerId) => {
+                void handleFieldPlayerClick(playerId);
+              }}
+              onDeselect={() => setSelectedPlayerOutId(null)}
+              nameLabel={nameLabel}
+              seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

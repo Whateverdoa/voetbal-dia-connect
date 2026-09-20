@@ -1,4 +1,5 @@
-import { assistKindLabel, formatAssistLine } from "@/lib/assistKind";
+import { formatAssistLine } from "@/lib/assistKind";
+import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
 
 interface TimelineSectionProps {
@@ -64,34 +65,8 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   switch (event.type) {
     case "goal":
       icon = "⚽";
-      const scoringTeamName =
-        event.isOpponentGoal || event.isOwnGoal ? opponentName : teamName;
-      if (event.isOpponentGoal) {
-        text = event.playerName
-          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Doelpunt ${scoringTeamName} (${event.note})`
-            : `Doelpunt ${scoringTeamName}`;
-      } else if (event.isOwnGoal) {
-        text = event.playerName
-          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
-            : `Eigen doelpunt (${scoringTeamName})`;
-      } else {
-        text = event.playerName
-          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Doelpunt ${scoringTeamName} (${event.note})`
-            : `Doelpunt ${scoringTeamName}`;
-        if (
-          event.assistKind === "corner" ||
-          event.assistKind === "free_kick"
-        ) {
-          text += ` · ${assistKindLabel(event.assistKind)}`;
-        }
-        highlight = true;
-      }
+      text = describeGoalEvent(event, teamName, opponentName);
+      highlight = !event.isOpponentGoal && !event.isOwnGoal;
       break;
     case "assist":
       icon = "👟";

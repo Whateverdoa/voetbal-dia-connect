@@ -24,6 +24,7 @@ export const helpAdminPage: HelpPageDef = {
         "Wijs per wedstrijd een scheidsrechter (en zo nodig een coach) toe.",
         "Maak een extra wedstrijd aan als die niet in het programma staat.",
         "Open of sluit de claimronde voor de speelweek, zodat de poule zelf kan claimen.",
+        "Een nieuwe of opnieuw geopende ronde heeft geen vaste sluitdatum. Scheidsrechters kunnen ook op de wedstrijddag claimen zolang de ronde open is en de wedstrijd nog niet is gestart. De ronde geldt voor de huidige speelweek.",
         "Kopieer WhatsApp-teksten voor open ronde of nog openstaande wedstrijden.",
       ],
     },

@@ -10,11 +10,13 @@
  * Only JO/MO teams are imported by default.
  */
 import { execSync } from "child_process";
-import { parsePlayersCsv, groupByTeam } from "./lib/csv-utils.mjs";
+import { parsePlayersCsv, groupByTeam, isFrozenJo132Slug } from "./lib/csv-utils.mjs";
 
 const args = process.argv.slice(2);
 const csvPath = args.find((arg) => !arg.startsWith("--"));
 const dryRun = args.includes("--dry-run");
+const namesAsIs = args.includes("--as-is");
+const deactivateMissing = args.includes("--deactivate-missing");
 const opsSecretIndex = args.indexOf("--ops-secret");
 const opsSecret = opsSecretIndex !== -1 ? args[opsSecretIndex + 1] : process.env.CONVEX_OPS_SECRET;
 
@@ -32,9 +34,11 @@ console.log(`\n📂 Reading CSV: ${csvPath}`);
 console.log(`🔐 Auth: ${opsSecret ? "ops-secret provided" : "dry-run without auth"}`);
 console.log(`🏃 Mode: ${dryRun ? "DRY-RUN (no writes)" : "COMMIT (will write to DB)"}\n`);
 
-const players = parsePlayersCsv(csvPath);
+const players = parsePlayersCsv(csvPath, { reorderNames: !namesAsIs });
 const grouped = groupByTeam(players);
-const teamSlugs = Object.keys(grouped).sort();
+const teamSlugs = Object.keys(grouped)
+  .filter((slug) => !isFrozenJo132Slug(slug))
+  .sort();
 
 console.log(`Found ${players.length} players across ${teamSlugs.length} teams:\n`);
 
@@ -67,6 +71,7 @@ for (const slug of teamSlugs) {
     teamSlug: slug,
     players: roster,
     dryRun: false,
+    deactivateMissing,
   });
 
   try {

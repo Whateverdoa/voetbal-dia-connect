@@ -31,6 +31,8 @@ import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
 import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
+import { CoachWisselplanTab } from "@/components/coach/CoachWisselplanTab";
+import { useDeviceSurface } from "@/hooks/useDeviceSurface";
 type ViewTab = "opstelling" | "wisselplan" | "speeltijd" | "seizoen";
 type LineupView = "veld" | "lijst";
 
@@ -49,6 +51,8 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
   const seasonMinutesByPlayerId = useSeasonMinutesMap(match.teamId);
   const [showCardMinutes, setShowCardMinutes] = useShowCardMinutes();
   const cardMinutes = showCardMinutes ? seasonMinutesByPlayerId : undefined;
+  const surface = useDeviceSurface();
+  const isPc = surface === "pc";
 
   useEffect(() => {
     lastUpdateRef.current = Date.now();
@@ -107,7 +111,11 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
       <nav className="bg-dia-green text-white px-4 py-2 sticky top-0 z-20">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <div
+          className={`${
+            isPc && activeTab === "wisselplan" ? "max-w-7xl" : "max-w-2xl"
+          } mx-auto flex items-center justify-between`}
+        >
           <div className="flex items-center gap-1">
             <Link
               href="/coach"
@@ -121,13 +129,15 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
             >
               Live view
             </Link>
-            <Link
-              href={`/coach/match/${match._id}/wisselplan`}
-              className="hidden md:flex text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 items-center"
-              title="Wisselplan op laptop of TV"
-            >
-              Planscherm
-            </Link>
+            {isPc ? (
+              <Link
+                href={`/coach/match/${match._id}/wisselplan`}
+                className="text-sm opacity-80 hover:opacity-100 min-h-[44px] px-2 flex items-center"
+                title="Wisselplan op iPad of laptop"
+              >
+                Planscherm
+              </Link>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             {!isConnected && (
@@ -162,7 +172,11 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         awayLogoUrl={awayLogoUrl}
       />
 
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
+      <div
+        className={`${
+          isPc && activeTab === "wisselplan" ? "max-w-7xl" : "max-w-2xl"
+        } mx-auto p-4 space-y-4`}
+      >
         <MatchControls
           matchId={match._id}
           status={match.status}
@@ -177,11 +191,21 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           breakClockAutoStart={match.breakClockAutoStart}
           scheduledBreakEndAt={match.scheduledBreakEndAt}
           canControlClock={canControlClock}
+          canAddGoals={canControlClock}
           canDoSubstitutions={canDoSubstitutions}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
-          onCardClick={isLive ? () => setShowCardModal(true) : undefined}
+          onCardClick={
+            isLive && canControlClock ? () => setShowCardModal(true) : undefined
+          }
         />
+
+        {isLive ? (
+          <StagedSubstitutionsPanel
+            matchId={match._id}
+            stagedSubstitutions={match.stagedSubstitutions ?? []}
+          />
+        ) : null}
 
         {isLive ? (
           <TimePenaltyPanel
@@ -300,25 +324,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         )}
 
         {activeTab === "wisselplan" && (
-          <>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 space-y-2">
-              <p className="font-semibold">Wisselplan hoort op laptop of TV</p>
-              <p>
-                Op de telefoon bedien je de live wedstrijd. Plannen en
-                presenteren doe je op een groot scherm.
-              </p>
-            </div>
-            <Link
-              href={`/coach/match/${match._id}/wisselplan`}
-              className="flex min-h-[48px] items-center justify-center rounded-xl bg-dia-green px-4 py-3 text-sm font-semibold text-white"
-            >
-              Open planscherm (laptop)
-            </Link>
-            <StagedSubstitutionsPanel
-              matchId={match._id}
-              stagedSubstitutions={match.stagedSubstitutions ?? []}
-            />
-          </>
+          <CoachWisselplanTab
+            match={match}
+            resolvedFormation={resolvedFormation}
+            surface={surface}
+            canEditPlan={isPregame || isLead}
+            canExecute={isLive && isLead}
+          />
         )}
 
         {activeTab === "seizoen" && (
@@ -373,6 +385,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         <CardModal
           matchId={match._id}
           players={match.players}
+          teamName={match.teamName}
           opponentName={match.opponent}
           onClose={() => setShowCardModal(false)}
         />

@@ -47,7 +47,16 @@ export function reorderDutchName(csvName) {
  * Returns array of { team, name } with names reordered to "Firstname Lastname".
  * Handles carry-forward: if Team cell is empty, inherits from previous row.
  */
-export function parsePlayersCsv(filePath, { joMoOnly = true } = {}) {
+const FROZEN_JO132 = /^(j?o)?13-0*2(jm)?$/i;
+
+export function isFrozenJo132Slug(slug) {
+  return FROZEN_JO132.test(String(slug).trim().replace(/\s+/g, ""));
+}
+
+export function parsePlayersCsv(
+  filePath,
+  { joMoOnly = true, reorderNames = true } = {},
+) {
   const raw = readFileSync(filePath, "utf-8");
   const lines = raw.split(/\r?\n/).filter((l) => l.trim());
 
@@ -67,10 +76,14 @@ export function parsePlayersCsv(filePath, { joMoOnly = true } = {}) {
       continue;
     }
 
+    if (isFrozenJo132Slug(currentTeam)) {
+      continue;
+    }
+
     results.push({
       team: currentTeam,
       teamSlug: currentTeam.toLowerCase(),
-      name: reorderDutchName(nameCell),
+      name: reorderNames ? reorderDutchName(nameCell) : nameCell,
     });
   }
 

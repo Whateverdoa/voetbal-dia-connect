@@ -5,7 +5,7 @@ import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/s
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { requireRefereeAccess } from "./lib/userAccess";
-import { getPlayWeekBounds } from "./lib/playWeek";
+import { getPlayWeekBounds, isClaimWindowOpen } from "./lib/playWeek";
 import {
   hasScheduleOverlap,
   isQualificationEligible,
@@ -23,8 +23,7 @@ async function getEffectiveOpenWindow(
     .withIndex("by_week", (q) => q.eq("weekStartMs", weekStartMs))
     .unique();
   if (!doc) return null;
-  if (doc.status !== "open") return null;
-  if (now < doc.opensAt || now >= doc.closesAt) return null;
+  if (!isClaimWindowOpen(doc, now)) return null;
   return doc;
 }
 
@@ -34,7 +33,7 @@ export const getOpenClaimWindowPublic = query({
     v.object({
       weekStartMs: v.number(),
       weekEndMs: v.number(),
-      closesAt: v.number(),
+      closesAt: v.optional(v.number()),
       isOpen: v.boolean(),
     }),
     v.null()

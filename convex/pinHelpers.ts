@@ -11,6 +11,7 @@ import {
   requireRefereeForMatch,
 } from "./lib/userAccess";
 import { hasAdminRole } from "./lib/adminOverride";
+import { coachLeadMayPerformOfficialDuty } from "./lib/officialDuty";
 
 type ReaderCtx = QueryCtx | MutationCtx;
 
@@ -49,12 +50,12 @@ export async function verifyClockPin(
     return false;
   }
 
+  if (!coachLeadMayPerformOfficialDuty(match)) {
+    return false;
+  }
+
   const coach = await verifyCoachTeamMembership(ctx, match);
   if (!coach) return false;
-
-  if (match.refereeId) {
-    return true;
-  }
 
   return match.leadCoachId === coach._id;
 }

@@ -1,14 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AppProviders } from "@/components/AppProviders";
-import { ClerkNav } from "@/components/ClerkNav";
-import { SignedInRoleSync } from "@/components/SignedInRoleSync";
+import { RouteShell } from "@/components/RouteShell";
 
 const inter = Inter({ subsets: ["latin"] });
-const hasClerkPublishableKey = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-);
 
 export const metadata: Metadata = {
   title: "DIA Wedstrijduitslagen Live",
@@ -44,15 +39,7 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <body className={`${inter.className} overflow-x-hidden`}>
-        <AppProviders>
-          {hasClerkPublishableKey ? (
-            <>
-              <SignedInRoleSync />
-              <ClerkNav />
-            </>
-          ) : null}
-          {children}
-        </AppProviders>
+        <RouteShell>{children}</RouteShell>
       </body>
     </html>
   );

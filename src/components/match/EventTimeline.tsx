@@ -1,10 +1,7 @@
 "use client";
 
-import {
-  assistKindLabel,
-  describeGoalEnrichment,
-  formatAssistLine,
-} from "@/lib/assistKind";
+import { describeGoalEnrichment, formatAssistLine } from "@/lib/assistKind";
+import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
 
 interface EventTimelineProps {
@@ -35,6 +32,20 @@ function formatTime(timestamp: number): string {
   });
 }
 
+function cardEventText(
+  kind: "Gele kaart" | "Rode kaart",
+  event: MatchEvent,
+  opponentName?: string,
+): string {
+  if (event.isOpponentCard) {
+    const team = opponentName || "Tegenstander";
+    return event.playerName ? `${kind} ${team} · ${event.playerName}` : `${kind} ${team}`;
+  }
+  return event.note
+    ? `${kind} ${event.playerName || ""} · ${event.note}`
+    : `${kind} ${event.playerName || ""}`;
+}
+
 function formatGameMinute(event: MatchEvent): string | null {
   if (event.displayMinute == null) {
     return null;
@@ -52,29 +63,11 @@ function getEventText(
 ): string {
   switch (event.type) {
     case "goal":
-      const scoredByOpponent = event.isOpponentGoal || event.isOwnGoal;
-      const scoringTeamName = scoredByOpponent
-        ? opponentName || "Tegenstander"
-        : teamName || "Ons team";
-      if (event.isOwnGoal) {
-        return event.playerName
-          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
-            : `Eigen doelpunt (${scoringTeamName})`;
-      }
-      if (event.playerName) {
-        const setPiece = assistKindLabel(event.assistKind);
-        const piece =
-          event.assistKind === "corner" || event.assistKind === "free_kick"
-            ? ` · ${setPiece}`
-            : "";
-        return `Doelpunt ${event.playerName} (${scoringTeamName})${piece}`;
-      }
-      if (event.note) {
-        return `Doelpunt ${scoringTeamName} (${event.note})`;
-      }
-      return `Doelpunt ${scoringTeamName}`;
+      return describeGoalEvent(
+        event,
+        teamName || "Ons team",
+        opponentName || "Tegenstander",
+      );
     case "assist":
       return (
         formatAssistLine(event.playerName, event.assistKind) ??
@@ -101,19 +94,9 @@ function getEventText(
     case "quarter_end":
       return `Kwart ${event.quarter} afgelopen`;
     case "yellow_card":
-      if (event.isOpponentCard) {
-        return `Gele kaart ${opponentName || "Tegenstander"}`;
-      }
-      return event.note
-        ? `Gele kaart ${event.playerName || ""} · ${event.note}`
-        : `Gele kaart ${event.playerName || ""}`;
+      return cardEventText("Gele kaart", event, opponentName);
     case "red_card":
-      if (event.isOpponentCard) {
-        return `Rode kaart ${opponentName || "Tegenstander"}`;
-      }
-      return event.note
-        ? `Rode kaart ${event.playerName || ""} · ${event.note}`
-        : `Rode kaart ${event.playerName || ""}`;
+      return cardEventText("Rode kaart", event, opponentName);
     default:
       return event.type;
   }

@@ -172,21 +172,21 @@ describe("SubstitutionPlanner", () => {
       screen.getByText(/Wisselplan · JO13-2 vs TSC/)
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Formatie")).toBeInTheDocument();
-    expect(screen.getByTestId("half-pitch-plane")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Half veld" })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vol veld" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Half veld" })).toBeInTheDocument();
+    expect(screen.queryByTestId("half-pitch-plane")).not.toBeInTheDocument();
     expect(screen.getAllByText("K1").length).toBeGreaterThan(0);
     expect(screen.getByText(/Openstaand \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/b: Henk → v: Jan/)).toBeInTheDocument();
     expect(screen.getByText("Plan leegmaken")).toBeInTheDocument();
   });
 
-  it("creates a plan row from half-pitch taps", async () => {
+  it("creates a plan row from pitch taps", async () => {
     renderPlanner();
 
+    fireEvent.click(screen.getByRole("button", { name: "Half veld" }));
     expect(screen.getByTestId("half-pitch-plane")).toBeInTheDocument();
-    clickPitchLabel("Piet 7");
+    clickPitchLabel("Piet");
     clickPitchLabel("JAN");
 
     await waitFor(() => {
@@ -222,7 +222,7 @@ describe("SubstitutionPlanner", () => {
     fireEvent.change(screen.getByLabelText("Min"), {
       target: { value: "12" },
     });
-    clickPitchLabel("Piet 7");
+    clickPitchLabel("Piet");
     clickPitchLabel("JAN");
 
     await waitFor(() => {

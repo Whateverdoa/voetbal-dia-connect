@@ -31,6 +31,53 @@ describe("EventTimeline", () => {
     expect(screen.getByText("60+4'")).toBeInTheDocument();
   });
 
+  it("shows an own goal as extra registration, credited to the other team", () => {
+    const event = buildEvent({
+      type: "goal",
+      isOwnGoal: true,
+      isOpponentGoal: true,
+      note: "Rugnummer: 9",
+    });
+
+    render(
+      <EventTimeline
+        events={[event]}
+        teamName="DIA JO13-1"
+        opponentName="VOAB"
+      />,
+    );
+
+    expect(
+      screen.getByText("Eigen doelpunt DIA JO13-1 #9 · telt voor VOAB"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a penalty on a goal", () => {
+    const event = buildEvent({
+      type: "goal",
+      playerName: "Jan",
+      assistKind: "penalty",
+    });
+
+    render(<EventTimeline events={[event]} teamName="TEST Sandbox" />);
+
+    expect(
+      screen.getByText("Doelpunt Jan (TEST Sandbox) · Penalty"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows opponent card identity when the official reported a number", () => {
+    const event = buildEvent({
+      type: "yellow_card",
+      isOpponentCard: true,
+      playerName: "#4 Vos",
+    });
+
+    render(<EventTimeline events={[event]} opponentName="VOAB" />);
+
+    expect(screen.getByText("Gele kaart VOAB · #4 Vos")).toBeInTheDocument();
+  });
+
   it("falls back to wall-clock if minute data is missing", () => {
     const event = buildEvent({ displayMinute: undefined, displayExtraMinute: undefined });
 

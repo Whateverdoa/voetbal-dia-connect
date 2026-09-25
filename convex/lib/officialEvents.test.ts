@@ -10,7 +10,6 @@ function buildEvent(
     _id: "evt1" as Doc<"matchEvents">["_id"],
     _creationTime: 1,
     matchId: "m1" as Doc<"matchEvents">["matchId"],
-    type: overrides.type,
     quarter: 1,
     timestamp: 1_700_000_000_000,
     createdAt: 1_700_000_000_000,

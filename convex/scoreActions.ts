@@ -101,6 +101,7 @@ export const adjustScore = mutation({
           isOpponentGoal: isOpponentGoal || undefined,
           isOwnGoal: args.isOwnGoal === true ? true : undefined,
           assistKind: args.assistKind,
+          reportedNumber: args.scorerNumber,
           note:
             args.scorerNumber != null
               ? `Rugnummer: ${args.scorerNumber}`

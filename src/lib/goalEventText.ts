@@ -45,17 +45,15 @@ export function describeGoalEvent(
   }
 
   const scoringTeamName = event.isOpponentGoal ? opponentName : teamName;
-  if (event.playerName) {
-    const setPiece = assistKindLabel(event.assistKind);
-    const piece =
-      isSetPieceKind(event.assistKind) && setPiece ? ` · ${setPiece}` : "";
-    return `Doelpunt ${event.playerName} (${scoringTeamName})${piece}`;
+  const who = event.playerName?.trim() || shirtFromNote(event.note);
+  const setPiece = assistKindLabel(event.assistKind);
+  const piece =
+    isSetPieceKind(event.assistKind) && setPiece ? ` · ${setPiece}` : "";
+  if (who) {
+    return `Doelpunt ${who} (${scoringTeamName})${piece}`;
   }
   if (isSetPieceKind(event.assistKind)) {
     return `Doelpunt ${scoringTeamName} · ${assistKindLabel(event.assistKind)}`;
-  }
-  if (event.note) {
-    return `Doelpunt ${scoringTeamName} (${event.note})`;
   }
   return `Doelpunt ${scoringTeamName}`;
 }

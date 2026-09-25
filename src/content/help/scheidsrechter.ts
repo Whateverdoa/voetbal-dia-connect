@@ -46,6 +46,7 @@ export const helpRefereePage: HelpPageDef = {
         "Houd de stand bij. Bij +1 kun je optioneel een rugnummer zetten en extra aangeven: penalty, vrije trap of hoekschop. Namen hoef je niet in te vullen.",
         "Eigen doelpunt is een extra knop: kies welk team in eigen doel trapte. De stand gaat naar de andere kant. Rugnummer mag, maar hoeft niet.",
         "Kaarten: kies geel of rood, voor DIA of de tegenstander. Rugnummer mag, maar hoeft niet. Namen hoef je niet in te vullen.",
+        "Onder Registratie zie je wat je hebt vastgelegd: doelpunten, rugnummers en kaarten.",
         "Onderbrekingen (bijvoorbeeld blessure) kun je registreren; de speelminuten van spelers pauzeren dan, de wedstrijdklok loopt door.",
         "Einde wedstrijd: lees de bevestiging en bevestig bewust.",
       ],

@@ -52,7 +52,7 @@ export const helpCoachPage: HelpPageDef = {
     {
       heading: "Wie bedient de klok",
       paragraphs: [
-        "Is er een scheidsrechter gekoppeld, dan bedient die de klok (start, kwart, rust, einde), de stand, doelpunten en kaarten. Jij volgt mee en houdt opstelling en wissels bij.",
+        "Is er een scheidsrechter gekoppeld, dan is die de wedstrijdleiding: klok, stand, doelpunten en kaarten. Jij kunt die knoppen dan niet meer gebruiken. Jij houdt opstelling en wissels bij.",
       ],
       bullets: [
         "Geen scheidsrechter: de wedstrijdleider mag klok, stand, doelpunten en kaarten zelf bedienen.",

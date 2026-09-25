@@ -8,6 +8,9 @@ interface EventTimelineProps {
   events: MatchEvent[];
   teamName?: string;
   opponentName?: string;
+  title?: string;
+  emptyText?: string;
+  types?: MatchEvent["type"][];
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -106,17 +109,20 @@ export function EventTimeline({
   events,
   teamName,
   opponentName,
+  title = "Events",
+  emptyText = "Nog geen events",
+  types,
 }: EventTimelineProps) {
-  // Reverse chronological order
-  const sortedEvents = [...events].reverse();
+  const visible = types
+    ? events.filter((event) => types.includes(event.type))
+    : events;
+  const sortedEvents = [...visible].reverse();
 
   if (sortedEvents.length === 0) {
     return (
       <section className="bg-white rounded-xl shadow-md p-4">
-        <h2 className="font-semibold mb-3 text-gray-700">Events</h2>
-        <p className="text-gray-500 text-sm text-center py-4">
-          Nog geen events
-        </p>
+        <h2 className="font-semibold mb-3 text-gray-700">{title}</h2>
+        <p className="text-gray-500 text-sm text-center py-4">{emptyText}</p>
       </section>
     );
   }
@@ -124,7 +130,7 @@ export function EventTimeline({
   return (
     <section className="bg-white rounded-xl shadow-md p-4">
       <h2 className="font-semibold mb-3 text-gray-700">
-        Events ({sortedEvents.length})
+        {title} ({sortedEvents.length})
       </h2>
       <div className="space-y-1 max-h-[300px] overflow-y-auto">
         {sortedEvents.map((event) => (

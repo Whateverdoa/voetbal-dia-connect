@@ -6,6 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchEvent, MatchPlayer } from "./types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { describeGoalEvent } from "@/lib/goalEventText";
+
+function playerLabel(player: MatchPlayer): string {
+  return player.number != null ? `#${player.number} ${player.name}` : player.name;
+}
 
 interface GoalEnrichmentPanelProps {
   matchId: Id<"matches">;
@@ -102,20 +107,9 @@ export function GoalEnrichmentPanel({
         <option value="">Selecteer doelpunt</option>
         {goals.map((goal) => (
           <option key={String(goal._id)} value={String(goal._id)}>
-            Kwart {goal.quarter} • {goal.displayMinute ?? "?"}'
-            {` • ${
-              goal.isOpponentGoal || goal.isOwnGoal ? opponentName : teamName
-            }`}
-            {goal.playerName ? ` • scorer: ${goal.playerName}` : ""}
-            {goal.relatedPlayerName ? ` • assist: ${goal.relatedPlayerName}` : ""}
-            {goal.assistKind === "corner"
-              ? " • hoekschop"
-              : goal.assistKind === "free_kick"
-                ? " • vrije trap"
-                : goal.assistKind === "penalty"
-                  ? " • penalty"
-                  : ""}
-            {goal.note ? ` • ${goal.note}` : ""}
+            {describeGoalEvent(goal, teamName, opponentName)}
+            {` · K${goal.quarter} ${goal.displayMinute ?? "?"}'`}
+            {goal.relatedPlayerName ? ` · assist ${goal.relatedPlayerName}` : ""}
           </option>
         ))}
       </select>
@@ -129,7 +123,7 @@ export function GoalEnrichmentPanel({
           <option value="">Scorer (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
         </select>
@@ -141,7 +135,7 @@ export function GoalEnrichmentPanel({
           <option value="">Assist (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
         </select>

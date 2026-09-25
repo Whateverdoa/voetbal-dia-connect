@@ -20,6 +20,7 @@ import {
   requireCoachForMatch,
 } from "./lib/userAccess";
 import { hasAdminRole } from "./lib/adminOverride";
+import { coachScreenMayControlClock } from "./lib/officialDuty";
 import { redactPlayerForPublic, type ConsentRow } from "./lib/privacyFilter";
 
 // Re-export from split modules for backwards compatibility
@@ -298,8 +299,8 @@ export const getForCoach = query({
     const isCurrentCoachLead =
       viewingAsAdmin || (coach !== null && match.leadCoachId === coach._id);
     const canControlClock =
-      viewingAsAdmin ||
-      (!match.refereeId && isCurrentCoachLead);
+      coachScreenMayControlClock(match) &&
+      (viewingAsAdmin || isCurrentCoachLead);
 
     const planRows = await ctx.db
       .query("substitutionPlans")

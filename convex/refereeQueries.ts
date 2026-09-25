@@ -10,6 +10,7 @@ import { ADMIN_DISPLAY_NAME, hasAdminRole } from "./lib/adminOverride";
 import { listSeasonMatchesForAdminView } from "./lib/adminLiveView";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
 import { isUnavailable } from "./lib/matchPlayerAvailability";
+import { listOfficialMatchEvents } from "./lib/officialEvents";
 
 const REFEREE_STATUS_ORDER: Record<string, number> = {
   live: 0,
@@ -63,6 +64,7 @@ export const getForReferee = query({
         match._id,
         Date.now(),
       );
+      const events = await listOfficialMatchEvents(ctx, match._id);
 
       return {
         id: match._id,
@@ -92,6 +94,7 @@ export const getForReferee = query({
         opponentLogoUrl: match.opponentLogoUrl,
         refereeName,
         diaPlayers,
+        events,
         viewingAsAdmin,
       };
     } catch {

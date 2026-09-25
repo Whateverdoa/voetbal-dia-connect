@@ -28,6 +28,7 @@ import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
 import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
+import { OfficialDutyNotice } from "@/components/coach/OfficialDutyNotice";
 import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
@@ -177,6 +178,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           isPc && activeTab === "wisselplan" ? "max-w-7xl" : "max-w-2xl"
         } mx-auto p-4 space-y-4`}
       >
+        {match.refereeId ? (
+          <OfficialDutyNotice refereeName={match.refereeName} />
+        ) : null}
+
         <MatchControls
           matchId={match._id}
           status={match.status}

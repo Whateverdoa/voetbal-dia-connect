@@ -78,6 +78,31 @@ describe("EventTimeline", () => {
     expect(screen.getByText("Gele kaart VOAB · #4 Vos")).toBeInTheDocument();
   });
 
+  it("shows a shirt-number goal and hides substitutions on the official log", () => {
+    render(
+      <EventTimeline
+        title="Registratie"
+        emptyText="Nog geen doelpunten of kaarten."
+        types={["goal", "yellow_card", "red_card"]}
+        teamName="TEST Sandbox"
+        events={[
+          buildEvent({ type: "sub_out", playerName: "Henk" }),
+          buildEvent({
+            _id: "evt_2" as MatchEvent["_id"],
+            type: "goal",
+            note: "Rugnummer: 7",
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Registratie (1)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Doelpunt #7 (TEST Sandbox)"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Henk/)).not.toBeInTheDocument();
+  });
+
   it("falls back to wall-clock if minute data is missing", () => {
     const event = buildEvent({ displayMinute: undefined, displayExtraMinute: undefined });
 

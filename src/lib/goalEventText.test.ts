@@ -48,4 +48,14 @@ describe("describeGoalEvent", () => {
       ),
     ).toBe("Doelpunt Jan (TEST Sandbox) · Penalty");
   });
+
+  it("links a referee goal to the shirt number", () => {
+    expect(
+      describeGoalEvent(
+        { note: "Rugnummer: 7", assistKind: "corner" },
+        "TEST Sandbox",
+        "VOAB",
+      ),
+    ).toBe("Doelpunt #7 (TEST Sandbox) · Hoekschop");
+  });
 });

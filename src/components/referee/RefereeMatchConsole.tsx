@@ -10,6 +10,8 @@ import { createCorrelationId } from "@/lib/correlationId";
 import { RefereeCardControls } from "./RefereeCardControls";
 import { RefereeClockPanel } from "./RefereeClockPanel";
 import { RefereeMatchHeader } from "./RefereeMatchHeader";
+import { EventTimeline } from "@/components/match/EventTimeline";
+import type { MatchEvent } from "@/components/match/types";
 import { RefereeScoreFlow } from "./RefereeScoreFlow";
 import {
   refereeStatusLabel,
@@ -45,6 +47,7 @@ interface RefereeMatchConsoleProps {
     number?: number;
     onField: boolean;
   }[];
+  events?: MatchEvent[];
 }
 
 export function RefereeMatchConsole({
@@ -71,6 +74,7 @@ export function RefereeMatchConsole({
   awayLogoUrl,
   diaTeamSide,
   diaPlayers,
+  events = [],
 }: RefereeMatchConsoleProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
@@ -182,8 +186,8 @@ export function RefereeMatchConsole({
             awayLogoUrl={awayLogoUrl}
           />
 
-          <div className="flex flex-1 flex-col justify-between p-3 sm:p-4">
-            <div className="space-y-2.5">
+          <div className="flex min-h-0 flex-1 flex-col justify-between p-3 sm:p-4">
+            <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
               <RefereeClockPanel
                 matchId={matchId}
                 status={status}
@@ -237,6 +241,15 @@ export function RefereeMatchConsole({
                     canRecordCards={isLive || isHalftime}
                   />
                 }
+              />
+
+              <EventTimeline
+                events={events}
+                teamName={diaTeamSide === "home" ? homeName : awayName}
+                opponentName={diaTeamSide === "home" ? awayName : homeName}
+                title="Registratie"
+                emptyText="Nog geen doelpunten of kaarten."
+                types={["goal", "yellow_card", "red_card"]}
               />
             </div>
           </div>

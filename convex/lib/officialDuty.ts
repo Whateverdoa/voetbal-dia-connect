@@ -14,3 +14,10 @@ export function coachLeadMayPerformOfficialDuty(match: {
 }): boolean {
   return !assignedRefereeOwnsOfficialDuty(match);
 }
+
+/** Coach screen: never clock/score/cards while a referee is assigned. */
+export function coachScreenMayControlClock(match: {
+  refereeId?: string | null;
+}): boolean {
+  return coachLeadMayPerformOfficialDuty(match);
+}

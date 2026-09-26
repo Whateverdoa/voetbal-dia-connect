@@ -1,4 +1,5 @@
 import { DEMO_STORAGE_KEY } from "./storage";
+import type { LocalDemoRoster } from "./localRoster";
 
 /** Display and storage scope only. Demo profiles never grant real team access. */
 export interface DemoProfile {
@@ -8,6 +9,8 @@ export interface DemoProfile {
   seasonLabel: string;
   storageKey: string;
   pilot: boolean;
+  /** A local roster snapshot, never an authenticated player or family link. */
+  roster?: LocalDemoRoster;
 }
 
 export const GENERAL_DEMO_PROFILE: DemoProfile = {

@@ -7,6 +7,9 @@ import Jo13TeamPortalPilotPage, { dynamic, metadata, viewport } from "./page";
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("PILOT_NOT_FOUND"); },
 }));
+vi.mock("@/lib/team-portal/localRoster.server", () => ({
+  getLocalJo13DemoProfile: () => JO13_02_DEMO_PROFILE,
+}));
 vi.mock("@/components/team-portal/TeamPortalDemo", () => ({
   TeamPortalDemo: vi.fn(({ profile }: { profile: DemoProfile }) => <main>{profile.teamName} proefversie</main>),
 }));

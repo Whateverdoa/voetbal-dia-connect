@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoState } from "@/lib/team-portal/fixtures";
+import { createRosterDemoState, type LocalDemoRoster } from "@/lib/team-portal/localRoster";
 import { GENERAL_DEMO_PROFILE, JO13_02_DEMO_PROFILE, type DemoProfile } from "@/lib/team-portal/demoProfiles";
 import { getPublishedFeedback, getWinners } from "@/lib/team-portal/selectors";
 import { DEMO_STORAGE_KEY, parseSavedDemo } from "@/lib/team-portal/storage";
@@ -9,6 +10,8 @@ import { useTeamPortalDemo } from "./useTeamPortalDemo";
 
 const NOW = 1800000000000;
 const actionVote = { type: "castVote", matchId: "m2", kind: "highlight", targetId: "h3" } as const;
+const localRoster: LocalDemoRoster = { version: 1, teamSlug: "jo13-2", importedAt: "2026-09-26T12:00:00Z", players: [{ id: "roster-example", name: "Testspeler", number: 4, position: "CB" }] };
+const rosterProfile: DemoProfile = { ...JO13_02_DEMO_PROFILE, id: "local-roster", storageKey: "test-roster-storage", roster: localRoster };
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -22,6 +25,32 @@ afterEach(() => {
 });
 
 describe("team portal browser persistence", () => {
+  it("keeps imported identities separate and preserves them through reload and reset", () => {
+    window.localStorage.setItem(JO13_02_DEMO_PROFILE.storageKey, JSON.stringify(createDemoState(NOW)));
+    const first = renderHook(() => useTeamPortalDemo(rosterProfile));
+    expect(first.result.current.state).toEqual(createRosterDemoState(localRoster));
+    expect(first.result.current.actor).toEqual({ role: "player", playerId: "roster-example" });
+    act(() => { first.result.current.setActor({ role: "coach" }); });
+    act(() => { expect(first.result.current.run({ type: "addHighlight", matchId: "m1", playerId: "roster-example", category: "Mooie pass", description: "Lokaal testmoment" })).toBe(true); });
+    first.unmount();
+    const next = renderHook(() => useTeamPortalDemo(rosterProfile));
+    expect(next.result.current.state.highlights).toHaveLength(1);
+    act(() => { next.result.current.reset(); });
+    expect(next.result.current.state).toEqual(createRosterDemoState(localRoster));
+    expect(parseSavedDemo(window.localStorage.getItem(JO13_02_DEMO_PROFILE.storageKey))).toEqual(createDemoState(NOW));
+  });
+
+  it("recovers broken or denied storage with the imported roster, never fictional identities", () => {
+    window.localStorage.setItem(rosterProfile.storageKey, "{broken");
+    const broken = renderHook(() => useTeamPortalDemo(rosterProfile));
+    expect(broken.result.current.state).toEqual(createRosterDemoState(localRoster));
+    broken.unmount();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("Denied"); });
+    const denied = renderHook(() => useTeamPortalDemo(rosterProfile));
+    expect(denied.result.current.state).toEqual(createRosterDemoState(localRoster));
+    expect(denied.result.current.storageWarning).not.toBe("");
+  });
+
   it("initializes a usable demo and stores the dated fixtures on the first visit", () => {
     const { result } = renderHook(() => useTeamPortalDemo());
 

@@ -14,7 +14,17 @@ Status: lokale proefversie, 26 september 2026. Nog geen uitrol naar ouders of sp
 | Ontwikkeltak | `codex/jo13-02-teamportaal` |
 | Browseropslag | `dia-teamportaal-demo-jo13-2-2026-2027-v1` |
 
-De algemene demo blijft beschikbaar op `/demo/teamportaal` met de oorspronkelijke opslag. Beide gebruiken voorbeeldspelers, voorbeeldwedstrijden en fictieve beoordelingen. Reset werkt alleen op de geopende proefversie. Gegevens worden niet gesynchroniseerd tussen browsers of apparaten.
+De algemene demo blijft beschikbaar op `/demo/teamportaal` met de oorspronkelijke opslag en fictieve voorbeelden. De JO13-02-demo kan uitsluitend lokaal een selectie, wedstrijdprogramma, uitslagen en stand uit DIA Live laden. Reset werkt alleen op de geopende proefversie. Gegevens worden niet gesynchroniseerd tussen browsers of apparaten.
+
+### Lokale teamgegevens
+
+De lokale kopie staat in `.local/teamportaal/jo13-2.json` (genegeerd door Git en uitgesloten van Next.js-deploymenttraces). Deze bevat de 15 vaste spelers, 5 gespeelde wedstrijden, 2 komende wedstrijden en de opgeslagen Sportlink-poulestand van 26 september 2026. De twee gastspelers uit O13-01 zijn op aanwijzing van de coach buiten de selectie gehouden. Hun bestaande DIA Live-registraties zijn niet gewijzigd.
+
+Alleen naam, rugnummer, bekende positie, wedstrijdgegevens, deelnemers-ID's en stand worden overgenomen. Contactgegevens, foto's, toestemmingen, beoordelingen en echte ouderkoppelingen worden niet gekopieerd. De server leest dit bestand uitsluitend tijdens lokale ontwikkeling; gehoste previews blijven de fictieve selectie gebruiken, ook als de demoroute daar expliciet is ingeschakeld.
+
+De echte selectie begint zonder feedback, observaties, kwaliteiten, acties of stemmen. Iedere speler heeft een expliciet gesimuleerd ouderprofiel. Afgeronde wedstrijden krijgen lege nabesprekingen voor de geregistreerde deelnemers uit de vaste selectie. De komende wedstrijden staan in het programma; die krijgen nog geen nabespreking. Het teamdoel blijft herkenbaar als voorbeeld.
+
+Het tijdstip van ophalen staat bij programma en uitslagen; de stand heeft daarnaast de bijwerktijd van de bron. Dit is een lokale momentopname en geen automatische koppeling. Een nieuwe bronkopie kan worden klaargezet in hetzelfde bestand. Wijzigingen aan selectie of wedstrijden krijgen een eigen browseropslag met een fingerprint; eerdere demogegevens blijven apart bewaard. **Reset demo** behoudt de geïmporteerde teamgegevens en wist alleen de lokale demo-invoer.
 
 De proefversie bevat spelerskaarten, ouder-kindweergave, coachfeedback met expliciete publicatie, positieve wedstrijdverkiezingen en optionele observaties voor coach en scout. Observaties staan standaard uit. De rolwisselaar simuleert toegang; dit is geen omgeving voor echte vertrouwelijke verslagen.
 
@@ -38,7 +48,7 @@ Na inloggen ziet een toegewezen coach of admin de beschikbare afgeronde wedstrij
 
 Het verslag toont de opgeslagen eindstand, doelpunten en assists, kaarten, uitgevoerde wissels, geregistreerde minuten en notities bij wedstrijdmomenten. Gecorrigeerde gegevens verschijnen via de bestaande realtime query. Eigen doelpunten, gekoppelde assists en dubbele wisselregistraties worden apart verwerkt. Ontbrekende minuten of een verschil tussen de eindstand en de doelpuntregistratie worden benoemd; ontbrekende gebeurtenissen worden niet verzonnen.
 
-Echte gegevens komen niet in de lokale demo-opslag. De feitelijke wedstrijdregistratie blijft alleen-lezen; het nieuwe spelerformulier heeft eigen opslag, beschreven hieronder. De vragenlijst verandert geen XP of verkiezingen. Coach- en scoutobservaties uit de demo worden niet aan echte spelers gekoppeld. Voor gezinsaccounts is nog expliciete serverautorisatie en een publicatiekeuze nodig.
+Deze verbonden verslagpagina schrijft geen gegevens naar de lokale demo. De feitelijke wedstrijdregistratie blijft alleen-lezen; het nieuwe spelerformulier heeft eigen opslag, beschreven hieronder. De vragenlijst verandert geen XP of verkiezingen. De lokale teamkopie hierboven blijft daarvan gescheiden: demo-invoer wordt niet naar echte spelerrecords teruggeschreven. Voor gezinsaccounts is nog expliciete serverautorisatie en een publicatiekeuze nodig.
 
 De lokale werkmap gebruikt voor deze verbonden pagina dezelfde bestaande appverbinding als DIA Live, via een genegeerd `.env.local` met alleen de Convex-URL en Clerk-configuratie. Er zijn geen deploymentcredentials overgenomen en geen backendwijzigingen uitgerold. De hoofdwerkmap en server op 3000 blijven ongewijzigd.
 
@@ -56,7 +66,7 @@ Twee optionele vragen gaan over spelen met en zonder bal. De geregistreerde mome
 
 De coach bewaart het concept, bekijkt het verslag, bevestigt het nalezen en kiest **Verslag vastleggen**. Nieuwere conceptwijzigingen veranderen het eerdere vastgelegde verslag niet. Tekst bij een als onbekend gemarkeerd antwoord blijft uitsluitend in het concept. Het vastgelegde verslag is nog niet aan ouders of spelers gepubliceerd. Dat vereist de latere accountkoppelingen en een aparte publicatiekeuze.
 
-Dezelfde vragen zijn klikbaar in de fictieve demo onder **Coach → Nabespreking**. Daar worden concepten lokaal bewaard en kan publicatie naar de fictieve speler en diens gekoppelde ouder worden getest. Deze simulatie schrijft niets naar echte wedstrijden.
+Dezelfde vragen zijn klikbaar in de demo onder **Coach → Nabespreking**, met fictieve spelers of de lokaal geïmporteerde selectie. Daar worden concepten lokaal bewaard en kan publicatie naar de speler- en oudersimulatie worden getest. Deze simulatie schrijft niets naar echte wedstrijden.
 
 Implementatie en validatie zijn beschikbaar op de featurebranch. De live backendfuncties moeten via de afgesproken releaseflow worden geactiveerd voordat echte opslag werkt. De bestaande wedstrijdregistratie blijft bruikbaar als die functies nog ontbreken. De productie-dry-run valideert het toegevoegde schema zonder indexverwijdering; deze controle activeert de nieuwe functies niet.
 

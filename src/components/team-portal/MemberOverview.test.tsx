@@ -1,13 +1,44 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDemoState } from "@/lib/team-portal/fixtures";
 import { MemberOverview } from "./MemberOverview";
+import { JO13_02_DEMO_PROFILE } from "@/lib/team-portal/demoProfiles";
+import { createRosterDemoState, type LocalDemoRoster } from "@/lib/team-portal/localRoster";
+import { DemoProfileProvider } from "./DemoProfileContext";
+import { TeamOverview } from "./TeamOverview";
 
 afterEach(cleanup);
 const now = Date.UTC(2026, 8, 19, 12);
+const roster: LocalDemoRoster = {
+  version: 1,
+  teamSlug: "jo13-2",
+  importedAt: "2026-09-26T12:00:00Z",
+  players: [{ id: "roster-player", name: "Testspeler", number: null, position: "Nog niet ingevoerd" }],
+};
 
 describe("MemberOverview", () => {
+  it("does not invent card details or fixtures for an imported roster", () => {
+    render(<DemoProfileProvider profile={{ ...JO13_02_DEMO_PROFILE, roster }}><MemberOverview state={createRosterDemoState(roster)} actor={{ role: "player", playerId: "roster-player" }} playerId="roster-player" now={now} onVote={vi.fn()} /></DemoProfileProvider>);
+    const card = within(screen.getByRole("article", { name: "Spelerskaart van Testspeler" }));
+    expect(card.getByText("Rugnummer nog niet ingevoerd")).toBeVisible();
+    expect(card.queryByText("“”")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Parkstad JO13/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Zaterdag · 10:30 uur/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/#null|#undefined/)).not.toBeInTheDocument();
+    expect(screen.getByText(/De coach heeft nog geen feedback gedeeld/)).toBeVisible();
+  });
+
+  it("labels the roster and example goal honestly and explains empty moments", () => {
+    render(<DemoProfileProvider profile={{ ...JO13_02_DEMO_PROFILE, roster }}><TeamOverview state={createRosterDemoState(roster)} now={now} onVote={vi.fn()} /></DemoProfileProvider>);
+    expect(screen.getByRole("heading", { name: "Onze selectie" })).toBeVisible();
+    expect(screen.getByText("1 spelers")).toBeVisible();
+    expect(screen.getByText("Voorbeeld van een teamdoel")).toBeVisible();
+    expect(screen.queryByText(/Deze week oefenen we/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Er zijn nog geen goedgekeurde wedstrijdmomenten/)).toBeVisible();
+    expect(screen.queryByText(/#null|#undefined/)).not.toBeInTheDocument();
+  });
+
   it("shows published development to the linked parent while keeping newer drafts private", () => {
     const state = createDemoState(now);
     const publishedCompliment = state.feedback[0].published!.compliment;

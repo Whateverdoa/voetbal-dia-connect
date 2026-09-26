@@ -39,6 +39,12 @@ function Harness({
 }
 
 describe("PlayerReviewForm", () => {
+  it("omits a missing shirt number instead of showing a placeholder identifier", () => {
+    render(<Harness player={{ ...player, number: null }} onSave={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Even terugkijken met Milan" })).toBeVisible();
+    expect(screen.queryByText(/#null|#undefined/)).not.toBeInTheDocument();
+  });
+
   it("starts with three core questions and allows an incomplete draft to be saved", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();

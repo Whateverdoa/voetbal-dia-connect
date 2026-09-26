@@ -88,7 +88,7 @@ export function CoachWorkspace({ state, matchId, onCommand }: CoachWorkspaceProp
             <div>
               <label htmlFor={playerSelectId} className="mb-2 block text-sm font-bold text-stone-800">Speler</label>
               <select id={playerSelectId} value={player.id} onChange={(event) => setSelectedPlayerId(event.target.value)} className={inputClass}>
-                {state.players.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · #{candidate.number}</option>)}
+                {state.players.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}{candidate.number != null ? ` · #${candidate.number}` : ""}</option>)}
               </select>
             </div>
             <p className="pb-3 text-sm text-stone-500">{player.position}</p>

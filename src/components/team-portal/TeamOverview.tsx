@@ -4,18 +4,21 @@ import { ArrowUpRight, Flag, HeartHandshake, Sparkles, Trophy } from "lucide-rea
 import type { DemoState } from "@/lib/team-portal/types";
 import { getWinners } from "@/lib/team-portal/selectors";
 import { useDemoProfile } from "./DemoProfileContext";
+import { LocalTeamSchedule } from "./LocalTeamSchedule";
 
 export function TeamOverview({ state, now, onVote }: { state: DemoState; now: number; onVote: () => void }) {
   const profile = useDemoProfile();
   const finished = state.matches.find((match) => getWinners(state, match.id, now).playerIds.length > 0);
   const winners = finished ? getWinners(state, finished.id, now) : null;
+  const moments = state.highlights.filter((item) => item.status === "approved").slice().reverse().slice(0, 6);
   return (
     <div className="space-y-7">
+      {profile.roster ? <LocalTeamSchedule roster={profile.roster} /> : null}
       <section className="relative overflow-hidden rounded-[28px] bg-[#123e30] p-6 text-white sm:p-8">
         <Flag className="absolute -right-4 -top-6 size-40 rotate-12 text-white/5" aria-hidden="true" />
-        <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-dia-yellow"><HeartHandshake size={16} /> Ons teamdoel</p>
+        <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-dia-yellow"><HeartHandshake size={16} /> {profile.roster ? "Voorbeeld van een teamdoel" : "Ons teamdoel"}</p>
         <h2 className="max-w-xl text-2xl font-bold leading-tight sm:text-3xl">Een goede pass?<br />Daarna helpen we elkaar weer.</h2>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed text-green-50/80">Deze week oefenen we op vrijlopen na een pass. Zo heeft de speler aan de bal altijd iemand om op te bouwen.</p>
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-green-50/80">{profile.roster ? "Bijvoorbeeld: oefenen op vrijlopen na een pass. Dit oefendoel is nog niet gekozen voor deze selectie." : "Deze week oefenen we op vrijlopen na een pass. Zo heeft de speler aan de bal altijd iemand om op te bouwen."}</p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold"><Sparkles size={15} className="text-dia-yellow" /> Samen beter, elke training weer</div>
       </section>
       {finished && winners ? (
@@ -28,17 +31,17 @@ export function TeamOverview({ state, now, onVote }: { state: DemoState; now: nu
         </section>
       ) : null}
       <section>
-        <div className="mb-4 flex items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Iedereen hoort erbij</p><h2 className="mt-1 text-xl font-bold text-stone-900">{profile.pilot ? "Voorbeeldselectie voor deze demo" : "Dit is ons team"}</h2></div><span className="text-sm text-stone-500">{state.players.length} {profile.pilot ? "voorbeeldspelers" : "spelers"}</span></div>
+        <div className="mb-4 flex items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Iedereen hoort erbij</p><h2 className="mt-1 text-xl font-bold text-stone-900">{profile.roster ? "Onze selectie" : profile.pilot ? "Voorbeeldselectie voor deze demo" : "Dit is ons team"}</h2></div><span className="text-sm text-stone-500">{state.players.length} {profile.pilot && !profile.roster ? "voorbeeldspelers" : "spelers"}</span></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {state.players.map((player) => (
             <article key={player.id} className="rounded-2xl border border-stone-200 bg-white p-4">
-              <div className="mb-4 flex items-start justify-between"><div className="flex size-11 items-center justify-center rounded-xl bg-[#edf3e9] font-bold text-dia-green">{player.name.slice(0, 2).toUpperCase()}</div><span className="text-sm font-bold text-stone-400">#{player.number}</span></div>
-              <h3 className="font-bold text-stone-900">{player.name}</h3><p className="mt-0.5 text-xs text-stone-500">{player.position}</p><p className="mt-3 border-t border-stone-100 pt-3 text-xs font-medium leading-relaxed text-dia-green">{player.qualities[0]}</p>
+              <div className="mb-4 flex items-start justify-between"><div className="flex size-11 items-center justify-center rounded-xl bg-[#edf3e9] font-bold text-dia-green">{player.name.slice(0, 2).toUpperCase()}</div>{player.number != null ? <span className="text-sm font-bold text-stone-400">#{player.number}</span> : null}</div>
+              <h3 className="font-bold text-stone-900">{player.name}</h3><p className="mt-0.5 text-xs text-stone-500">{player.position}</p>{player.qualities[0] ? <p className="mt-3 border-t border-stone-100 pt-3 text-xs font-medium leading-relaxed text-dia-green">{player.qualities[0]}</p> : null}
             </article>
           ))}
         </div>
       </section>
-      <section><h2 className="mb-4 text-xl font-bold text-stone-900">Momenten om te onthouden</h2><div className="grid gap-3 sm:grid-cols-2">{state.highlights.filter((item) => item.status === "approved").slice().reverse().slice(0, 6).map((highlight) => <article key={highlight.id} className="rounded-2xl border border-stone-200 bg-white p-5"><p className="flex items-center gap-2 text-xs font-bold text-dia-green"><Sparkles size={15} />{highlight.category} · {state.players.find((player) => player.id === highlight.playerId)?.name}</p><p className="mt-3 break-words text-sm leading-relaxed text-stone-700">{highlight.description}</p><p className="mt-3 text-xs text-stone-400">Tegen {state.matches.find((match) => match.id === highlight.matchId)?.opponent}{highlight.minute ? ` · ${highlight.minute}e minuut` : ""}</p></article>)}</div></section>
+      <section><h2 className="mb-4 text-xl font-bold text-stone-900">Momenten om te onthouden</h2>{moments.length === 0 ? <p className="rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-500">Er zijn nog geen goedgekeurde wedstrijdmomenten voor deze selectie.</p> : <div className="grid gap-3 sm:grid-cols-2">{moments.map((highlight) => <article key={highlight.id} className="rounded-2xl border border-stone-200 bg-white p-5"><p className="flex items-center gap-2 text-xs font-bold text-dia-green"><Sparkles size={15} />{highlight.category} · {state.players.find((player) => player.id === highlight.playerId)?.name}</p><p className="mt-3 break-words text-sm leading-relaxed text-stone-700">{highlight.description}</p><p className="mt-3 text-xs text-stone-400">Tegen {state.matches.find((match) => match.id === highlight.matchId)?.opponent}{highlight.minute ? ` · ${highlight.minute}e minuut` : ""}</p></article>)}</div>}</section>
     </div>
   );
 }

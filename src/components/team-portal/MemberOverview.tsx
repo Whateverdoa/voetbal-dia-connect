@@ -6,6 +6,7 @@ import { SKILLS, type DemoActor, type DemoState, type Skill, type SkillLevel } f
 import { PublishedPlayerReviews } from "./PublishedPlayerReviews";
 import { DemoPlayerCard } from "./DemoPlayerCard";
 import { useDemoProfile } from "./DemoProfileContext";
+import { LocalTeamSchedule } from "./LocalTeamSchedule";
 
 interface MemberOverviewProps {
   state: DemoState;
@@ -56,6 +57,7 @@ export function MemberOverview({ state, actor, playerId, now, onVote, view = "pr
 
   return (
     <div className="space-y-6">
+      {profile.roster ? <LocalTeamSchedule roster={profile.roster} compact /> : null}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]">
         <DemoPlayerCard player={player} />
         <div className="min-w-0 space-y-5">
@@ -88,7 +90,7 @@ export function MemberOverview({ state, actor, playerId, now, onVote, view = "pr
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      {!profile.roster ? <div className="grid gap-5 md:grid-cols-2">
         <section className={panelClass} aria-labelledby="next-fixture">
           <div className="flex items-center gap-2 text-dia-green"><CalendarDays aria-hidden="true" className="h-5 w-5" /><h2 id="next-fixture" className="text-sm font-bold">Weer samen het veld op</h2></div>
           <div className="mt-4 flex items-center gap-4">
@@ -100,7 +102,7 @@ export function MemberOverview({ state, actor, playerId, now, onVote, view = "pr
           <div className="flex items-center gap-2 text-dia-green"><Check aria-hidden="true" className="h-5 w-5" /><h2 id="last-fixture" className="text-sm font-bold">Laatste wedstrijd</h2></div>
           {lastMatch ? <div className="mt-5 flex items-center justify-between gap-4"><div><p className="font-bold text-stone-900">{profile.teamName} – {lastMatch.opponent}</p><p className="mt-2 text-sm text-stone-500">{lastMatch.dateLabel}</p></div><p className="shrink-0 rounded-xl bg-stone-100 px-4 py-3 text-2xl font-black tracking-tight text-stone-900">{lastMatch.score}</p></div> : <p className="mt-4 text-sm text-stone-500">Er is nog geen wedstrijd gespeeld.</p>}
         </section>
-      </div>
+      </div> : null}
 
       <section className={panelClass} aria-labelledby="member-moments">
         <div className="flex flex-wrap items-center justify-between gap-3">

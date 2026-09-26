@@ -6,11 +6,13 @@ import { emptyPlayerReview, getPlayerReviewProgress, type PlayerReview } from "@
 import type { CommandHandler, DemoState } from "@/lib/team-portal/types";
 import { getPlayerReviewPublication } from "@/lib/team-portal/playerReviewRules";
 import { PlayerReviewForm } from "./PlayerReviewForm";
+import { useDemoProfile } from "./DemoProfileContext";
 
 const same = (left: PlayerReview, right: PlayerReview) => JSON.stringify(left) === JSON.stringify(right);
 
-/** Only fictional demo records are persisted here. Remount this workspace for each match. */
+/** Records stay in the local demo. Remount this workspace for each match. */
 export function PlayerReviewWorkspace({ state, matchId, onCommand }: { state: DemoState; matchId: string; onCommand: CommandHandler }) {
+  const profile = useDemoProfile();
   const match = state.matches.find((candidate) => candidate.id === matchId);
   const players = state.players.filter((candidate) => match?.participantIds.includes(candidate.id));
   const [selectedId, setSelectedId] = useState(players[0]?.id ?? "");
@@ -60,13 +62,13 @@ export function PlayerReviewWorkspace({ state, matchId, onCommand }: { state: De
           const progress = getPlayerReviewProgress(current);
           const shared = review?.published && same(getPlayerReviewPublication(current), review.published);
           const label = shared ? "Gedeeld" : progress.status === "ready" ? "Klaar om te delen" : progress.status === "draft" ? "Concept" : "Nog te bespreken";
-          return <button key={candidate.id} type="button" aria-pressed={candidate.id === player.id} onClick={() => selectPlayer(candidate.id)} className={`min-h-16 rounded-xl border px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dia-green ${candidate.id === player.id ? "border-dia-green bg-emerald-50" : "border-stone-200 hover:bg-stone-50"}`}><span className="block text-sm font-bold">{candidate.name} <span className="font-normal text-stone-500">#{candidate.number}</span></span><span className="mt-1 block text-xs text-stone-500">{label}</span></button>;
+          return <button key={candidate.id} type="button" aria-pressed={candidate.id === player.id} onClick={() => selectPlayer(candidate.id)} className={`min-h-16 rounded-xl border px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dia-green ${candidate.id === player.id ? "border-dia-green bg-emerald-50" : "border-stone-200 hover:bg-stone-50"}`}><span className="block text-sm font-bold">{candidate.name} {candidate.number != null ? <span className="font-normal text-stone-500">#{candidate.number}</span> : null}</span><span className="mt-1 block text-xs text-stone-500">{label}</span></button>;
         })}
       </div>
     </section>
     <section className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
       <label htmlFor={selectId} className="mb-2 block text-sm font-bold">Speler voor nabespreking</label>
-      <select id={selectId} value={player.id} onChange={(event) => selectPlayer(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 bg-white p-3 text-base focus-visible:outline-2 focus-visible:outline-dia-green">{players.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · #{candidate.number}</option>)}</select>
+      <select id={selectId} value={player.id} onChange={(event) => selectPlayer(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 bg-white p-3 text-base focus-visible:outline-2 focus-visible:outline-dia-green">{players.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}{candidate.number != null ? ` · #${candidate.number}` : ""}</option>)}</select>
       <p className="mt-3 text-sm text-stone-500">{dirty ? "Nog niet bewaard. Bij een andere speler kiezen bewaren we je concept." : publishedIsCurrent ? "Deze versie is gedeeld met de speler en gekoppelde ouders in de demo." : record ? "Concept bewaard. Alleen de coach ziet je antwoorden." : "Je formulier staat klaar. Begin met wat je zelf hebt gezien."}</p>
       {record?.published && (!publishedIsCurrent || dirty) ? <p className="mt-2 text-sm text-amber-800">De eerder gedeelde versie blijft zichtbaar totdat je opnieuw deelt.</p> : null}
       <div className="mt-6">
@@ -83,7 +85,7 @@ export function PlayerReviewWorkspace({ state, matchId, onCommand }: { state: De
           }}
           publishDisabled={!record || dirty || publishedIsCurrent}
           recordedMoments={state.highlights.filter((moment) => moment.matchId === matchId && moment.playerId === player.id && moment.status === "approved").map((moment) => ({ id: moment.id, label: `${moment.category}${moment.minute !== undefined ? ` · ${moment.minute}'` : ""}`, text: moment.description }))}
-          storageNote="Fictieve proefversie: bewaar vóór je van wedstrijd of scherm wisselt. Concepten blijven lokaal in deze browser; delen maakt het verslag zichtbaar in de speler- en ouderdemo."
+          storageNote={profile.roster ? "Selectiegegevens uit DIA Live. Bewaar vóór je van wedstrijd of scherm wisselt: deze nabesprekingen blijven lokaal in deze browser. Delen toont het verslag in de speler- en ouderdemo; ouder-kindkoppelingen zijn gesimuleerd." : "Fictieve proefversie: bewaar vóór je van wedstrijd of scherm wisselt. Concepten blijven lokaal in deze browser; delen maakt het verslag zichtbaar in de speler- en ouderdemo."}
         />
       </div>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-5">

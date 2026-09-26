@@ -14,7 +14,7 @@ const buttonClass = "inline-flex min-h-12 items-center justify-center rounded-xl
 const inputClass = "w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-base text-stone-900 outline-none focus:border-dia-green focus:ring-2 focus:ring-dia-green/20 disabled:bg-stone-100 disabled:text-stone-500";
 
 export interface PlayerReviewFormProps {
-  player: { id: string; name: string; number?: number };
+  player: { id: string; name: string; number?: number | null };
   answers: PlayerReview;
   onChange: (answers: PlayerReview) => void;
   onSave: () => void;
@@ -109,7 +109,7 @@ export function PlayerReviewForm({
     >
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-dia-green">Na de wedstrijd</p>
-        <h3 id={`${inputId}-title`} className="mt-1 text-xl font-black text-stone-900">Even terugkijken met {player.name}{player.number !== undefined && <span className="ml-2 text-base font-medium text-stone-500">#{player.number}</span>}</h3>
+        <h3 id={`${inputId}-title`} className="mt-1 text-xl font-black text-stone-900">Even terugkijken met {player.name}{player.number != null && <span className="ml-2 text-base font-medium text-stone-500">#{player.number}</span>}</h3>
         <p className="mt-2 text-sm leading-relaxed text-stone-600">Denk terug aan concrete momenten. Bespreek ze samen en vul drie korte vragen in. Met twee extra vragen kun je verder kijken naar het spel met en zonder bal.</p>
       </div>
 

@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { TeamPortalDemo } from "@/components/team-portal/TeamPortalDemo";
-import { JO13_02_DEMO_PROFILE } from "@/lib/team-portal/demoProfiles";
+import { getLocalJo13DemoProfile } from "@/lib/team-portal/localRoster.server";
 import { isTeamPortalDemoEnabled } from "@/lib/team-portal/demoRoute";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "JO13-02 · Teamportaal proefversie · DIA",
-  description: "Proefversie van het DIA JO13-02-teamportaal met voorbeeldspelers.",
+  description: "Lokale proefversie van het DIA JO13-02-teamportaal.",
   robots: { index: false, follow: false },
 };
 
@@ -25,5 +25,5 @@ export default function Jo13TeamPortalPilotPage() {
     TEAM_PORTAL_DEMO_ENABLED: process.env.TEAM_PORTAL_DEMO_ENABLED,
   })) notFound();
 
-  return <TeamPortalDemo profile={JO13_02_DEMO_PROFILE} />;
+  return <TeamPortalDemo profile={getLocalJo13DemoProfile()} />;
 }

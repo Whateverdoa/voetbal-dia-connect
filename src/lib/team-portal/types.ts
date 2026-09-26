@@ -14,7 +14,7 @@ export type DemoActor = { role: "coach" } | { role: "scout" } | { role: "player"
 export interface DemoPlayer {
   id: string;
   name: string;
-  number: number;
+  number: number | null;
   position: string;
   qualities: string[];
   motto: string;

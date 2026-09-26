@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { applyDemoCommand } from "@/lib/team-portal/commands";
 import { createDemoState } from "@/lib/team-portal/fixtures";
+import { createRosterDemoState } from "@/lib/team-portal/localRoster";
 import { parseSavedDemo } from "@/lib/team-portal/storage";
 import { GENERAL_DEMO_PROFILE, type DemoProfile } from "@/lib/team-portal/demoProfiles";
 import type { DemoActor, DemoCommand } from "@/lib/team-portal/types";
 
 export function useTeamPortalDemo(profile: DemoProfile = GENERAL_DEMO_PROFILE) {
   const storageKey = profile.storageKey;
-  const [state, setState] = useState(() => createDemoState(0));
+  const seedState = useCallback((timestamp: number) => profile.roster ? createRosterDemoState(profile.roster) : createDemoState(timestamp), [profile.roster]);
+  const [state, setState] = useState(() => seedState(0));
   const current = useRef(state);
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const ready = loadedStorageKey === storageKey;
@@ -24,11 +26,11 @@ export function useTeamPortalDemo(profile: DemoProfile = GENERAL_DEMO_PROFILE) {
       try {
         const raw = window.localStorage.getItem(storageKey);
         const saved = parseSavedDemo(raw);
-        if (raw !== null && !saved) setStorageWarning("De opgeslagen demo was niet meer geldig. We hebben de voorbeelden hersteld.");
-        return saved ?? createDemoState(timestamp);
+        if (raw !== null && !saved) setStorageWarning(profile.roster ? "De opgeslagen demo was niet meer geldig. Je lokale teamgegevens staan weer klaar, zonder beoordelingen." : "De opgeslagen demo was niet meer geldig. We hebben de voorbeelden hersteld.");
+        return saved ?? seedState(timestamp);
       } catch {
         setStorageWarning("Je browser bewaart deze demo niet. Je kunt alles proberen zolang dit tabblad openblijft.");
-        return createDemoState(timestamp);
+        return seedState(timestamp);
       }
     };
     const initial = load();
@@ -41,7 +43,7 @@ export function useTeamPortalDemo(profile: DemoProfile = GENERAL_DEMO_PROFILE) {
     setLoadedStorageKey(storageKey);
     const interval = window.setInterval(() => setNow(Date.now()), 10000);
     return () => window.clearInterval(interval);
-  }, [storageKey]);
+  }, [storageKey, seedState, profile.roster]);
 
   useEffect(() => {
     if (!ready) return;
@@ -84,13 +86,13 @@ export function useTeamPortalDemo(profile: DemoProfile = GENERAL_DEMO_PROFILE) {
 
   const reset = () => {
     const timestamp = Date.now();
-    const seed = createDemoState(timestamp);
+    const seed = seedState(timestamp);
     current.current = seed;
     setState(seed);
     setActor({ role: "player", playerId: seed.players[0].id });
     setNow(timestamp);
     setStorageWarning("");
-    setNotice({ text: "De demo is teruggezet naar de voorbeeldspelers en wedstrijden.", error: false });
+    setNotice({ text: profile.roster ? "De lokale selectie en wedstrijdgegevens blijven staan. De demo-beoordelingen en stemmen zijn gewist." : "De demo is teruggezet naar de voorbeeldspelers en wedstrijden.", error: false });
   };
 
   return { state, actor, setActor, now, ready, run, reset, storageWarning, notice, dismissNotice: () => setNotice(null) };

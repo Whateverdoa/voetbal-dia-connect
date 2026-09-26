@@ -19,7 +19,7 @@ export function DemoPlayerCard({ player, compact = false }: DemoPlayerCardProps)
         <div aria-hidden="true" className="absolute -right-12 -top-10 h-64 w-64 rounded-full border-[35px] border-white/[0.035]" />
         <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-[#063d2d] to-transparent" />
         <div className="absolute left-5 top-5 z-10">
-          <p className={`${compact ? "text-3xl" : "text-4xl"} font-black leading-none tracking-tight text-dia-yellow`}>{player.number}</p>
+          <p aria-label={player.number == null ? "Rugnummer nog niet ingevoerd" : `Rugnummer ${player.number}`} className={`${compact ? "text-3xl" : "text-4xl"} font-black leading-none tracking-tight text-dia-yellow`}>{player.number ?? "—"}</p>
           <p className="mt-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-100">{profile.teamName}</p>
         </div>
         {/* The club logo is already bundled in the app. */}
@@ -33,7 +33,7 @@ export function DemoPlayerCard({ player, compact = false }: DemoPlayerCardProps)
           <path d="M105 127 113 114 118 234 101 233Z M225 127 217 114 212 234 229 233Z" fill="#c7bc1e" />
           <path d="M145 89V233M185 89V233" stroke="#fff985" strokeWidth="1.5" opacity="0.4" />
           <path d="m207 97 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z" fill="#073e2d" />
-          <text x="165" y="193" textAnchor="middle" fontSize="74" fontFamily="Arial, sans-serif" fontWeight="900" fill="#073e2d">{player.number}</text>
+          <text x="165" y="193" textAnchor="middle" fontSize="74" fontFamily="Arial, sans-serif" fontWeight="900" fill="#073e2d">{player.number ?? "—"}</text>
         </svg>
         <div className="absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-[#063d2d] to-transparent" />
       </div>
@@ -43,10 +43,11 @@ export function DemoPlayerCard({ player, compact = false }: DemoPlayerCardProps)
           {cardNameLines(player.name, "first").map((line) => <span key={line} className="block">{line}</span>)}
         </h2>
         <p className="mt-2 text-sm font-medium text-emerald-100">{player.position}</p>
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4">
+        {player.number == null ? <p className="mt-2 text-xs text-emerald-100/80">Rugnummer nog niet ingevoerd</p> : null}
+        {player.qualities.length > 0 ? <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4">
           {player.qualities.map((quality) => <span key={quality} className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-dia-yellow"><Sparkles aria-hidden="true" className="h-3 w-3" />{quality}</span>)}
-        </div>
-        {!compact ? <p className="mt-4 text-sm italic leading-relaxed text-emerald-100/80">“{player.motto}”</p> : null}
+        </div> : null}
+        {!compact && player.motto.trim() ? <p className="mt-4 text-sm italic leading-relaxed text-emerald-100/80">“{player.motto}”</p> : null}
       </div>
     </article>
   );

@@ -2,6 +2,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoState } from "@/lib/team-portal/fixtures";
+import { createRosterDemoState, type LocalDemoRoster } from "@/lib/team-portal/localRoster";
+import { JO13_02_DEMO_PROFILE } from "@/lib/team-portal/demoProfiles";
 import type { DemoActor, DemoState } from "@/lib/team-portal/types";
 import { TeamPortalDemo } from "./TeamPortalDemo";
 
@@ -43,6 +45,25 @@ afterEach(() => vi.restoreAllMocks());
 const desktopNav = () => within(screen.getByRole("navigation", { name: "Teamportaal" }));
 
 describe("professional observation navigation", () => {
+  it("switches explicitly simulated parents without pretending unrelated players are siblings", () => {
+    const roster: LocalDemoRoster = { version: 1, teamSlug: "jo13-2", importedAt: "2026-09-26T12:00:00Z", players: [
+      { id: "local-first", name: "Eerste testspeler", number: 2, position: "CB" },
+      { id: "local-second", name: "Tweede testspeler", number: null, position: "" },
+    ] };
+    setup.state = createRosterDemoState(roster);
+    setup.actor = { role: "player", playerId: "local-first" };
+    render(<TeamPortalDemo profile={{ ...JO13_02_DEMO_PROFILE, roster }} />);
+    expect(screen.getByText(/echte teamgegevens, lokale demo/)).toBeInTheDocument();
+    expect(screen.queryByText(/fictieve voorbeeldspelers/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ouder", exact: true }));
+    const parent = screen.getByRole("combobox", { name: "Oudersimulatie" });
+    expect(within(screen.getByRole("combobox", { name: "Mijn kind" })).getAllByRole("option")).toHaveLength(1);
+    fireEvent.change(parent, { target: { value: "parent-local-second" } });
+    expect(screen.getByRole("heading", { name: "Samen groeien met Tweede testspeler" })).toBeInTheDocument();
+    expect(within(screen.getByRole("combobox", { name: "Mijn kind" })).getByRole("option", { name: "Tweede testspeler" })).toBeInTheDocument();
+    expect(within(screen.getByRole("combobox", { name: "Mijn kind" })).queryByRole("option", { name: "Eerste testspeler" })).not.toBeInTheDocument();
+  });
+
   it("keeps observations discoverable for coaches while the optional module is off", () => {
     render(<TeamPortalDemo />);
     fireEvent.click(screen.getByRole("button", { name: "Coach" }));

@@ -81,6 +81,7 @@ import type * as lib_officialEvents from "../lib/officialEvents.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
 import type * as lib_pickPresentMatch from "../lib/pickPresentMatch.js";
 import type * as lib_playWeek from "../lib/playWeek.js";
+import type * as lib_playerMatchReview from "../lib/playerMatchReview.js";
 import type * as lib_positionZones from "../lib/positionZones.js";
 import type * as lib_presentationFormation from "../lib/presentationFormation.js";
 import type * as lib_presentationSubstitutionPlans from "../lib/presentationSubstitutionPlans.js";
@@ -118,6 +119,7 @@ import type * as ops_equalizeTscJo132Minutes from "../ops/equalizeTscJo132Minute
 import type * as ops_setJo132ActiveRoster from "../ops/setJo132ActiveRoster.js";
 import type * as pinHelpers from "../pinHelpers.js";
 import type * as playerConsents from "../playerConsents.js";
+import type * as playerMatchReviews from "../playerMatchReviews.js";
 import type * as playerPhotos from "../playerPhotos.js";
 import type * as playingTimeHelpers from "../playingTimeHelpers.js";
 import type * as playingTimeSeason from "../playingTimeSeason.js";
@@ -246,6 +248,7 @@ declare const fullApi: ApiFromModules<{
   "lib/opsAuth": typeof lib_opsAuth;
   "lib/pickPresentMatch": typeof lib_pickPresentMatch;
   "lib/playWeek": typeof lib_playWeek;
+  "lib/playerMatchReview": typeof lib_playerMatchReview;
   "lib/positionZones": typeof lib_positionZones;
   "lib/presentationFormation": typeof lib_presentationFormation;
   "lib/presentationSubstitutionPlans": typeof lib_presentationSubstitutionPlans;
@@ -283,6 +286,7 @@ declare const fullApi: ApiFromModules<{
   "ops/setJo132ActiveRoster": typeof ops_setJo132ActiveRoster;
   pinHelpers: typeof pinHelpers;
   playerConsents: typeof playerConsents;
+  playerMatchReviews: typeof playerMatchReviews;
   playerPhotos: typeof playerPhotos;
   playingTimeHelpers: typeof playingTimeHelpers;
   playingTimeSeason: typeof playingTimeSeason;

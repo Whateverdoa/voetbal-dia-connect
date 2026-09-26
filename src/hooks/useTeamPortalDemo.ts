@@ -62,7 +62,9 @@ export function useTeamPortalDemo(profile: DemoProfile = GENERAL_DEMO_PROFILE) {
       current.current = next;
       setState(next);
       setNow(timestamp);
-      const messages: Record<DemoCommand["type"], string> = {
+      // Conversation keystrokes save silently; errors still surface through the catch below.
+      if (command.type === "saveInterview") return true;
+      const messages: Record<Exclude<DemoCommand["type"], "saveInterview">, string> = {
         savePlayerReview: "Spelerverslag als concept bewaard. Alleen zichtbaar voor de coach.",
         publishPlayerReview: "Spelerverslag gedeeld met de speler en gekoppelde ouders.",
         saveFeedback: "Concept bewaard. Alleen zichtbaar voor de coach.",

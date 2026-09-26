@@ -1,6 +1,7 @@
 import { getMatchPhase } from "./selectors";
 import { applyObservationCommand } from "./observationRules";
 import { applyPlayerReviewCommand } from "./playerReviewRules";
+import { isReviewInterviewDraft } from "./reviewInterview";
 import { CATEGORIES, SKILLS, SKILL_LEVELS, VOTE_REASONS, type DemoActor, type DemoCommand, type DemoState } from "./types";
 
 function requireCondition(value: unknown, message: string): asserts value {
@@ -9,6 +10,14 @@ function requireCondition(value: unknown, message: string): asserts value {
 
 /** Local demo rules. A future backend must independently enforce the same rules. */
 export function applyDemoCommand(state: DemoState, actor: DemoActor, command: DemoCommand, now: number): DemoState {
+  if (command.type === "saveInterview") {
+    requireCondition(actor.role === "coach", "Alleen de coach kan een nabespreking bewaren.");
+    requireCondition(state.players.some((player) => player.id === command.playerId), "Speler niet gevonden.");
+    requireCondition(state.matches.some((match) => match.id === command.matchId && match.participantIds.includes(command.playerId)), "Kies een speler die aan deze wedstrijd deelnam.");
+    requireCondition(isReviewInterviewDraft(command.draft), "Dit gesprek kon niet worden bewaard. Controleer de invoer.");
+    const interviews = (state.interviews ?? []).filter((item) => item.matchId !== command.matchId || item.playerId !== command.playerId);
+    return { ...state, interviews: [...interviews, { matchId: command.matchId, playerId: command.playerId, draft: structuredClone(command.draft) }] };
+  }
   if (command.type === "savePlayerReview" || command.type === "publishPlayerReview") {
     return applyPlayerReviewCommand(state, actor, command, now);
   }

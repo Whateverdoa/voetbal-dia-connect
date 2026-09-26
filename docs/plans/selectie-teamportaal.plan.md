@@ -4,9 +4,11 @@
 **Roadmap:** [open-roadmap.md](./open-roadmap.md)  
 **Pilotteam:** `jo13-2` eerst; andere selecties daarna
 
-De lokale [JO13-02-proefversie](./jo13-02-teamportaal-pilot.md) staat op `/demo/teamportaal/jo13-2`. Deze gebruikt fictieve gegevens, een rolwisselaar en eigen browseropslag. Speler-, ouder- en coachflows en optionele coach-/scoutobservaties zijn klikbaar; de member-routes hieronder beschrijven de latere echte integratie.
+De lokale [JO13-02-proefversie](./jo13-02-teamportaal-pilot.md) staat op `/demo/teamportaal/jo13-2`. Deze gebruikt een rolwisselaar en eigen browseropslag. Uitsluitend lokaal kan een privébronkopie de echte selectie, gespeelde en komende wedstrijden en stand leveren; elders blijven de voorbeelden fictief. Speler-, ouder- en coachflows en optionele coach-/scoutobservaties zijn klikbaar; de member-routes hieronder beschrijven de latere echte integratie.
 
-De coachweergave linkt daarnaast naar `/team/jo13-2/verslag`: een afzonderlijk wedstrijdverslag met bestaande geregistreerde uitslagen, gebeurtenissen, notities en speeltijd. Hier komen ook drie kernvragen en twee optionele vragen per deelnemende speler, met privéconcepten en expliciet vastgelegde verslagen in `playerMatchReviews`. Hiervoor gelden de echte Clerk-/Convex-coachrechten en een eigen auteursidentiteit. De demo-rollen geven geen toegang en echte gegevens worden niet naar de demo-opslag gekopieerd. Toegang voor ouders en spelers volgt pas na de accountkoppelingen hieronder. De backenduitbreiding moet nog via de releaseflow worden geactiveerd.
+De coachweergave linkt daarnaast naar `/team/jo13-2/verslag`: een afzonderlijk wedstrijdverslag met bestaande geregistreerde uitslagen, gebeurtenissen, notities en speeltijd. Hier komen ook drie kernvragen en twee optionele vragen per deelnemende speler, met privéconcepten en expliciet vastgelegde verslagen in `playerMatchReviews`. Hiervoor gelden de echte Clerk-/Convex-coachrechten en een eigen auteursidentiteit. De demo-rollen geven geen toegang en deze verbonden pagina schrijft niets naar de demo-opslag. Toegang voor ouders en spelers volgt pas na de accountkoppelingen hieronder. De backenduitbreiding moet nog via de releaseflow worden geactiveerd.
+
+De lokale nabespreking begint met een gesprek: vrij vertellen of dicteren, maximaal drie vervolgvragen via de bestaande Claude-configuratie, daarna een kort voorstel ter controle. Overnemen vult uitsluitend het conceptformulier; bewaren en delen blijven expliciet. De lokale API is geblokkeerd in productie en gehoste previews, waar het formulier beschikbaar blijft. Zie de proefversie voor opslag, verwerking door Anthropic en de browserdicteerfunctie.
 
 ## Productvisie
 

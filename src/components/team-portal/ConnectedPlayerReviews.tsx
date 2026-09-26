@@ -8,7 +8,9 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { AfterMatchReport } from "@/lib/team-portal/matchReport";
 import { buildPlayerReviewReport, emptyPlayerReview, getPlayerReviewProgress, type PlayerReview } from "@/lib/team-portal/playerReview";
+import { emptyReviewInterview, type ReviewInterviewDraft } from "@/lib/team-portal/reviewInterview";
 import { PlayerReviewForm, PlayerReviewReportView } from "./PlayerReviewForm";
+import { PlayerReviewChat } from "./PlayerReviewChat";
 
 type SavedReview = FunctionReturnType<typeof api.playerMatchReviews.listForMatch>[number];
 type Player = AfterMatchReport["players"][number];
@@ -26,14 +28,17 @@ function ReviewList({ report, matchId, participantIds, onDirtyChange }: { report
   const [selectedId, setSelectedId] = useState(players[0]?.playerId ?? "");
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [interviews, setInterviews] = useState<Record<string, ReviewInterviewDraft>>({});
   const player = players.find((candidate) => candidate.playerId === selectedId) ?? players[0];
-  useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false); }, [dirty, onDirtyChange]);
+  const hasConversation = Object.values(interviews).some((draft) => draft.input.trim() || draft.messages.length || draft.proposal);
+  const hasUnsavedWork = dirty || hasConversation || busy;
+  useEffect(() => { onDirtyChange(hasUnsavedWork); return () => onDirtyChange(false); }, [hasUnsavedWork, onDirtyChange]);
   useEffect(() => {
-    if (!dirty) return;
+    if (!hasUnsavedWork) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [hasUnsavedWork]);
 
   function choose(id: string) {
     if (id === player?.playerId || busy) return;
@@ -55,16 +60,18 @@ function ReviewList({ report, matchId, participantIds, onDirtyChange }: { report
         return <button type="button" key={candidate.playerId} disabled={busy} aria-pressed={candidate.playerId === player.playerId} onClick={() => choose(candidate.playerId)} className={`${buttonClass} text-left ${candidate.playerId === player.playerId ? "border-dia-green bg-emerald-50" : ""}`}><span className="block">{candidate.name}</span><span className="mt-1 block text-xs font-normal text-stone-500">{candidate.playerId === player.playerId && dirty ? "Niet bewaard" : status}</span></button>;
       })}
     </div>
-    <ReviewEditor key={player.playerId} player={player} report={report} matchId={matchId} record={record} onDirtyChange={setDirty} onBusyChange={setBusy} onNext={players.indexOf(player) < players.length - 1 ? () => { setDirty(false); setSelectedId(players[players.indexOf(player) + 1].playerId); } : undefined} />
+    <ReviewEditor key={player.playerId} player={player} report={report} matchId={matchId} record={record} interview={interviews[player.playerId] ?? emptyReviewInterview()} onInterviewChange={(draft) => setInterviews((previous) => ({ ...previous, [player.playerId]: draft }))} onDirtyChange={setDirty} onBusyChange={setBusy} onNext={players.indexOf(player) < players.length - 1 ? () => { setDirty(false); setSelectedId(players[players.indexOf(player) + 1].playerId); } : undefined} />
   </section>;
 }
 
-function ReviewEditor({ player, report, matchId, record, onDirtyChange, onBusyChange, onNext }: { player: Player; report: AfterMatchReport; matchId: Id<"matches">; record?: SavedReview; onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void; onNext?: () => void }) {
+function ReviewEditor({ player, report, matchId, record, interview, onInterviewChange, onDirtyChange, onBusyChange, onNext }: { player: Player; report: AfterMatchReport; matchId: Id<"matches">; record?: SavedReview; interview: ReviewInterviewDraft; onInterviewChange: (draft: ReviewInterviewDraft) => void; onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void; onNext?: () => void }) {
   const saveDraft = useMutation(api.playerMatchReviews.saveDraft);
   const finalize = useMutation(api.playerMatchReviews.finalize);
   const [buffer, setBuffer] = useState<{ answers: PlayerReview; revision: number | null } | null>(null);
   const [acknowledged, setAcknowledged] = useState<SavedReview | null>(null);
   const [busy, setBusy] = useState(false);
+  const [chatBusy, setChatBusy] = useState(false);
+  const [mode, setMode] = useState<"chat" | "form">(() => process.env.NODE_ENV === "development" ? "chat" : "form");
   const [message, setMessage] = useState("");
   const [conflict, setConflict] = useState(false);
   const saved = acknowledged && (!record || acknowledged.revision > record.revision) ? acknowledged : record;
@@ -72,7 +79,12 @@ function ReviewEditor({ player, report, matchId, record, onDirtyChange, onBusyCh
   const dirty = Boolean(buffer && !same(buffer.answers, saved?.draft ?? emptyPlayerReview()));
   const finalizedIsCurrent = Boolean(saved?.finalized && sameReport(answers, saved.finalized));
   useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
-  useEffect(() => { onBusyChange(busy); return () => onBusyChange(false); }, [busy, onBusyChange]);
+  useEffect(() => { onBusyChange(busy || chatBusy); return () => onBusyChange(false); }, [busy, chatBusy, onBusyChange]);
+
+  function updateAnswers(value: PlayerReview) {
+    setBuffer((previous) => ({ answers: value, revision: previous ? previous.revision : saved?.revision ?? null }));
+    setMessage("");
+  }
 
   function failure(error: unknown) {
     const data: unknown = error instanceof ConvexError ? error.data : null;
@@ -82,7 +94,7 @@ function ReviewEditor({ player, report, matchId, record, onDirtyChange, onBusyCh
   }
 
   async function save(): Promise<boolean> {
-    if (busy) return false;
+    if (busy || chatBusy) return false;
     if (saved && !dirty) return true;
     setBusy(true);
     setMessage("");
@@ -98,7 +110,7 @@ function ReviewEditor({ player, report, matchId, record, onDirtyChange, onBusyCh
   }
 
   async function finish() {
-    if (!saved || busy || dirty || finalizedIsCurrent) return;
+    if (!saved || busy || chatBusy || dirty || finalizedIsCurrent) return;
     setBusy(true);
     try {
       const result = await finalize({ matchId, playerId: player.playerId as Id<"players">, expectedRevision: saved.revision });
@@ -111,13 +123,19 @@ function ReviewEditor({ player, report, matchId, record, onDirtyChange, onBusyCh
 
   return <div className="space-y-5 border-t border-stone-200 pt-6">
     <p className="rounded-xl bg-stone-50 p-4 text-sm leading-relaxed text-stone-600">Deze antwoorden en verslagen zijn alleen toegankelijk met jouw coachaccount. Ouders, spelers en andere stafleden krijgen nog geen toegang. Bewaar je antwoorden voordat je de wedstrijd of pagina verlaat.</p>
+    {process.env.NODE_ENV === "development" ? <div className="flex gap-2" role="group" aria-label="Manier van nabespreken">
+      {([{ id: "chat", label: "Gesprek" }, { id: "form", label: "Formulier" }] as const).map((option) => <button key={option.id} type="button" disabled={busy || chatBusy} aria-pressed={mode === option.id} onClick={() => setMode(option.id)} className={`${buttonClass} ${mode === option.id ? "border-dia-green bg-emerald-50 text-dia-green" : ""}`}>{option.label}</button>)}
+    </div> : null}
     <fieldset disabled={busy} className="min-w-0">
       <legend className="sr-only">Spelerverslag voor {player.name}</legend>
-      <PlayerReviewForm player={{ id: player.playerId, name: player.name, number: player.number }} answers={answers} onChange={(value) => { setBuffer((previous) => ({ answers: value, revision: previous ? previous.revision : saved?.revision ?? null })); setMessage(""); }} onSave={() => { void save(); }} saveDisabled={Boolean(saved) && !dirty} onPublish={() => { void finish(); }} publishDisabled={!saved || dirty || finalizedIsCurrent} publishLabel="Verslag vastleggen" minutesPlayed={player.minutesPlayed} recordedMoments={report.timeline.filter((moment) => moment.playerIds.includes(player.playerId)).map((moment) => ({ id: moment.id, label: moment.timeLabel, text: [moment.text, moment.detail, moment.note].filter(Boolean).join(" · ") }))} storageNote="Concepten worden in DIA Live bij deze wedstrijd en speler opgeslagen. Lees het conceptverslag na en leg het daarna vast." />
+      {process.env.NODE_ENV === "development" && mode === "chat" ? <>
+        <PlayerReviewChat player={{ id: player.playerId, name: player.name }} value={interview} onChange={onInterviewChange} answers={answers} onBusyChange={setChatBusy} onApply={(value) => { updateAnswers(value); setMode("form"); setMessage("Voorstel overgenomen in je concept. Controleer de antwoorden en bewaar ze bij deze wedstrijd."); }} />
+        <p className="mt-4 text-sm leading-relaxed text-stone-500">Het gesprek blijft alleen op dit scherm beschikbaar, ook als je een andere speler kiest. Bij herladen of een andere wedstrijd verdwijnt het gesprek. Neem het voorstel over en bewaar je antwoorden om ze bij de wedstrijd op te slaan.</p>
+      </> : <PlayerReviewForm player={{ id: player.playerId, name: player.name, number: player.number }} answers={answers} onChange={updateAnswers} onSave={() => { void save(); }} saveDisabled={Boolean(saved) && !dirty} onPublish={() => { void finish(); }} publishDisabled={!saved || dirty || finalizedIsCurrent} publishLabel="Verslag vastleggen" minutesPlayed={player.minutesPlayed} recordedMoments={report.timeline.filter((moment) => moment.playerIds.includes(player.playerId)).map((moment) => ({ id: moment.id, label: moment.timeLabel, text: [moment.text, moment.detail, moment.note].filter(Boolean).join(" · ") }))} storageNote="Concepten worden in DIA Live bij deze wedstrijd en speler opgeslagen. Lees het conceptverslag na en leg het daarna vast." />}
     </fieldset>
     <p role="status" className="text-sm font-semibold text-dia-green">{busy ? "Opslaan…" : message}</p>
     {conflict ? <button type="button" className={buttonClass} onClick={() => { if (window.confirm("De niet bewaarde antwoorden in dit formulier vervangen door de opgeslagen versie?")) { setBuffer(null); setAcknowledged(null); setConflict(false); setMessage(""); } }}>Opgeslagen versie laden</button> : null}
-    {onNext ? <button type="button" disabled={busy} className={buttonClass} onClick={() => { void save().then((ok) => { if (ok) onNext(); }); }}>Bewaar en volgende speler</button> : null}
+    {onNext ? <button type="button" disabled={busy || chatBusy} className={buttonClass} onClick={() => { void save().then((ok) => { if (ok) onNext(); }); }}>Bewaar en volgende speler</button> : null}
     {saved?.finalized ? <section className="space-y-4 rounded-2xl bg-stone-50 p-5"><h3 className="font-bold">Vastgelegd spelersverslag</h3>{!finalizedIsCurrent ? <p className="text-sm text-stone-500">Je conceptwijzigingen zijn nog niet in dit vastgelegde verslag opgenomen.</p> : null}<PlayerReviewReportView review={saved.finalized} /></section> : null}
   </div>;
 }

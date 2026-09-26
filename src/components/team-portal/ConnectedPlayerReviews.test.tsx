@@ -6,6 +6,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { AfterMatchReport } from "@/lib/team-portal/matchReport";
 import { emptyPlayerReview, PLAYER_REVIEW_QUESTIONS, type PlayerReview } from "@/lib/team-portal/playerReview";
 import { ConnectedPlayerReviews } from "./ConnectedPlayerReviews";
+import type { PlayerReviewChatProps } from "./PlayerReviewChat";
 
 type SavedReview = {
   _id: Id<"playerMatchReviews">;
@@ -30,6 +31,15 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("convex/react", () => ({ useQuery: mocks.query, useMutation: mocks.mutation }));
 vi.mock("@/convex/_generated/api", async () => ({ api: (await import("convex/server")).anyApi }));
+vi.mock("./PlayerReviewChat", () => ({
+  PlayerReviewChat: ({ player, value, onChange, onApply, onBusyChange }: PlayerReviewChatProps) => <div>
+    <h3>Gesprek voor {player.name}</h3>
+    <textarea aria-label="Gespreksinvoer" value={value.input} onChange={(event) => onChange({ ...value, input: event.target.value })} />
+    <button type="button" onClick={() => onApply(completeAnswers())}>Pas chatvoorstel toe</button>
+    <button type="button" onClick={() => onBusyChange?.(true)}>Start spreken</button>
+    <button type="button" onClick={() => onBusyChange?.(false)}>Stop spreken</button>
+  </div>,
+}));
 
 const MATCH_ID = "match-real" as Id<"matches">;
 const PLAYER_ID = "player-milan" as Id<"players">;
@@ -116,6 +126,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("connected player report editor", () => {
@@ -178,7 +189,7 @@ describe("connected player report editor", () => {
     expect(mocks.save).toHaveBeenCalledOnce();
     expect(mocks.save).toHaveBeenLastCalledWith(expect.objectContaining({ playerId: PLAYER_ID, matchId: MATCH_ID, expectedRevision: null }));
     expect(questionInput("positiveMoment")).toHaveValue("");
-    expect(mocks.dirty).toHaveBeenLastCalledWith(false);
+    await waitFor(() => expect(mocks.dirty).toHaveBeenLastCalledWith(false));
   });
 
   it("finalizes only after saving, previewing and explicitly confirming the report", async () => {
@@ -303,5 +314,67 @@ describe("connected player report editor", () => {
     queryFailure = false;
     fireEvent.click(screen.getByRole("button", { name: "Opnieuw proberen" }));
     await waitFor(() => expect(screen.getByRole("heading", { name: /Even terugkijken met Milan/ })).toBeInTheDocument());
+  });
+
+  it("keeps development conversations for each player and warns before leaving without writing transcripts anywhere", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const confirm = vi.spyOn(window, "confirm");
+    const storage = vi.spyOn(Storage.prototype, "setItem");
+    render(<ConnectedPlayerReviews report={matchReport()} matchId={MATCH_ID} onDirtyChange={mocks.dirty} />);
+    expect(mocks.dirty).toHaveBeenLastCalledWith(false);
+    fireEvent.change(screen.getByRole("textbox", { name: "Gespreksinvoer" }), { target: { value: "Mijn onbewerkte verhaal over Milan." } });
+    expect(mocks.dirty).toHaveBeenLastCalledWith(true);
+    const leave = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(leave);
+    expect(leave.defaultPrevented).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /Noor.*Nog te bespreken/ }));
+    expect(screen.getByRole("textbox", { name: "Gespreksinvoer" })).toHaveValue("");
+    expect(confirm).not.toHaveBeenCalled();
+    expect(mocks.dirty).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: /Milan.*Nog te bespreken/ }));
+    expect(screen.getByRole("textbox", { name: "Gespreksinvoer" })).toHaveValue("Mijn onbewerkte verhaal over Milan.");
+    fireEvent.change(screen.getByRole("textbox", { name: "Gespreksinvoer" }), { target: { value: "" } });
+    expect(mocks.dirty).toHaveBeenLastCalledWith(false);
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(storage).not.toHaveBeenCalled();
+  });
+
+  it("applies a chat proposal as unsaved answers and retains the transcript warning after saving the assessment", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    render(<ConnectedPlayerReviews report={matchReport()} matchId={MATCH_ID} onDirtyChange={mocks.dirty} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Gespreksinvoer" }), { target: { value: "Gesprek dat alleen op dit scherm blijft." } });
+    fireEvent.click(screen.getByRole("button", { name: "Pas chatvoorstel toe" }));
+    expect(questionInput("positiveMoment")).toHaveValue(completeAnswers().positiveMoment.text);
+    expect(mocks.dirty).toHaveBeenLastCalledWith(true);
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Concept bewaren" }));
+    await screen.findByText("Concept opgeslagen bij deze wedstrijd. Je kunt later verdergaan.");
+    expect(mocks.save).toHaveBeenCalledExactlyOnceWith({ matchId: MATCH_ID, playerId: PLAYER_ID, answers: completeAnswers(), expectedRevision: null });
+    expect(mocks.dirty).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: "Gesprek" }));
+    expect(screen.getByRole("textbox", { name: "Gespreksinvoer" })).toHaveValue("Gesprek dat alleen op dit scherm blijft.");
+    expect(mocks.finalize).not.toHaveBeenCalled();
+  });
+
+  it("blocks player switching, mode changes and next while dictation or an interview request is active", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    render(<ConnectedPlayerReviews report={matchReport()} matchId={MATCH_ID} onDirtyChange={mocks.dirty} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start spreken" }));
+    expect(screen.getByRole("button", { name: /Noor.*Nog te bespreken/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Formulier" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bewaar en volgende speler" })).toBeDisabled();
+    expect(mocks.dirty).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: "Stop spreken" }));
+    expect(screen.getByRole("button", { name: /Noor.*Nog te bespreken/ })).toBeEnabled();
+    expect(mocks.dirty).toHaveBeenLastCalledWith(false);
+  });
+
+  it("keeps the production report on the existing manual form", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    render(<ConnectedPlayerReviews report={matchReport()} matchId={MATCH_ID} onDirtyChange={mocks.dirty} />);
+    expect(questionInput("positiveMoment")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Gesprek" })).not.toBeInTheDocument();
   });
 });

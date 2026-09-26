@@ -55,7 +55,7 @@ describe("professional observation navigation", () => {
     render(<TeamPortalDemo profile={{ ...JO13_02_DEMO_PROFILE, roster }} />);
     expect(screen.getByText(/echte teamgegevens, lokale demo/)).toBeInTheDocument();
     expect(screen.queryByText(/fictieve voorbeeldspelers/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Ouder", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Ouder" }));
     const parent = screen.getByRole("combobox", { name: "Oudersimulatie" });
     expect(within(screen.getByRole("combobox", { name: "Mijn kind" })).getAllByRole("option")).toHaveLength(1);
     fireEvent.change(parent, { target: { value: "parent-local-second" } });

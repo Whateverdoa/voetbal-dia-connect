@@ -62,7 +62,7 @@ function TeamPortalDemoContent() {
     team: { eyebrow: `${profile.teamName} · seizoen ${profile.seasonLabel}`, title: profile.roster ? `${state.players.length} spelers. Eén team.` : profile.pilot ? "Voorbeeldspelers. Eén team." : "Twaalf spelers. Eén team.", text: profile.roster ? "Onze selectie, uitslagen, programma en stand uit DIA Live." : profile.pilot ? "Een fictieve selectie om de teamervaring samen uit te proberen." : "Ieder een eigen kracht. Samen maken we er iets moois van." },
     voting: { eyebrow: "Een compliment maakt het verschil", title: actor.role === "coach" ? "Geef mooie momenten een podium." : "Wie maakte het verschil?", text: actor.role === "parent" ? "Bekijk de positieve acties en de uitslagen van de teamverkiezingen." : "Een fijne teamgenoot, een slimme pass of een geweldige redding. Laat het weten." },
     coach: { eyebrow: "De coachwerkplek", title: "Aandacht voor iedere speler.", text: "Een concreet compliment vandaag. Een mooie volgende stap voor morgen." },
-    reviews: { eyebrow: "Na elke wedstrijd", title: "Wat zag je bij iedere speler?", text: "Drie vragen. Eén persoonlijk verslag. Meer aandacht voor wat je samen hebt gezien." },
+    reviews: { eyebrow: "Na elke wedstrijd", title: "Wat zag je bij iedere speler?", text: process.env.NODE_ENV === "production" ? "Kijk per speler terug op concrete momenten en maak een persoonlijk conceptverslag." : "Vertel of dicteer wat je zag. Met een paar korte vervolgvragen maak je er een persoonlijk conceptverslag van." },
     observations: { eyebrow: "Professionele observaties", title: "Kijk gericht. Leg ontwikkeling vast.", text: "Een aparte werkplek voor coaches en scouts, buiten de speler- en ouderweergave." },
   };
   const heading = headings[activeTab];

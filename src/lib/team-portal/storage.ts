@@ -1,6 +1,7 @@
 import { CATEGORIES, SKILLS, SKILL_LEVELS, VOTE_REASONS, type DemoState } from "./types";
 import { isStaffObservation } from "./observationRules";
 import { isDemoPlayerReview } from "./playerReviewRules";
+import { isReviewInterviewDraft } from "./reviewInterview";
 
 export const DEMO_STORAGE_KEY = "dia-teamportaal-demo-v1";
 const record = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -23,6 +24,7 @@ export function isDemoState(value: unknown): value is DemoState {
   if (value.observationsEnabled !== undefined && typeof value.observationsEnabled !== "boolean") return false;
   if (value.observations !== undefined && (!Array.isArray(value.observations) || !value.observations.every(isStaffObservation))) return false;
   if (value.playerReviews !== undefined && (!Array.isArray(value.playerReviews) || !value.playerReviews.every(isDemoPlayerReview))) return false;
+  if (value.interviews !== undefined && !rows(value.interviews, (row) => string(row.matchId) && string(row.playerId) && isReviewInterviewDraft(row.draft))) return false;
   if (!rows(value.players, (row) => string(row.id) && string(row.name) && (row.number === null || number(row.number)) && string(row.position) && strings(row.qualities) && string(row.motto))) return false;
   if (!rows(value.guardians, (row) => string(row.id) && string(row.name) && strings(row.childrenIds))) return false;
   if (!rows(value.matches, (row) => string(row.id) && string(row.opponent) && string(row.dateLabel) && string(row.score) && includes(["preparing", "voting", "closed"], row.phase) && strings(row.participantIds) && optionalNumber(row.openedAt) && optionalNumber(row.closesAt) && optionalStrings(row.playerCandidateIds) && optionalStrings(row.highlightCandidateIds) && (row.phase === "preparing" || (number(row.openedAt) && number(row.closesAt) && strings(row.playerCandidateIds) && strings(row.highlightCandidateIds))))) return false;
@@ -38,6 +40,9 @@ export function isDemoState(value: unknown): value is DemoState {
   const playerReviews = state.playerReviews ?? [];
   if (!unique(playerReviews.map((item) => item.id)) || !unique(playerReviews.map((item) => `${item.matchId}:${item.playerId}`))) return false;
   if (!playerReviews.every((item) => playerIds.includes(item.playerId) && state.matches.some((match) => match.id === item.matchId && match.participantIds.includes(item.playerId)))) return false;
+  const interviews = state.interviews ?? [];
+  if (!unique(interviews.map((item) => `${item.matchId}:${item.playerId}`))) return false;
+  if (!interviews.every((item) => playerIds.includes(item.playerId) && state.matches.some((match) => match.id === item.matchId && match.participantIds.includes(item.playerId)))) return false;
   if (!unique((state.observations ?? []).map((item) => item.id))) return false;
   if (!(state.observations ?? []).every((item) => playerIds.includes(item.playerId) && (item.content.context === "training" || state.matches.some((match) => match.id === item.content.matchId && match.participantIds.includes(item.playerId))))) return false;
   if (!state.guardians.every((guardian) => guardian.childrenIds.length > 0 && unique(guardian.childrenIds) && guardian.childrenIds.every((id) => playerIds.includes(id)))) return false;

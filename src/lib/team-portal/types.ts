@@ -1,6 +1,7 @@
 /** Demo-only domain. String IDs deliberately do not depend on a backend. */
 import type { ObservationCommand, StaffObservation } from "./observationTypes";
 import type { PlayerReview } from "./playerReview";
+import type { ReviewInterviewDraft } from "./reviewInterview";
 export const SKILLS = ["balvaardigheid", "spelinzicht", "samenspel", "inzet", "sportiviteit"] as const;
 export type Skill = (typeof SKILLS)[number];
 export const SKILL_LEVELS = ["Nog niet beoordeeld", "In ontwikkeling", "Steeds vaker zichtbaar", "Sterk punt"] as const;
@@ -81,6 +82,8 @@ export interface DemoState {
   feedback: CoachFeedback[];
   /** Optional so existing v1 demo data keeps its feedback, votes and observations. */
   playerReviews?: DemoPlayerReview[];
+  /** Private coach conversations, scoped to a single match and player. */
+  interviews?: { matchId: string; playerId: string; draft: ReviewInterviewDraft }[];
   highlights: MatchHighlight[];
   votes: DemoVote[];
   /** Optional for existing v1 browser data; disabled until the coach enables it. */
@@ -89,6 +92,7 @@ export interface DemoState {
 }
 export type DemoCommand =
   | ObservationCommand
+  | { type: "saveInterview"; matchId: string; playerId: string; draft: ReviewInterviewDraft }
   | { type: "savePlayerReview"; matchId: string; playerId: string; answers: PlayerReview }
   | { type: "publishPlayerReview"; reviewId: string }
   | { type: "saveFeedback"; playerId: string; kind: CoachFeedback["kind"]; matchId?: string; content: FeedbackContent }

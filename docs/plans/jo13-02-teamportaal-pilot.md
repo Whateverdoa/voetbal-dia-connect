@@ -50,7 +50,7 @@ Het verslag toont de opgeslagen eindstand, doelpunten en assists, kaarten, uitge
 
 Deze verbonden verslagpagina schrijft geen gegevens naar de lokale demo. De feitelijke wedstrijdregistratie blijft alleen-lezen; het nieuwe spelerformulier heeft eigen opslag, beschreven hieronder. De vragenlijst verandert geen XP of verkiezingen. De lokale teamkopie hierboven blijft daarvan gescheiden: demo-invoer wordt niet naar echte spelerrecords teruggeschreven. Voor gezinsaccounts is nog expliciete serverautorisatie en een publicatiekeuze nodig.
 
-De lokale werkmap gebruikt voor deze verbonden pagina dezelfde bestaande appverbinding als DIA Live, via een genegeerd `.env.local` met alleen de Convex-URL en Clerk-configuratie. Er zijn geen deploymentcredentials overgenomen en geen backendwijzigingen uitgerold. De hoofdwerkmap en server op 3000 blijven ongewijzigd.
+De lokale werkmap gebruikt voor deze verbonden pagina dezelfde bestaande appverbinding als DIA Live, via een genegeerd `.env.local` met de Convex-URL en Clerk-configuratie. Voor de gesprekshulp wordt daarin ook de bestaande Anthropic-sleutel hergebruikt. Er zijn geen deploymentcredentials overgenomen en geen backendwijzigingen uitgerold. De hoofdwerkmap en server op 3000 blijven ongewijzigd.
 
 ## Nabespreking per speler — echte wedstrijdopslag
 
@@ -60,7 +60,7 @@ De gekozen richting is opslag bij echte wedstrijden. De pagina `/team/jo13-2/ver
 2. Hoe hielp de speler het team?
 3. Wat is één haalbare volgende stap op de training?
 
-Twee optionele vragen gaan over spelen met en zonder bal. De geregistreerde momenten en minuten helpen bij het terugdenken, maar vullen geen antwoorden of beoordelingen automatisch in. Per vraag is **Niet goed kunnen zien** mogelijk. Voor een verslag zijn alle kernvragen beantwoord of expliciet onbekend, met minstens één eigen observatie. Het verslag gebruikt uitsluitend de antwoorden van de coach, zonder externe AI- of spraakdienst.
+Twee optionele vragen gaan over spelen met en zonder bal. De geregistreerde momenten en minuten helpen bij het terugdenken, maar vullen geen antwoorden of beoordelingen automatisch in. Per vraag is **Niet goed kunnen zien** mogelijk. Voor een verslag zijn alle kernvragen beantwoord of expliciet onbekend, met minstens één eigen observatie. Het formulier werkt zelfstandig; tijdens lokale ontwikkeling is daarnaast de gesprekshulp hieronder beschikbaar.
 
 `playerMatchReviews` bewaart per echte auteur, wedstrijd en speler een concept en een afzonderlijke vastgelegde versie. `listForMatch`, `saveDraft` en `finalize` controleren iedere keer Clerk-identiteit, coach-/adminrechten, wedstrijdstatus, team en selectie. Concepten zijn privé per auteur; ook een andere coach of admin krijgt ze niet via deze functies. Registraties van afwezige spelers worden uitgesloten; nul minuten op zichzelf sluit een speler niet uit. Revisienummers voorkomen stil overschrijven vanuit een tweede tabblad.
 
@@ -69,6 +69,20 @@ De coach bewaart het concept, bekijkt het verslag, bevestigt het nalezen en kies
 Dezelfde vragen zijn klikbaar in de demo onder **Coach → Nabespreking**, met fictieve spelers of de lokaal geïmporteerde selectie. Daar worden concepten lokaal bewaard en kan publicatie naar de speler- en oudersimulatie worden getest. Deze simulatie schrijft niets naar echte wedstrijden.
 
 Implementatie en validatie zijn beschikbaar op de featurebranch. De live backendfuncties moeten via de afgesproken releaseflow worden geactiveerd voordat echte opslag werkt. De bestaande wedstrijdregistratie blijft bruikbaar als die functies nog ontbreken. De productie-dry-run valideert het toegevoegde schema zonder indexverwijdering; deze controle activeert de nieuwe functies niet.
+
+## Gesprek en dicteren
+
+**Coach → Nabespreking → Gesprek** begint met één open vraag over de geselecteerde speler. De coach kan een lang verhaal typen of op **Dicteer je verhaal** drukken. Herkende Nederlandse tekst blijft eerst bewerkbaar in het tekstvak. Alleen expliciet verzenden stuurt het gesprek en de huidige formulierantwoorden naar Claude. De assistent stelt hoogstens drie gerichte vervolgvragen; **Niet goed gezien** slaat een onbekend onderdeel over en **Maak nu een concept** rondt eerder af.
+
+Claude vat uitsluitend de eigen observaties en bevestigde oefenpunten van de coach samen in de vijf bestaande beoordelingsvelden. Onbekende onderdelen blijven onbekend. Het voorstel staat eerst ter controle in beeld. **Neem over als concept** vult het bewerkbare formulier; bewaren, nalezen en publiceren of vastleggen blijven afzonderlijke stappen. De chat verandert geen wedstrijdregistratie, XP of stemmen. Automatische samenvattingen blijven voorstellen die de coach moet controleren.
+
+De bestaande `ANTHROPIC_API_KEY` blijft uitsluitend op de server in `.env.local`. De directe Anthropic-provider gebruikt standaard `claude-sonnet-5`; `ANTHROPIC_REVIEW_MODEL` kan dit wijzigen. Het endpoint `/demo/teamportaal/api/interview` accepteert alleen lokale ontwikkelverzoeken van dezelfde origin, met begrensde tekstlengte, twee gelijktijdige verzoeken, twintig verzoeken per minuut en een timeout. Het is geblokkeerd in productie en gehoste previews. Daar blijft het formulier beschikbaar. Er worden geen ruwe providerfouten of gesprekken gelogd en het endpoint schrijft geen databasegegevens.
+
+Dicteren gebruikt de browserfunctie `SpeechRecognition` of `webkitSpeechRecognition`, met `nl-NL`. De browser kan daarvoor een eigen spraakdienst gebruiken; dit staat bij de microfoon. De app bewaart geen audio en start de microfoon nooit automatisch. Bij ontbrekende browserondersteuning blijven typen en de dicteerknop van het apparaattoetsenbord beschikbaar. De herkende tekst moet worden gecontroleerd voordat deze wordt verzonden.
+
+In de demo worden invoer, gespreksbeurten en voorstellen per wedstrijd en speler in de bestaande lokale browseropslag bewaard. Wisselen van rol, tabblad of speler en herladen behouden het gesprek; **Reset demo** wist de demo-invoer. De rolwisselaar blijft een simulatie, geen beveiliging voor vertrouwelijke observaties. Op de verbonden verslagpagina blijven gesprekken alleen in het geheugen van het geopende scherm; de coach krijgt een waarschuwing bij verlaten. Alleen de overgenomen en expliciet bewaarde formulierantwoorden gaan naar de bestaande wedstrijdopslag. Voor gehost gebruik van de gesprekshulp zijn echte serverautorisatie en grenzen per coach nodig.
+
+Validatie omvat gespreks- en opslagvalidatie, onbekende antwoorden, maximaal drie vervolgvragen, herhalen na netwerkfouten, expliciete overname, stoppen en opruimen van dicteren, meerdere spraakresultaten vlak achter elkaar en blokkeren van de API buiten lokale ontwikkeling. Een echte Claude-aanroep en de browserflow zijn met fictieve testobservaties gecontroleerd; live microfoonaudio is niet opgenomen tijdens ontwikkeling.
 
 ## Stap naar echt gebruik
 

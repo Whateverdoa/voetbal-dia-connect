@@ -7,6 +7,7 @@ import { GENERAL_DEMO_PROFILE, JO13_02_DEMO_PROFILE, type DemoProfile } from "@/
 import { getPublishedFeedback, getWinners } from "@/lib/team-portal/selectors";
 import { DEMO_STORAGE_KEY, parseSavedDemo } from "@/lib/team-portal/storage";
 import { useTeamPortalDemo } from "./useTeamPortalDemo";
+import { emptyReviewInterview } from "@/lib/team-portal/reviewInterview";
 
 const NOW = 1800000000000;
 const actionVote = { type: "castVote", matchId: "m2", kind: "highlight", targetId: "h3" } as const;
@@ -25,6 +26,20 @@ afterEach(() => {
 });
 
 describe("team portal browser persistence", () => {
+  it("silently saves coach conversations across role changes and reloads, and clears them on reset", () => {
+    const first = renderHook(() => useTeamPortalDemo());
+    act(() => { first.result.current.setActor({ role: "coach" }); });
+    const draft = { ...emptyReviewInterview(), input: "Mijn verhaal over deze speler." };
+    act(() => { expect(first.result.current.run({ type: "saveInterview", matchId: "m1", playerId: "p1", draft })).toBe(true); });
+    expect(first.result.current.notice).toBeNull();
+    act(() => { first.result.current.setActor({ role: "parent", guardianId: "family1" }); });
+    expect(first.result.current.state.interviews?.[0].draft).toEqual(draft);
+    first.unmount();
+    const reloaded = renderHook(() => useTeamPortalDemo());
+    expect(reloaded.result.current.state.interviews?.[0].draft).toEqual(draft);
+    act(() => { reloaded.result.current.reset(); });
+    expect(reloaded.result.current.state.interviews ?? []).toEqual([]);
+  });
   it("keeps imported identities separate and preserves them through reload and reset", () => {
     window.localStorage.setItem(JO13_02_DEMO_PROFILE.storageKey, JSON.stringify(createDemoState(NOW)));
     const first = renderHook(() => useTeamPortalDemo(rosterProfile));

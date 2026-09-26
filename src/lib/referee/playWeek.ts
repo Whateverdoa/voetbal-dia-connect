@@ -44,16 +44,6 @@ export function getPlayWeekEndMs(weekStartMs: number): number {
   return weekStartMs + 7 * 24 * 60 * 60 * 1000;
 }
 
-/** Default claim-window close: Wednesday 18:00 Amsterdam of that play week. */
-export function getDefaultClaimWindowClosesAt(weekStartMs: number): number {
-  const mon = amsterdamParts(weekStartMs);
-  const wedMs =
-    parseAmsterdamTimestamp(`${mon.year}-${mon.month}-${mon.day}T12:00:00`) +
-    2 * 24 * 60 * 60 * 1000;
-  const wed = amsterdamParts(wedMs);
-  return parseAmsterdamTimestamp(`${wed.year}-${wed.month}-${wed.day}T18:00:00`);
-}
-
 export function getPlayWeekBounds(nowMs: number = Date.now()) {
   const weekStartMs = getPlayWeekStartMs(nowMs);
   return { weekStartMs, weekEndMs: getPlayWeekEndMs(weekStartMs) };

@@ -28,6 +28,7 @@ import { TabButton } from "@/components/match/TabButton";
 import { FormationSelector } from "@/components/match/FormationSelector";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
 import { useSeasonMinutesMap } from "@/hooks/useSeasonMinutesMap";
+import { OfficialDutyNotice } from "@/components/coach/OfficialDutyNotice";
 import { useShowCardMinutes } from "@/hooks/useShowCardMinutes";
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
 import { CardMinutesToggle } from "@/components/coach/CardMinutesToggle";
@@ -163,6 +164,9 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
       />
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
+        {match.refereeId ? (
+          <OfficialDutyNotice refereeName={match.refereeName} />
+        ) : null}
         <MatchControls
           matchId={match._id}
           status={match.status}
@@ -177,10 +181,11 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           breakClockAutoStart={match.breakClockAutoStart}
           scheduledBreakEndAt={match.scheduledBreakEndAt}
           canControlClock={canControlClock}
+          canAddGoals={canControlClock}
           canDoSubstitutions={canDoSubstitutions}
           onGoalClick={() => setShowGoalModal(true)}
           onSubClick={() => setShowSubModal(true)}
-          onCardClick={isLive ? () => setShowCardModal(true) : undefined}
+          onCardClick={isLive && canControlClock ? () => setShowCardModal(true) : undefined}
         />
 
         {isLive ? (
@@ -373,6 +378,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         <CardModal
           matchId={match._id}
           players={match.players}
+          teamName={match.teamName}
           opponentName={match.opponent}
           onClose={() => setShowCardModal(false)}
         />

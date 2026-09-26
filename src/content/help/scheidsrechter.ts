@@ -2,12 +2,12 @@ import type { HelpPageDef } from "./types";
 
 export const helpRefereePage: HelpPageDef = {
   title: "Scheidsrechter",
-  subtitle: "Klok en stand — op de zijlijn, op je telefoon.",
+  subtitle: "Klok, stand en kaarten — op de zijlijn, op je telefoon.",
   blocks: [
     {
       heading: "Wat is jouw rol",
       paragraphs: [
-        "Jij begeleidt de wedstrijd aan de kant van de klok en de stand. In de club wordt dit soms wedstrijdbegeleider genoemd; in het menu staat Scheidsrechter. De coach houdt opstelling en wissels bij.",
+        "Jij bent de officiële leiding als je aan de wedstrijd hangt en de app gebruikt: klok, stand, doelpunten en kaarten. In de club wordt dit soms wedstrijdbegeleider genoemd; in het menu staat Scheidsrechter. De coach houdt opstelling en wissels bij.",
       ],
     },
     {
@@ -33,6 +33,7 @@ export const helpRefereePage: HelpPageDef = {
       ],
       bullets: [
         "Claimen: tik de wedstrijd aan onder Beschikbaar.",
+        "Ook op de wedstrijddag kun je nog claimen, zolang de ronde open is en de wedstrijd nog niet is gestart.",
         "Loslaten kan zolang de wedstrijd nog gepland is — daarna is hij van jou tot de club iets wijzigt.",
         "Geen ronde open, of je staat niet in de poule: dan wijst de club (of de coach) je toe.",
       ],
@@ -42,7 +43,10 @@ export const helpRefereePage: HelpPageDef = {
       bullets: [
         "Start de wedstrijd als beide teams klaarstaan.",
         "Bedien de klok: volgend kwart of helft, rust, hervatten, einde.",
-        "Houd de stand bij. Bij een DIA-doelpunt kun je de schutter kiezen.",
+        "Houd de stand bij. Bij +1 kun je optioneel een rugnummer zetten en extra aangeven: penalty, vrije trap of hoekschop. Namen hoef je niet in te vullen.",
+        "Eigen doelpunt is een extra knop: kies welk team in eigen doel trapte. De stand gaat naar de andere kant. Rugnummer mag, maar hoeft niet.",
+        "Kaarten: kies geel of rood, voor DIA of de tegenstander. Rugnummer mag, maar hoeft niet. Namen hoef je niet in te vullen.",
+        "Onder Registratie zie je wat je hebt vastgelegd: doelpunten, rugnummers en kaarten.",
         "Onderbrekingen (bijvoorbeeld blessure) kun je registreren; de speelminuten van spelers pauzeren dan, de wedstrijdklok loopt door.",
         "Einde wedstrijd: lees de bevestiging en bevestig bewust.",
       ],

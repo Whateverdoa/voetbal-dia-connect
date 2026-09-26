@@ -6,7 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchEvent, MatchPlayer } from "./types";
 import { createCorrelationId } from "@/lib/correlationId";
-import type { AssistKind } from "@/lib/assistKind";
+import { describeGoalEvent } from "@/lib/goalEventText";
+
+function playerLabel(player: MatchPlayer): string {
+  return player.number != null ? `#${player.number} ${player.name}` : player.name;
+}
 
 interface GoalEnrichmentPanelProps {
   matchId: Id<"matches">;
@@ -27,7 +31,9 @@ export function GoalEnrichmentPanel({
   const [targetId, setTargetId] = useState<Id<"matchEvents"> | null>(null);
   const [scorerId, setScorerId] = useState<Id<"players"> | "">("");
   const [assistId, setAssistId] = useState<Id<"players"> | "">("");
-  const [assistKind, setAssistKind] = useState<"" | AssistKind>("");
+  const [assistKind, setAssistKind] = useState<
+    "" | "pass" | "corner" | "free_kick" | "penalty"
+  >("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,8 +90,8 @@ export function GoalEnrichmentPanel({
     <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
       <h2 className="font-bold text-lg">Doelpunt aanvullen</h2>
       <p className="text-sm text-gray-600">
-        Kies een doelpunt. Je mag alleen &quot;Hoekschop&quot; of &quot;Vrije
-        trap&quot; zetten — scorer en assist zijn optioneel.
+        Kies een doelpunt. Je mag penalty, hoekschop of vrije trap zetten —
+        scorer en assist zijn optioneel.
       </p>
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -101,18 +107,9 @@ export function GoalEnrichmentPanel({
         <option value="">Selecteer doelpunt</option>
         {goals.map((goal) => (
           <option key={String(goal._id)} value={String(goal._id)}>
-            Kwart {goal.quarter} • {goal.displayMinute ?? "?"}'
-            {` • ${
-              goal.isOpponentGoal || goal.isOwnGoal ? opponentName : teamName
-            }`}
-            {goal.playerName ? ` • scorer: ${goal.playerName}` : ""}
-            {goal.relatedPlayerName ? ` • assist: ${goal.relatedPlayerName}` : ""}
-            {goal.assistKind === "corner"
-              ? " • hoekschop"
-              : goal.assistKind === "free_kick"
-                ? " • vrije trap"
-                : ""}
-            {goal.note ? ` • ${goal.note}` : ""}
+            {describeGoalEvent(goal, teamName, opponentName)}
+            {` · K${goal.quarter} ${goal.displayMinute ?? "?"}'`}
+            {goal.relatedPlayerName ? ` · assist ${goal.relatedPlayerName}` : ""}
           </option>
         ))}
       </select>
@@ -126,7 +123,7 @@ export function GoalEnrichmentPanel({
           <option value="">Scorer (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
         </select>
@@ -138,7 +135,7 @@ export function GoalEnrichmentPanel({
           <option value="">Assist (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
         </select>
@@ -146,15 +143,16 @@ export function GoalEnrichmentPanel({
           value={assistKind}
           onChange={(e) =>
             setAssistKind(
-              e.target.value as "" | "pass" | "corner" | "free_kick"
+              e.target.value as "" | "pass" | "corner" | "free_kick" | "penalty"
             )
           }
           className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base sm:col-span-2"
         >
           <option value="">Hoe ontstond het doelpunt? (optioneel)</option>
           <option value="pass">Pass / assist</option>
-          <option value="corner">Hoekschop</option>
+          <option value="penalty">Penalty</option>
           <option value="free_kick">Vrije trap</option>
+          <option value="corner">Hoekschop</option>
         </select>
       </div>
 

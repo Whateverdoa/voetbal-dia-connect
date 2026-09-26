@@ -1,16 +1,16 @@
 "use client";
 
-import {
-  assistKindLabel,
-  describeGoalEnrichment,
-  formatAssistLine,
-} from "@/lib/assistKind";
+import { describeGoalEnrichment, formatAssistLine } from "@/lib/assistKind";
+import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
 
 interface EventTimelineProps {
   events: MatchEvent[];
   teamName?: string;
   opponentName?: string;
+  title?: string;
+  emptyText?: string;
+  types?: MatchEvent["type"][];
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -35,6 +35,20 @@ function formatTime(timestamp: number): string {
   });
 }
 
+function cardEventText(
+  kind: "Gele kaart" | "Rode kaart",
+  event: MatchEvent,
+  opponentName?: string,
+): string {
+  if (event.isOpponentCard) {
+    const team = opponentName || "Tegenstander";
+    return event.playerName ? `${kind} ${team} · ${event.playerName}` : `${kind} ${team}`;
+  }
+  return event.note
+    ? `${kind} ${event.playerName || ""} · ${event.note}`
+    : `${kind} ${event.playerName || ""}`;
+}
+
 function formatGameMinute(event: MatchEvent): string | null {
   if (event.displayMinute == null) {
     return null;
@@ -52,29 +66,11 @@ function getEventText(
 ): string {
   switch (event.type) {
     case "goal":
-      const scoredByOpponent = event.isOpponentGoal || event.isOwnGoal;
-      const scoringTeamName = scoredByOpponent
-        ? opponentName || "Tegenstander"
-        : teamName || "Ons team";
-      if (event.isOwnGoal) {
-        return event.playerName
-          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
-            : `Eigen doelpunt (${scoringTeamName})`;
-      }
-      if (event.playerName) {
-        const setPiece = assistKindLabel(event.assistKind);
-        const piece =
-          event.assistKind === "corner" || event.assistKind === "free_kick"
-            ? ` · ${setPiece}`
-            : "";
-        return `Doelpunt ${event.playerName} (${scoringTeamName})${piece}`;
-      }
-      if (event.note) {
-        return `Doelpunt ${scoringTeamName} (${event.note})`;
-      }
-      return `Doelpunt ${scoringTeamName}`;
+      return describeGoalEvent(
+        event,
+        teamName || "Ons team",
+        opponentName || "Tegenstander",
+      );
     case "assist":
       return (
         formatAssistLine(event.playerName, event.assistKind) ??
@@ -101,19 +97,9 @@ function getEventText(
     case "quarter_end":
       return `Kwart ${event.quarter} afgelopen`;
     case "yellow_card":
-      if (event.isOpponentCard) {
-        return `Gele kaart ${opponentName || "Tegenstander"}`;
-      }
-      return event.note
-        ? `Gele kaart ${event.playerName || ""} · ${event.note}`
-        : `Gele kaart ${event.playerName || ""}`;
+      return cardEventText("Gele kaart", event, opponentName);
     case "red_card":
-      if (event.isOpponentCard) {
-        return `Rode kaart ${opponentName || "Tegenstander"}`;
-      }
-      return event.note
-        ? `Rode kaart ${event.playerName || ""} · ${event.note}`
-        : `Rode kaart ${event.playerName || ""}`;
+      return cardEventText("Rode kaart", event, opponentName);
     default:
       return event.type;
   }
@@ -123,17 +109,20 @@ export function EventTimeline({
   events,
   teamName,
   opponentName,
+  title = "Events",
+  emptyText = "Nog geen events",
+  types,
 }: EventTimelineProps) {
-  // Reverse chronological order
-  const sortedEvents = [...events].reverse();
+  const visible = types
+    ? events.filter((event) => types.includes(event.type))
+    : events;
+  const sortedEvents = [...visible].reverse();
 
   if (sortedEvents.length === 0) {
     return (
       <section className="bg-white rounded-xl shadow-md p-4">
-        <h2 className="font-semibold mb-3 text-gray-700">Events</h2>
-        <p className="text-gray-500 text-sm text-center py-4">
-          Nog geen events
-        </p>
+        <h2 className="font-semibold mb-3 text-gray-700">{title}</h2>
+        <p className="text-gray-500 text-sm text-center py-4">{emptyText}</p>
       </section>
     );
   }
@@ -141,7 +130,7 @@ export function EventTimeline({
   return (
     <section className="bg-white rounded-xl shadow-md p-4">
       <h2 className="font-semibold mb-3 text-gray-700">
-        Events ({sortedEvents.length})
+        {title} ({sortedEvents.length})
       </h2>
       <div className="space-y-1 max-h-[300px] overflow-y-auto">
         {sortedEvents.map((event) => (

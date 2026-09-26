@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MatchLoadingScreen, MatchErrorScreen } from "@/components/match";
 import type { MatchPlayer } from "@/components/match";
-import { SubstitutionPlannerStudio } from "@/components/match/plan/SubstitutionPlannerStudio";
+import { SubstitutionPlanner } from "@/components/match/plan/SubstitutionPlanner";
 import { resolveMatchFormation } from "@/lib/formations/resolveMatchFormation";
 
 export default function CoachWisselplanPage() {
@@ -45,6 +45,7 @@ export default function CoachWisselplanPage() {
   }
 
   const players = match.players as MatchPlayer[];
+
   const resolvedFormation = resolveMatchFormation(
     match.formationId,
     match.customFormationTemplate
@@ -60,9 +61,12 @@ export default function CoachWisselplanPage() {
   const isPregame = match.status === "scheduled" || match.status === "lineup";
   const isLive = match.status === "live" || match.status === "halftime";
   const isLead = match.isCurrentCoachLead ?? false;
+  const canEditPlan = isPregame || isLead;
+  // Executing live swaps only while the match is still running.
+  const canExecute = isLive && isLead;
 
   return (
-    <SubstitutionPlannerStudio
+    <SubstitutionPlanner
       matchId={match._id}
       teamId={match.teamId}
       publicCode={match.publicCode}
@@ -76,8 +80,8 @@ export default function CoachWisselplanPage() {
       formationId={match.formationId ?? undefined}
       customFormationTemplateId={match.customFormationTemplate?._id}
       resolvedFormation={resolvedFormation}
-      canEditPlan={isPregame || isLead}
-      canExecute={isLive && isLead}
+      canEditPlan={canEditPlan}
+      canExecute={canExecute}
     />
   );
 }

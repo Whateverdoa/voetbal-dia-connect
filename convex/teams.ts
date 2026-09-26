@@ -4,7 +4,6 @@ import { v } from "convex/values";
 import { compareSeasonHistory } from "./lib/matchHistoryOrder";
 import { isSandboxTeamSlug } from "./lib/sandboxTeam";
 import { isActiveSeasonMatch } from "./lib/season";
-import { isCurrentSeasonTeam } from "./lib/seasonYouthTeams";
 
 // Get team by slug (public query)
 export const getBySlug = query({
@@ -53,7 +52,7 @@ export const listPublicTeams = query({
 
     const enriched = await Promise.all(
       teams
-        .filter((team) => !isSandboxTeamSlug(team.slug) && isCurrentSeasonTeam(team))
+        .filter((team) => !isSandboxTeamSlug(team.slug))
         .map(async (team) => {
         if (!clubs.has(team.clubId)) {
           const club = await ctx.db.get(team.clubId);

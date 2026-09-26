@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { ScoreColumn } from "./RefereeScorePrompts";
 
 type RefereeScorePanelProps = {
@@ -12,8 +11,6 @@ type RefereeScorePanelProps = {
   scoreError: string | null;
   onIncrement: (team: "home" | "away") => void;
   onDecrement: (team: "home" | "away") => Promise<void>;
-  cardControls?: ReactNode;
-  extraControls?: ReactNode;
 };
 
 export function RefereeScorePanel({
@@ -25,8 +22,6 @@ export function RefereeScorePanel({
   scoreError,
   onIncrement,
   onDecrement,
-  cardControls,
-  extraControls,
 }: RefereeScorePanelProps) {
   return (
     <div className="space-y-2.5">
@@ -60,9 +55,6 @@ export function RefereeScorePanel({
           showScore={false}
         />
       </div>
-
-      {cardControls}
-      {extraControls}
     </div>
   );
 }

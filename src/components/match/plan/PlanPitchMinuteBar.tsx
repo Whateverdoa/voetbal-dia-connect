@@ -6,7 +6,6 @@ interface PlanPitchMinuteBarProps {
   minuteDraft: string;
   onMinuteChange: (value: string) => void;
   canEdit: boolean;
-  tone?: "light" | "dark";
 }
 
 /** Minute field above the plan pitch (set before tapping a swap). */
@@ -16,27 +15,18 @@ export function PlanPitchMinuteBar({
   minuteDraft,
   onMinuteChange,
   canEdit,
-  tone = "light",
 }: PlanPitchMinuteBarProps) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span
         className={`text-xs font-bold uppercase tracking-widest ${
-          hasSelection
-            ? "text-amber-400"
-            : tone === "dark"
-              ? "text-white/60"
-              : "text-slate-400"
+          hasSelection ? "text-amber-500" : "text-slate-400"
         }`}
       >
         {statusText}
       </span>
       {canEdit ? (
-        <label
-          className={`flex items-center gap-1.5 text-xs ${
-            tone === "dark" ? "text-white/80" : "text-gray-600"
-          }`}
-        >
+        <label className="flex items-center gap-1.5 text-xs text-gray-600">
           Min
           <input
             type="number"

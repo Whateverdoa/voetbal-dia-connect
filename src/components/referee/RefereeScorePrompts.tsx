@@ -1,7 +1,89 @@
 "use client";
 
-import type { AssistKind } from "@/lib/assistKind";
-import { GoalKindChips } from "./GoalKindChips";
+import { Id } from "@/convex/_generated/dataModel";
+
+export function DiaScorerPrompt({
+  teamName,
+  players,
+  selectedPlayerId,
+  onSelectPlayer,
+  onConfirm,
+  onSkip,
+  onCancel,
+  isLoading,
+}: {
+  teamName: string;
+  players: {
+    playerId: Id<"players">;
+    name: string;
+    number?: number;
+    onField: boolean;
+  }[];
+  selectedPlayerId: Id<"players"> | null;
+  onSelectPlayer: (id: Id<"players">) => void;
+  onConfirm: () => void;
+  onSkip: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  const sortedPlayers = [...players].sort(
+    (a, b) => Number(b.onField) - Number(a.onField)
+  );
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in duration-200">
+      <p className="text-sm font-medium text-gray-700 text-center">
+        Doelpunt voor <strong>{teamName}</strong>
+      </p>
+      <label className="block text-xs text-gray-500 text-center">
+        Selecteer de scorer (DIA-team)
+      </label>
+      <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+        {sortedPlayers.map((player) => (
+          <button
+            key={String(player.playerId)}
+            onClick={() => onSelectPlayer(player.playerId)}
+            disabled={isLoading}
+            className={`text-left px-3 py-2 rounded-lg border text-sm min-h-[44px] ${
+              selectedPlayerId === player.playerId
+                ? "border-dia-green bg-dia-green-light"
+                : "border-gray-200 bg-white hover:bg-gray-50"
+            }`}
+          >
+            <span className="font-medium">{player.name}</span>
+            {player.number != null ? ` (#${player.number})` : ""}
+            <span className="block text-xs text-gray-500">
+              {player.onField ? "Op veld" : "Bank"}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1 py-3 border border-gray-300 text-gray-500 text-sm font-medium rounded-lg hover:bg-gray-100 disabled:opacity-50"
+        >
+          Annuleer
+        </button>
+        <button
+          onClick={onSkip}
+          disabled={isLoading}
+          className="flex-1 py-3 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+        >
+          {isLoading ? "Bezig..." : "Sla over"}
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isLoading || !selectedPlayerId}
+          className="flex-1 py-3 bg-dia-green text-white text-sm font-medium rounded-lg hover:bg-dia-green-dark disabled:opacity-50"
+        >
+          {isLoading ? "Bezig..." : "Opslaan"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function ShirtNumberPrompt({
   teamName,
@@ -11,8 +93,6 @@ export function ShirtNumberPrompt({
   onSkip,
   onCancel,
   isLoading,
-  goalKind,
-  onGoalKindChange,
 }: {
   teamName: string;
   shirtNumber: string;
@@ -21,8 +101,6 @@ export function ShirtNumberPrompt({
   onSkip: () => void;
   onCancel: () => void;
   isLoading: boolean;
-  goalKind: AssistKind | null;
-  onGoalKindChange: (kind: AssistKind | null) => void;
 }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 animate-in fade-in duration-200">
@@ -47,11 +125,6 @@ export function ShirtNumberPrompt({
         autoFocus
         disabled={isLoading}
       />
-      <GoalKindChips
-        value={goalKind}
-        onChange={onGoalKindChange}
-        disabled={isLoading}
-      />
       <div className="flex gap-2">
         <button
           onClick={onCancel}
@@ -67,11 +140,11 @@ export function ShirtNumberPrompt({
           className="flex-1 py-3 bg-gray-200 text-gray-700 text-sm font-medium
                      rounded-lg hover:bg-gray-300 disabled:opacity-50"
         >
-          {isLoading ? "Bezig..." : "Zonder nummer"}
+          {isLoading ? "Bezig..." : "Sla over"}
         </button>
         <button
           onClick={onConfirm}
-          disabled={isLoading}
+          disabled={isLoading || !shirtNumber}
           className="flex-1 py-3 bg-dia-green text-white text-sm font-medium
                      rounded-lg hover:bg-dia-green-dark disabled:opacity-50"
         >

@@ -8,7 +8,7 @@ import { requireAdminAccess } from "./adminAuth";
 import { getAuthenticatedEmail } from "./lib/adminAccess";
 import {
   formatPlayWeekLabel,
-  isClaimWindowOpen,
+  getDefaultClaimWindowClosesAt,
   getPlayWeekBounds,
 } from "./lib/playWeek";
 import { seasonKeyFromMs } from "./lib/season";
@@ -25,7 +25,7 @@ export const getClaimWindowForWeek = query({
       weekStartMs: v.number(),
       weekEndMs: v.number(),
       opensAt: v.number(),
-      closesAt: v.optional(v.number()),
+      closesAt: v.number(),
       status: v.union(
         v.literal("scheduled"),
         v.literal("open"),
@@ -46,7 +46,9 @@ export const getClaimWindowForWeek = query({
       .unique();
     if (!doc) return null;
 
-    const isEffectivelyOpen = isClaimWindowOpen(doc, now);
+    const closesAt = doc.closesAt ?? doc.weekEndMs;
+    const isEffectivelyOpen =
+      doc.status === "open" && now >= doc.opensAt && now < closesAt;
 
     return {
       _id: doc._id,
@@ -54,7 +56,7 @@ export const getClaimWindowForWeek = query({
       weekStartMs: doc.weekStartMs,
       weekEndMs: doc.weekEndMs,
       opensAt: doc.opensAt,
-      closesAt: doc.closesAt,
+      closesAt,
       status: doc.status,
       weekLabel: formatPlayWeekLabel(doc.weekStartMs),
       isEffectivelyOpen,
@@ -119,11 +121,9 @@ export const openClaimWindow = mutation({
         }
       : getPlayWeekBounds(now);
 
-    const closesAt = args.closesAt;
-    if (bounds.weekEndMs <= now) {
-      throw new Error("Deze speelweek is al afgelopen");
-    }
-    if (closesAt !== undefined && (!Number.isFinite(closesAt) || closesAt <= now)) {
+    const closesAt =
+      args.closesAt ?? getDefaultClaimWindowClosesAt(bounds.weekStartMs);
+    if (closesAt <= now) {
       throw new Error("Sluitmoment moet in de toekomst liggen");
     }
 
@@ -141,7 +141,6 @@ export const openClaimWindow = mutation({
         closesAt,
         weekEndMs: bounds.weekEndMs,
         seasonKey,
-        closingReminderSentAt: undefined,
         updatedAt: now,
       });
       windowId = existing._id;
@@ -196,7 +195,7 @@ export const closeClaimWindow = mutation({
     }
     await ctx.db.patch(existing._id, {
       status: "closed",
-      closesAt: Math.min(existing.closesAt ?? now, now),
+      closesAt: Math.min(existing.closesAt ?? existing.weekEndMs, now),
       updatedAt: now,
     });
     return null;

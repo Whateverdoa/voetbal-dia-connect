@@ -7,20 +7,6 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAdminOrOps } from "../lib/opsAuth";
-import { isFrozenJo132Slug } from "../lib/protectedTeams";
-
-const upsertResult = v.object({
-  error: v.optional(v.string()),
-  teamSlug: v.optional(v.string()),
-  teamName: v.optional(v.string()),
-  dryRun: v.optional(v.boolean()),
-  created: v.number(),
-  skipped: v.number(),
-  deactivated: v.optional(v.number()),
-  skippedNames: v.optional(v.array(v.string())),
-  createdNames: v.optional(v.array(v.string())),
-  deactivatedNames: v.optional(v.array(v.string())),
-});
 
 export const upsertTeamPlayers = mutation({
   args: {
@@ -33,19 +19,9 @@ export const upsertTeamPlayers = mutation({
       }),
     ),
     dryRun: v.boolean(),
-    deactivateMissing: v.optional(v.boolean()),
   },
-  returns: upsertResult,
   handler: async (ctx, args) => {
     await requireAdminOrOps(ctx, args.opsSecret);
-
-    if (isFrozenJo132Slug(args.teamSlug)) {
-      return {
-        error: "JO13-2 is bevroren en wordt niet gewijzigd",
-        created: 0,
-        skipped: 0,
-      };
-    }
 
     const team = await ctx.db
       .query("teams")
@@ -65,27 +41,16 @@ export const upsertTeamPlayers = mutation({
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
 
-    const nameKey = (value: string) => value.toLowerCase().trim().replace(/\s+/g, " ");
-    const existingByName = new Map(
-      existing.map((player) => [nameKey(player.name), player]),
+    const existingNames = new Set(
+      existing.map((player) => player.name.toLowerCase().trim()),
     );
-    const incomingNames = new Set(args.players.map((player) => nameKey(player.name)));
 
     const toCreate = args.players.filter(
-      (player) => !existingByName.has(nameKey(player.name)),
+      (player) => !existingNames.has(player.name.toLowerCase().trim()),
     );
     const toSkip = args.players.filter((player) =>
-      existingByName.has(nameKey(player.name)),
+      existingNames.has(player.name.toLowerCase().trim()),
     );
-    const toReactivate = existing.filter(
-      (player) =>
-        !player.active && incomingNames.has(nameKey(player.name)),
-    );
-    const toDeactivate = args.deactivateMissing
-      ? existing.filter(
-          (player) => player.active && !incomingNames.has(nameKey(player.name)),
-        )
-      : [];
 
     if (!args.dryRun) {
       const now = Date.now();
@@ -98,12 +63,6 @@ export const upsertTeamPlayers = mutation({
           createdAt: now,
         });
       }
-      for (const player of toReactivate) {
-        await ctx.db.patch(player._id, { active: true });
-      }
-      for (const player of toDeactivate) {
-        await ctx.db.patch(player._id, { active: false });
-      }
     }
 
     return {
@@ -112,10 +71,8 @@ export const upsertTeamPlayers = mutation({
       dryRun: args.dryRun,
       created: toCreate.length,
       skipped: toSkip.length,
-      deactivated: toDeactivate.length,
       skippedNames: toSkip.map((player) => player.name),
       createdNames: toCreate.map((player) => player.name),
-      deactivatedNames: toDeactivate.map((player) => player.name),
     };
   },
 });

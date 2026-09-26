@@ -128,7 +128,7 @@ export function ClaimWindowStrip({
           </h3>
           <p className="mt-1 text-sm text-slate-600">
             Status: <span className="font-semibold text-slate-900">{statusLabel}</span>
-            {isOpen && windowDoc?.closesAt !== undefined && (
+            {isOpen && windowDoc && (
               <>
                 {" "}
                 · sluit{" "}
@@ -143,12 +143,6 @@ export function ClaimWindowStrip({
               </>
             )}
           </p>
-          {isOpen && windowDoc?.closesAt === undefined && (
-            <p className="mt-2 text-sm text-slate-600">
-              Geen vaste sluitdatum. Deze speelweek kunnen scheidsrechters ook op
-              de wedstrijddag claimen, totdat je de ronde sluit.
-            </p>
-          )}
           {stats && (
             <p className="mt-2 text-sm text-slate-500">
               {stats.claimed}/{stats.total} toegewezen ·{" "}

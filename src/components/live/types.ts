@@ -1,5 +1,4 @@
 // Shared types for live match components
-import type { AssistKind } from "@/lib/assistKind";
 
 export interface MatchData {
   id: string;
@@ -46,7 +45,7 @@ export interface MatchEvent {
   type: string;
   playerName?: string;
   relatedPlayerName?: string;
-  assistKind?: AssistKind;
+  assistKind?: "pass" | "corner" | "free_kick" | "penalty";
   stagedEventId?: string;
   targetEventId?: string;
   quarter: number;

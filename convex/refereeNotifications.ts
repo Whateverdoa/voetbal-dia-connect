@@ -151,7 +151,8 @@ export const createWindowClosingReminders = internalMutation({
       .collect();
 
     for (const window of openWindows) {
-      if (now >= window.weekEndMs || (window.closesAt !== undefined && now >= window.closesAt)) {
+      const closesAt = window.closesAt ?? window.weekEndMs;
+      if (now >= closesAt) {
         await ctx.db.patch(window._id, {
           status: "closed",
           updatedAt: now,
@@ -159,9 +160,7 @@ export const createWindowClosingReminders = internalMutation({
         continue;
       }
 
-      // Manual rounds have no impending deadline to remind referees about.
-      if (window.closesAt === undefined) continue;
-      const msLeft = window.closesAt - now;
+      const msLeft = closesAt - now;
       const oneDay = 24 * 60 * 60 * 1000;
       if (msLeft > oneDay || msLeft < 0) continue;
       if (window.closingReminderSentAt !== undefined) continue;

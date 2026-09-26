@@ -190,16 +190,17 @@ function PlayerReviewChatSession({ player, value, onChange, answers, onApply, on
           id={`${id}-input`}
           rows={6}
           maxLength={MAX_INTERVIEW_INPUT_LENGTH}
-          aria-describedby={`${id}-dictation ${id}-provider`}
+          aria-describedby={`${id}-keyboard ${id}-dictation ${id}-provider`}
           value={value.input}
           disabled={pending || dictation.listening || !hasRoom}
           onChange={(event) => {
             onChange({ ...value, input: event.target.value, proposal: null });
             setAdopted(false);
           }}
-          placeholder="Druk op de microfoon en vertel, of typ hier…"
+          placeholder="Vertel of typ wat je je herinnert van deze speler…"
           className="w-full resize-y rounded-xl border border-stone-200 bg-white px-3 py-3 text-base text-stone-900 outline-none focus:border-dia-green focus:ring-2 focus:ring-dia-green/20 disabled:bg-stone-100 disabled:text-stone-500"
         />
+        <p id={`${id}-keyboard`} className="text-sm leading-relaxed text-stone-600">Op je telefoon: tik in het tekstvak en gebruik de microfoon van je toetsenbord. Verstuur daarna je tekst naar de assistent.</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
           {dictation.supported ? (
             <button type="button" disabled={pending || !hasRoom} onClick={dictation.listening ? dictation.stop : dictation.start} aria-pressed={dictation.listening} className={dictation.listening ? recordingButtonClass : neutralButtonClass}>

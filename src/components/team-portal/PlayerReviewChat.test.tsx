@@ -72,6 +72,19 @@ afterEach(() => {
 });
 
 describe("PlayerReviewChat", () => {
+  it("shows phone keyboard dictation guidance without starting browser recording", async () => {
+    const user = userEvent.setup();
+    render(<Harness player={player} answers={emptyPlayerReview()} onApply={vi.fn()} />);
+    const textbox = screen.getByRole("textbox", { name: "Jouw verhaal" });
+    expect(screen.getByText("Op je telefoon: tik in het tekstvak en gebruik de microfoon van je toetsenbord. Verstuur daarna je tekst naar de assistent.")).toBeVisible();
+    expect(textbox).toHaveAttribute("placeholder", "Vertel of typ wat je je herinnert van deze speler…");
+    expect(textbox).toHaveAccessibleDescription(/microfoon van je toetsenbord/);
+    await user.click(textbox);
+    expect(textbox).toHaveFocus();
+    expect(speech.start).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("invites a story, discloses Claude, and sends only on an explicit action", async () => {
     const user = userEvent.setup();
     const answers = completeReview();

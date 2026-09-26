@@ -40,6 +40,14 @@ De aparte werkmap draait op 3001 zodat de bestaande ontwikkelserver op 3000 niet
 npx next dev --turbopack --hostname localhost -p 3001
 ```
 
+### Testen op een telefoon via het lokale netwerk
+
+Voor een expliciet aangevraagde telefoontest kan dezelfde server op 3001 met `--hostname 0.0.0.0` worden gestart. Controleer eerst de poort en stop alleen de geïdentificeerde server van deze werkmap. Stel in de genegeerde `.env.local` één exact adres in: `TEAM_PORTAL_LAN_ORIGIN=http://<privé-ip-van-de-pc>:3001`. Next.js laat de ontwikkelassets voor die host toe; de Claude-route accepteert uitsluitend die origin met dezelfde Host/Origin-combinatie. Andere LAN-adressen, publieke hosts, gehoste previews en productie blijven voor deze API geblokkeerd. Er is geen publieke tunnel nodig.
+
+De telefoon moet op hetzelfde lokale netwerk zitten en opent `http://<privé-ip-van-de-pc>:3001/demo/teamportaal/jo13-2`. De pc en ontwikkelserver moeten aan blijven. De browseropslag is per apparaat én webadres: `localhost` en het IP-adres delen hun demo-invoer niet, ook niet op dezelfde pc. Er is nog geen synchronisatie tussen telefoon en pc.
+
+Op de telefoon kan de coach in het tekstvak tikken en de microfoon van het telefoontoetsenbord gebruiken. Een lokaal HTTP-adres heeft geen HTTPS-beveiliging; de microfoonknop van de webpagina is daar niet betrouwbaar beschikbaar. De toetsenbordroute staat daarom altijd bij het invoerveld. De demo-rollen blijven een simulatie; het netwerkadres is voor de lokale proef bedoeld.
+
 ## Wedstrijdverslag met echte registraties
 
 De coachweergave van de JO13-02-proefversie bevat **Open wedstrijdverslag**. Deze link opent `/team/jo13-2/verslag`, een afzonderlijke pagina met de bestaande Clerk-/Convex-verbinding. De demo zelf blijft zonder providers werken. De rolwisselaar verleent geen toegang tot echte wedstrijdgegevens.
@@ -76,7 +84,7 @@ Implementatie en validatie zijn beschikbaar op de featurebranch. De live backend
 
 Claude vat uitsluitend de eigen observaties en bevestigde oefenpunten van de coach samen in de vijf bestaande beoordelingsvelden. Onbekende onderdelen blijven onbekend. Het voorstel staat eerst ter controle in beeld. **Neem over als concept** vult het bewerkbare formulier; bewaren, nalezen en publiceren of vastleggen blijven afzonderlijke stappen. De chat verandert geen wedstrijdregistratie, XP of stemmen. Automatische samenvattingen blijven voorstellen die de coach moet controleren.
 
-De bestaande `ANTHROPIC_API_KEY` blijft uitsluitend op de server in `.env.local`. De directe Anthropic-provider gebruikt standaard `claude-sonnet-5`; `ANTHROPIC_REVIEW_MODEL` kan dit wijzigen. Het endpoint `/demo/teamportaal/api/interview` accepteert alleen lokale ontwikkelverzoeken van dezelfde origin, met begrensde tekstlengte, twee gelijktijdige verzoeken, twintig verzoeken per minuut en een timeout. Het is geblokkeerd in productie en gehoste previews. Daar blijft het formulier beschikbaar. Er worden geen ruwe providerfouten of gesprekken gelogd en het endpoint schrijft geen databasegegevens.
+De bestaande `ANTHROPIC_API_KEY` blijft uitsluitend op de server in `.env.local`. De directe Anthropic-provider gebruikt standaard `claude-sonnet-5`; `ANTHROPIC_REVIEW_MODEL` kan dit wijzigen. Het endpoint `/demo/teamportaal/api/interview` accepteert alleen lokale ontwikkelverzoeken van dezelfde origin (localhost of het expliciet ingestelde privé-LAN-adres), met begrensde tekstlengte, twee gelijktijdige verzoeken, twintig verzoeken per minuut en een timeout. Het is geblokkeerd in productie en gehoste previews. Daar blijft het formulier beschikbaar. Er worden geen ruwe providerfouten of gesprekken gelogd en het endpoint schrijft geen databasegegevens.
 
 Dicteren gebruikt de browserfunctie `SpeechRecognition` of `webkitSpeechRecognition`, met `nl-NL`. De browser kan daarvoor een eigen spraakdienst gebruiken; dit staat bij de microfoon. De app bewaart geen audio en start de microfoon nooit automatisch. Bij ontbrekende browserondersteuning blijven typen en de dicteerknop van het apparaattoetsenbord beschikbaar. De herkende tekst moet worden gecontroleerd voordat deze wordt verzonden.
 

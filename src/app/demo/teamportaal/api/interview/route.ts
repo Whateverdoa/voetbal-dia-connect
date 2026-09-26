@@ -7,11 +7,26 @@ const requestTimes: number[] = [];
 let activeRequests = 0;
 const error = (message: string, status: number) => Response.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 
+function allowedDevelopmentOrigin(url: URL): boolean {
+  if (["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return true;
+  // Opt in to one private LAN origin for a phone test, never arbitrary hosts.
+  if (url.origin !== process.env.TEAM_PORTAL_LAN_ORIGIN) return false;
+  const parts = url.hostname.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  return parts[0] === 10 || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168);
+}
+
 function localRequest(request: Request): boolean {
-  const url = new URL(request.url);
+  const internalUrl = new URL(request.url);
+  // Next dev can construct request.url from its bind address (0.0.0.0).
+  // Compare the browser origin with the actual Host, never forwarded headers.
+  const host = request.headers.get("host") ?? internalUrl.host;
+  if (/[\\/@?#\s]/.test(host)) return false;
+  let url: URL;
+  try { url = new URL(`${internalUrl.protocol}//${host}`); } catch { return false; }
   return process.env.NODE_ENV === "development" && (!process.env.VERCEL || process.env.VERCEL === "0") &&
     (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === "development") &&
-    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
+    allowedDevelopmentOrigin(url) &&
     request.headers.get("origin") === url.origin &&
     !["cross-site", "same-site"].includes(request.headers.get("sec-fetch-site") ?? "");
 }

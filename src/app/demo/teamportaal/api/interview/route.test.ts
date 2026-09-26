@@ -19,6 +19,7 @@ beforeEach(() => {
   vi.stubEnv("NODE_ENV", "development");
   vi.stubEnv("VERCEL", undefined);
   vi.stubEnv("VERCEL_ENV", undefined);
+  vi.stubEnv("TEAM_PORTAL_LAN_ORIGIN", undefined);
   vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
   vi.mocked(generateInterviewReply).mockResolvedValue(reply);
 });
@@ -54,6 +55,36 @@ describe("local Claude interview route", () => {
     const { POST } = await import("./route");
     expect((await POST(request())).status).toBe(503);
     expect(generateInterviewReply).not.toHaveBeenCalled();
+  });
+  it("allows only the explicitly enabled private LAN origin with the same origin header", async () => {
+    const { POST } = await import("./route");
+    const fromLan = (origin = "http://192.168.1.20:3001", target = "http://192.168.1.20:3001") => new Request(`${target}/demo/teamportaal/api/interview`, { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(payload()) });
+    expect((await POST(fromLan())).status).toBe(403);
+    vi.stubEnv("TEAM_PORTAL_LAN_ORIGIN", "http://192.168.1.20:3001");
+    expect((await POST(fromLan())).status).toBe(200);
+    expect((await POST(fromLan("http://192.168.1.21:3001", "http://192.168.1.21:3001"))).status).toBe(403);
+    expect((await POST(fromLan("http://192.168.1.20:3000"))).status).toBe(403);
+    expect((await POST(fromLan("https://external.example"))).status).toBe(403);
+    vi.stubEnv("NODE_ENV", "production");
+    expect((await POST(fromLan())).status).toBe(403);
+    expect(generateInterviewReply).toHaveBeenCalledOnce();
+  });
+  it.each(["https://public.example", "http://8.8.8.8:3001", "http://172.32.0.1:3001", "http://169.254.1.1:3001"])("never enables a non-private configured host: %s", async (origin) => {
+    vi.stubEnv("TEAM_PORTAL_LAN_ORIGIN", origin);
+    const { POST } = await import("./route");
+    const response = await POST(new Request(`${origin}/demo/teamportaal/api/interview`, { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(payload()) }));
+    expect(response.status).toBe(403);
+    expect(generateInterviewReply).not.toHaveBeenCalled();
+  });
+  it("uses the actual Host when Next dev supplies its bind address and rejects forged host/origin pairs", async () => {
+    vi.stubEnv("TEAM_PORTAL_LAN_ORIGIN", "http://192.168.1.20:3001");
+    const { POST } = await import("./route");
+    const boundRequest = (host: string) => new Request("http://0.0.0.0:3001/demo/teamportaal/api/interview", { method: "POST", headers: { host, origin: "http://192.168.1.20:3001", "content-type": "application/json" }, body: JSON.stringify(payload()) });
+    expect((await POST(boundRequest("192.168.1.20:3001"))).status).toBe(200);
+    expect((await POST(boundRequest("external.example:3001"))).status).toBe(403);
+    expect((await POST(boundRequest("192.168.1.20:3001@external.example"))).status).toBe(403);
+    expect((await POST(request(payload(), "http://localhost:3001", { host: "external.example:3001" }))).status).toBe(403);
+    expect(generateInterviewReply).toHaveBeenCalledOnce();
   });
   it.each([
     {}, { ...payload(), followUpCount: 4 }, { ...payload(), messages: [] },

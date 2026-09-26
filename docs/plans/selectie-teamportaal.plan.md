@@ -1,8 +1,12 @@
 # Plan — Selectie-teamportaal (landing + member gamificatie)
 
-**Status:** gepland (documentatie; nog niet gebouwd)
+**Status:** JO13-02-proefversie lokaal beschikbaar; echte accounts en integratie nog gepland
 **Roadmap:** [open-roadmap.md](./open-roadmap.md)  
 **Pilotteam:** `jo13-2` eerst; andere selecties daarna
+
+De lokale [JO13-02-proefversie](./jo13-02-teamportaal-pilot.md) staat op `/demo/teamportaal/jo13-2`. Deze gebruikt fictieve gegevens, een rolwisselaar en eigen browseropslag. Speler-, ouder- en coachflows en optionele coach-/scoutobservaties zijn klikbaar; de member-routes hieronder beschrijven de latere echte integratie.
+
+De coachweergave linkt daarnaast naar `/team/jo13-2/verslag`: een afzonderlijk wedstrijdverslag met bestaande geregistreerde uitslagen, gebeurtenissen, notities en speeltijd. Hier komen ook drie kernvragen en twee optionele vragen per deelnemende speler, met privéconcepten en expliciet vastgelegde verslagen in `playerMatchReviews`. Hiervoor gelden de echte Clerk-/Convex-coachrechten en een eigen auteursidentiteit. De demo-rollen geven geen toegang en echte gegevens worden niet naar de demo-opslag gekopieerd. Toegang voor ouders en spelers volgt pas na de accountkoppelingen hieronder. De backenduitbreiding moet nog via de releaseflow worden geactiveerd.
 
 ## Productvisie
 

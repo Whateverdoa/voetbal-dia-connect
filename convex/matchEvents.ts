@@ -4,7 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import {
-  verifyCoachTeamMembership,
+  verifyClockPin,
   verifyIsMatchLead,
 } from "./pinHelpers";
 import {
@@ -30,7 +30,7 @@ export const addGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match))) {
+    if (!(await verifyClockPin(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
 
@@ -129,7 +129,7 @@ export const removeLastGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match))) {
+    if (!(await verifyClockPin(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
 

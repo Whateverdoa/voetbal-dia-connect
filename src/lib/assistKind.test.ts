@@ -16,6 +16,7 @@ describe("formatAssistLine", () => {
     expect(formatAssistLine(null, "corner")).toBe("Hoekschop");
     expect(formatAssistLine("Jan", "free_kick")).toBe("Vrije trap: Jan");
     expect(formatAssistLine(undefined, "free_kick")).toBe("Vrije trap");
+    expect(formatAssistLine(null, "penalty")).toBe("Penalty");
   });
 
   it("returns null when there is no player and no set piece", () => {
@@ -28,6 +29,7 @@ describe("resolveAssistKindForSubmit", () => {
   it("keeps set-piece kinds even without a player", () => {
     expect(resolveAssistKindForSubmit("corner", null)).toBe("corner");
     expect(resolveAssistKindForSubmit("free_kick", "p1")).toBe("free_kick");
+    expect(resolveAssistKindForSubmit("penalty", null)).toBe("penalty");
   });
 
   it("sends pass only when a player is chosen", () => {
@@ -44,6 +46,9 @@ describe("describeGoalEnrichment", () => {
     );
     expect(describeGoalEnrichment({ assistKind: "free_kick" })).toBe(
       "Vrije trap genoteerd"
+    );
+    expect(describeGoalEnrichment({ assistKind: "penalty" })).toBe(
+      "Penalty genoteerd"
     );
   });
 

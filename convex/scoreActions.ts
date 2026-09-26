@@ -13,11 +13,13 @@ import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
+import { assistKindValidator } from "./lib/assistKind";
+import { compactDefined } from "./lib/cardEntry";
 
 /**
  * Adjust the match score by +1 or -1 for a given team.
  *
- * - Both coach and referee roles are accepted (verifyClockPin).
+ * - Assigned referee, or match lead when no referee (verifyClockPin).
  * - When delta is +1, a lightweight "goal" event is always logged.
  *   If scorerNumber is provided, it is stored in the note so coach can enrich later.
  * - Score is clamped to a minimum of 0.
@@ -29,6 +31,8 @@ export const adjustScore = mutation({
     delta: v.union(v.literal(1), v.literal(-1)),
     scorerNumber: v.optional(v.number()),
     scorerPlayerId: v.optional(v.id("players")),
+    assistKind: v.optional(assistKindValidator),
+    isOwnGoal: v.optional(v.boolean()),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -86,19 +90,26 @@ export const adjustScore = mutation({
       await ctx.db.insert("matchEvents", {
         matchId: args.matchId,
         type: "goal",
-        playerId: args.scorerPlayerId,
         quarter: match.currentQuarter,
         matchMs: eventStamp.gameSecond * 1000,
-        isOpponentGoal: isOpponentGoal || undefined,
-        note:
-          args.scorerNumber != null
-            ? `Rugnummer: ${args.scorerNumber}`
-            : undefined,
         correlationId: args.correlationId,
         commandType: "ADJUST_SCORE",
         timestamp: effectiveEventTime,
-        ...eventStamp,
         createdAt: now,
+        ...compactDefined({
+          playerId: args.scorerPlayerId,
+          isOpponentGoal: isOpponentGoal || undefined,
+          isOwnGoal: args.isOwnGoal === true ? true : undefined,
+          assistKind: args.assistKind,
+          reportedNumber: args.scorerNumber,
+          note:
+            args.scorerNumber != null
+              ? `Rugnummer: ${args.scorerNumber}`
+              : undefined,
+          gameSecond: eventStamp.gameSecond,
+          displayMinute: eventStamp.displayMinute,
+          displayExtraMinute: eventStamp.displayExtraMinute,
+        }),
       });
     }
   },

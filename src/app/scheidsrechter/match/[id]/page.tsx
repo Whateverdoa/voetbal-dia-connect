@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
 import { RefereeMatchConsole } from "@/components/referee/RefereeMatchConsole";
-import type { MatchStatus } from "@/components/match/types";
+import type { MatchEvent, MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
 export default function RefereeMatchPage() {
   const params = useParams();
@@ -101,6 +101,7 @@ export default function RefereeMatchPage() {
         awayLogoUrl={awayLogoUrl}
         diaTeamSide={match.isHome ? "home" : "away"}
         diaPlayers={match.diaPlayers ?? []}
+        events={(match.events ?? []) as MatchEvent[]}
       />
     </main>
   );

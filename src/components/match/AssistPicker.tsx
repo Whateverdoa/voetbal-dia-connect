@@ -7,8 +7,9 @@ import type { MatchPlayer } from "./types";
 
 const KIND_BUTTONS: { kind: AssistKind; label: string }[] = [
   { kind: "pass", label: "Assist" },
-  { kind: "corner", label: "Hoekschop" },
+  { kind: "penalty", label: "Penalty" },
   { kind: "free_kick", label: "Vrije trap" },
+  { kind: "corner", label: "Hoekschop" },
 ];
 
 interface AssistPickerProps {
@@ -37,7 +38,7 @@ export function AssistPicker({
       </h3>
       <div
         data-testid="assist-kind-row"
-        className="grid grid-cols-3 gap-2 mb-3"
+        className="grid grid-cols-2 gap-2 mb-3 sm:grid-cols-4"
       >
         {KIND_BUTTONS.map(({ kind, label }) => {
           const selected = assistKind === kind;

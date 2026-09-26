@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getClaimWindowForWeek, closeClaimWindow, openClaimWindow } from "./refereeClaimWindows";
 import { getOpenClaimWindowPublic } from "./refereePool";
-import { getDefaultClaimWindowClosesAt, getPlayWeekBounds } from "./lib/playWeek";
+import { getPlayWeekBounds } from "./lib/playWeek";
 import { recordedPlayerName } from "./lib/matchEventProjection";
 
 vi.mock("./adminAuth", () => ({ requireAdminAccess: vi.fn() }));
@@ -29,8 +29,8 @@ describe("production rollback compatibility", () => {
     const row = { _id: "window1", ...bounds, opensAt: bounds.weekStartMs, status: "open" };
     const ctx = { db: { query: () => ({ withIndex: () => ({ unique: async () => row }) }) } };
 
-    expect(await invoke(getClaimWindowForWeek, ctx)).toMatchObject({ closesAt: bounds.weekEndMs, isEffectivelyOpen: true });
-    expect(await invoke(getOpenClaimWindowPublic, ctx)).toMatchObject({ closesAt: bounds.weekEndMs, isOpen: true });
+    expect(await invoke(getClaimWindowForWeek, ctx)).toMatchObject({ isEffectivelyOpen: true });
+    expect(await invoke(getOpenClaimWindowPublic, ctx)).toMatchObject({ isOpen: true });
   });
 
   it("closes a saved round without writing an invalid numeric deadline", async () => {
@@ -45,7 +45,7 @@ describe("production rollback compatibility", () => {
     expect(patch).toHaveBeenCalledWith("window1", { status: "closed", closesAt: now, updatedAt: now });
   });
 
-  it("keeps the original Wednesday deadline for newly opened rounds", async () => {
+  it("opens new rounds without an automatic deadline", async () => {
     vi.useFakeTimers();
     const now = Date.parse("2026-09-21T09:00:00+02:00");
     vi.setSystemTime(now);
@@ -57,7 +57,7 @@ describe("production rollback compatibility", () => {
 
     await invoke(openClaimWindow, ctx);
     expect(insert).toHaveBeenCalledWith("refereeClaimWindows", expect.objectContaining({
-      closesAt: getDefaultClaimWindowClosesAt(getPlayWeekBounds(now).weekStartMs),
+      closesAt: undefined,
     }));
   });
 });

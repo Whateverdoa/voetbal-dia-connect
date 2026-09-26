@@ -43,14 +43,13 @@ export function getPlayWeekEndMs(weekStartMs: number): number {
   return weekStartMs + 7 * 24 * 60 * 60 * 1000;
 }
 
-export function isClaimWindowOpen(
-  window: { status: string; opensAt: number; weekEndMs: number; closesAt?: number },
-  now: number,
-): boolean {
-  return window.status === "open" &&
-    now >= window.opensAt &&
-    now < window.weekEndMs &&
-    (window.closesAt === undefined || now < window.closesAt);
+export function getDefaultClaimWindowClosesAt(weekStartMs: number): number {
+  const mon = amsterdamParts(weekStartMs);
+  const wedMs =
+    parseAmsterdamTimestamp(`${mon.year}-${mon.month}-${mon.day}T12:00:00`) +
+    2 * 24 * 60 * 60 * 1000;
+  const wed = amsterdamParts(wedMs);
+  return parseAmsterdamTimestamp(`${wed.year}-${wed.month}-${wed.day}T18:00:00`);
 }
 
 export function getPlayWeekBounds(nowMs: number = Date.now()) {

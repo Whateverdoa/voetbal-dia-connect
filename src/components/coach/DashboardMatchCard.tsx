@@ -1,9 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import { StatusBadge, MatchStatus } from "../StatusBadge";
 import { MatchVersusLogos } from "@/components/MatchVersusLogos";
-import { useDeviceSurface } from "@/hooks/useDeviceSurface";
 
 export interface DashboardMatch {
   _id: string;
@@ -31,7 +28,6 @@ export function DashboardMatchCard({
   compact?: boolean;
   diaTeamName?: string;
 }) {
-  const isPc = useDeviceSurface() === "pc";
   const diaLabel = diaTeamName ?? match.teamName ?? "Team";
   const isActive =
     match.status === "live" ||
@@ -126,12 +122,12 @@ export function DashboardMatchCard({
         </div>
       </div>
       </Link>
-      {match.status !== "finished" && isPc ? (
+      {match.status !== "finished" ? (
         <Link
           href={`/coach/match/${match._id}/wisselplan`}
-          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-dia-green px-3 py-2 text-sm font-semibold text-dia-green"
+          className="mt-3 hidden md:inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-dia-green px-3 py-2 text-sm font-semibold text-dia-green"
         >
-          Groot planscherm
+          Planscherm (laptop)
         </Link>
       ) : null}
     </div>

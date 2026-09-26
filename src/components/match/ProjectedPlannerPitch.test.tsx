@@ -58,26 +58,6 @@ describe("ProjectedPlannerPitch", () => {
 
     const plane = screen.getByTestId("half-pitch-plane");
     expect(plane.style.transform).toContain(`rotateX(${TILT_DEG}deg)`);
-    expect(screen.getByText("Keeper")).toBeTruthy();
-  });
-
-  it("letterboxes a landscape full pitch when fill is on", () => {
-    const { container } = render(
-      <ProjectedPlannerPitch
-        pitchLayout="full"
-        formation={formation}
-        cfg={FIELDS["8tal"]}
-        onField={onField}
-        selectedPlayerId={null}
-        canEdit
-        pitchMaxWidthClass="max-w-lg"
-        fill
-        onFieldPlayerClick={() => undefined}
-      />
-    );
-
-    const box = container.querySelector<HTMLElement>("[style*='aspect-ratio']");
-    expect(box?.style.aspectRatio).toBe("640 / 425");
-    expect(screen.getByText("Keeper")).toBeTruthy();
+    expect(screen.getByText("Keeper 1")).toBeTruthy();
   });
 });

@@ -8,7 +8,6 @@ import {
   type DashboardMatch,
 } from "@/components/coach/DashboardMatchCard";
 import { coachStandenHref } from "@/lib/coachStandenHref";
-import { useDeviceSurface } from "@/hooks/useDeviceSurface";
 
 interface CoachDashboardProps {
   data: {
@@ -39,7 +38,6 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
   const standenHref = data.viewingAsAdmin
     ? "/teams"
     : coachStandenHref(data.teams);
-  const isPc = useDeviceSurface() === "pc";
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
@@ -60,24 +58,13 @@ export function CoachDashboard({ data, onLogout, toolbar }: CoachDashboardProps)
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {isPc ? (
-                <Link
-                  href="/coach/presenteren"
-                  className="inline-flex px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] items-center text-sm font-medium"
-                  title="Presenteren op iPad, laptop of TV"
-                >
-                  Presenteren
-                </Link>
-              ) : null}
-              {isPc ? (
-                <Link
-                  href="/coach/plannen"
-                  className="inline-flex px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] items-center text-sm font-medium"
-                  title="Wisselplan op iPad of laptop"
-                >
-                  Plannen
-                </Link>
-              ) : null}
+              <Link
+                href="/coach/presenteren"
+                className="hidden md:inline-flex px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] items-center text-sm font-medium"
+                title="Presenteren op laptop of TV"
+              >
+                Presenteren
+              </Link>
               <Link
                 href={standenHref}
                 className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] inline-flex items-center text-sm font-medium"

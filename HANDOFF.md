@@ -27,9 +27,16 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 ### Afstemming main ↔ Vercel (controle)
 
-- **Frontend (Vercel)** volgt doorgaans de **tip van `main`** na merge/push. Laatste **Production**-deployment in GitHub is gekoppeld aan commit **`adec0d2`** (merge o.a. PR #31: speeltijd-presets, einde-wedstrijd-bevestiging, sync-`requireAdminOrOps`, HANDOFF-backlog). Controleer actuele production status in het Vercel-dashboard of bijv. `gh api repos/Whateverdoa/voetbal-dia-connect/deployments`.
+- **Productiebasis vanaf herstel 26 september 2026:** `c4e5318` (19 september), met de ruitopstelling 1-3-4-3 en zonder de globale navigatie op `/live/*`. De basisfuncties voor scheidsrechters blijven onderdeel van de website. Extra gegevensvelden uit de nieuwere release blijven toegestaan, zodat bestaande wedstrijdregistraties behouden blijven.
+- **Frontend (Vercel)** hoort de tip van `main` te volgen. Controleer bij een release de actuele alias én commit; een Vercel-rollback alleen herstelt de backend niet.
 - **Convex-backend (productie)** is **niet** hetzelfde als een Vercel-build: schema/mutaties gaan naar het Convex-project via `npx convex deploy` (of CI) naar de juiste deployment. Na schema-wijzigingen: verifiëren dat **productie-Convex** dezelfde versie draait als de code verwacht.
 - **Lokale repo:** als er nog **niet-gecommitte** wijzigingen staan (bijv. import team-slug mapping in `syncWedstrijdenToMatches.ts`), staan die **niet** op `main` en dus **niet** op Vercel tot commit + push + nieuwe deploy.
+
+### Gescheiden ontwikkelsporen
+
+- **Productiewebsite:** `main`, Vercel `voetbal-dia-connect`, Convex `nautical-condor-5`.
+- **Nieuwe scheidsrechtersuitbreiding:** `feat/scheids-official-duty`. De brede release `f89f606` is teruggedraaid bij het productieherstel. Breng toekomstige onderdelen met een gerichte PR terug; merge de oude featurebranch niet blind na deze revert.
+- **iPhone-app:** aparte repository `Whateverdoa/voetbal-iphone-26-27`, branch `codex/mobile-substitutions`. De bijbehorende backenduitbreiding staat hier op `codex/mobile-substitutions-dev` (PR #55), gericht op ontwikkelbackend `quaint-barracuda-871`. Deze uitbreidingen horen niet bij de herstelde productieversie.
 
 ## Routes
 - `/`: homepage / publieke ingang

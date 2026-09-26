@@ -1,25 +1,17 @@
-export const ASSIST_KINDS = ["pass", "corner", "free_kick", "penalty"] as const;
+export const ASSIST_KINDS = ["pass", "corner", "free_kick"] as const;
 
-export type AssistKind = (typeof ASSIST_KINDS)[number];
+// Read events from the newer release without adding its controls to the old UI.
+export type AssistKind = (typeof ASSIST_KINDS)[number] | "penalty";
 
 export const ASSIST_KIND_LABELS: Record<AssistKind, string> = {
   pass: "Assist",
   corner: "Hoekschop",
   free_kick: "Vrije trap",
-  penalty: "Penalty",
+  penalty: "Strafschop",
 };
 
-export function isAssistKind(value: string | null | undefined): value is AssistKind {
-  return (
-    value === "pass" ||
-    value === "corner" ||
-    value === "free_kick" ||
-    value === "penalty"
-  );
-}
-
-export function isSetPieceKind(kind?: AssistKind | null): boolean {
-  return kind === "corner" || kind === "free_kick" || kind === "penalty";
+export function isAssistKind(value: string | null | undefined): value is (typeof ASSIST_KINDS)[number] {
+  return value === "pass" || value === "corner" || value === "free_kick";
 }
 
 /** Label for set-piece kinds only; a regular pass stays "Assist". */
@@ -32,8 +24,8 @@ export function formatAssistLine(
   playerName?: string | null,
   kind?: AssistKind | null,
 ): string | null {
-  const setPiece = isSetPieceKind(kind);
-  const label = setPiece && kind ? ASSIST_KIND_LABELS[kind] : "Assist";
+  const setPiece = kind === "corner" || kind === "free_kick";
+  const label = setPiece ? ASSIST_KIND_LABELS[kind] : "Assist";
   const name = playerName?.trim();
   if (name && setPiece) return `${label}: ${name}`;
   if (name) return `Assist: ${name}`;
@@ -45,7 +37,7 @@ export function resolveAssistKindForSubmit(
   kind: AssistKind | null,
   playerId: string | null,
 ): AssistKind | undefined {
-  if (isSetPieceKind(kind) && kind) return kind;
+  if (kind === "corner" || kind === "free_kick") return kind;
   if (kind === "pass" && playerId) return "pass";
   return undefined;
 }
@@ -59,8 +51,8 @@ export function describeGoalEnrichment(args: {
   const scorer = args.scorerName?.trim() || null;
   const assist = args.assistName?.trim() || null;
   const kind = args.assistKind ?? null;
-  const setPiece = isSetPieceKind(kind);
-  const setPieceLabel = setPiece && kind ? ASSIST_KIND_LABELS[kind] : null;
+  const setPiece = kind === "corner" || kind === "free_kick";
+  const setPieceLabel = setPiece ? ASSIST_KIND_LABELS[kind] : null;
 
   if (!scorer && !assist && setPieceLabel) {
     return `${setPieceLabel} genoteerd`;

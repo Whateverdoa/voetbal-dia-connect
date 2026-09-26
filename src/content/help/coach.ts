@@ -7,7 +7,7 @@ export const helpCoachPage: HelpPageDef = {
     {
       heading: "Wat is jouw rol",
       paragraphs: [
-        "Jij houdt de wedstrijd van jouw team bij. Is er een scheidsrechter gekoppeld, dan bedient die klok, stand, doelpunten en kaarten. Jij gaat over de selectie, opstelling en wissels.",
+        "Jij houdt de wedstrijd van jouw team bij. De scheidsrechter (in het menu: Scheidsrechter) bedient meestal de klok en de stand. Jij gaat over de selectie, opstelling, wissels en gebeurtenissen zoals doelpunten van DIA.",
       ],
     },
     {
@@ -33,7 +33,7 @@ export const helpCoachPage: HelpPageDef = {
         "Open de wedstrijd ruim van tevoren, het liefst vanaf de zijlijn op je telefoon.",
         "Controleer datum, thuis/uit en speeltijd (bijvoorbeeld 4×15 of 2×30) onder de wedstrijdgegevens.",
         "Zet de opstelling: wie staat op het veld, wie op de bank, wie is afwezig of geblesseerd.",
-        "Je kunt kiezen tussen lijst en veldweergave, en een formatie kiezen. Dezelfde formatie zie je via Presenteren; het grote wisselveld open je via Plannen (beide alleen op iPad of laptop).",
+        "Je kunt kiezen tussen lijst en veldweergave, en een formatie kiezen. Dezelfde formatie zie je op het opstellingsscherm via Presenteren (alleen coaches en admins).",
         "Zet Opstelling tonen aan als ouders de opstelling op de live-pagina mogen zien.",
         "Wijs een scheidsrechter toe als de club dat nog niet heeft gedaan.",
         "Claim Wedstrijdleider als jij de wissels en de wedstrijd aanstuurt. Bij twee coaches kan maar één tegelijk leider zijn.",
@@ -42,8 +42,8 @@ export const helpCoachPage: HelpPageDef = {
     {
       heading: "Tijdens de wedstrijd",
       bullets: [
-        "Doelpunt of kaart: alleen als er geen scheidsrechter in de app zit. Anders doet de scheidsrechter dat.",
-        "Wisselplan: op iPad of laptop open je Plannen (naast Presenteren) voor het grote veld. Op de telefoon zie je hetzelfde plan en voer je ze uit.",
+        "Doelpunt: kies de schutter (en later eventueel de assist) via Doelpunt.",
+        "Wissel: alleen de wedstrijdleider voert wissels uit. Je kunt ze van tevoren in het wisselplan klaarzetten.",
         "Speeltijd toont hoe lang iedereen op het veld staat. Bij live geeft de app soms een wisselsuggestie.",
         "Gebeurtenissen (doelpunten, kaarten, wissels) zie je in de tijdlijn.",
         "Live view opent de publieke pagina, handig om te delen via WhatsApp.",
@@ -52,10 +52,10 @@ export const helpCoachPage: HelpPageDef = {
     {
       heading: "Wie bedient de klok",
       paragraphs: [
-        "Is er een scheidsrechter gekoppeld, dan bedient die de klok (start, kwart, rust, einde), de stand, doelpunten en kaarten. Jij volgt mee en houdt opstelling en wissels bij.",
+        "Is er een scheidsrechter gekoppeld, dan bedient die de klok (start, kwart, rust, einde) en de stand. Jij volgt mee en houdt opstelling en wissels bij.",
       ],
       bullets: [
-        "Geen scheidsrechter: de wedstrijdleider mag klok, stand, doelpunten en kaarten zelf bedienen.",
+        "Geen scheidsrechter: de wedstrijdleider mag de klok zelf bedienen.",
         "Einde wedstrijd vraagt altijd om een bewuste bevestiging, zodat je niet per ongeluk afrondt.",
       ],
     },

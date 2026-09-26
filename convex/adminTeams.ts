@@ -4,7 +4,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminAccess } from "./adminAuth";
-import { isCurrentSeasonTeam } from "./lib/seasonYouthTeams";
 
 // ============ TEAMS ============
 
@@ -23,7 +22,6 @@ export const createTeam = mutation({
       name: args.name,
       slug: args.slug.toLowerCase(),
       logoUrl: args.logoUrl,
-      active: true,
       createdAt: Date.now(),
     });
   },
@@ -33,12 +31,10 @@ export const listTeamsByClub = query({
   args: { clubId: v.id("clubs") },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
-    return (
-      await ctx.db
-        .query("teams")
-        .withIndex("by_club", (q) => q.eq("clubId", args.clubId))
-        .collect()
-    ).filter(isCurrentSeasonTeam);
+    return await ctx.db
+      .query("teams")
+      .withIndex("by_club", (q) => q.eq("clubId", args.clubId))
+      .collect();
   },
 });
 
@@ -52,9 +48,7 @@ export const getTeam = query({
 export const listAllTeams = query({
   handler: async (ctx) => {
     await requireAdminAccess(ctx);
-    const teams = (await ctx.db.query("teams").collect()).filter(
-      isCurrentSeasonTeam,
-    );
+    const teams = await ctx.db.query("teams").collect();
     // Enrich with club name
     return await Promise.all(
       teams.map(async (t) => {

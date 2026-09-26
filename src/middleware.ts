@@ -1,7 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
-import { isTeamPortalDemoPath } from "@/lib/team-portal/demoRoute";
 import {
   hasRole,
   parseRolesFromSessionClaims,
@@ -67,9 +66,6 @@ const clerkHandler = hasClerkEnv
   : null;
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
-  // The server page gates availability; the demo never needs a Clerk session.
-  if (isTeamPortalDemoPath(req.nextUrl.pathname)) return NextResponse.next();
-
   if (!clerkHandler) {
     if (isRoleOnboardingRoute(req)) {
       return NextResponse.redirect(new URL("/", req.url));

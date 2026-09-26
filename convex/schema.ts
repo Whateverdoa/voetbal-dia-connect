@@ -95,7 +95,7 @@ export default defineSchema({
     weekStartMs: v.number(),
     weekEndMs: v.number(),
     opensAt: v.number(),
-    /** Optional explicit deadline; omitted when the admin closes the round manually. */
+    /** Keep accepting rounds created without a deadline by the newer release. */
     closesAt: v.optional(v.number()),
     status: v.union(
       v.literal("scheduled"),
@@ -300,12 +300,7 @@ export default defineSchema({
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
     assistKind: v.optional(
-      v.union(
-        v.literal("pass"),
-        v.literal("corner"),
-        v.literal("free_kick"),
-        v.literal("penalty"),
-      )
+      v.union(v.literal("pass"), v.literal("corner"), v.literal("free_kick"), v.literal("penalty"))
     ),
     quarter: v.number(),
     matchMs: v.optional(v.number()), // Milliseconds from match start (derived from gameSecond)
@@ -313,9 +308,8 @@ export default defineSchema({
     isOpponentGoal: v.optional(v.boolean()), // Goal by opponent
     /** Card shown to the opponent (admin/timeline only; no own-team time penalty). */
     isOpponentCard: v.optional(v.boolean()),
-    /** Free-text identity when the official types a name instead of picking a roster row. */
+    // Preserve identities already recorded by the newer release.
     reportedName: v.optional(v.string()),
-    /** Shirt number entered by the official (own team or opponent). */
     reportedNumber: v.optional(v.number()),
     stagedEventId: v.optional(v.id("matchEvents")), // For staged sub confirm/cancel events
     targetEventId: v.optional(v.id("matchEvents")), // For enrichment events

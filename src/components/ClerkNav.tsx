@@ -4,6 +4,7 @@ import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useAppNavHeight } from "@/hooks/useAppNavHeight";
@@ -18,6 +19,15 @@ import {
  * server component in @clerk/nextjs v7 and renders nothing in this client header.
  */
 export function ClerkNav() {
+  const pathname = usePathname();
+
+  // Shared match links are spectator pages; account navigation stays elsewhere.
+  if (pathname.startsWith("/live/")) return null;
+
+  return <ClerkNavContent />;
+}
+
+function ClerkNavContent() {
   const headerRef = useRef<HTMLElement>(null);
   useAppNavHeight(headerRef);
   const { signOut } = useClerk();

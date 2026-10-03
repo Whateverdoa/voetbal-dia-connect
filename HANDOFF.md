@@ -10,6 +10,15 @@ DIA Live is een realtime jeugdvoetbal-app voor DIA.
 
 Repo: Next.js 16 + Convex + Clerk.
 
+## Wisselplan hersteld (3 oktober 2026)
+
+De coachinterface gebruikt dezelfde opgeslagen `substitutionPlans` op beide schermformaten:
+- Telefoon: tab **Wisselplan** toont openstaande/afgeronde regels en laat de leidende coach tijdens de wedstrijd wissels uitvoeren.
+- iPad/laptop: **Plannen** in het dashboard opent de wedstrijdkeuze en het grote planscherm; de wedstrijdtab bevat ook de volledige planner.
+- `useDeviceSurface` gebruikt de kortste schermzijde (vanaf 600 px groot scherm), zodat een gedraaide telefoon de compacte bediening behoudt.
+
+Dit is een gerichte terugplaatsing uit `f89f606`, zonder backendwijzigingen of de losse native iPhone-app. Behoud deze interface bij toekomstige integraties van het scheidsrechtersgedeelte.
+
 ## Tech Stack
 - Next.js 16 (App Router, Turbopack)
 - React 19 + TypeScript strict

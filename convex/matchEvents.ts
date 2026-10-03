@@ -22,6 +22,9 @@ export const addGoal = mutation({
     playerId: v.optional(v.id("players")),
     assistPlayerId: v.optional(v.id("players")),
     assistKind: v.optional(assistKindValidator),
+    assistStatus: v.optional(v.union(v.literal("none"), v.literal("unknown"), v.literal("player"))),
+    reportedNumber: v.optional(v.number()),
+    note: v.optional(v.string()),
     isOwnGoal: v.optional(v.boolean()),
     isOpponentGoal: v.optional(v.boolean()),
   },
@@ -57,6 +60,7 @@ export const addGoal = mutation({
     await ctx.db.insert("matchEvents", {
       matchId: args.matchId,
       type: "goal",
+      assistStatus: args.assistStatus, reportedNumber: args.reportedNumber, note: args.note,
       playerId: args.playerId,
       relatedPlayerId: args.assistPlayerId,
       assistKind: args.assistKind,

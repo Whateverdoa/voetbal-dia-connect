@@ -44,8 +44,10 @@ async function applyPlannedPositionSwap(
 
   const slotA = mpA.fieldSlotIndex;
   const slotB = mpB.fieldSlotIndex;
-  await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB });
-  await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA });
+  const keeperA = mpA.isKeeper;
+  const keeperB = mpB.isKeeper;
+  await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB, isKeeper: keeperB });
+  await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA, isKeeper: keeperA });
 }
 
 export const listForMatch = query({

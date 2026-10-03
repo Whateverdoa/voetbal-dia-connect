@@ -10,6 +10,7 @@ import {
 } from "./matchEventGameTime";
 import { throwIfUnavailable } from "./matchPlayerAvailability";
 import { markMatchingPendingPlanExecuted } from "./markMatchingPendingPlanExecuted";
+import { assertPlayerMayEnter } from "./cardEntryEligibility";
 
 export async function applyBenchSubstitutionWithSlotTransfer(
   ctx: MutationCtx,
@@ -63,24 +64,32 @@ export async function applyBenchSubstitutionWithSlotTransfer(
   }
   throwIfUnavailable(mpIn, "sub");
 
-  const slotToTransfer = mpOut.fieldSlotIndex;
+  await assertPlayerMayEnter(ctx, match, args.playerInId);
 
+  const slotToTransfer = mpOut.fieldSlotIndex;
+  const keeperToTransfer = mpOut.isKeeper;
+
+  const tracking = match.status === "live" && match.activeStoppageStartedAt == null && match.pausedAt == null;
   if (mpOut.lastSubbedInAt) {
-    await recordPlayingTime(ctx, mpOut, now);
+    const end = match.pausedAt ?? match.activeStoppageStartedAt ?? (match.status === "halftime" ? match.halftimeStartedAt : undefined) ?? now;
+    await recordPlayingTime(ctx, mpOut, Math.max(mpOut.lastSubbedInAt, end));
   }
   await ctx.db.patch(mpOut._id, {
     onField: false,
     lastSubbedInAt: undefined,
+    isKeeper: false,
     fieldSlotIndex: undefined,
   });
 
   const mpInUpdates: {
     onField: boolean;
-    lastSubbedInAt: number;
+    lastSubbedInAt?: number;
+    isKeeper: boolean;
     fieldSlotIndex?: number;
   } = {
     onField: true,
-    lastSubbedInAt: now,
+    lastSubbedInAt: tracking ? now : undefined,
+    isKeeper: keeperToTransfer,
   };
   if (slotToTransfer !== undefined && slotToTransfer !== null) {
     mpInUpdates.fieldSlotIndex = slotToTransfer;

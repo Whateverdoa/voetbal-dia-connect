@@ -13,7 +13,7 @@ Repo: Next.js 16 + Convex + Clerk.
 ## Wisselplan hersteld (3 oktober 2026)
 
 De coachinterface gebruikt dezelfde opgeslagen `substitutionPlans` op beide schermformaten:
-- Telefoon: tab **Wisselplan** toont openstaande/afgeronde regels en laat de leidende coach tijdens de wedstrijd wissels uitvoeren.
+- Telefoon: tab **Wisselplan** toont openstaande/afgeronde regels, biedt eenvoudig plannen via de spelerslijst (inclusief minuut/helft aanpassen) en laat de leidende coach tijdens de wedstrijd wissels uitvoeren.
 - iPad/laptop: **Plannen** in het dashboard opent de wedstrijdkeuze en het grote planscherm; de wedstrijdtab bevat ook de volledige planner.
 - `useDeviceSurface` gebruikt de kortste schermzijde (vanaf 600 px groot scherm), zodat een gedraaide telefoon de compacte bediening behoudt.
 

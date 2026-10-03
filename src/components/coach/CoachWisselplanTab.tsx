@@ -20,7 +20,7 @@ export function CoachWisselplanTab({
   canExecute: boolean;
 }) {
   if (surface === "mobile") {
-    return <CoachWisselplanMobile match={match} canExecute={canExecute} />;
+    return <CoachWisselplanMobile match={match} canExecute={canExecute} canEditPlan={canEditPlan} />;
   }
 
   return (

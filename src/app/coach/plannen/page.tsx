@@ -8,7 +8,7 @@ export default function CoachPlannenPage() {
       title="Plannen"
       subtitle="Kies welke wedstrijd je op het grote veld plant"
       blurbTitle="Alleen voor iPad of laptop"
-      blurb="Plannen vult het scherm, zodat het hele veld zichtbaar blijft. Op de telefoon bekijk je het wisselplan en voer je wissels uit in de wedstrijd zelf."
+      blurb="Plannen vult het scherm, zodat het hele veld zichtbaar blijft. Op de telefoon kun je eenvoudig plannen met de spelerslijst en wissels uitvoeren in de wedstrijd zelf."
       actionLabel="Open planscherm"
       hrefFor={(match) => `/coach/match/${match._id}/wisselplan`}
     />

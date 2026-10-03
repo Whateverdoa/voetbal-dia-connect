@@ -14,7 +14,7 @@ const execute = Object.assign(vi.fn(), { withOptimisticUpdate: vi.fn() });
 
 function tab(surface: "mobile" | "pc", match: Match = wisselplanMatch, canExecute = true) {
   return <CoachWisselplanTab match={match} surface={surface}
-    resolvedFormation={getFormation("8v8_1-3-3-1")} canEditPlan canExecute={canExecute} />;
+    resolvedFormation={getFormation("8v8_1-3-3-1")} canEditPlan={match.status === "scheduled" || match.status === "lineup" || match.isCurrentCoachLead === true} canExecute={canExecute} />;
 }
 
 describe("restored coach wisselplan", () => {
@@ -32,7 +32,7 @@ describe("restored coach wisselplan", () => {
     expect(screen.getByText(/Openstaand \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Piet → v: Jan/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Wissel uitvoeren" })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: "Verwijderen" }) !== null).toBe(surface === "pc");
+    expect(screen.getByRole("button", { name: "Verwijderen" })).toBeEnabled();
   });
 
   it("executes once, disables while saving and shows completed history after the live update", async () => {
@@ -68,6 +68,29 @@ describe("restored coach wisselplan", () => {
   it("shows the plan without execution rights to a coach without the lead", () => {
     render(tab("mobile", { ...wisselplanMatch, isCurrentCoachLead: false }, false));
     expect(screen.getByText(/Openstaand \(1\)/)).toBeInTheDocument();
+    expect(screen.queryByText("Wissel plannen")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Wissel uitvoeren" })).not.toBeInTheDocument();
   });
+  it("plans on the phone before kickoff using the projected squad without executing a real swap", async () => {
+    render(tab("mobile", { ...wisselplanMatch, status: "scheduled" }));
+    fireEvent.click(screen.getByText("Wissel plannen"));
+    const selects = screen.getAllByRole("combobox");
+    fireEvent.change(selects[0], { target: { value: "piet" } });
+    fireEvent.change(selects[1], { target: { value: "jan" } });
+    fireEvent.change(screen.getByPlaceholderText("bijv. 35"), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Wissel toevoegen" }));
+    await waitFor(() => expect(execute).toHaveBeenCalledWith({
+      matchId: wisselplanMatch._id, playerOutId: "piet", playerInId: "jan",
+      kind: "substitution", targetMinute: 25, targetQuarter: 1, insertAtQuarterBoundary: false,
+    }));
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Wissel uitvoeren" })).not.toBeInTheDocument();
+  });
+
+  it("closes planning after the match", () => {
+    render(tab("mobile", { ...wisselplanMatch, status: "finished" }));
+    expect(screen.queryByText("Wissel plannen")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Verwijderen" })).not.toBeInTheDocument();
+  });
+
 });

@@ -26,3 +26,11 @@ The Expo repository generates its selected public contract from DEV `function-sp
 - Companion Expo changes pass typecheck/lint, 33 model tests and iOS/Android Hermes export. Phone acceptance (iPhone 13, then Android) is outstanding; browser fixture checks are not physical-device results.
 
 Snapshot archives and inspection reports are local in the user's Temp directory, not committed. Production enablement and distribution remain separate work.
+
+## Persistent lineup board and reversal — 2026-10-04
+
+Native field/bench taps use the same immediate interaction as DIA Live PitchView. Two field players call the existing position-swap handler; a field/bench pair still calls the canonical substitution handler. Position swaps preserve minutes and keeper transfer. Mobile preparation follows the same board without score/clock or separate confirmation pages.
+
+`nativeLineupChanges` is additive transaction-local recovery history for new mobile board actions. `undoNativeLineup` reauthorizes coach/lead access, checks idempotency, and restores the exact previous lineup/time anchors and plan execution fields while deleting only events created by that operation. Undo is restricted to the most recent active record and requires the entire match/event/roster revision and plan signature to match its post-state. Later events, clock changes, role changes and plan edits therefore cannot be overwritten. The original command dedupe remains, so retrying an undone submission cannot silently reapply it. The UI's Modify button undoes and allows a new choice on the same board; the replacement is recorded at the current time, not backdated.
+
+123 targeted backend tests pass, including delayed undo, associated plan recovery, authorization, retry, position/keeper behavior and rejection after intervening changes. Companion mobile has 35 passing model tests. Existing test fixture match records were not mutated during the UI inspection. Only DEV is deployed; existing production code and data remain unchanged.

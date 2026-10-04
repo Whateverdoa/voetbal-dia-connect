@@ -1,3 +1,4 @@
+import { lineupSnapshot, recordLineupChange } from "./lib/nativeLineupHistory";
 import { FORMATIONS } from "../src/lib/formations";
 import { v, type ObjectType } from "convex/values";
 import { mutation, query } from "./_generated/server";
@@ -11,6 +12,7 @@ import { readEventState } from "./mobileMatchEvents";
 import { disciplineBadgeByPlayerId, deriveActiveTimePenalties, matchPenaltyClockNow } from "../src/lib/cards/cardRules";
 
 const fields = {
+  lastLineupChange: v.union(v.null(), v.object({ id: v.id("nativeLineupChanges"), label: v.string(), canUndo: v.boolean(), playerOutId: v.optional(v.id("players")) })),
   id: v.id("matches"), revision: v.string(), teamName: v.string(), opponent: v.string(), isHome: v.boolean(),
   status: v.union(v.literal("scheduled"), v.literal("lineup"), v.literal("live"), v.literal("halftime"), v.literal("finished")),
   currentQuarter: v.number(), quarterCount: v.number(), regulationDurationMinutes: v.optional(v.number()),
@@ -70,7 +72,10 @@ export const getNativeMatch = query({
     const templates = await ctx.db.query("formationTemplates").withIndex("by_team", q => q.eq("teamId", match.teamId)).take(100);
     const preset = FORMATIONS[match.formationId ?? ""] ?? FORMATIONS[match.pitchType === "half" ? "8v8_1-3-3-1" : "11v11_1-4-3-3"];
     const preparedTemplate = template?.active && template.teamId === match.teamId ? { name: template.name, structure: template.structure, slots: template.slots } : { name: preset.name, structure: preset.name, slots: preset.slots };
+    const lastChange = args.role !== "referee" ? await ctx.db.query("nativeLineupChanges").withIndex("by_match_undone", q => q.eq("matchId", args.matchId).eq("undone", false)).order("desc").first() : null;
+    const planSignature = lastChange ? (await lineupSnapshot(ctx, args.matchId)).planSignature : "";
     return {
+      lastLineupChange: lastChange ? { id: lastChange._id, label: lastChange.label, playerOutId: lastChange.playerOutId, canUndo: state.revision === lastChange.afterRevision && planSignature === lastChange.afterPlansSignature && match.status !== "finished" && (!active || isCurrentCoachLead) } : null,
       id: match._id, revision: state.revision, teamName: detail.teamName, opponent: match.opponent, isHome: match.isHome,
       status: match.status, currentQuarter: match.currentQuarter, quarterCount: match.quarterCount,
       regulationDurationMinutes: match.regulationDurationMinutes, homeScore: match.homeScore, awayScore: match.awayScore,
@@ -98,7 +103,21 @@ export const nativeSubstitute = mutation({
     if (!args.correlationId.trim() || args.correlationId.length > 160) throw new Error("Ongeldige opdrachtcode");
     if (!(await consumeCommandIdempotency(ctx, { ...args, commandType: "NATIVE_SUBSTITUTE" }))) return { deduped: true };
     if (args.revision !== state.revision) throw new Error("De wedstrijd is gewijzigd. Controleer de wissel opnieuw.");
-    await ctx.runMutation(api.matchActions.substituteFromField, { matchId: args.matchId, playerOutId: args.playerOutId, playerInId: args.playerInId, correlationId: args.correlationId });
+    if (state.match.status !== "live" && state.match.status !== "halftime") throw new Error("Wisselen kan alleen tijdens de wedstrijd of rust");
+    if (args.playerOutId === args.playerInId) throw new Error("Kies twee verschillende spelers");
+    const incoming = await ctx.db.query("matchPlayers").withIndex("by_match_player", q => q.eq("matchId", args.matchId).eq("playerId", args.playerInId)).first();
+    const outgoing = await ctx.db.query("matchPlayers").withIndex("by_match_player", q => q.eq("matchId", args.matchId).eq("playerId", args.playerOutId)).first();
+    if (!incoming || !outgoing || !outgoing.onField || incoming.absent || incoming.injured || outgoing.absent || outgoing.injured) throw new Error("Deze spelers zijn niet beschikbaar voor een wissel");
+    const before = await lineupSnapshot(ctx, args.matchId);
+    const positionSwap = incoming.onField;
+    if (positionSwap) {
+      await ctx.runMutation(api.matchLineup.swapFieldPositions, { matchId: args.matchId, playerAId: args.playerOutId, playerBId: args.playerInId });
+    } else {
+      await ctx.runMutation(api.matchActions.substituteFromField, { matchId: args.matchId, playerOutId: args.playerOutId, playerInId: args.playerInId, correlationId: args.correlationId });
+    }
+    const outName = (await ctx.db.get(args.playerOutId))?.name ?? "Speler";
+    const inName = (await ctx.db.get(args.playerInId))?.name ?? "Speler";
+    await recordLineupChange(ctx, { matchId: args.matchId, correlationId: args.correlationId, before, beforeEventIds: state.events.map(e => e._id), label: `${outName} ${positionSwap ? "↔" : "→"} ${inName}`, playerOutId: args.playerOutId });
     return { deduped: false };
   },
 });

@@ -1,3 +1,4 @@
+import { undoNativeLineup } from "./mobileLineupHistory";
 import { nativePrepare } from "./mobilePreparation";
 import { assignPlayerToSlot, togglePlayerOnField, toggleKeeper, swapFieldPositions } from "./matchLineupCore";
 import { getMobilePlan, executePlanCommand } from "./mobileSubstitutionPlans";
@@ -467,6 +468,76 @@ describe("native parity and replay", () => {
     expect(h.rows("matchEvents").filter(e => e.type === "sub_in")).toHaveLength(1);
     expect(h.find(`mp-${assistantId}`)).toMatchObject({ onField: true, fieldSlotIndex: 8 });
     await expect(handler(h.ctx, { ...args, correlationId: "stale" })).rejects.toThrow("gewijzigd");
+  });
+  it("swaps two native field positions once without changing minutes and transfers keeper status", async () => {
+    const h = fixture();
+    await h.ctx.db.patch(`mp-${scorerId}` as Id<"matchPlayers">, { isKeeper: true });
+    const handler = (nativeSubstitute as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    const args = { matchId, correlationId: "positions", revision: (await h.state()).revision, playerOutId: scorerId, playerInId: assistantId };
+    await expect(handler(h.ctx, args)).resolves.toEqual({ deduped: false });
+    await expect(handler(h.ctx, args)).resolves.toEqual({ deduped: true });
+    expect(h.find(`mp-${scorerId}`)).toMatchObject({ onField: true, fieldSlotIndex: 9, isKeeper: false, minutesPlayed: 0, lastSubbedInAt: now - 600_000 });
+    expect(h.find(`mp-${assistantId}`)).toMatchObject({ onField: true, fieldSlotIndex: 8, isKeeper: true, minutesPlayed: 0, lastSubbedInAt: now - 600_000 });
+    expect(h.rows("matchEvents")).toHaveLength(0);
+    await expect(handler(h.ctx, { ...args, correlationId: "stale-position" })).rejects.toThrow("gewijzigd");
+  });
+  it("requires match leadership for a native position swap and blocks finished matches", async () => {
+    const h = fixture({ status: "finished" });
+    const handler = (nativeSubstitute as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    const args = { matchId, correlationId: "finished-position", revision: (await h.state()).revision, playerOutId: scorerId, playerInId: assistantId };
+    vi.mocked(verifyIsMatchLead).mockResolvedValue(null);
+    await expect(handler(h.ctx, args)).rejects.toThrow("wedstrijdleider");
+    vi.mocked(verifyIsMatchLead).mockResolvedValue({ _id: "coach" } as Doc<"coaches">);
+    await expect(handler(h.ctx, args)).rejects.toThrow("tijdens de wedstrijd");
+    expect(h.find(`mp-${scorerId}`)?.fieldSlotIndex).toBe(8);
+  });
+  it("undo restores original minutes, lineup and matching plan, without leaving substitute events", async () => {
+    const h = fixture();
+    await h.ctx.db.patch(`mp-${assistantId}` as Id<"matchPlayers">, { onField: false, lastSubbedInAt: undefined, fieldSlotIndex: undefined });
+    h.seed("substitutionPlans", { _id: "undo-plan", matchId, playerOutId: scorerId, playerInId: assistantId, status: "pending", sequence: 0, createdAt: now, updatedAt: now });
+    const before = JSON.parse(JSON.stringify([h.find(`mp-${scorerId}`), h.find(`mp-${assistantId}`)]));
+    const swap = (nativeSubstitute as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    await swap(h.ctx, { matchId, correlationId: "undo-swap", revision: (await h.state()).revision, playerOutId: scorerId, playerInId: assistantId });
+    expect(h.find("undo-plan")?.status).toBe("executed");
+    const change = h.rows("nativeLineupChanges")[0];
+    const undo = (undoNativeLineup as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    const args = { matchId, changeId: change._id, revision: (await h.state()).revision, correlationId: "undo-once" };
+    vi.setSystemTime(now + 90_000);
+    await expect(undo(h.ctx, args)).resolves.toEqual({ deduped: false });
+    await expect(undo(h.ctx, args)).resolves.toEqual({ deduped: true });
+    expect([h.find(`mp-${scorerId}`), h.find(`mp-${assistantId}`)]).toEqual(before);
+    expect(h.find("undo-plan")).toMatchObject({ status: "pending", updatedAt: now });
+    expect(h.find("undo-plan")?.executedAt).toBeUndefined();
+    expect(h.rows("matchEvents")).toHaveLength(0);
+    expect(h.find(change._id)?.undone).toBe(true);
+  });
+  it("does not undo across a later match event or overwrite another plan edit", async () => {
+    for (const later of ["goal", "plan"] as const) {
+      const h = fixture();
+      h.seed("substitutionPlans", { _id: "later-plan", matchId, playerOutId: scorerId, playerInId: assistantId, status: "pending", sequence: 0, createdAt: now, updatedAt: now });
+      const swap = (nativeSubstitute as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+      await swap(h.ctx, { matchId, correlationId: "positions", revision: (await h.state()).revision, playerOutId: scorerId, playerInId: assistantId });
+      const change = h.rows("nativeLineupChanges")[0];
+      if (later === "goal") await h.command({ correlationId: "later-goal", operation: "add", kind: "goal", side: "dia" });
+      else await h.ctx.db.patch("later-plan" as Id<"substitutionPlans">, { sequence: 1 });
+      const undo = (undoNativeLineup as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+      await expect(undo(h.ctx, { matchId, changeId: change._id, revision: (await h.state()).revision, correlationId: "blocked-undo" })).rejects.toThrow("niet veilig");
+      expect(h.find(`mp-${scorerId}`)?.fieldSlotIndex).toBe(9);
+    }
+  });
+  it("restores pregame preparation and refuses unauthorized undo", async () => {
+    const h = fixture({status:"scheduled"});
+    const prep = (nativePrepare as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    await prep(h.ctx, { matchId, correlationId: "prepare-position", revision: (await h.state()).revision, playerId: assistantId, slot: 8 });
+    const change = h.rows("nativeLineupChanges")[0];
+    const undo = (undoNativeLineup as unknown as { _handler: (ctx: MutationCtx, args: Record<string, unknown>) => Promise<unknown> })._handler;
+    const args = { matchId, changeId: change._id, revision: (await h.state()).revision, correlationId: "prep-undo" };
+    vi.mocked(verifyCoachTeamMembership).mockResolvedValue(null);
+    await expect(undo(h.ctx, args)).rejects.toThrow("Geen toegang");
+    vi.mocked(verifyCoachTeamMembership).mockResolvedValue({ _id: "coach" } as Doc<"coaches">);
+    await undo(h.ctx, args);
+    expect(h.find(`mp-${scorerId}`)?.fieldSlotIndex).toBe(8);
+    expect(h.find(`mp-${assistantId}`)?.fieldSlotIndex).toBe(9);
   });
   it("does not count halftime as playing time and transfers the keeper role", async () => {
     const h = fixture({ status: "halftime" });

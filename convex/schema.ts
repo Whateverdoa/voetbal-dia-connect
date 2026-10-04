@@ -1,3 +1,4 @@
+import { savedLineupPlayer, savedLineupPlan } from "./lib/nativeLineupValidators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
@@ -10,6 +11,12 @@ import {
 } from "./schemaFragments";
 
 export default defineSchema({
+  nativeLineupChanges: defineTable({
+    matchId: v.id("matches"), correlationId: v.string(), createdAt: v.number(), undone: v.boolean(),
+    label: v.string(), playerOutId: v.optional(v.id("players")),
+    beforePlayers: v.array(savedLineupPlayer), beforePlans: v.array(savedLineupPlan),
+    createdEventIds: v.array(v.id("matchEvents")), afterRevision: v.string(), afterPlansSignature: v.string(),
+  }).index("by_match_undone", ["matchId", "undone"]),
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"

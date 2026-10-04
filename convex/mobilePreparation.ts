@@ -1,3 +1,4 @@
+import { lineupSnapshot, recordLineupChange } from "./lib/nativeLineupHistory";
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { api } from "./_generated/api";
@@ -34,6 +35,8 @@ export const nativePrepare = mutation({
     if (!incoming || incoming.absent || incoming.injured) throw new Error("Deze speler is niet beschikbaar");
     const out = rows.find(p => p.onField && p.fieldSlotIndex === args.slot && p.playerId !== args.playerId);
     if (live && (out || incoming.onField)) throw new Error("Kies een lege veldpositie en een bankspeler, of gebruik Wisselen");
+    const before = await lineupSnapshot(ctx, args.matchId);
+    const positionSwap = incoming.onField;
     if (out && incoming.onField && incoming.fieldSlotIndex !== undefined) {
       await ctx.runMutation(api.matchLineup.swapFieldPositions, { matchId: args.matchId, playerAId: out.playerId, playerBId: incoming.playerId });
     } else {
@@ -41,6 +44,9 @@ export const nativePrepare = mutation({
       await ctx.runMutation(api.matchLineup.assignPlayerToSlot, { matchId: args.matchId, playerId: incoming.playerId, fieldSlotIndex: slot.id });
       if ((slot.position === "GK") !== incoming.isKeeper) await ctx.runMutation(api.matchLineup.toggleKeeper, { matchId: args.matchId, playerId: incoming.playerId });
     }
+    const inName = (await ctx.db.get(args.playerId))?.name ?? "Speler";
+    const outName = out ? (await ctx.db.get(out.playerId))?.name : undefined;
+    await recordLineupChange(ctx, { matchId: args.matchId, correlationId: args.correlationId, before, beforeEventIds: state.events.map(e => e._id), label: outName ? `${outName} ${positionSwap ? "↔" : "→"} ${inName}` : `${inName} op positie ${slot.id + 1}`, playerOutId: out?.playerId });
     return { deduped: false };
   },
 });

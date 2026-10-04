@@ -79,6 +79,8 @@ import type * as lib_matchPlayerAvailability from "../lib/matchPlayerAvailabilit
 import type * as lib_matchTiming from "../lib/matchTiming.js";
 import type * as lib_matchesInPlayWeek from "../lib/matchesInPlayWeek.js";
 import type * as lib_mobileEventModel from "../lib/mobileEventModel.js";
+import type * as lib_nativeLineupHistory from "../lib/nativeLineupHistory.js";
+import type * as lib_nativeLineupValidators from "../lib/nativeLineupValidators.js";
 import type * as lib_officialDuty from "../lib/officialDuty.js";
 import type * as lib_officialEvents from "../lib/officialEvents.js";
 import type * as lib_opsAuth from "../lib/opsAuth.js";
@@ -114,6 +116,7 @@ import type * as matchPregameActions from "../matchPregameActions.js";
 import type * as matchQueries from "../matchQueries.js";
 import type * as matches from "../matches.js";
 import type * as mobileAdmin from "../mobileAdmin.js";
+import type * as mobileLineupHistory from "../mobileLineupHistory.js";
 import type * as mobileMatchActions from "../mobileMatchActions.js";
 import type * as mobileMatchEvents from "../mobileMatchEvents.js";
 import type * as mobileNative from "../mobileNative.js";
@@ -253,6 +256,8 @@ declare const fullApi: ApiFromModules<{
   "lib/matchTiming": typeof lib_matchTiming;
   "lib/matchesInPlayWeek": typeof lib_matchesInPlayWeek;
   "lib/mobileEventModel": typeof lib_mobileEventModel;
+  "lib/nativeLineupHistory": typeof lib_nativeLineupHistory;
+  "lib/nativeLineupValidators": typeof lib_nativeLineupValidators;
   "lib/officialDuty": typeof lib_officialDuty;
   "lib/officialEvents": typeof lib_officialEvents;
   "lib/opsAuth": typeof lib_opsAuth;
@@ -288,6 +293,7 @@ declare const fullApi: ApiFromModules<{
   matchQueries: typeof matchQueries;
   matches: typeof matches;
   mobileAdmin: typeof mobileAdmin;
+  mobileLineupHistory: typeof mobileLineupHistory;
   mobileMatchActions: typeof mobileMatchActions;
   mobileMatchEvents: typeof mobileMatchEvents;
   mobileNative: typeof mobileNative;

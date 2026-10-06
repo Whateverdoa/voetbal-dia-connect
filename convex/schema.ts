@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { playerReviewValidator } from "./lib/playerMatchReview";
 import {
   cardProfileValidator,
   playerConsentsTable,
@@ -257,6 +258,20 @@ export default defineSchema({
     .index("by_match", ["matchId"])
     .index("by_match_player", ["matchId", "playerId"])
     .index("by_player", ["playerId"]), // For getPlayerStats query
+
+  // Private post-match observations. Each author owns independent draft/final snapshots.
+  playerMatchReviews: defineTable({
+    matchId: v.id("matches"),
+    teamId: v.id("teams"),
+    playerId: v.id("players"),
+    authorTokenIdentifier: v.string(),
+    draft: playerReviewValidator,
+    finalized: v.optional(playerReviewValidator),
+    finalizedAt: v.optional(v.number()),
+    revision: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_match_and_author_and_player", ["matchId", "authorTokenIdentifier", "playerId"]),
 
   // Idempotency guard per UI command
   matchCommandDedupes: defineTable({

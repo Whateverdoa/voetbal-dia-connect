@@ -1,6 +1,7 @@
 "use client";
 
 import { TeamLogo } from "@/components/TeamLogo";
+import { findLocalLogo } from "@/lib/logos";
 
 export type StandingRowData = {
   position: number;
@@ -43,7 +44,7 @@ export function StandingsRow({ row, isOwnTeam }: StandingsRowProps) {
       <td className="py-2 px-1">
         <span className="flex items-center gap-2">
           <TeamLogo
-            logoUrl={row.clubLogoUrl}
+            logoUrl={findLocalLogo(row.teamName) ?? row.clubLogoUrl}
             teamName={row.teamName}
             size="sm"
             className="shrink-0"

@@ -1,3 +1,4 @@
+import { savedLineupPlayer, savedLineupPlan } from "./lib/nativeLineupValidators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
@@ -10,6 +11,12 @@ import {
 } from "./schemaFragments";
 
 export default defineSchema({
+  nativeLineupChanges: defineTable({
+    matchId: v.id("matches"), correlationId: v.string(), createdAt: v.number(), undone: v.boolean(),
+    label: v.string(), playerOutId: v.optional(v.id("players")),
+    beforePlayers: v.array(savedLineupPlayer), beforePlans: v.array(savedLineupPlan),
+    createdEventIds: v.array(v.id("matchEvents")), afterRevision: v.string(), afterPlansSignature: v.string(),
+  }).index("by_match_undone", ["matchId", "undone"]),
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"
@@ -151,6 +158,7 @@ export default defineSchema({
     publicCode: v.string(), // 6-char code for public access
     coachPin: v.optional(v.string()), // Legacy PIN to control this match
     coachId: v.optional(v.id("coaches")),
+    mobileCreationId: v.optional(v.string()),
     
     // Match info
     opponent: v.string(),
@@ -233,6 +241,9 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
     .index("by_refereeId", ["refereeId"])
+    .index("by_coachId", ["coachId"])
+    .index("by_leadCoachId", ["leadCoachId"])
+    .index("by_team_mobile_creation", ["teamId", "mobileCreationId"])
     .index("by_season", ["seasonKey"])
     .index("by_team_and_season", ["teamId", "seasonKey"])
     .index("by_sportlink_code", ["sportlinkWedstrijdcode"]),
@@ -270,6 +281,11 @@ export default defineSchema({
     "correlationId",
   ]),
 
+  mobileAdminCommandDedupes: defineTable({
+    actorEmail: v.string(), correlationId: v.string(), payloadHash: v.string(),
+    resultId: v.string(), createdAt: v.number(),
+  }).index("by_actor_correlation", ["actorEmail", "correlationId"]),
+
   matchStoppages: defineTable({
     matchId: v.id("matches"),
     quarter: v.number(),
@@ -295,10 +311,17 @@ export default defineSchema({
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
-      v.literal("red_card")
+      v.literal("red_card"),
+      v.literal("corner"),
+      v.literal("free_kick")
     ),
     playerId: v.optional(v.id("players")), // Who did it
     relatedPlayerId: v.optional(v.id("players")), // Assist giver, or sub replacement
+    side: v.optional(v.union(v.literal("dia"), v.literal("opponent"))),
+    opponentNumber: v.optional(v.number()),
+    cardReason: v.optional(v.union(v.literal("direct"), v.literal("second_yellow"))),
+    assistStatus: v.optional(v.union(v.literal("none"), v.literal("unknown"), v.literal("player"))),
+    replacesGoalDetails: v.optional(v.boolean()),
     assistKind: v.optional(
       v.union(v.literal("pass"), v.literal("corner"), v.literal("free_kick"), v.literal("penalty"))
     ),
@@ -366,6 +389,7 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
     executedAt: v.optional(v.number()),
+    executedGameSecond: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -5,15 +5,6 @@ type EventWithNames = Doc<"matchEvents"> & {
   relatedPlayerName?: string;
 };
 
-/** Keep manually recorded identities readable after restoring the older UI. */
-export function recordedPlayerName(
-  event: Pick<Doc<"matchEvents">, "reportedName" | "reportedNumber">,
-  rosterName?: string,
-): string | undefined {
-  return rosterName ?? event.reportedName ??
-    (event.reportedNumber !== undefined ? `Nr. ${event.reportedNumber}` : undefined);
-}
-
 export type StagedSubstitution = {
   stagedEventId: Id<"matchEvents">;
   outId?: Id<"players">;
@@ -24,6 +15,14 @@ export type StagedSubstitution = {
   matchMs?: number;
   createdAt: number;
 };
+
+export function recordedPlayerName(
+  event: Pick<Doc<"matchEvents">, "reportedName" | "reportedNumber">,
+  rosterName?: string,
+): string | undefined {
+  return rosterName ?? event.reportedName ??
+    (event.reportedNumber !== undefined ? `Nr. ${event.reportedNumber}` : undefined);
+}
 
 function toMs(event: Doc<"matchEvents">): number | undefined {
   if (event.matchMs != null) {
@@ -60,14 +59,16 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
       (a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id))
     );
     const latest = ordered[ordered.length - 1];
+    const relatedPlayerId = latest.replacesGoalDetails ? latest.relatedPlayerId : latest.relatedPlayerId ?? event.relatedPlayerId;
 
     return {
       ...event,
-      playerId: latest.playerId ?? event.playerId,
-      relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
-      playerName: latest.playerName ?? event.playerName,
-      relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
-      assistKind: latest.assistKind ?? event.assistKind,
+      playerId: latest.replacesGoalDetails ? latest.playerId : latest.playerId ?? event.playerId,
+      relatedPlayerId,
+      playerName: latest.replacesGoalDetails ? latest.playerName : latest.playerName ?? event.playerName,
+      relatedPlayerName: latest.replacesGoalDetails ? latest.relatedPlayerName : latest.relatedPlayerName ?? event.relatedPlayerName,
+      assistKind: latest.replacesGoalDetails ? latest.assistKind : latest.assistKind ?? event.assistKind,
+      assistStatus: latest.assistStatus ?? (relatedPlayerId ? "player" : event.assistStatus === "none" ? "none" : "unknown"),
       matchMs: toMs(event),
     };
   });

@@ -1,3 +1,5 @@
+import { assertPlayerMayEnter } from "./lib/cardEntryEligibility";
+import { FORMATIONS } from "../src/lib/formations";
 /**
  * Match lineup core mutations - field, keeper and formation controls
  */
@@ -153,6 +155,12 @@ export const assignPlayerToSlot = mutation({
       .withIndex("by_match", (q) => q.eq("matchId", args.matchId))
       .collect();
 
+    if (!mp.onField && (match.status === "live" || match.status === "halftime")) {
+      const unavailableSlots = await assertPlayerMayEnter(ctx, match, mp.playerId);
+      const template = match.customFormationTemplateId ? await ctx.db.get(match.customFormationTemplateId) : null;
+      const maxPlayers = template?.slots.length ?? (FORMATIONS[match.formationId ?? ""]?.slots.length ?? (match.pitchType === "half" ? 8 : 11));
+      if (allMps.filter(p => p.onField).length >= maxPlayers - unavailableSlots) throw new Error("Het veld kan pas na de lopende tijdstraf worden aangevuld");
+    }
     for (const other of allMps) {
       if (other.fieldSlotIndex === args.fieldSlotIndex && other._id !== mp._id) {
         await ctx.db.patch(other._id, { fieldSlotIndex: undefined });
@@ -163,7 +171,7 @@ export const assignPlayerToSlot = mutation({
       onField: true,
       fieldSlotIndex: args.fieldSlotIndex,
     };
-    if (!mp.onField && match.status === "live") {
+    if (!mp.onField && match.status === "live" && match.activeStoppageStartedAt == null && match.pausedAt == null) {
       await startPlayingTime(ctx, mp._id, now);
     }
     await ctx.db.patch(mp._id, updates);
@@ -210,8 +218,10 @@ export const swapFieldPositions = mutation({
 
     const slotA = mpA.fieldSlotIndex;
     const slotB = mpB.fieldSlotIndex;
-    await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB });
-    await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA });
+    const keeperA = mpA.isKeeper;
+    const keeperB = mpB.isKeeper;
+    await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB, isKeeper: keeperB });
+    await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA, isKeeper: keeperA });
   },
 });
 

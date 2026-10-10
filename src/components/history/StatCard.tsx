@@ -10,7 +10,7 @@ interface StatCardProps {
 }
 
 const colorClasses = {
-  green: "bg-green-50 text-green-700",
+  green: "bg-dia-green-light text-dia-black",
   red: "bg-red-50 text-red-700",
   gray: "bg-gray-50 text-gray-700",
   blue: "bg-blue-50 text-blue-700",

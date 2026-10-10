@@ -12,6 +12,7 @@ import {
   MATCH_TIMING_PRESETS,
   type MatchTimingPresetId,
 } from "@/lib/matchTimingPresets";
+import { activeSeasonKey } from "@/lib/season";
 
 type StatusFilter = "alle" | "scheduled" | "live" | "finished";
 
@@ -20,7 +21,9 @@ interface MatchesTabProps {
 }
 
 export function MatchesTab({ teams }: MatchesTabProps) {
-  const matches = useQuery(api.admin.listAllMatches, {});
+  const matches = useQuery(api.admin.listAllMatches, {
+    seasonKey: activeSeasonKey(),
+  });
   const coaches = useQuery(api.admin.listCoaches);
   const referees = useQuery(api.matches.listActiveReferees);
   const updateMatch = useMutation(api.admin.updateMatch);

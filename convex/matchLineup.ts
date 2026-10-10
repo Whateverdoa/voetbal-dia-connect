@@ -11,4 +11,8 @@ export {
   setMatchFormation,
 } from "./matchLineupCore";
 export { substituteFromField } from "./matchLineupSubstitutions";
-export { togglePlayerAbsent, toggleShowLineup } from "./matchLineupAvailability";
+export {
+  setPlayerAvailability,
+  togglePlayerAbsent,
+  toggleShowLineup,
+} from "./matchLineupAvailability";

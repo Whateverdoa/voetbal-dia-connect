@@ -55,3 +55,8 @@ export function parseRolesFromSessionClaims(sessionClaims: unknown): AppRole[] {
 export function hasRole(roles: readonly AppRole[], role: AppRole): boolean {
   return roles.includes(role);
 }
+
+/** Presenteren / spelerskaarten: alleen coach of admin. */
+export function canPresentTactics(roles: readonly string[]): boolean {
+  return roles.includes("admin") || roles.includes("coach");
+}

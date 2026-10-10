@@ -136,7 +136,7 @@ function MatchCard({ match }: { match: RefereeMatch }) {
       </div>
 
       <div className="bg-dia-green/5 px-4 py-2 text-center">
-        <span className="text-xs font-medium text-dia-green">
+        <span className="text-xs font-medium text-dia-black">
           Tik om te openen →
         </span>
       </div>
@@ -165,7 +165,7 @@ export function RefereeMatchList({
         </div>
       </nav>
 
-      <header className="bg-gradient-to-b from-dia-green to-green-700 p-6 text-white text-center">
+      <header className="bg-dia-black p-6 text-white text-center">
         <p className="text-sm opacity-80">Welkom</p>
         <h1 className="text-2xl font-bold">{refereeName}</h1>
         <p className="text-sm opacity-80 mt-1">

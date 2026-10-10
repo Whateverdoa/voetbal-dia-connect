@@ -28,6 +28,7 @@ interface MatchControlsProps {
   canDoSubstitutions?: boolean;
   onGoalClick: () => void;
   onSubClick: () => void;
+  onCardClick?: () => void;
 }
 
 export function MatchControls({
@@ -48,6 +49,7 @@ export function MatchControls({
   canDoSubstitutions = true,
   onGoalClick,
   onSubClick,
+  onCardClick,
 }: MatchControlsProps) {
   const startMatch = useMutation(api.matchActions.start);
   const nextQuarter = useMutation(api.matchActions.nextQuarter);
@@ -128,7 +130,7 @@ export function MatchControls({
         <button
           onClick={() => handleMutation(() => startMatch({ matchId }), "Start wedstrijd")}
           disabled={isLoading}
-          className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-4 bg-dia-black text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Bezig..." : "Start wedstrijd"}
         </button>
@@ -136,13 +138,20 @@ export function MatchControls({
 
       {isLive && (
         <div className="space-y-3">
-          {(canAddGoals || canDoSubstitutions) && (
-            <div className={`grid gap-3 ${canAddGoals && canDoSubstitutions ? "grid-cols-2" : "grid-cols-1"}`}>
+          {(canAddGoals || canDoSubstitutions || onCardClick) && (
+            <div
+              className={`grid gap-3 ${
+                [canAddGoals, canDoSubstitutions, !!onCardClick].filter(Boolean)
+                  .length > 1
+                  ? "grid-cols-2"
+                  : "grid-cols-1"
+              }`}
+            >
               {canAddGoals && (
                 <button
                   onClick={onGoalClick}
                   disabled={isLoading}
-                  className="py-5 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="py-5 bg-dia-black text-white text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-2xl">⚽</span>
                   <span>GOAL!</span>
@@ -158,6 +167,17 @@ export function MatchControls({
                   <span>Wissel</span>
                 </button>
               )}
+              {onCardClick ? (
+                <button
+                  type="button"
+                  onClick={onCardClick}
+                  disabled={isLoading}
+                  className="py-5 bg-amber-500 text-amber-950 text-xl font-bold rounded-xl min-h-[64px] active:scale-[0.98] transition-transform hover:bg-amber-400 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed col-span-full sm:col-span-1"
+                >
+                  <span className="text-2xl">🟨</span>
+                  <span>Kaart</span>
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -266,7 +286,7 @@ export function MatchControls({
           <button
             onClick={() => handleMutation(() => resumeHalftime({ matchId }), "Hervatten")}
             disabled={isLoading}
-            className="w-full py-4 bg-dia-green text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-dia-green-light shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-dia-black text-white text-xl font-bold rounded-xl min-h-[56px] active:scale-[0.98] transition-transform hover:bg-neutral-800 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Bezig..." : getResumeLabel()}
           </button>

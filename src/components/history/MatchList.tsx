@@ -8,10 +8,11 @@ import { HistoryMatchCard } from "./HistoryMatchCard";
 
 interface MatchListProps {
   teamId: Id<"teams">;
+  seasonKey: string;
 }
 
-export function MatchList({ teamId }: MatchListProps) {
-  const matches = useQuery(api.teams.getMatchHistory, { teamId });
+export function MatchList({ teamId, seasonKey }: MatchListProps) {
+  const matches = useQuery(api.teams.getMatchHistory, { teamId, seasonKey });
 
   if (!matches) {
     return (
@@ -36,18 +37,12 @@ export function MatchList({ teamId }: MatchListProps) {
     );
   }
 
-  const orderedMatches = [...matches].sort((left, right) => {
-    const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
-    const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
-    return rightTimestamp - leftTimestamp;
-  });
-
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold text-gray-900">
-        Wedstrijden ({orderedMatches.length})
+        Wedstrijden {seasonKey} ({matches.length})
       </h2>
-      {orderedMatches.map((match) => (
+      {matches.map((match) => (
         <HistoryMatchCard key={match.id} match={match} />
       ))}
     </section>

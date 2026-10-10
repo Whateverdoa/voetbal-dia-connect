@@ -16,6 +16,7 @@ type AnyEvent = {
   stagedEventId?: string;
   gameSecond?: number;
   matchMs?: number;
+  assistKind?: "pass" | "corner" | "free_kick";
 };
 
 function event(overrides: Partial<AnyEvent>): AnyEvent {
@@ -52,6 +53,22 @@ describe("matchEventProjection", () => {
     const projectedGoal = projected.find((e) => e._id === "goal-1");
 
     expect(projectedGoal?.playerName).toBe("Lars");
+  });
+
+  it("applies assistKind from the latest goal enrichment", () => {
+    const goal = event({ _id: "goal-2", assistKind: "pass" });
+    const enrich = event({
+      _id: "enrich-kind",
+      type: "goal_enrichment",
+      targetEventId: "goal-2",
+      assistKind: "corner",
+      createdAt: 4,
+    });
+
+    const projected = applyGoalEnrichments([goal, enrich] as never);
+    const projectedGoal = projected.find((e) => e._id === "goal-2");
+
+    expect(projectedGoal?.assistKind).toBe("corner");
   });
 
   it("returns only open staged substitutions", () => {

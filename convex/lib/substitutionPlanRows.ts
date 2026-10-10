@@ -19,6 +19,8 @@ export type EnrichedSubstitutionPlan = {
   updatedAt: number;
   outName?: string;
   inName?: string;
+  outNumber?: number;
+  inNumber?: number;
 };
 
 export type SortableSubstitutionPlanRow<TId extends string = string> = {
@@ -93,6 +95,19 @@ export async function nextSubstitutionPlanSequence(
   return rows.reduce((max, row) => Math.max(max, row.sequence), -1) + 1;
 }
 
+/**
+ * After clearing every pending row, keep non-pending rows in order and
+ * return the ids that should receive sequences 0..n-1.
+ */
+export function planRowsAfterClearPending<TId extends string>(
+  rows: SortableSubstitutionPlanRow<TId>[]
+): TId[] {
+  return [...rows]
+    .filter((row) => row.status !== "pending")
+    .sort(bySequence)
+    .map((row) => row._id);
+}
+
 export async function listEnrichedSubstitutionPlans(
   ctx: ReaderCtx,
   matchId: Id<"matches">
@@ -125,6 +140,8 @@ export async function listEnrichedSubstitutionPlans(
       updatedAt: row.updatedAt,
       outName: playerOut?.name,
       inName: playerIn?.name,
+      outNumber: playerOut?.number,
+      inNumber: playerIn?.number,
     });
   }
   return enriched;

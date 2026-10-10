@@ -5,6 +5,15 @@ type EventWithNames = Doc<"matchEvents"> & {
   relatedPlayerName?: string;
 };
 
+/** Keep manually recorded identities readable after restoring the older UI. */
+export function recordedPlayerName(
+  event: Pick<Doc<"matchEvents">, "reportedName" | "reportedNumber">,
+  rosterName?: string,
+): string | undefined {
+  return rosterName ?? event.reportedName ??
+    (event.reportedNumber !== undefined ? `Nr. ${event.reportedNumber}` : undefined);
+}
+
 export type StagedSubstitution = {
   stagedEventId: Id<"matchEvents">;
   outId?: Id<"players">;
@@ -58,6 +67,7 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
       relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
       playerName: latest.playerName ?? event.playerName,
       relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
+      assistKind: latest.assistKind ?? event.assistKind,
       matchMs: toMs(event),
     };
   });

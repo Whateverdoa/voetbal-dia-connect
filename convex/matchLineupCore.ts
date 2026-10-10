@@ -9,6 +9,7 @@ import {
   verifyCoachTeamMembership,
   verifyIsMatchLead,
 } from "./pinHelpers";
+import { isUnavailable, throwIfUnavailable } from "./lib/matchPlayerAvailability";
 
 // Toggle player on/off field
 export const togglePlayerOnField = mutation({
@@ -44,8 +45,8 @@ export const togglePlayerOnField = mutation({
     if (!mp) {
       return;
     }
-    if (mp.absent && !mp.onField) {
-      throw new Error("Speler die afwezig is kan niet op het veld");
+    if (isUnavailable(mp) && !mp.onField) {
+      throwIfUnavailable(mp, "field");
     }
     if (mp.onField) {
       if (match.status === "live" && mp.lastSubbedInAt) {
@@ -144,7 +145,7 @@ export const assignPlayerToSlot = mutation({
       )
       .first();
     if (!mp) throw new Error("Player not in this match");
-    if (mp.absent) throw new Error("Afwezige speler kan niet op het veld worden geplaatst");
+    throwIfUnavailable(mp, "field");
 
     const now = Date.now();
     const allMps = await ctx.db

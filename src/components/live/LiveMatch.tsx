@@ -14,8 +14,10 @@ import {
 } from "./index";
 import { MatchClock, formatElapsed } from "@/components/match/MatchClock";
 import { LineupSection } from "./LineupSection";
+import { LivePitchSection } from "./LivePitchSection";
 import { GoalsSection } from "./GoalsSection";
 import { TimelineSection } from "./TimelineSection";
+import { TeamLinksSection } from "./TeamLinksSection";
 import type { MatchData, MatchEvent, LineupPlayer } from "./types";
 import { hasRole, parseRolesFromMetadata } from "@/lib/auth/roles";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -39,7 +41,8 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
   const isHalftime = match.status === "halftime";
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled" || match.status === "lineup";
-  const hasStoppageAdvice = (match.stoppageAdvisoryMs ?? 0) > 0;
+  const hasStoppageAdvice =
+    !isFinished && (match.stoppageAdvisoryMs ?? 0) > 0;
 
   // Track previous scores for goal animation
   const prevScoresRef = useRef({ home: match.homeScore, away: match.awayScore });
@@ -84,7 +87,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
       <header
         className={`p-6 text-white ${
           isLive
-            ? "bg-gradient-to-b from-green-600 to-green-700"
+            ? "bg-gradient-to-b from-dia-black to-neutral-900"
             : isHalftime
             ? "bg-gradient-to-b from-orange-500 to-orange-600"
             : isFinished
@@ -163,6 +166,9 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 </time>
               </p>
             )}
+            {match.isHome && match.venueField ? (
+              <p className="text-sm text-white/85 text-center">{match.venueField}</p>
+            ) : null}
 
             {/* Quarter progress indicator */}
             {!isScheduled && (
@@ -261,7 +267,16 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
 
         {/* Lineup section */}
         {match.showLineup && match.lineup && (
-          <LineupSection lineup={match.lineup.filter((p): p is LineupPlayer => p !== null)} teamName={match.teamName} />
+          <>
+            {(match.status === "live" || match.status === "halftime" || match.status === "lineup") && (
+              <LivePitchSection
+                lineup={match.lineup.filter((p): p is LineupPlayer => p !== null)}
+                formationId={match.formationId}
+                teamName={match.teamName}
+              />
+            )}
+            <LineupSection lineup={match.lineup.filter((p): p is LineupPlayer => p !== null)} teamName={match.teamName} />
+          </>
         )}
 
         {/* Goals section */}
@@ -275,33 +290,33 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
           isScheduled={isScheduled}
         />
 
+        {match.teamSlug && (
+          <TeamLinksSection
+            teamSlug={match.teamSlug}
+            teamName={match.teamName}
+          />
+        )}
+
         {/* Match code footer */}
         <div className="text-center text-sm text-gray-400 py-4 space-y-2">
           <p>
             Wedstrijd code: <span className="font-mono font-bold">{code}</span>
           </p>
           <div className="flex items-center justify-center gap-3">
-            <Link href="/" className="text-dia-green hover:underline">
+            <Link href="/" className="text-dia-black hover:underline">
               Andere wedstrijd
             </Link>
-            {match.teamSlug && (
-              <>
-                <span className="text-gray-300">•</span>
-                <Link
-                  href={`/team/${match.teamSlug}/history`}
-                  className="text-dia-green hover:underline"
-                >
-                  {match.teamName} geschiedenis
-                </Link>
-              </>
-            )}
+            <span className="text-gray-300">•</span>
+            <Link href="/teams" className="text-dia-black hover:underline">
+              Alle teams
+            </Link>
           </div>
           {(canCoach || canReferee || canAdmin) && (
             <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
               {canCoach && (
                 <Link
                   href={`/coach/match/${match.id}`}
-                  className="text-dia-green hover:underline"
+                  className="text-dia-black hover:underline"
                 >
                   Naar coachweergave
                 </Link>
@@ -309,13 +324,13 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
               {canReferee && (
                 <Link
                   href={`/scheidsrechter/match/${match.id}?code=${encodeURIComponent(code)}`}
-                  className="text-dia-green hover:underline"
+                  className="text-dia-black hover:underline"
                 >
                   Naar scheidsrechterweergave
                 </Link>
               )}
               {canAdmin && (
-                <Link href="/admin" className="text-dia-green hover:underline">
+                <Link href="/admin" className="text-dia-black hover:underline">
                   Naar admin
                 </Link>
               )}

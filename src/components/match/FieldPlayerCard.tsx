@@ -1,10 +1,12 @@
 /**
  * FieldPlayerCard — EA FC-style card for the field view.
- * Renders avatar silhouette, position-colored name bar, number, and position label.
- * Responsive: 70px on phone, 90px on tablet/desktop.
+ * Supports photo or silhouette, phone/tablet/presentation sizes.
  */
 import { getRoleColor, getRoleLabel } from "@/lib/roleColors";
-import { useCardSize } from "@/hooks/useCardSize";
+import { useCardSize, type CardSizeMode } from "@/hooks/useCardSize";
+import { firstNameOf, type CardNameMode } from "@/lib/cards/formatCardName";
+import type { DisciplineBadge } from "@/lib/cards/cardRules";
+import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface FieldPlayerCardProps {
   name: string;
@@ -16,6 +18,15 @@ interface FieldPlayerCardProps {
   isDimmed: boolean;
   isEmpty: boolean;
   onClick: () => void;
+  photoUrl?: string | null;
+  sizeMode?: CardSizeMode;
+  nameDisplay?: CardNameMode;
+  /** Season total minutes (coach card toggle). */
+  seasonMinutes?: number;
+  /** Yellow/red discipline mark on the shield. */
+  disciplineBadge?: DisciplineBadge;
+  /** Appended after the centering translate/scale (e.g. counter-rotation). */
+  extraTransform?: string;
 }
 
 function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
@@ -37,11 +48,26 @@ export function FieldPlayerCard({
   isDimmed,
   isEmpty,
   onClick,
+  photoUrl,
+  sizeMode = "auto",
+  nameDisplay = "first",
+  seasonMinutes,
+  disciplineBadge,
+  extraTransform,
 }: FieldPlayerCardProps) {
-  const sz = useCardSize();
+  const sz = useCardSize(sizeMode);
   const rc = getRoleColor(position);
   const posLabel = getRoleLabel(position);
   const scale = isSelected ? 1.08 : 1;
+  const emptyTransform = extraTransform
+    ? `translate(-50%, -50%) ${extraTransform}`
+    : "translate(-50%, -50%)";
+  const cardTransform = extraTransform
+    ? `translate(-50%, -50%) scale(${scale}) ${extraTransform}`
+    : `translate(-50%, -50%) scale(${scale})`;
+  const preserve3d = extraTransform
+    ? ({ transformStyle: "preserve-3d" } as const)
+    : undefined;
 
   if (isEmpty) {
     return (
@@ -53,7 +79,8 @@ export function FieldPlayerCard({
           top: `${y}%`,
           width: sz.card,
           height: sz.card,
-          transform: "translate(-50%, -50%)",
+          transform: emptyTransform,
+          ...preserve3d,
           background: "rgba(255,255,255,0.06)",
           borderColor: "rgba(255,255,255,0.12)",
           transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -66,9 +93,10 @@ export function FieldPlayerCard({
     );
   }
 
-  const firstName = name.trim().split(/\s+/)[0] || name;
-  const displayName = firstName.slice(0, 10).toUpperCase();
+  const fieldLabel =
+    nameDisplay === "full" ? name.trim() : firstNameOf(name);
   const displayNumber = number != null ? String(number) : "?";
+  const isPresentation = sizeMode === "presentation";
 
   return (
     <div
@@ -77,7 +105,8 @@ export function FieldPlayerCard({
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: `translate(-50%, -50%) scale(${scale})`,
+        transform: cardTransform,
+        ...preserve3d,
         zIndex: isSelected ? 100 : Math.round(y),
         transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: isDimmed ? 0.4 : 1,
@@ -100,7 +129,6 @@ export function FieldPlayerCard({
           backdropFilter: "blur(16px)",
         }}
       >
-        {/* Position label (top-left) */}
         <div className="absolute top-1 left-1" style={{ lineHeight: 1 }}>
           <span
             className="font-bold uppercase"
@@ -110,36 +138,73 @@ export function FieldPlayerCard({
           </span>
         </div>
 
-        {/* Number badge (top-right) */}
-        <div className="absolute top-1 right-1">
-          <span className="font-mono font-bold text-white/30" style={{ fontSize: sz.numFont }}>
+        <div className="absolute top-1 right-1 flex items-start gap-0.5">
+          {disciplineBadge ? (
+            <DisciplineCardMark badge={disciplineBadge} size="md" />
+          ) : null}
+          <span className="font-mono font-bold text-white" style={{ fontSize: sz.numFont }}>
             {displayNumber}
           </span>
         </div>
 
-        {/* Avatar */}
-        <div className="mt-3 mb-0.5">
+        <div className="relative mt-3 mb-0.5">
           <div
-            className="rounded-full flex items-center justify-center"
+            className="relative rounded-full flex items-center justify-center overflow-hidden"
             style={{
               width: sz.avatar,
               height: sz.avatar,
               background: `linear-gradient(135deg, ${rc.bg}40, ${rc.bg}15)`,
-              border: `1.5px solid ${rc.bg}50`,
+              border: isPresentation
+                ? "2px solid #FFE713"
+                : `1.5px solid ${rc.bg}50`,
+              boxShadow: isPresentation ? "0 0 10px rgba(255,231,19,0.35)" : undefined,
             }}
           >
-            <PlayerIcon size={sz.icon} color={rc.bg} />
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <PlayerIcon size={sz.icon} color={rc.bg} />
+            )}
           </div>
+          {isPresentation ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/logos/dia.png"
+              alt=""
+              className="pointer-events-none absolute -bottom-1 -right-1 rounded-full bg-dia-black/80 p-0.5"
+              style={{ width: sz.avatar * 0.38, height: sz.avatar * 0.38, objectFit: "contain" }}
+            />
+          ) : null}
         </div>
 
-        {/* Name bar */}
-        <div className="w-full py-1 text-center" style={{ background: rc.bg }}>
+        <div className="w-full py-1 px-0.5 text-center" style={{ background: rc.bg }}>
           <span
-            className="font-bold uppercase tracking-wide"
-            style={{ color: rc.text, fontSize: sz.nameFont, letterSpacing: "0.08em" }}
+            className="font-bold leading-tight block"
+            style={{
+              color: rc.text,
+              fontSize: nameDisplay === "full" ? Math.max(9, sz.nameFont - 2) : sz.nameFont,
+              letterSpacing: nameDisplay === "full" ? "0.02em" : "0.08em",
+              textTransform: nameDisplay === "full" ? "none" : "uppercase",
+            }}
           >
-            {displayName}
+            {fieldLabel}
           </span>
+          {seasonMinutes !== undefined ? (
+            <span
+              className="block tabular-nums opacity-90"
+              style={{
+                color: rc.text,
+                fontSize: Math.max(8, sz.nameFont - 1),
+              }}
+            >
+              {seasonMinutes}&prime;
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

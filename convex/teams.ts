@@ -1,6 +1,9 @@
 import { query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { compareSeasonHistory } from "./lib/matchHistoryOrder";
+import { isSandboxTeamSlug } from "./lib/sandboxTeam";
+import { isActiveSeasonMatch } from "./lib/season";
 
 // Get team by slug (public query)
 export const getBySlug = query({
@@ -26,18 +29,69 @@ export const getBySlug = query({
   },
 });
 
-// Get match history for a team (finished matches only, most recent first)
+/** Public team directory for the parent-facing team lookup. */
+export const listPublicTeams = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.id("teams"),
+      name: v.string(),
+      slug: v.string(),
+      clubName: v.string(),
+      logoUrl: v.union(v.string(), v.null()),
+      hasStanding: v.boolean(),
+    })
+  ),
+  handler: async (ctx) => {
+    const teams = await ctx.db.query("teams").collect();
+    const clubs = new Map<Id<"clubs">, string>();
+
+    const standingSlugs = new Set(
+      (await ctx.db.query("standings").collect()).map((doc) => doc.teamSlug)
+    );
+
+    const enriched = await Promise.all(
+      teams
+        .filter((team) => !isSandboxTeamSlug(team.slug))
+        .map(async (team) => {
+        if (!clubs.has(team.clubId)) {
+          const club = await ctx.db.get(team.clubId);
+          clubs.set(team.clubId, club?.name ?? "Club");
+        }
+        return {
+          id: team._id,
+          name: team.name,
+          slug: team.slug,
+          clubName: clubs.get(team.clubId) ?? "Club",
+          logoUrl: team.logoUrl ?? null,
+          hasStanding: standingSlugs.has(team.slug),
+        };
+      })
+    );
+
+    return enriched.sort((a, b) =>
+      a.name.localeCompare(b.name, "nl", { numeric: true })
+    );
+  },
+});
+
+// Finished matches for one season, first kickoff of the season first.
 export const getMatchHistory = query({
-  args: { teamId: v.id("teams") },
+  args: {
+    teamId: v.id("teams"),
+    seasonKey: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // Get all finished matches for this team
     const matches = await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
-      .order("desc")
       .collect();
 
-    const finishedMatches = matches.filter((m) => m.status === "finished");
+    const finishedMatches = matches.filter((m) => {
+      if (m.status !== "finished") return false;
+      if (!args.seasonKey) return true;
+      return isActiveSeasonMatch(m, args.seasonKey);
+    });
 
     // Enrich each match with goal scorers
     const enrichedMatches = await Promise.all(
@@ -143,25 +197,27 @@ export const getMatchHistory = query({
       })
     );
 
-    return enrichedMatches.sort((left, right) => {
-      const leftTimestamp = left.finishedAt ?? left.scheduledAt ?? 0;
-      const rightTimestamp = right.finishedAt ?? right.scheduledAt ?? 0;
-      return rightTimestamp - leftTimestamp;
-    });
+    return enrichedMatches.sort(compareSeasonHistory);
   },
 });
 
 // Get season stats for a team
 export const getSeasonStats = query({
-  args: { teamId: v.id("teams") },
+  args: {
+    teamId: v.id("teams"),
+    seasonKey: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    // Get all finished matches
     const matches = await ctx.db
       .query("matches")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
       .collect();
 
-    const finishedMatches = matches.filter((m) => m.status === "finished");
+    const finishedMatches = matches.filter((m) => {
+      if (m.status !== "finished") return false;
+      if (!args.seasonKey) return true;
+      return isActiveSeasonMatch(m, args.seasonKey);
+    });
 
     // Calculate record
     let wins = 0;

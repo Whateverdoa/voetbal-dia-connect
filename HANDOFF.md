@@ -10,6 +10,21 @@ DIA Live is een realtime jeugdvoetbal-app voor DIA.
 
 Repo: Next.js 16 + Convex + Clerk.
 
+## Wisselplan hersteld (3 oktober 2026)
+
+De coachinterface gebruikt dezelfde opgeslagen `substitutionPlans` op beide schermformaten:
+- Telefoon: tab **Wisselplan** toont openstaande/afgeronde regels, biedt eenvoudig plannen via de spelerslijst (inclusief minuut/helft aanpassen) en laat de leidende coach tijdens de wedstrijd wissels uitvoeren.
+- iPad/laptop: **Plannen** in het dashboard opent de wedstrijdkeuze en het grote planscherm; de wedstrijdtab bevat ook de volledige planner.
+- `useDeviceSurface` gebruikt de kortste schermzijde (vanaf 600 px groot scherm), zodat een gedraaide telefoon de compacte bediening behoudt.
+
+Dit is een gerichte terugplaatsing uit `f89f606`, zonder backendwijzigingen of de losse native iPhone-app. Behoud deze interface bij toekomstige integraties van het scheidsrechtersgedeelte.
+
+## Zelfstandige wisselmodule-demo
+
+`/demo/wisselmodule` toont broncontrole, oefenwissels, positieruilen, formaties, automatische demonstratie en A4-print. De demo gebruikt lokale momentopnamen van Reeshof, Gilze en het fotovoorbeeld; zij schrijft niet naar Convex. Automatische fotoherkenning en appimport zijn nog niet gebouwd. Ontwerp en verificatie: [`docs/plans/wisselmodule.md`](docs/plans/wisselmodule.md).
+
+De route opent zonder auth/backend-providers. Navigatie en `SignedInRoleSync` staan daarom in de normale tak van `AppProviders`, niet rechtstreeks in de rootlayout. Houd die onderdelen binnen Clerk en Convex bij verdere integraties.
+
 ## Tech Stack
 - Next.js 16 (App Router, Turbopack)
 - React 19 + TypeScript strict
@@ -27,9 +42,16 @@ Production-deploy op Vercel wordt getriggerd door die merge (push naar `main`). 
 
 ### Afstemming main ↔ Vercel (controle)
 
-- **Frontend (Vercel)** volgt doorgaans de **tip van `main`** na merge/push. Laatste **Production**-deployment in GitHub is gekoppeld aan commit **`adec0d2`** (merge o.a. PR #31: speeltijd-presets, einde-wedstrijd-bevestiging, sync-`requireAdminOrOps`, HANDOFF-backlog). Controleer actuele production status in het Vercel-dashboard of bijv. `gh api repos/Whateverdoa/voetbal-dia-connect/deployments`.
+- **Productiebasis vanaf herstel 26 september 2026:** `c4e5318` (19 september), met de ruitopstelling 1-3-4-3 en zonder de globale navigatie op `/live/*`. Het scheidsrechtersdeel is daarna gericht geïntegreerd op deze basis: coach en scheidsrechter zijn twee functies binnen dezelfde app en gebruiken dezelfde wedstrijdgegevens.
+- **Frontend (Vercel)** hoort de tip van `main` te volgen. Controleer bij een release de actuele alias én commit; een Vercel-rollback alleen herstelt de backend niet.
 - **Convex-backend (productie)** is **niet** hetzelfde als een Vercel-build: schema/mutaties gaan naar het Convex-project via `npx convex deploy` (of CI) naar de juiste deployment. Na schema-wijzigingen: verifiëren dat **productie-Convex** dezelfde versie draait als de code verwacht.
 - **Lokale repo:** als er nog **niet-gecommitte** wijzigingen staan (bijv. import team-slug mapping in `syncWedstrijdenToMatches.ts`), staan die **niet** op `main` en dus **niet** op Vercel tot commit + push + nieuwe deploy.
+
+### Gescheiden ontwikkelsporen
+
+- **Productiewebsite:** `main`, Vercel `voetbal-dia-connect`, Convex `nautical-condor-5`.
+- **Coach en scheidsrechter:** samen op `main`. De toegewezen scheidsrechter beheert klok, score en kaarten; de coach beheert opstelling/wissels en vult doelpunten aan. Zonder toegewezen scheidsrechter neemt de coach met wedstrijdleiding de officiële bediening over. Admin behoudt de backendoverride. De oude branch `feat/scheids-official-duty` blijft als historische bron bestaan en bevat daarnaast ongeïntegreerde portaal/import/planschermwijzigingen; merge die branch niet blind.
+- **iPhone-app:** aparte repository `Whateverdoa/voetbal-iphone-26-27`, branch `codex/mobile-substitutions`. De bijbehorende backenduitbreiding staat hier op `codex/mobile-substitutions-dev` (PR #55), gericht op ontwikkelbackend `quaint-barracuda-871`. Deze uitbreidingen horen niet bij de herstelde productieversie.
 
 ## Routes
 - `/`: homepage / publieke ingang
@@ -202,10 +224,13 @@ Adminflow:
 - niet aannemen dat `op teamlijst staan` genoeg is; ze moeten in de wedstrijdselectie zitten
 
 Importflow voor VoetbalAssist/KNVB:
-- **Automatisch (productie-Convex):** cron `weekend-results-hourly` draait **elk uur op zaterdag en zondag** (UTC `8–20`, ruwweg **09:00/10:00–21:00/22:00** Europe/Amsterdam). Alleen als er die dag minstens één wedstrijd in `matches` is met `scheduledAt + regulationDurationMinutes + 15 min` verstreken, wordt opgehaald + gesynct. Logs: Convex function logs (`import/weeklyUpdate:runIfMatchesEnded`).
+- **Automatisch (productie-Convex):** twee crons, beiden target `import/weeklyUpdate:runIfMatchesEnded` met dezelfde gate (alleen draaien als er die dag minstens één wedstrijd in `matches` is met `scheduledAt + regulationDurationMinutes + 15 min` verstreken):
+  - `weekend-results-hourly` — **elk uur op za + zo**, UTC `8–20` (≈ Amsterdam 10:00–22:00 CEST / 09:00–21:00 CET).
+  - `midweek-evening-results` — **elk uur op ma–vr avond**, UTC `17–21` (≈ Amsterdam 19:00–23:00 CEST / 18:00–22:00 CET) voor doordeweekse avond- en inhaalwedstrijden.
+  - Logs: Convex function logs → filter op `weeklyUpdate`.
 - **Handmatig (alles in één keer):** `npm run results:update` (= `npx convex run import/weeklyUpdate:runNow`). Zonder ingelogde admin: JSON-args met `opsSecret` gelijk aan `CONVEX_OPS_SECRET` (zelfde patroon als `syncAll`).
 - **Losse stappen (fallback):** `import/importWedstrijden:fetchAndImport` haalt de DIA-wedstrijden op uit VoetbalAssist; `import/syncWedstrijdenToMatches:syncAll` zet die om naar `matches` — **auth:** `requireAdminOrOps` (ingelogde admin in dashboard óf CLI met `opsSecret` gelijk aan `CONVEX_OPS_SECRET`)
-- de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `JO13-2JM -> jo13-2`, `G Team -> g-team`
+- de sync normaliseert een aantal DIA-importnamen naar bestaande app-teams, o.a. `35+1 -> 35-1`, `VR30+1 -> 30-1`, `1 (zon) -> zo1`, `VR1 (zon) -> vr1`, `O23-1 -> jo23-1`, `O13-2JM / JO13-2JM -> jo13-2`, `G Team -> g-team`
 - bewust niet automatisch gemapt: ambigue bronvarianten zoals kale `JO10` of `JO12`; die vragen handmatige teamkeuze of extra mapping
 - nieuwe niet-gespeelde wedstrijden krijgen tijdens de sync automatisch `matchPlayers` voor alle actieve teamspelers
 - bestaande wedstrijden zonder `matchPlayers` kunnen tijdens dezelfde sync een roster-backfill krijgen zolang ze nog niet gespeeld zijn
@@ -282,6 +307,11 @@ Open punten uit gebruik / data (geen volledige specs; vastgelegd voor opvolging)
 
 **Status:** *future to-do* — layout in o.a. `PlayersTab`, testen op fysiek device. Zie ook **`docs/plans/product-backlog.md`**.
 
+## Tech-schulden (niet-urgent)
+
+- **Next.js `middleware.ts` → `proxy.ts`** — Next.js 16 deprecatet de `middleware`-file-conventie; breaking in 17. Huidige file: `src/middleware.ts` (Clerk). Later: hernoemen naar `src/proxy.ts` en de export. Geen haast zolang we op Next 16 blijven.
+- **Convex** — staat op `^1.44`. De upgrade uit PR #38 (`1.31.6` → `1.35.1`) is achterhaald; die PR is gesloten.
+
 ## Future To-Do's (product)
 
 Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring). *Status: backlog — nog niet geprioriteerd of ingepland tenzij anders vermeld.*
@@ -298,6 +328,14 @@ Items voor later traject (o.a. na “first sell” / uitbreiding live-ervaring).
 2. **Veldlayout — plat bovenaanzicht** — Het veld is nu **perspectivisch**; gewenst: terug naar een **plat, vlak bovenaanzicht** (traditioneel tactiekbord). *Dit is een UI-designbeslissing, geen datawijziging.* **Volgende stap:** afstemmen met Roel over de gewenste layout vóór implementatie (sluit aan bij “live veldsituatie” hierboven, maar specificeert de weergave-richting).
 3. **Wedstrijdplan vooraf (pre-match planning)** — Nu vooral wissels **tijdens** de wedstrijd. Gewenst: **vooraf** een vollediger plan: **opstelling per kwart**, **geplande wissels** (uit/in, moment/timing), bewerkbaar **tijdens** de wedstrijd; plan = **startpunt**, geen dwangbuis. **Technisch (richting):** een **draft**-volgorde die **los staat** van de **append-only** `matchEvents` tot de coach een geplande actie **bevestigt**; uitgevoerde acties blijven gewone events. *Complex — verdient een apart **WAT+HOE**-document vóór bouwen.*
 4. **Backlog & planning** — Volledige uitwerking van open punten staat in **`docs/plans/product-backlog.md`**. Optioneel later: koppeling aan GitHub Projects, Linear, enz. zodat dit document vooral “wat en waarom” blijft en tickets de status bijhouden.
+
+### JO13-pilot: presentatie, gamificatie, consent (Fable)
+
+Actief implementatietraject voor selectieteams (presentatie, gamificatie, consent). **Hoofd-testteam nu: JO13-2** (`jo13-2`); andere teams later.
+
+- **Masterplan:** [`docs/plans/fable-jo13-presentatie-gamificatie.plan.md`](docs/plans/fable-jo13-presentatie-gamificatie.plan.md)
+- **Voortgang (live tracker):** [`docs/plans/fable-jo13-progress.md`](docs/plans/fable-jo13-progress.md) — Fable werkt taken af en logt in dit bestand.
+- **Open roadmap (2026-08):** [`docs/plans/open-roadmap.md`](docs/plans/open-roadmap.md) — inventaris + tactiek-presentatie, selectie-teamportaal, heatmaps-future.
 
 ## Toekomst: Speelweek-model voor admin planning
 Voor nu werkt adminfiltering op `matches.scheduledAt` met runtime-afgeleide week/dag.

@@ -12,12 +12,12 @@ describe('LiveConnectionIndicator', () => {
     it('applies green background when connected', () => {
       const { container } = render(<LiveConnectionIndicator isConnected={true} />);
       const indicator = container.firstChild as HTMLElement;
-      expect(indicator).toHaveClass('bg-green-100', 'text-green-700');
+      expect(indicator).toHaveClass('bg-dia-green-light', 'text-dia-black');
     });
 
     it('shows green pulsing dot when connected', () => {
       const { container } = render(<LiveConnectionIndicator isConnected={true} />);
-      const dot = container.querySelector('.bg-green-500');
+      const dot = container.querySelector('.bg-dia-yellow');
       expect(dot).toBeInTheDocument();
       expect(dot).toHaveClass('animate-pulse');
     });
@@ -75,7 +75,7 @@ describe('LiveConnectionIndicator', () => {
       );
       const indicator = container.firstChild as HTMLElement;
       expect(indicator).toHaveClass('my-custom-class');
-      expect(indicator).toHaveClass('bg-green-100'); // Still has default
+      expect(indicator).toHaveClass('bg-dia-green-light'); // Still has default
     });
   });
 

@@ -4,24 +4,32 @@
  * Referee names are only included when referees.showPublicName is true; coach identity is never exposed.
  */
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
+import { isSandboxTeamSlug } from "./lib/sandboxTeam";
+import { isActiveSeasonMatch } from "./lib/season";
 
 // List all publicly visible matches, enriched with team/club names.
 export const listPublicMatches = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { seasonKey: v.optional(v.string()) },
+  handler: async (ctx, args) => {
     // Note: acceptable for small club. Paginate if match count grows.
     const allMatches = await ctx.db.query("matches").collect();
 
     // Exclude "lineup" — that's pre-match setup, not public
     const visibleStatuses = new Set(["scheduled", "live", "halftime", "finished"]);
-    const matches = allMatches.filter((m) => visibleStatuses.has(m.status));
+    const matches = allMatches.filter((m) => {
+      if (!visibleStatuses.has(m.status)) return false;
+      if (args.seasonKey) return isActiveSeasonMatch(m, args.seasonKey);
+      return true;
+    });
 
     // Enrich each match with team name and club name
     const enriched = await Promise.all(
       matches.map(async (m) => {
         const team = await ctx.db.get(m.teamId);
+        if (team && isSandboxTeamSlug(team.slug)) return null;
         const club = team ? await ctx.db.get(team.clubId) : null;
         const refFields = await getPublicRefereeFields(ctx, m.refereeId);
         const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, m._id, Date.now());
@@ -42,6 +50,7 @@ export const listPublicMatches = query({
           halftimeStartedAt: m.halftimeStartedAt,
           scheduledBreakEndAt: m.scheduledBreakEndAt,
           scheduledAt: m.scheduledAt,
+          venueField: m.isHome ? (m.venueField ?? null) : null,
           teamName: team?.name ?? "Team",
           clubName: club?.name ?? "Club",
           teamLogoUrl: team?.logoUrl ?? null,
@@ -53,6 +62,8 @@ export const listPublicMatches = query({
       }),
     );
 
+    const visible = enriched.filter((row): row is NonNullable<typeof row> => row !== null);
+
     // Sort: live/halftime first, then scheduled (newest first), then finished
     const statusOrder: Record<string, number> = {
       live: 0,
@@ -61,13 +72,13 @@ export const listPublicMatches = query({
       finished: 3,
     };
 
-    enriched.sort((a, b) => {
+    visible.sort((a, b) => {
       const orderDiff = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
       if (orderDiff !== 0) return orderDiff;
       // Within the same status group, newest scheduledAt first
       return (b.scheduledAt ?? 0) - (a.scheduledAt ?? 0);
     });
 
-    return enriched;
+    return visible;
   },
 });

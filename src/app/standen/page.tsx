@@ -7,6 +7,11 @@ import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import type { PublicMatch } from "@/types/publicMatch";
 import { formatMatchDate } from "@/types/publicMatch";
+import {
+  browserListGroup,
+  isScheduledKickoffOverdue,
+} from "@/lib/matchBrowserFilters";
+import { activeSeasonKey } from "@/lib/season";
 
 function isToday(ts: number): boolean {
   const d = new Date(ts);
@@ -24,31 +29,32 @@ function isTodayMatch(m: PublicMatch): boolean {
 
 const groups = [
   {
-    key: "live",
+    key: "live" as const,
     label: "LIVE",
-    filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
-    dotClass: "bg-green-500 animate-pulse",
-    labelClass: "text-green-600",
+    group: "live" as const,
+    dotClass: "bg-dia-yellow animate-pulse",
+    labelClass: "text-dia-black",
   },
   {
-    key: "finished",
+    key: "finished" as const,
     label: "AFGELOPEN",
-    filter: (m: PublicMatch) => m.status === "finished",
+    group: "finished" as const,
     dotClass: "bg-red-500",
     labelClass: "text-red-600",
   },
   {
-    key: "scheduled",
+    key: "scheduled" as const,
     label: "GEPLAND",
-    filter: (m: PublicMatch) => m.status === "scheduled",
+    group: "scheduled" as const,
     dotClass: "bg-blue-500",
     labelClass: "text-blue-600",
   },
 ];
 
-function ScoreRow({ match }: { match: PublicMatch }) {
+function ScoreRow({ match, now }: { match: PublicMatch; now: number }) {
   const isLive = match.status === "live" || match.status === "halftime";
-  const showScore = match.status !== "scheduled";
+  const awaitingOfficial = isScheduledKickoffOverdue(match, now);
+  const showScore = match.status !== "scheduled" && !awaitingOfficial;
 
   const leftTeam = match.isHome ? match.teamName : match.opponent;
   const rightTeam = match.isHome ? match.opponent : match.teamName;
@@ -60,9 +66,11 @@ function ScoreRow({ match }: { match: PublicMatch }) {
           {leftTeam}
         </span>
         {showScore ? (
-          <span className={`tabular-nums font-bold min-w-[5ch] text-center ${isLive ? "text-green-600" : "text-gray-800"}`}>
+          <span className={`tabular-nums font-bold min-w-[5ch] text-center ${isLive ? "text-dia-black" : "text-gray-800"}`}>
             {match.homeScore} - {match.awayScore}
           </span>
+        ) : awaitingOfficial ? (
+          <span className="min-w-[8ch] text-center text-[10px] text-gray-400">geen Sportlink-uitslag</span>
         ) : (
           <span className="min-w-[5ch] text-center text-gray-300 font-medium">– – –</span>
         )}
@@ -77,7 +85,7 @@ function ScoreRow({ match }: { match: PublicMatch }) {
         </p>
       )}
 
-      {match.status === "scheduled" && match.scheduledAt && (
+      {browserListGroup(match, now) === "scheduled" && match.scheduledAt && (
         <p className="text-center text-sm text-gray-400 mt-0.5">
           {formatMatchDate(match.scheduledAt)}
         </p>
@@ -92,12 +100,15 @@ function StandenContent() {
   const showAll = params.get("alle") === "true";
   const hasFilter = teamFilter !== "";
 
-  const raw = useQuery(api.matches.listPublicMatches);
+  const raw = useQuery(api.matches.listPublicMatches, {
+    seasonKey: activeSeasonKey(),
+  });
 
   if (raw === undefined) {
     return <p className="text-center text-gray-400 py-16 text-lg">Laden...</p>;
   }
 
+  const now = Date.now();
   let matches: PublicMatch[] = raw as PublicMatch[];
 
   // Default: show only today's matches. ?alle=true shows everything.
@@ -132,7 +143,7 @@ function StandenContent() {
           {!showAll && (
             <Link
               href="/standen?alle=true"
-              className="text-sm text-dia-green hover:text-green-700 underline"
+              className="text-sm text-dia-black hover:text-dia-black underline"
             >
               Alle wedstrijden bekijken
             </Link>
@@ -141,7 +152,7 @@ function StandenContent() {
       ) : (
         <div className="space-y-8">
           {groups.map((group) => {
-            const items = matches.filter(group.filter);
+            const items = matches.filter((m) => browserListGroup(m, now) === group.group);
             if (items.length === 0) return null;
             return (
               <section key={group.key}>
@@ -153,7 +164,7 @@ function StandenContent() {
                 </div>
                 <div className="divide-y divide-gray-100">
                   {items.map((m) => (
-                    <ScoreRow key={m._id} match={m} />
+                    <ScoreRow key={m._id} match={m} now={now} />
                   ))}
                 </div>
               </section>
@@ -165,7 +176,7 @@ function StandenContent() {
       {/* Toggle link */}
       <div className="text-center mt-8">
         {showAll ? (
-          <Link href="/standen" className="text-sm text-dia-green hover:text-green-700">
+          <Link href="/standen" className="text-sm text-dia-black hover:text-dia-black">
             Alleen vandaag
           </Link>
         ) : (
@@ -183,7 +194,7 @@ export default function StandenPage() {
     <main className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-8">
-          DIA Wedstrijduitslagen <span className="text-dia-green">Live</span>
+          DIA Wedstrijduitslagen <span className="text-dia-black">Live</span>
         </h1>
 
         <Suspense fallback={<p className="text-center text-gray-400 py-16 text-lg">Laden...</p>}>
@@ -191,7 +202,7 @@ export default function StandenPage() {
         </Suspense>
 
         <div className="text-center mt-12">
-          <Link href="/" className="text-sm text-gray-400 hover:text-dia-green transition-colors">
+          <Link href="/" className="text-sm text-gray-400 hover:text-dia-black transition-colors">
             ← Terug naar home
           </Link>
         </div>

@@ -6,9 +6,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Id } from "@/convex/_generated/dataModel";
 import { RefereeMatchConsole } from "@/components/referee/RefereeMatchConsole";
-import type { MatchStatus } from "@/components/match/types";
+import type { MatchEvent, MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
-
 export default function RefereeMatchPage() {
   const params = useParams();
   const matchIdParam = params.id;
@@ -28,7 +27,7 @@ export default function RefereeMatchPage() {
           <p className="text-red-600 font-medium">Ongeldige wedstrijdlink</p>
           <Link
             href="/scheidsrechter"
-            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
+            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-dia-green-dark"
           >
             Terug naar overzicht
           </Link>
@@ -48,7 +47,7 @@ export default function RefereeMatchPage() {
           <p className="text-red-600 font-medium">Wedstrijd niet gevonden of je hebt geen toegang</p>
           <Link
             href="/scheidsrechter"
-            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-green-700"
+            className="inline-block py-2 px-4 bg-dia-green text-white rounded-lg font-medium hover:bg-dia-green-dark"
           >
             Terug naar overzicht
           </Link>
@@ -73,7 +72,7 @@ export default function RefereeMatchPage() {
             ← Terug
           </Link>
           <span className="bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-            Scheidsrechter
+            {match.viewingAsAdmin ? "Admin" : "Scheidsrechter"}
           </span>
         </div>
       </nav>
@@ -102,6 +101,7 @@ export default function RefereeMatchPage() {
         awayLogoUrl={awayLogoUrl}
         diaTeamSide={match.isHome ? "home" : "away"}
         diaPlayers={match.diaPlayers ?? []}
+        events={(match.events ?? []) as MatchEvent[]}
       />
     </main>
   );

@@ -1,16 +1,25 @@
 "use client";
 
 import clsx from "clsx";
+import type { PlayerAvailabilityStatus } from "@/lib/matchPlayerAvailability";
+import type { DisciplineBadge } from "@/lib/cards/cardRules";
+import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface PlayerCardProps {
   name: string;
   number?: number;
   isKeeper: boolean;
   onField: boolean;
-  absent?: boolean;
+  /** Match availability; default available. */
+  availability?: PlayerAvailabilityStatus;
+  /** Season total minutes, shown as e.g. 42′ next to the name. */
+  seasonMinutes?: number;
+  disciplineBadge?: DisciplineBadge;
   onToggleField?: () => void;
   onToggleKeeper?: () => void;
-  onToggleAbsent?: () => void;
+  onSetAvailability?: (status: PlayerAvailabilityStatus) => void;
+  /** When availability toggles are shown, which buttons to offer. */
+  availabilityActions?: Array<"absent" | "injured">;
 }
 
 export function PlayerCard({
@@ -18,102 +27,156 @@ export function PlayerCard({
   number,
   isKeeper,
   onField,
-  absent = false,
+  availability = "available",
+  seasonMinutes,
+  disciplineBadge,
   onToggleField,
   onToggleKeeper,
-  onToggleAbsent,
+  onSetAvailability,
+  availabilityActions = ["absent", "injured"],
 }: PlayerCardProps) {
+  const unavailable = availability !== "available";
+  const absent = availability === "absent";
+  const injured = availability === "injured";
+  const showAbsent = availabilityActions.includes("absent");
+  const showInjured = availabilityActions.includes("injured");
+  const hasActions = !!(onToggleField || onToggleKeeper || onSetAvailability);
+
   return (
     <div
       className={clsx(
-        "p-3 rounded-xl border-2 transition-all",
+        "p-3 rounded-xl border-2 transition-all space-y-2",
         absent && "bg-amber-50 border-amber-400",
-        !absent && onField && "bg-green-50 border-green-500",
-        !absent && !onField && "bg-gray-50 border-gray-200",
-        isKeeper && !absent && "ring-2 ring-yellow-400 ring-offset-1"
+        injured && "bg-rose-50 border-rose-400",
+        !unavailable && onField && "bg-dia-green-light border-dia-green",
+        !unavailable && !onField && "bg-gray-50 border-gray-200",
+        isKeeper && !unavailable && "ring-2 ring-yellow-400 ring-offset-1"
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        {/* Player info */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {number !== undefined && (
-            <span
-              className={clsx(
-                "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
-                absent && "bg-amber-200 text-amber-800",
-                !absent && onField && "bg-green-200 text-green-800",
-                !absent && !onField && "bg-gray-200 text-gray-600"
-              )}
-            >
-              {number}
-            </span>
-          )}
-          <span className="font-medium text-sm truncate">{name}</span>
-        </div>
-
-        {/* Absent badge when applicable */}
-        {absent && (
-          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-            Niet aanwezig
+      <div className="flex items-start gap-2 min-w-0">
+        {number !== undefined && (
+          <span
+            className={clsx(
+              "relative w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
+              absent && "bg-amber-200 text-amber-800",
+              injured && "bg-rose-200 text-rose-800",
+              !unavailable && onField && "bg-dia-green text-white",
+              !unavailable && !onField && "bg-gray-200 text-gray-600"
+            )}
+          >
+            {number}
+            {disciplineBadge ? (
+              <span className="absolute -top-1 -right-1">
+                <DisciplineCardMark badge={disciplineBadge} size="sm" />
+              </span>
+            ) : null}
           </span>
         )}
-
-        {/* Action buttons */}
-        {(onToggleField || onToggleKeeper || onToggleAbsent) && (
-        <div className="flex gap-1 flex-shrink-0 items-center">
-          {/* Absent toggle: mark present when absent, or mark absent when on bench */}
-          {onToggleAbsent && (
-          <button
-            onClick={onToggleAbsent}
-            className={clsx(
-              "w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all",
-              "min-w-[40px] min-h-[40px] active:scale-95",
-              absent
-                ? "bg-amber-200 text-amber-800 hover:bg-amber-300"
-                : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-            )}
-            aria-label={absent ? "Markeer aanwezig" : "Markeer afwezig"}
-            title={absent ? "Aanwezig" : "Afwezig"}
-          >
-            {absent ? "✓" : "✗"}
-          </button>
-          )}
-          {/* Keeper toggle */}
-          {onToggleKeeper && !absent && (
-          <button
-            onClick={onToggleKeeper}
-            className={clsx(
-              "w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all",
-              "min-w-[40px] min-h-[40px] active:scale-95",
-              isKeeper
-                ? "bg-yellow-400 text-white shadow-md"
-                : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-            )}
-            aria-label={isKeeper ? "Verwijder keeper" : "Maak keeper"}
-          >
-            🧤
-          </button>
-          )}
-
-          {/* Field/bench toggle — hidden when absent */}
-          {onToggleField && !absent && (
-          <button
-            onClick={onToggleField}
-            className={clsx(
-              "w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all",
-              "min-w-[40px] min-h-[40px] active:scale-95",
-              onField
-                ? "bg-red-100 text-red-600 hover:bg-red-200"
-                : "bg-green-100 text-green-600 hover:bg-green-200"
-            )}
-            aria-label={onField ? "Naar bank" : "Naar veld"}
-          >
-            {onField ? "↓" : "↑"}
-          </button>
-          )}
+        <div className="min-w-0 flex-1">
+          <span className="font-medium text-sm text-gray-900 break-words inline-flex items-center gap-1.5">
+            {name}
+            {number === undefined && disciplineBadge ? (
+              <DisciplineCardMark badge={disciplineBadge} size="sm" />
+            ) : null}
+          </span>
+          {seasonMinutes !== undefined ? (
+            <span className="block text-xs text-gray-500 tabular-nums mt-0.5">
+              Seizoen {seasonMinutes} min
+            </span>
+          ) : null}
+          {absent ? (
+            <span className="mt-1 inline-block text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+              Niet aanwezig
+            </span>
+          ) : null}
+          {injured ? (
+            <span className="mt-1 inline-block text-xs font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+              Geblesseerd
+            </span>
+          ) : null}
         </div>
-        )}
       </div>
+
+      {hasActions ? (
+        <div className="flex flex-wrap gap-1 items-center">
+          {onSetAvailability ? (
+            <>
+              {showAbsent ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetAvailability(absent ? "available" : "absent")
+                  }
+                  className={clsx(
+                    "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
+                    absent
+                      ? "bg-amber-200 text-amber-800 hover:bg-amber-300"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  aria-label={absent ? "Markeer beschikbaar" : "Markeer afwezig"}
+                  title={absent ? "Beschikbaar" : "Afwezig"}
+                >
+                  {absent ? "✓" : "Afw"}
+                </button>
+              ) : null}
+              {showInjured ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onSetAvailability(injured ? "available" : "injured")
+                  }
+                  className={clsx(
+                    "min-w-[40px] min-h-[40px] rounded-lg px-1.5 text-xs font-bold transition-all active:scale-95",
+                    injured
+                      ? "bg-rose-200 text-rose-800 hover:bg-rose-300"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  aria-label={
+                    injured ? "Markeer beschikbaar" : "Markeer geblesseerd"
+                  }
+                  title={injured ? "Beschikbaar" : "Geblesseerd"}
+                >
+                  {injured ? "✓" : "Bles"}
+                </button>
+              ) : null}
+            </>
+          ) : null}
+
+          {onToggleKeeper && !unavailable ? (
+            <button
+              type="button"
+              onClick={onToggleKeeper}
+              className={clsx(
+                "w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all",
+                "min-w-[40px] min-h-[40px] active:scale-95",
+                isKeeper
+                  ? "bg-yellow-400 text-white shadow-md"
+                  : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+              )}
+              aria-label={isKeeper ? "Verwijder keeper" : "Maak keeper"}
+            >
+              🧤
+            </button>
+          ) : null}
+
+          {onToggleField && !unavailable ? (
+            <button
+              type="button"
+              onClick={onToggleField}
+              className={clsx(
+                "w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all",
+                "min-w-[40px] min-h-[40px] active:scale-95",
+                onField
+                  ? "bg-red-100 text-red-600 hover:bg-red-200"
+                  : "bg-dia-green text-white hover:bg-dia-green-dark"
+              )}
+              aria-label={onField ? "Naar bank" : "Naar veld"}
+            >
+              {onField ? "↓" : "↑"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

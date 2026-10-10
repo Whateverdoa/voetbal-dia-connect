@@ -10,7 +10,7 @@ function player(
   name: string,
   onField: boolean,
   fieldSlotIndex?: number,
-  absent?: boolean
+  options?: { absent?: boolean; injured?: boolean }
 ): MatchPlayer {
   return {
     matchPlayerId: `mp-${id}` as Id<"matchPlayers">,
@@ -19,7 +19,8 @@ function player(
     onField,
     isKeeper: false,
     fieldSlotIndex,
-    absent,
+    absent: options?.absent,
+    injured: options?.injured,
   };
 }
 
@@ -54,7 +55,8 @@ describe("projectSubstitutionPlan", () => {
     player("b", "B", true, 2),
     player("c", "C", false),
     player("d", "D", false),
-    player("e", "E", false, undefined, true),
+    player("e", "E", false, undefined, { absent: true }),
+    player("f", "F", false, undefined, { injured: true }),
   ];
 
   it("moves the first planned substitute into the projected field and changes the bench", () => {
@@ -87,8 +89,16 @@ describe("projectSubstitutionPlan", () => {
     );
 
     expect(result.quarterPreview).toBeDefined();
-    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual(["B", "C", "Keeper"]);
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["C", "D", "Keeper"]);
+    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual([
+      "B",
+      "C",
+      "Keeper",
+    ]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "C",
+      "D",
+      "Keeper",
+    ]);
     expect(names(result.quarterPreview!.quarterStartBench)).toEqual(["A", "D"]);
     expect(names(result.quarterPreview!.projectedBench)).toEqual(["A", "B"]);
   });
@@ -103,7 +113,11 @@ describe("projectSubstitutionPlan", () => {
       2
     );
 
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["B", "C", "Keeper"]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "B",
+      "C",
+      "Keeper",
+    ]);
     expect(names(result.quarterPreview!.projectedBench)).toEqual(["A", "D"]);
   });
 
@@ -115,6 +129,24 @@ describe("projectSubstitutionPlan", () => {
 
     expect(names(result.projectedOnField)).toEqual(["A", "B", "Keeper"]);
     expect(names(result.projectedBench)).toEqual(["C", "D"]);
+  });
+
+  it("treats already-applied live substitutions as no-ops without warnings", () => {
+    const afterLive = [
+      player("gk", "Keeper", true, 0),
+      player("a", "A", false),
+      player("b", "B", true, 2),
+      player("c", "C", true, 1),
+      player("d", "D", false),
+    ];
+    const result = projectSubstitutionPlan(afterLive, [
+      plan(0, "a", "c"),
+      plan(1, "b", "d"),
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(names(result.projectedOnField)).toEqual(["C", "D", "Keeper"]);
+    expect(names(result.projectedBench)).toEqual(["A", "B"]);
   });
 
   it("warns for stale rows and continues from the last valid state", () => {
@@ -133,16 +165,21 @@ describe("projectSubstitutionPlan", () => {
   it("excludes quarterless rows from the quarter preview and reports them separately", () => {
     const result = projectSubstitutionPlan(
       players,
-      [
-        plan(0, "a", "c"),
-        plan(1, "b", "d", { targetQuarter: 2 }),
-      ],
+      [plan(0, "a", "c"), plan(1, "b", "d", { targetQuarter: 2 })],
       2
     );
 
     expect(result.quarterlessPendingRows).toHaveLength(1);
-    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual(["A", "B", "Keeper"]);
-    expect(names(result.quarterPreview!.projectedOnField)).toEqual(["A", "D", "Keeper"]);
+    expect(names(result.quarterPreview!.quarterStartOnField)).toEqual([
+      "A",
+      "B",
+      "Keeper",
+    ]);
+    expect(names(result.quarterPreview!.projectedOnField)).toEqual([
+      "A",
+      "D",
+      "Keeper",
+    ]);
   });
 
   it("excludes absent players from projected candidates", () => {
@@ -152,11 +189,29 @@ describe("projectSubstitutionPlan", () => {
     expect(names(result.projectedBench)).not.toContain("E");
   });
 
+  it("excludes injured players from projected candidates", () => {
+    const result = projectSubstitutionPlan(players, [plan(0, "a", "c")]);
+
+    expect(names(result.startingBench)).not.toContain("F");
+    expect(names(result.projectedBench)).not.toContain("F");
+  });
+
   it("transfers the field slot to the incoming player in projections", () => {
     const result = projectSubstitutionPlan(players, [plan(0, "a", "c")]);
     const incoming = result.projectedOnField.find((current) => current.name === "C");
 
     expect(incoming?.fieldSlotIndex).toBe(1);
+  });
+
+  it("applies pending rows in minute order even when sequence is reversed", () => {
+    const result = projectSubstitutionPlan(players, [
+      plan(0, "c", "d", { targetQuarter: 1, targetMinute: 20 }),
+      plan(1, "a", "c", { targetQuarter: 1, targetMinute: 10 }),
+    ]);
+
+    expect(result.warnings).toHaveLength(0);
+    expect(names(result.projectedOnField)).toEqual(["B", "D", "Keeper"]);
+    expect(names(result.projectedBench)).toEqual(["A", "C"]);
   });
 
   it("applies planned position swaps before later substitutions", () => {

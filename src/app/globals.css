@@ -1,26 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* DIA brand colors - Dutch football club aesthetic */
+  /* RKVV DIA — clubgroen as the calm operational primary; yellow stays an accent. */
   --color-dia-green: #1B5E20;
-  --color-dia-green-light: #2E7D32;
+  --color-dia-green-light: #E8F5E9; /* wash for cards / panels */
   --color-dia-green-dark: #0D3D14;
+  --color-dia-yellow: #FFE713;
+  --color-dia-yellow-deep: #DFC800;
+  --color-dia-black: #0A0A0A;
   --color-dia-white: #FFFFFF;
 }
 
 :root {
   /* Legacy CSS variable for backwards compatibility */
   --dia-green: #1B5E20;
+  --dia-black: #0A0A0A;
 }
 
 html,
 body {
   min-height: 100dvh;
+  max-width: 100%;
   -webkit-text-size-adjust: 100%;
+  /* Pitch-side phones: block sideways page drag from wide pitch/3D cards. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
   @apply bg-gray-50 min-h-screen;
+  position: relative;
+  width: 100%;
 }
 
 /* Score display animation */
@@ -52,7 +62,7 @@ body {
 .timeline-event::before {
   content: '';
   @apply absolute left-3 top-2 w-2 h-2 rounded-full;
-  background-color: var(--dia-green);
+  background-color: var(--dia-black);
 }
 
 .timeline-event::after {
@@ -70,7 +80,7 @@ body {
 }
 
 .player-card.on-field {
-  @apply border-green-600 bg-green-50;
+  @apply border-dia-green bg-dia-green-light;
 }
 
 .player-card.is-keeper {

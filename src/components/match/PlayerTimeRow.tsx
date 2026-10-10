@@ -26,7 +26,7 @@ interface PlayerTimeRowProps {
 const formatMinutes = (minutes: number) => `${Math.round(minutes)} min`;
 
 const statusColors = {
-  good: { bg: "bg-green-100", border: "border-green-300", indicator: "bg-green-500", progress: "bg-green-500", text: "text-green-700" },
+  good: { bg: "bg-dia-green-light", border: "border-dia-yellow-deep/50", indicator: "bg-dia-yellow", progress: "bg-dia-yellow", text: "text-dia-black" },
   warning: { bg: "bg-yellow-50", border: "border-yellow-300", indicator: "bg-yellow-500", progress: "bg-yellow-500", text: "text-yellow-700" },
   critical: { bg: "bg-red-50", border: "border-red-300", indicator: "bg-red-500", progress: "bg-red-500", text: "text-red-700" },
 };
@@ -50,7 +50,7 @@ export function PlayerTimeRow({ player, rank, fairnessStatus, maxMinutes, compac
           <span className={clsx(
             "rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0",
             compact ? "w-7 h-7" : "w-8 h-8",
-            player.onField ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-600"
+            player.onField ? "bg-dia-green-light text-dia-black" : "bg-gray-200 text-gray-600"
           )}>
             {player.number}
           </span>
@@ -66,7 +66,7 @@ export function PlayerTimeRow({ player, rank, fairnessStatus, maxMinutes, compac
               <span className="text-xs bg-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">K</span>
             )}
             {player.onField && !compact && (
-              <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded flex-shrink-0">Veld</span>
+              <span className="text-xs bg-dia-yellow text-white px-1.5 py-0.5 rounded flex-shrink-0">Veld</span>
             )}
           </div>
 

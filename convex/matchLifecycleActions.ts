@@ -9,6 +9,7 @@ import { fetchRefereeForMatch } from "./refereeHelpers";
 import { generatePublicCode, MAX_CODE_GENERATION_ATTEMPTS } from "./helpers";
 import { requireCoachForTeam } from "./lib/userAccess";
 import { assertValidMatchTiming } from "./lib/matchTiming";
+import { seasonKeyFromMs } from "./lib/season";
 import {
   buildEventGameTimeStamp,
   computeQuarterOverrunSeconds,
@@ -62,6 +63,7 @@ export const create = mutation({
     const quarterCount = args.quarterCount ?? 4;
     const regulationMinutes = args.regulationDurationMinutes ?? 60;
     assertValidMatchTiming(quarterCount, regulationMinutes);
+    const seasonBase = args.scheduledAt ?? Date.now();
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode,
@@ -69,6 +71,7 @@ export const create = mutation({
       opponent: trimmedOpponent,
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
+      seasonKey: seasonKeyFromMs(seasonBase),
       status: "scheduled",
       currentQuarter: 1,
       quarterCount,
@@ -235,6 +238,9 @@ export const nextQuarter = mutation({
         halftimeStartedAt: undefined,
         scheduledBreakEndAt: undefined,
         finishedAt: now,
+      });
+      await ctx.scheduler.runAfter(0, internal.gamification.awardMatchXpInternal, {
+        matchId: args.matchId,
       });
       return;
     }

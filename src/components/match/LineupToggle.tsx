@@ -22,7 +22,7 @@ export function LineupToggle({ matchId, showLineup }: LineupToggleProps) {
         <button
           onClick={() => toggleLineup({ matchId })}
           className={`relative w-14 h-8 rounded-full transition-colors min-w-[56px] ${
-            showLineup ? "bg-dia-green" : "bg-gray-300"
+            showLineup ? "bg-dia-black" : "bg-gray-300"
           }`}
           role="switch"
           aria-checked={showLineup}

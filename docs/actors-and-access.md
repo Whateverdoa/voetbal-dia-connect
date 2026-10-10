@@ -10,9 +10,12 @@ Developer-oriented overview: who can do what, where it is enforced, and how club
 | Coach | Clerk + Convex `coach` + `coaches` row | `/coach`, `/coach/match/[id]` |
 | Referee (domain name) | Clerk + Convex `referee` + `referees` row | `/scheidsrechter`, `/scheidsrechter/match/[id]` |
 | Match lead | Same as coach; per-match `matches.leadCoachId` | Coach match UI (e.g. substitutions) |
-| Public (parents, guardians, supporters) | None | `/`, `/live/[code]` — read-only |
+| Public (supporters) | None | `/`, `/live/[code]`, `/team/[slug]` landing — read-only |
+| Parent / member *(planned)* | Clerk + Convex `parent`/`member` + guardian↔player link | `/team/[slug]/app/*` — selection-team portal (gamification); see [`plans/selectie-teamportaal.plan.md`](plans/selectie-teamportaal.plan.md) |
 
 In user-facing Dutch we often call the referee role **wedstrijdbegeleider** (parent/volunteer operating clock and score). The Convex role literal remains `referee` and routes keep `/scheidsrechter` unless renamed in a dedicated migration.
+
+**Selection-team portal (planned):** guardians (and later optionally players) sign in with Clerk for a SaaS-like deck/XP area on selection teams only (`isSelectionTeam`). Public landing stays unauthenticated. Not the same as `/present` (staff kiosk) or one-shot `/consent/[token]`.
 
 ## Two layers: Clerk (routes) vs Convex (data)
 
@@ -45,3 +48,5 @@ The club does not “assign roles inside the login UI”; they maintain **correc
 
 - [`docs/roles.md`](roles.md) — Clerk metadata, bootstrap, onboarding.
 - [`HANDOFF.md`](../HANDOFF.md) — product architecture and import behaviour.
+- [`docs/plans/open-roadmap.md`](plans/open-roadmap.md) — open inventaris (tactiek, portaal, heatmaps).
+- [`docs/plans/selectie-teamportaal.plan.md`](plans/selectie-teamportaal.plan.md) — parent/member portal plan.

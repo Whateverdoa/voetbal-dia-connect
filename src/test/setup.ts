@@ -2,6 +2,14 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
 
+// jsdom has no ResizeObserver; components that measure their box need it.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
 // Mock Convex hooks globally
 vi.mock('convex/react', () => ({
   useQuery: vi.fn(),

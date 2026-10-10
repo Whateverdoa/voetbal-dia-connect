@@ -61,6 +61,27 @@ describe("TimelineSection", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows an own goal credited to the other team", () => {
+    render(
+      <TimelineSection
+        teamName="DIA JO12-1"
+        opponentName="SCO JO12-2"
+        isScheduled={false}
+        events={[
+          buildEvent({
+            type: "goal",
+            isOwnGoal: true,
+            isOpponentGoal: false,
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText("Eigen doelpunt SCO JO12-2 · telt voor DIA JO12-1"),
+    ).toBeInTheDocument();
+  });
+
   it("shows scoring team name for opponent goals", () => {
     render(
       <TimelineSection
@@ -72,5 +93,26 @@ describe("TimelineSection", () => {
     );
 
     expect(screen.getByText("Doelpunt SCO JO12-2")).toBeInTheDocument();
+  });
+
+  it("shows hoekschop on a team goal", () => {
+    render(
+      <TimelineSection
+        teamName="DIA JO13-2"
+        opponentName="TSC O13-2"
+        isScheduled={false}
+        events={[
+          buildEvent({
+            type: "goal",
+            playerName: "Jip",
+            assistKind: "corner",
+          }),
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByText("Doelpunt Jip (DIA JO13-2) · Hoekschop")
+    ).toBeInTheDocument();
   });
 });

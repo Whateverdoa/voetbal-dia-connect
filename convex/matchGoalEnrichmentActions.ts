@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { buildEventGameTimeStamp, getEffectiveEventTime } from "./lib/matchEventGameTime";
+import { assistKindValidator } from "./lib/assistKind";
 import { verifyCoachTeamMembership } from "./pinHelpers";
 import { consumeCommandIdempotency } from "./lib/commandIdempotency";
 
@@ -14,6 +15,7 @@ export const enrichGoal = mutation({
     eventId: v.id("matchEvents"),
     scorerId: v.optional(v.id("players")),
     assistId: v.optional(v.id("players")),
+    assistKind: v.optional(assistKindValidator),
     correlationId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -72,6 +74,7 @@ export const enrichGoal = mutation({
       targetEventId: args.eventId,
       playerId: args.scorerId,
       relatedPlayerId: args.assistId,
+      assistKind: args.assistKind,
       matchMs: toMatchMs(stamp.gameSecond),
       correlationId: args.correlationId,
       commandType: "ENRICH_GOAL",

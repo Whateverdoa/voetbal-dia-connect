@@ -117,7 +117,17 @@ function reducer(session: Session, command: Command): Session {
           : substituteDemoPlayer(match, command.out, command.incoming);
         break;
       }
-      case "positions": next = swapDemoPlayerPositions(match, command.a, command.b); break;
+      case "positions": {
+        const pendingStep = match.plan.steps.find((step) => match.stepStatus[step.id] === "pending");
+        const plannedAction = pendingStep?.actions.find((action) => action.kind === "positionSwap" &&
+          ((action.playerOutKey === command.a && action.playerInKey === command.b) ||
+            (action.playerOutKey === command.b && action.playerInKey === command.a)) &&
+          !(match.completedActionIds ?? []).includes(action.id));
+        next = pendingStep && plannedAction
+          ? executeDemoAction(match, pendingStep.id, plannedAction.id)
+          : swapDemoPlayerPositions(match, command.a, command.b);
+        break;
+      }
       case "formation": next = changeDemoFormation(match, command.formation); break;
       case "jump": {
         const pending = match.plan.steps.find((step) => match.stepStatus[step.id] === "pending" && step.matchMinute * 60 > match.elapsedSeconds);

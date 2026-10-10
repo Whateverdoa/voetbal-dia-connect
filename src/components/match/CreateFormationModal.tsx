@@ -72,8 +72,8 @@ export function CreateFormationModal({
           onChange={(e) => setKind(e.target.value as "8v8" | "11v11")}
           className="w-full px-3 py-2 border rounded-lg text-sm"
         >
-          <option value="8v8">8-tal</option>
           <option value="11v11">11-tal</option>
+          <option value="8v8">8-tal</option>
         </select>
         <label className="block text-sm font-medium text-gray-700">Opbouw (streepjes)</label>
         <input

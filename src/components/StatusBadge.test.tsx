@@ -46,7 +46,7 @@ describe('StatusBadge', () => {
     it('applies green background and pulse animation for live status', () => {
       render(<StatusBadge status="live" />);
       const badge = screen.getByText('LIVE');
-      expect(badge).toHaveClass('bg-green-500');
+      expect(badge).toHaveClass('bg-dia-yellow');
       expect(badge).toHaveClass('animate-pulse');
     });
 
@@ -56,10 +56,10 @@ describe('StatusBadge', () => {
       expect(badge).toHaveClass('bg-orange-500');
     });
 
-    it('applies red background for finished status', () => {
+    it('applies black background for finished status', () => {
       render(<StatusBadge status="finished" />);
       const badge = screen.getByText('Afgelopen');
-      expect(badge).toHaveClass('bg-red-600');
+      expect(badge).toHaveClass('bg-dia-black');
     });
   });
 
@@ -67,7 +67,7 @@ describe('StatusBadge', () => {
     it('shows pulsing dot only for live status', () => {
       const { container } = render(<StatusBadge status="live" />);
       // The live status has an extra pulsing dot element
-      const pulsingDot = container.querySelector('.w-2.h-2.bg-white.rounded-full');
+      const pulsingDot = container.querySelector('.w-2.h-2.bg-dia-black.rounded-full');
       expect(pulsingDot).toBeInTheDocument();
     });
 
@@ -76,7 +76,7 @@ describe('StatusBadge', () => {
       
       statuses.forEach((status) => {
         const { container } = render(<StatusBadge status={status} />);
-        const pulsingDot = container.querySelector('.w-2.h-2.bg-white.rounded-full');
+        const pulsingDot = container.querySelector('.w-2.h-2.bg-dia-black.rounded-full');
         expect(pulsingDot).not.toBeInTheDocument();
       });
     });
@@ -107,7 +107,7 @@ describe('StatusBadge', () => {
       render(<StatusBadge status="live" className="my-custom-class" />);
       const badge = screen.getByText('LIVE');
       expect(badge).toHaveClass('my-custom-class');
-      expect(badge).toHaveClass('bg-green-500'); // Still has default class
+      expect(badge).toHaveClass('bg-dia-yellow'); // Still has default class
     });
   });
 

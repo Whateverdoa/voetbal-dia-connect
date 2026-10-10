@@ -6,7 +6,7 @@ describe('CoachDashboard', () => {
   const mockOnLogout = vi.fn();
   const mockCoachData = {
     coach: { id: 'coach123', name: 'Coach Mike' },
-    teams: [{ id: 'team456', name: 'JO12-1' }],
+    teams: [{ id: 'team456', name: 'JO12-1', slug: 'jo12-1' }],
     matches: [] as any[],
   };
 
@@ -15,11 +15,55 @@ describe('CoachDashboard', () => {
   });
 
   describe('Header', () => {
-    it('renders Dutch welcome message with coach name', () => {
+    it('shows an admin banner when viewing all matches', () => {
+      render(
+        <CoachDashboard
+          data={{ ...mockCoachData, viewingAsAdmin: true }}
+          onLogout={mockOnLogout}
+        />
+      );
+      expect(screen.getByText('Alle teams · dit seizoen')).toBeInTheDocument();
+      expect(screen.queryByText('Je bekijkt dit als admin')).not.toBeInTheDocument();
+    });
+
+    it('shows an empty filter message when admin has no matching teams', () => {
+      render(
+        <CoachDashboard
+          data={{
+            ...mockCoachData,
+            teams: [],
+            matches: [],
+            viewingAsAdmin: true,
+          }}
+          onLogout={mockOnLogout}
+        />
+      );
+      expect(
+        screen.getByText('Geen wedstrijden voor deze filters.')
+      ).toBeInTheDocument();
+    });
+
+    it('links Standen to the coach team stand', () => {
       render(
         <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
-      expect(screen.getByText('Welkom, Coach Mike!')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Standen' })).toHaveAttribute(
+        'href',
+        '/team/jo12-1?tab=stand'
+      );
+    });
+
+    it('links Standen to the team directory for admin view', () => {
+      render(
+        <CoachDashboard
+          data={{ ...mockCoachData, viewingAsAdmin: true }}
+          onLogout={mockOnLogout}
+        />
+      );
+      expect(screen.getByRole('link', { name: 'Standen' })).toHaveAttribute(
+        'href',
+        '/teams'
+      );
     });
 
     it('displays team name in header', () => {
@@ -113,6 +157,10 @@ describe('CoachDashboard', () => {
         <CoachDashboard data={mockCoachData} onLogout={mockOnLogout} />
       );
       expect(screen.getByText('Nieuwe wedstrijd')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Spelers' })).toHaveAttribute(
+        'href',
+        '/coach/team/team456'
+      );
     });
 
     it('new match button links to correct URL with teamId', () => {

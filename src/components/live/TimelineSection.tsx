@@ -1,3 +1,5 @@
+import { formatAssistLine } from "@/lib/assistKind";
+import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
 
 interface TimelineSectionProps {
@@ -63,28 +65,14 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   switch (event.type) {
     case "goal":
       icon = "⚽";
-      const scoringTeamName =
-        event.isOpponentGoal || event.isOwnGoal ? opponentName : teamName;
-      if (event.isOpponentGoal) {
-        text = event.playerName
-          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Doelpunt ${scoringTeamName} (${event.note})`
-            : `Doelpunt ${scoringTeamName}`;
-      } else if (event.isOwnGoal) {
-        text = event.playerName
-          ? `Eigen doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Eigen doelpunt (${scoringTeamName}) (${event.note})`
-            : `Eigen doelpunt (${scoringTeamName})`;
-      } else {
-        text = event.playerName
-          ? `Doelpunt ${event.playerName} (${scoringTeamName})`
-          : event.note
-            ? `Doelpunt ${scoringTeamName} (${event.note})`
-            : `Doelpunt ${scoringTeamName}`;
-        highlight = true;
-      }
+      text = describeGoalEvent(event, teamName, opponentName);
+      highlight = !event.isOpponentGoal && !event.isOwnGoal;
+      break;
+    case "assist":
+      icon = "👟";
+      text =
+        formatAssistLine(event.playerName, event.assistKind) ??
+        `Assist ${event.playerName || ""}`;
       break;
     case "sub_out":
       icon = "🔁";
@@ -109,7 +97,7 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   }
 
   return (
-    <div className={highlight ? "bg-green-50 -mx-2 px-2 py-1 rounded" : "py-1"}>
+    <div className={highlight ? "bg-dia-green-light -mx-2 px-2 py-1 rounded" : "py-1"}>
       <div className="flex items-center gap-3">
         {gameMinute ? (
           <div className="w-14 leading-tight">

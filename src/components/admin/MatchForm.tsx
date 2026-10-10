@@ -216,7 +216,7 @@ export function MatchForm({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-light disabled:bg-slate-300"
+          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white transition hover:bg-dia-green-dark disabled:bg-slate-300"
         >
           {submitting ? "Aanmaken..." : "Wedstrijd aanmaken"}
         </button>
@@ -238,7 +238,7 @@ export function MatchForm({
         className="flex w-full items-center justify-between px-4 py-3 text-left text-lg font-semibold transition hover:bg-slate-50"
       >
         <span className="flex items-center gap-2">
-          <Plus size={20} className="text-dia-green" />
+          <Plus size={20} className="text-dia-black" />
           Nieuwe wedstrijd
         </span>
         {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}

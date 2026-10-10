@@ -6,38 +6,40 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import type { PublicMatch } from "@/types/publicMatch";
 import {
+  browserListGroup,
   filterMatchesForBrowser,
   type TimeFilter,
   type VenueFilter,
 } from "@/lib/matchBrowserFilters";
 import { MatchBrowserCard } from "@/components/MatchBrowserCard";
+import { activeSeasonKey } from "@/lib/season";
 
 const statusGroups = [
   {
     key: "live" as const,
     label: "LIVE",
-    filter: (m: PublicMatch) => m.status === "live" || m.status === "halftime",
-    dotClass: "bg-green-500 animate-pulse",
-    labelClass: "text-green-600",
+    group: "live" as const,
+    dotClass: "bg-dia-yellow animate-pulse",
+    labelClass: "text-dia-black",
   },
   {
     key: "scheduled" as const,
     label: "Gepland",
-    filter: (m: PublicMatch) => m.status === "scheduled",
+    group: "scheduled" as const,
     dotClass: "bg-blue-500",
     labelClass: "text-blue-700",
   },
   {
     key: "finished" as const,
     label: "Afgelopen",
-    filter: (m: PublicMatch) => m.status === "finished",
+    group: "finished" as const,
     dotClass: "bg-red-500",
     labelClass: "text-red-600",
   },
 ];
 
 const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
-  weekend: "Komend weekend",
+  weekend: "Dit weekend",
   today: "Vandaag",
   week: "Deze week",
   all: "Alle wedstrijden",
@@ -45,7 +47,7 @@ const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
 
 const TIME_FILTER_HELP: Record<TimeFilter, string> = {
   weekend:
-    "Live wedstrijden plus geplande en afgelopen wedstrijden in het komende weekendvenster (vrij–zon).",
+    "Live wedstrijden plus geplande en afgelopen wedstrijden in het weekendvenster (vrij–zon).",
   today: "Live wedstrijden plus wedstrijden met een aanvang vandaag (lokale tijd).",
   week: "Live wedstrijden plus wedstrijden in de huidige kalenderweek (ma–zo).",
   all: "Alle zichtbare wedstrijden in de app.",
@@ -72,7 +74,9 @@ function sortMatchesInGroup(
 }
 
 export function MatchBrowser() {
-  const matches = useQuery(api.matches.listPublicMatches);
+  const matches = useQuery(api.matches.listPublicMatches, {
+    seasonKey: activeSeasonKey(),
+  });
   const connection = useConvexConnectionState();
   const [showConnectionIssue, setShowConnectionIssue] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,11 +119,13 @@ export function MatchBrowser() {
     );
   }
 
+  const now = Date.now();
   const filteredMatches = filterMatchesForBrowser(
     matches,
     searchTerm,
     timeFilter,
-    venueFilter
+    venueFilter,
+    now,
   );
   const normalizedSearch = searchTerm.trim();
   const hasMatches = filteredMatches.length > 0;
@@ -138,7 +144,7 @@ export function MatchBrowser() {
             ? "Geen wedstrijden in deze week"
             : timeFilter === "all"
               ? "Geen wedstrijden"
-              : "Geen wedstrijden in deze periode (komend weekend)";
+              : "Geen wedstrijden in deze periode (dit weekend)";
 
   return (
     <div className="mt-8">
@@ -215,7 +221,7 @@ export function MatchBrowser() {
         <div className="space-y-6">
           {statusGroups.map((group) => {
             const groupMatches = sortMatchesInGroup(
-              filteredMatches.filter(group.filter),
+              filteredMatches.filter((m) => browserListGroup(m, now) === group.group),
               group.key
             );
             if (groupMatches.length === 0) return null;
@@ -238,7 +244,7 @@ export function MatchBrowser() {
                 <ul className="flex flex-col gap-3" role="list">
                   {groupMatches.map((match) => (
                     <li key={match._id} className="w-full">
-                      <MatchBrowserCard match={match as PublicMatch} />
+                      <MatchBrowserCard match={match as PublicMatch} now={now} />
                     </li>
                   ))}
                 </ul>
@@ -253,7 +259,7 @@ export function MatchBrowser() {
             <button
               type="button"
               onClick={() => setSearchTerm("")}
-              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+              className="min-h-[44px] text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
             >
               Wis zoekopdracht
             </button>
@@ -262,7 +268,7 @@ export function MatchBrowser() {
             <button
               type="button"
               onClick={() => setTimeFilter("all")}
-              className="min-h-[44px] text-sm font-medium text-dia-green hover:text-green-700 transition-colors"
+              className="min-h-[44px] text-sm font-medium text-dia-black hover:text-dia-black transition-colors"
             >
               Toon alle wedstrijden
             </button>

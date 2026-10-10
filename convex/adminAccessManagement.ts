@@ -29,7 +29,7 @@ export const backfillUserAccess = mutation({
     for (const email of getBootstrapAdminEmails()) {
       await upsertUserAccess(ctx, {
         email,
-        roles: ["admin"],
+        roles: ["admin", "coach", "referee"],
         source: "bootstrap_admin",
       });
       createdOrUpdated += 1;

@@ -109,8 +109,8 @@ describe("PitchView", () => {
     it("calls substituteFromField when bench player selected then field player clicked", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("HENK"));
-      fireEvent.click(screen.getByText("JAN"));
+      fireEvent.click(screen.getByText("HENK 11"));
+      fireEvent.click(screen.getByText("Jan 10"));
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
@@ -125,8 +125,8 @@ describe("PitchView", () => {
     it("calls substituteFromField when field player selected then bench player clicked", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("JAN"));
-      fireEvent.click(screen.getByText("HENK"));
+      fireEvent.click(screen.getByText("Jan 10"));
+      fireEvent.click(screen.getByText("HENK 11"));
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
@@ -143,8 +143,8 @@ describe("PitchView", () => {
     it("calls swapFieldPositions when two field players selected", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("JAN"));
-      fireEvent.click(screen.getByText("PIET"));
+      fireEvent.click(screen.getByText("Jan 10"));
+      fireEvent.click(screen.getByText("Piet 7"));
 
       expect(mockSwap).toHaveBeenCalledWith({
         matchId,
@@ -159,8 +159,8 @@ describe("PitchView", () => {
     it("calls assignPlayerToSlot and togglePlayerOnField when bench→field in pre-game", () => {
       renderPitchView("scheduled");
 
-      fireEvent.click(screen.getByText("HENK"));
-      fireEvent.click(screen.getByText("JAN"));
+      fireEvent.click(screen.getByText("HENK 11"));
+      fireEvent.click(screen.getByText("Jan 10"));
 
       expect(mockAssign).toHaveBeenCalledWith({
         matchId,

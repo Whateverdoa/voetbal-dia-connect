@@ -3,15 +3,16 @@
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { recordPlayingTime, startPlayingTime } from "./playingTimeHelpers";
 import {
-  verifyCoachTeamMembership,
+  verifyClockPin,
   verifyIsMatchLead,
 } from "./pinHelpers";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
 } from "./lib/matchEventGameTime";
+import { assistKindValidator } from "./lib/assistKind";
+import { applyBenchSubstitutionWithSlotTransfer } from "./lib/benchSubstitutionCore";
 
 // Record a goal
 export const addGoal = mutation({
@@ -20,6 +21,7 @@ export const addGoal = mutation({
     correlationId: v.optional(v.string()),
     playerId: v.optional(v.id("players")),
     assistPlayerId: v.optional(v.id("players")),
+    assistKind: v.optional(assistKindValidator),
     isOwnGoal: v.optional(v.boolean()),
     isOpponentGoal: v.optional(v.boolean()),
   },
@@ -28,7 +30,7 @@ export const addGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match))) {
+    if (!(await verifyClockPin(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
 
@@ -57,6 +59,7 @@ export const addGoal = mutation({
       type: "goal",
       playerId: args.playerId,
       relatedPlayerId: args.assistPlayerId,
+      assistKind: args.assistKind,
       quarter: match.currentQuarter,
       matchMs: goalStamp.gameSecond * 1000,
       isOwnGoal: args.isOwnGoal,
@@ -76,6 +79,7 @@ export const addGoal = mutation({
         type: "assist",
         playerId: args.assistPlayerId,
         relatedPlayerId: args.playerId,
+        assistKind: args.assistKind,
         quarter: match.currentQuarter,
         matchMs: assistStamp.gameSecond * 1000,
         correlationId: args.correlationId,
@@ -105,74 +109,12 @@ export const substitute = mutation({
       throw new Error("Alleen de wedstrijdleider mag wissels uitvoeren");
     }
 
-    const now = Date.now();
-    const effectiveEventTime = getEffectiveEventTime(match, now);
-    const substitutionStamp = buildEventGameTimeStamp(match, effectiveEventTime);
-
-    // Find match players
-    const mpOut = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerOutId)
-      )
-      .first();
-
-    const mpIn = await ctx.db
-      .query("matchPlayers")
-      .withIndex("by_match_player", (q) =>
-        q.eq("matchId", args.matchId).eq("playerId", args.playerInId)
-      )
-      .first();
-
-    if (!mpOut || !mpIn) {
-      throw new Error("Speler niet in deze wedstrijd");
-    }
-    if (!mpOut.onField) {
-      throw new Error("Speler die eruit gaat moet op het veld staan");
-    }
-    if (mpIn.onField) {
-      throw new Error("Speler die erin gaat moet op de bank staan");
-    }
-    if (mpIn.absent) {
-      throw new Error("Afwezige speler kan niet worden ingewisseld");
-    }
-
-    // Player going OFF - record their playing time
-    if (mpOut.lastSubbedInAt) {
-      await recordPlayingTime(ctx, mpOut, now);
-    }
-    await ctx.db.patch(mpOut._id, { onField: false, lastSubbedInAt: undefined });
-
-    // Player going ON - start tracking their time
-    await startPlayingTime(ctx, mpIn._id, now);
-
-    // Log events
-    await ctx.db.insert("matchEvents", {
+    await applyBenchSubstitutionWithSlotTransfer(ctx, {
       matchId: args.matchId,
-      type: "sub_out",
-      playerId: args.playerOutId,
-      relatedPlayerId: args.playerInId,
-      quarter: match.currentQuarter,
-      matchMs: substitutionStamp.gameSecond * 1000,
+      playerOutId: args.playerOutId,
+      playerInId: args.playerInId,
       correlationId: args.correlationId,
       commandType: "SUBSTITUTE",
-      timestamp: effectiveEventTime,
-      ...substitutionStamp,
-      createdAt: now,
-    });
-
-    await ctx.db.insert("matchEvents", {
-      matchId: args.matchId,
-      type: "sub_in",
-      playerId: args.playerInId,
-      relatedPlayerId: args.playerOutId,
-      quarter: match.currentQuarter,
-      matchMs: substitutionStamp.gameSecond * 1000,
-      correlationId: args.correlationId,
-      commandType: "SUBSTITUTE",
-      timestamp: effectiveEventTime,
-      ...substitutionStamp,
-      createdAt: now,
     });
   },
 });
@@ -187,7 +129,7 @@ export const removeLastGoal = mutation({
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
-    if (!(await verifyCoachTeamMembership(ctx, match))) {
+    if (!(await verifyClockPin(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }
 

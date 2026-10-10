@@ -60,7 +60,7 @@ function ManagementButton({
       onClick={onClick}
       className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
         active
-          ? "border-dia-green bg-emerald-50 text-dia-green"
+          ? "border-dia-green bg-dia-green-light text-dia-black"
           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
       }`}
     >
@@ -87,13 +87,15 @@ export function AdminWorkspace({ onLogout }: { onLogout: () => void }) {
             </Link>
             <h1 className="mt-1 text-2xl font-semibold text-slate-900">Admin werkplek</h1>
           </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
-            Uitloggen
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onLogout}
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Uitloggen
+            </button>
+          </div>
         </div>
       </header>
 
@@ -101,7 +103,7 @@ export function AdminWorkspace({ onLogout }: { onLogout: () => void }) {
         <section className="rounded-[32px] border border-white/60 bg-white/75 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-green">DIA admin</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-dia-black">DIA admin</p>
               <h2 className="mt-2 text-3xl font-semibold text-slate-900">Overzicht voor toewijzen en beheer</h2>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
                 Gebruik toewijzing voor wedstrijden en scheidsrechters. Beheer blijft beschikbaar voor teams, spelers, coaches en setup.

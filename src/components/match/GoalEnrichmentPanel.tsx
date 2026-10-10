@@ -6,6 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchEvent, MatchPlayer } from "./types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { describeGoalEvent } from "@/lib/goalEventText";
+
+function playerLabel(player: MatchPlayer): string {
+  return player.number != null ? `#${player.number} ${player.name}` : player.name;
+}
 
 interface GoalEnrichmentPanelProps {
   matchId: Id<"matches">;
@@ -26,6 +31,9 @@ export function GoalEnrichmentPanel({
   const [targetId, setTargetId] = useState<Id<"matchEvents"> | null>(null);
   const [scorerId, setScorerId] = useState<Id<"players"> | "">("");
   const [assistId, setAssistId] = useState<Id<"players"> | "">("");
+  const [assistKind, setAssistKind] = useState<
+    "" | "pass" | "corner" | "free_kick" | "penalty"
+  >("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,10 +50,12 @@ export function GoalEnrichmentPanel({
     if (!selectedGoal) {
       setScorerId("");
       setAssistId("");
+      setAssistKind("");
       return;
     }
     setScorerId(selectedGoal.playerId ?? "");
     setAssistId(selectedGoal.relatedPlayerId ?? "");
+    setAssistKind(selectedGoal.assistKind ?? "");
   }, [selectedGoal]);
 
   if (goals.length === 0) {
@@ -62,11 +72,13 @@ export function GoalEnrichmentPanel({
         eventId: targetId,
         scorerId: scorerId || undefined,
         assistId: assistId || undefined,
+        assistKind: assistKind || undefined,
         correlationId: createCorrelationId("enrich-goal"),
       });
       setTargetId(null);
       setScorerId("");
       setAssistId("");
+      setAssistKind("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Onbekende fout");
     } finally {
@@ -78,7 +90,8 @@ export function GoalEnrichmentPanel({
     <section className="bg-white rounded-xl shadow-md p-4 space-y-3">
       <h2 className="font-bold text-lg">Doelpunt aanvullen</h2>
       <p className="text-sm text-gray-600">
-        Kies een doelpunt en vul scorer/assist in of pas deze achteraf aan.
+        Kies een doelpunt. Je mag penalty, hoekschop of vrije trap zetten —
+        scorer en assist zijn optioneel.
       </p>
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -94,13 +107,9 @@ export function GoalEnrichmentPanel({
         <option value="">Selecteer doelpunt</option>
         {goals.map((goal) => (
           <option key={String(goal._id)} value={String(goal._id)}>
-            Kwart {goal.quarter} • {goal.displayMinute ?? "?"}'
-            {` • ${
-              goal.isOpponentGoal || goal.isOwnGoal ? opponentName : teamName
-            }`}
-            {goal.playerName ? ` • scorer: ${goal.playerName}` : ""}
-            {goal.relatedPlayerName ? ` • assist: ${goal.relatedPlayerName}` : ""}
-            {goal.note ? ` • ${goal.note}` : ""}
+            {describeGoalEvent(goal, teamName, opponentName)}
+            {` · K${goal.quarter} ${goal.displayMinute ?? "?"}'`}
+            {goal.relatedPlayerName ? ` · assist ${goal.relatedPlayerName}` : ""}
           </option>
         ))}
       </select>
@@ -114,7 +123,7 @@ export function GoalEnrichmentPanel({
           <option value="">Scorer (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
         </select>
@@ -126,16 +135,31 @@ export function GoalEnrichmentPanel({
           <option value="">Assist (optioneel)</option>
           {players.map((player) => (
             <option key={String(player.playerId)} value={String(player.playerId)}>
-              {player.name}
+              {playerLabel(player)}
             </option>
           ))}
+        </select>
+        <select
+          value={assistKind}
+          onChange={(e) =>
+            setAssistKind(
+              e.target.value as "" | "pass" | "corner" | "free_kick" | "penalty"
+            )
+          }
+          className="w-full border border-gray-300 rounded-lg p-3 min-h-[48px] text-base sm:col-span-2"
+        >
+          <option value="">Hoe ontstond het doelpunt? (optioneel)</option>
+          <option value="pass">Pass / assist</option>
+          <option value="penalty">Penalty</option>
+          <option value="free_kick">Vrije trap</option>
+          <option value="corner">Hoekschop</option>
         </select>
       </div>
 
       <button
         onClick={onSave}
         disabled={busy || !targetId}
-        className="w-full py-3 min-h-[48px] bg-dia-green text-white rounded-lg text-base font-medium disabled:opacity-50"
+        className="w-full py-3 min-h-[48px] bg-dia-black text-dia-yellow rounded-lg text-base font-medium disabled:opacity-50"
       >
         {busy ? "Bezig..." : "Opslaan"}
       </button>

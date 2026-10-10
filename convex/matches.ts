@@ -10,10 +10,18 @@ import {
   applyGoalEnrichments,
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
+  recordedPlayerName,
 } from "./lib/matchEventProjection";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
+import {
+  getCurrentUserAccess,
+  requireCoachForMatch,
+} from "./lib/userAccess";
+import { hasAdminRole } from "./lib/adminOverride";
+import { coachScreenMayControlClock } from "./lib/officialDuty";
+import { redactPlayerForPublic, type ConsentRow } from "./lib/privacyFilter";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -62,7 +70,7 @@ export const getByPublicCode = query({
 
     const enrichedEvents = events.map((e) => ({
       ...e,
-      playerName: e.playerId ? playerMap[e.playerId] : undefined,
+      playerName: recordedPlayerName(e, e.playerId ? playerMap[e.playerId] : undefined),
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
@@ -80,13 +88,38 @@ export const getByPublicCode = query({
       const lineupPlayers = await Promise.all(
         matchPlayers.map(async (mp) => {
           const player = await ctx.db.get(mp.playerId);
-          return player ? {
+          if (!player) return null;
+
+          const consents = await ctx.db
+            .query("playerConsents")
+            .withIndex("by_player", (q) => q.eq("playerId", player._id))
+            .collect();
+          const redacted = redactPlayerForPublic(
+            {
+              _id: String(player._id),
+              name: player.name,
+              number: player.number,
+              photoUrl: player.photoUrl,
+            },
+            consents as ConsentRow[]
+          );
+
+          const selection = team?.isSelectionTeam === true;
+          const displayName = selection
+            ? redacted.displayName
+            : player.name.split(/\s+/).filter(Boolean)[0] ?? player.name;
+
+          return {
             id: mp.playerId,
-            name: player.name,
+            name: displayName,
             number: player.number,
             onField: mp.onField,
             isKeeper: mp.isKeeper,
-          } : null;
+            fieldSlotIndex: mp.fieldSlotIndex,
+            photoUrl: selection
+              ? (redacted.photoUrl ?? undefined)
+              : player.photoUrl,
+          };
         })
       );
       lineup = lineupPlayers.filter(Boolean);
@@ -106,7 +139,9 @@ export const getByPublicCode = query({
       homeScore: match.homeScore,
       awayScore: match.awayScore,
       showLineup: match.showLineup,
+      formationId: match.formationId,
       scheduledAt: match.scheduledAt,
+      venueField: match.isHome ? (match.venueField ?? null) : null,
       startedAt: match.startedAt,
       quarterStartedAt: match.quarterStartedAt,
       pausedAt: match.pausedAt,
@@ -139,15 +174,21 @@ export const getForCoach = query({
     const match = await ctx.db.get(args.matchId);
     if (!match) return null;
 
-    const identity = await ctx.auth.getUserIdentity();
-    const email = identity?.email?.trim().toLowerCase();
-    if (!email) return null;
+    const access = await getCurrentUserAccess(ctx);
+    if (!access) return null;
 
-    const coach = await ctx.db
-      .query("coaches")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-    if (!coach || !coach.teamIds.includes(match.teamId)) return null;
+    let coach: Doc<"coaches"> | null = null;
+    if (hasAdminRole(access)) {
+      if (access.coachId) {
+        coach = await ctx.db.get(access.coachId);
+      }
+    } else {
+      try {
+        coach = await requireCoachForMatch(ctx, match);
+      } catch {
+        return null;
+      }
+    }
 
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);
@@ -181,6 +222,7 @@ export const getForCoach = query({
           onField: mp.onField,
           isKeeper: mp.isKeeper,
           absent: mp.absent ?? false,
+          injured: mp.injured ?? false,
           minutesPlayed: Math.round(totalMinutes * 10) / 10,
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,
@@ -209,7 +251,7 @@ export const getForCoach = query({
 
     const enrichedEvents = events.map((e) => ({
       ...e,
-      playerName: e.playerId ? playerMap[e.playerId] : undefined,
+      playerName: recordedPlayerName(e, e.playerId ? playerMap[e.playerId] : undefined),
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
@@ -249,8 +291,12 @@ export const getForCoach = query({
       }
     }
 
-    const isCurrentCoachLead = match.leadCoachId === coach._id;
-    const canControlClock = !!match.refereeId || isCurrentCoachLead;
+    const viewingAsAdmin = hasAdminRole(access);
+    const isCurrentCoachLead =
+      viewingAsAdmin || (coach !== null && match.leadCoachId === coach._id);
+    const canControlClock =
+      coachScreenMayControlClock(match) &&
+      (viewingAsAdmin || isCurrentCoachLead);
 
     const planRows = await ctx.db
       .query("substitutionPlans")
@@ -280,6 +326,8 @@ export const getForCoach = query({
           updatedAt: r.updatedAt,
           outName: po?.name,
           inName: pi?.name,
+          outNumber: po?.number,
+          inNumber: pi?.number,
         };
       })
     );
@@ -291,6 +339,7 @@ export const getForCoach = query({
       opponent: match.opponent,
       isHome: match.isHome,
       scheduledAt: match.scheduledAt,
+      venueField: match.isHome ? (match.venueField ?? null) : null,
       status: match.status,
       currentQuarter: match.currentQuarter,
       quarterCount: match.quarterCount,
@@ -330,6 +379,7 @@ export const getForCoach = query({
       hasLead: !!match.leadCoachId,
       isCurrentCoachLead,
       canControlClock,
+      viewingAsAdmin,
     };
   },
 });

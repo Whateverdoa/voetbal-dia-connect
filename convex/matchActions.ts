@@ -6,6 +6,7 @@
 
 // Re-export from split modules for backwards compatibility
 export { addGoal, substitute, removeLastGoal } from "./matchEvents";
+export { addCard } from "./matchCardActions";
 export {
   stageSubstitution,
   confirmSubstitution,
@@ -15,6 +16,7 @@ export { enrichGoal } from "./matchGoalEnrichmentActions";
 export {
   togglePlayerOnField,
   toggleKeeper,
+  setPlayerAvailability,
   togglePlayerAbsent,
   toggleShowLineup,
   assignPlayerToSlot,

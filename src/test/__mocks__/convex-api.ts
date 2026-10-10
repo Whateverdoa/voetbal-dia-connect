@@ -60,6 +60,7 @@ export const api = {
     substituteFromField: "matchActions:substituteFromField",
     stageSubstitution: "matchActions:stageSubstitution",
     removeLastGoal: "matchActions:removeLastGoal",
+    addCard: "matchActions:addCard",
     assignPlayerToSlot: "matchActions:assignPlayerToSlot",
     togglePlayerOnField: "matchActions:togglePlayerOnField",
     swapFieldPositions: "matchActions:swapFieldPositions",
@@ -68,6 +69,10 @@ export const api = {
     resumeFromHalftime: "matchActions:resumeFromHalftime",
     pauseClock: "matchActions:pauseClock",
     resumeClock: "matchActions:resumeClock",
+  },
+  userQueries: {
+    getMyRoles: "userQueries:getMyRoles",
+    getMyCoachTeams: "userQueries:getMyCoachTeams",
   },
   substitutionPlans: {
     addPlanItem: "substitutionPlans:addPlanItem",

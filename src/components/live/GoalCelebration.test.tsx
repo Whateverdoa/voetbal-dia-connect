@@ -44,7 +44,7 @@ describe('GoalCelebration', () => {
         <GoalCelebration show={true} isOurGoal={true} onComplete={onComplete} />
       );
       const goalText = screen.getByText('GOAL!');
-      expect(goalText).toHaveClass('text-green-500');
+      expect(goalText).toHaveClass('text-dia-yellow-deep');
     });
 
     it('shows confetti effect for our goal', () => {

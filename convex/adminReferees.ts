@@ -15,14 +15,17 @@ export const createReferee = mutation({
   args: {
     name: v.string(),
     email: v.string(),
+    contactEmail: v.optional(v.string()),
     qualificationTags: v.optional(v.array(v.string())),
     showPublicName: v.optional(v.boolean()),
+    inClaimPool: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx);
 
     const trimmedName = args.name.trim();
     const trimmedEmail = args.email.trim().toLowerCase();
+    const contactEmail = args.contactEmail?.trim().toLowerCase();
 
     if (!trimmedName) {
       throw new Error("Naam is verplicht");
@@ -44,6 +47,8 @@ export const createReferee = mutation({
       name: trimmedName,
       email: trimmedEmail,
       active: true,
+      inClaimPool: args.inClaimPool !== false,
+      ...(contactEmail ? { contactEmail } : {}),
       ...(qualificationTags.length > 0 ? { qualificationTags } : {}),
       ...(args.showPublicName === true ? { showPublicName: true } : {}),
       createdAt: Date.now(),
@@ -72,7 +77,9 @@ export const updateReferee = mutation({
     refereeId: v.id("referees"),
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    contactEmail: v.optional(v.union(v.string(), v.null())),
     active: v.optional(v.boolean()),
+    inClaimPool: v.optional(v.boolean()),
     qualificationTags: v.optional(v.array(v.string())),
     showPublicName: v.optional(v.boolean()),
   },
@@ -87,7 +94,9 @@ export const updateReferee = mutation({
     const updates: {
       name?: string;
       email?: string;
+      contactEmail?: string | undefined;
       active?: boolean;
+      inClaimPool?: boolean;
       qualificationTags?: string[];
       showPublicName?: boolean;
     } = {};
@@ -119,6 +128,18 @@ export const updateReferee = mutation({
 
     if (args.active !== undefined) {
       updates.active = args.active;
+    }
+
+    if (args.inClaimPool !== undefined) {
+      updates.inClaimPool = args.inClaimPool;
+    }
+
+    if (args.contactEmail !== undefined) {
+      if (args.contactEmail === null || args.contactEmail.trim() === "") {
+        updates.contactEmail = undefined;
+      } else {
+        updates.contactEmail = args.contactEmail.trim().toLowerCase();
+      }
     }
 
     if (args.qualificationTags !== undefined) {

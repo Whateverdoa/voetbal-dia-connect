@@ -1,6 +1,6 @@
 # Wisselmodule — foto, wisselblad en print
 
-Status op 30 september 2026: ontwerpvoorstel, uitgewerkt praktijkvoorbeeld, zelfstandige controlefunctie en een werkende lokale demonstratie op **`/demo/wisselmodule`**. De demo laat verificatie, uitvoering en plan versus demowerkelijkheid interactief zien. De volledige module, automatische fotoherkenning en de appkoppeling zijn nog niet gebouwd. De aangeleverde handgeschreven lijst is visueel overgenomen en intern gecontroleerd; een geslaagde berekening geeft geen automatische bronbevestiging door de coach.
+Status op 10 oktober 2026: ontwerpvoorstel, uitgewerkte praktijkvoorbeelden, zelfstandige controlefunctie en een werkende lokale demonstratie op **`/demo/wisselmodule`**. De demo laat broncontrole, handmatige en automatische oefenwissels, positieruilen, formatiekeuze, A4-print en plan versus demowerkelijkheid interactief zien. De volledige module, automatische fotoherkenning en de appkoppeling zijn nog niet gebouwd. De aangeleverde handgeschreven lijst is visueel overgenomen en intern gecontroleerd; een geslaagde berekening geeft geen automatische bronbevestiging door de coach.
 
 ## Wat de coach ermee kan
 
@@ -479,3 +479,13 @@ Alle 9 bankwissels en 6 positieruilen zijn uitvoerbaar: steeds 11 op het veld en
 De engine verdeelt speelminuten per interval tussen wisselmomenten en slaat iedere uitvoering met veldsnapshot op. Uitgevoerde, deels uitgevoerde en overgeslagen regels worden gerespecteerd. Bij een conflict met de actuele opstelling pauzeert de demo op dat moment met een foutmelding: de hele conflicterende groep blijft onuitgevoerd, eerdere geldige voortgang blijft behouden. Later inschakelen van automatisch wisselen voert achterstallige regels op de actuele tijd uit, zonder het verleden te herschrijven. Het oorspronkelijke plan blijft intact; er zijn geen writes naar de wedstrijdapp.
 
 Verificatie: 52 engine-tests en 21 UI-tests geslaagd, inclusief twee volledige Reeshof-helften met alle 15 acties, exacte individuele speelminuten en 660 veldminuten. Gerichte TypeScript- en ESLint-controles geslaagd. Browsercontrole bevestigt automatische uitvoering op 10:00 met Lucas op LW, Revi op CM en Krijn op CB.
+
+### Integratie met main — 10 oktober 2026
+
+De demo is geïntegreerd met `main` op `252ac3a`, inclusief Next.js 16.3.1 en Convex 1.44.0. Alleen de exacte route `/demo/wisselmodule` draait zonder Clerk- en Convex-providers. Op normale app-routes blijven navigatie en `SignedInRoleSync` binnen beide providers; de bestaande coach-, scheidsrechter- en presentatiefunctionaliteit uit main blijft behouden.
+
+Een handmatig uitgevoerde positieruil die overeenkomt met de eerstvolgende open planactie wordt als uitgevoerd gemarkeerd. De automatische demonstratie herhaalt deze ruil niet; beide selecteervolgordes zijn getest. Het A4-printrooster laat de hoogte van wisselteksten meegroeien, zodat ook het uitgebreide Reeshof-moment op 40 minuten boven het veldplaatje past.
+
+Verificatie: alle 173 tests voor de demo, planvalidatie, bronnen en providergrenzen geslaagd; TypeScript, gerichte ESLint-controle en de PIN-guard geslaagd. De frontendproductiebuild slaagt met de bestaande publieke Clerk-configuratie; er is geen backenddeployment uitgevoerd. De volledige suite bevat daarnaast 21 bestaande fouten in vijf pitch-/plannertestbestanden. Dezelfde testnamen en foutmeldingen zijn gereproduceerd tegen een schone kopie van `origin/main` op `252ac3a`. Drie demo-timeouts tijdens gelijktijdige build en volledige suite traden niet meer op bij de gerichte run met twee workers.
+
+De oude, al door Git genegeerde map `devoorbereiding/` valt ook buiten de TypeScript-projectscope. Broncode, tests en dit ontwerp worden gecommit; gegenereerde rapporten, wedstrijdback-ups, tijdelijke scripts en IDE-bestanden blijven lokaal.

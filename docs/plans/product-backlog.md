@@ -75,7 +75,12 @@ Samenvatting van **openstaande** product- en techniekwerk, naast **HANDOFF.md** 
 - **Spelers met foto’s** — upload in admin, tonen op veld/bank, fallback initialen/rugnummer.
 - **Veldlayout plat bovenaanzicht** — designafstemming (o.a. met Roel) vóór bouw.
 - **Pre-match planning** — opstelling/wissels per kwart vooraf; draft los van `matchEvents` tot bevestiging; **apart WAT+HOE-document vóór implementatie**.
-- **Wisselmodule: foto, controle en plan tegenover uitvoering** — foto direct vanuit de coachwedstrijd, bewerkbaar/verifieerbaar plan, veldkaartjes op één A4, import en vergelijking met werkelijke wissels en speelminuten tijdens/na de wedstrijd. Vaste planversies en uitvoeringskoppelingen nodig voor het eindrapport. Ontwerp en koppelregels: **[wisselmodule.md](wisselmodule.md)**. Status: ontwerp, voorbeeldexports en zelfstandige controlefunctie beschikbaar; volledige module/appkoppeling nog te bouwen.
+- **Wisselmodule: foto, controle en plan tegenover uitvoering** — foto direct vanuit de coachwedstrijd, bewerkbaar/verifieerbaar plan, veldkaartjes op één A4, import en vergelijking met werkelijke wissels en speelminuten tijdens/na de wedstrijd. Vaste planversies en uitvoeringskoppelingen nodig voor het eindrapport. Ontwerp en koppelregels: **[wisselmodule.md](wisselmodule.md)**. Status: lokale demo met broncontrole, automatische oefenwissels en A4-print beschikbaar; automatische fotoherkenning en volledige appkoppeling nog te bouwen.
+- **Tactiek op presentatie** — wisselplan read-only op `/present` — [`tactiek-presentatie.plan.md`](./tactiek-presentatie.plan.md).
+- **Selectie-teamportaal** — publieke landing + Clerk member-gamificatie (JO13 eerst, uitbreidbaar) — [`selectie-teamportaal.plan.md`](./selectie-teamportaal.plan.md).
+- **Heatmaps (future)** — tactische zones, geen GPS — [`heatmaps-future.md`](./heatmaps-future.md).
+
+**Open inventaris:** [`open-roadmap.md`](./open-roadmap.md).
 
 ---
 
@@ -90,6 +95,7 @@ Samenvatting van **openstaande** product- en techniekwerk, naast **HANDOFF.md** 
 ## 7. Optioneel / meta
 
 - **Logo’s:** upload naar Convex storage als statische URLs tekort schieten (HANDOFF § *Club-/teamlogo's*).
+- **Next.js middleware → proxy:** `src/middleware.ts` hernoemen vóór Next 17 (HANDOFF § *Tech-schulden*).
 - **Tracker:** issues uit dit document naar GitHub Issues / Projects voor voortgangsdates en owners.
 
 ---

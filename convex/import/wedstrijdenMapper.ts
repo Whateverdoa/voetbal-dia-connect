@@ -40,6 +40,8 @@ export type WedstrijdDoc = {
   scheidsrechter: string;
   thuisteamLogo?: string;
   uitteamLogo?: string;
+  /** Present when staged from Sportlink Club.Dataservice. */
+  sportlink_wedstrijdcode?: string;
 };
 
 function stripHtml(uitslag: string): string {

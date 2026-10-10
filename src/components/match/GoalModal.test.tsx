@@ -352,19 +352,10 @@ describe('GoalModal', () => {
       fireEvent.click(screen.getByText('GOAL!'));
       fireEvent.click(screen.getByText('Jan'));
 
-      // In the assist section, Jan should not appear as a player option (he's the scorer)
-      // The assist section should have "Geen assist" + other players (not Jan)
-      const assistHeading = screen.getByText('Assist (optioneel)');
-      expect(assistHeading).toBeInTheDocument();
-      
-      // Get all buttons after the assist heading
-      const assistContainer = assistHeading.parentElement?.parentElement;
-      const assistGrid = assistContainer?.querySelectorAll('.grid')[1]; // Second grid is assist
-      const assistButtons = assistGrid?.querySelectorAll('button');
-      
-      // Should have "Geen assist" + 3 other players (not Jan who is scorer)
-      // Total: 4 buttons (Geen assist + Piet + Klaas + Dirk)
-      expect(assistButtons?.length).toBe(4);
+      const assistPlayers = screen.getByTestId('assist-player-row');
+      const assistButtons = assistPlayers.querySelectorAll('button');
+      expect(assistButtons.length).toBe(4);
+      expect(assistPlayers).not.toHaveTextContent('Jan');
     });
 
     it('can select an assist player', () => {
@@ -448,6 +439,59 @@ describe('GoalModal', () => {
           matchId: defaultMatchId,
           playerId: 'p1',
           assistPlayerId: 'p2',
+          isOpponentGoal: false,
+          correlationId: expect.any(String),
+        });
+      });
+    });
+
+    it('submits a corner without a named player', async () => {
+      render(
+        <GoalModal
+          matchId={defaultMatchId}
+          playersOnField={mockPlayersOnField}
+          onClose={mockOnClose}
+        />
+      );
+
+      fireEvent.click(screen.getByText('GOAL!'));
+      fireEvent.click(screen.getByText('Jan'));
+      fireEvent.click(screen.getByText('Hoekschop'));
+      fireEvent.click(screen.getByText('Registreren'));
+
+      await waitFor(() => {
+        expect(mockAddGoal).toHaveBeenCalledWith({
+          matchId: defaultMatchId,
+          playerId: 'p1',
+          assistPlayerId: undefined,
+          assistKind: 'corner',
+          isOpponentGoal: false,
+          correlationId: expect.any(String),
+        });
+      });
+    });
+
+    it('submits a free kick with the player who took it', async () => {
+      render(
+        <GoalModal
+          matchId={defaultMatchId}
+          playersOnField={mockPlayersOnField}
+          onClose={mockOnClose}
+        />
+      );
+
+      fireEvent.click(screen.getByText('GOAL!'));
+      fireEvent.click(screen.getByText('Jan'));
+      fireEvent.click(screen.getByText('Vrije trap'));
+      fireEvent.click(screen.getAllByText('Piet')[1] ?? screen.getByText('Piet'));
+      fireEvent.click(screen.getByText('Registreren'));
+
+      await waitFor(() => {
+        expect(mockAddGoal).toHaveBeenCalledWith({
+          matchId: defaultMatchId,
+          playerId: 'p1',
+          assistPlayerId: 'p2',
+          assistKind: 'free_kick',
           isOpponentGoal: false,
           correlationId: expect.any(String),
         });

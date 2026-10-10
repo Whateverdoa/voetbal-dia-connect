@@ -3,6 +3,36 @@ import type { PublicMatch } from "@/types/publicMatch";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const liveStatuses = new Set<PublicMatch["status"]>(["live", "halftime"]);
 
+/** Default youth kickoff length + buffer before we treat "scheduled" as played. */
+const OVERDUE_AFTER_MINUTES = 75;
+
+export type BrowserListGroup = "live" | "scheduled" | "finished";
+
+/**
+ * Sportlink often never publishes O7–O10 scores. After kickoff those rows
+ * must not stay in "Gepland".
+ */
+export function isScheduledKickoffOverdue(
+  match: Pick<PublicMatch, "status" | "scheduledAt">,
+  now: number,
+): boolean {
+  if (match.status !== "scheduled" && match.status !== "lineup") return false;
+  if (match.scheduledAt == null || !Number.isFinite(match.scheduledAt)) {
+    return false;
+  }
+  return match.scheduledAt + OVERDUE_AFTER_MINUTES * 60_000 <= now;
+}
+
+export function browserListGroup(
+  match: Pick<PublicMatch, "status" | "scheduledAt">,
+  now: number,
+): BrowserListGroup {
+  if (liveStatuses.has(match.status as PublicMatch["status"])) return "live";
+  if (match.status === "finished") return "finished";
+  if (isScheduledKickoffOverdue(match, now)) return "finished";
+  return "scheduled";
+}
+
 /** Time window for the homepage match list (Dutch copy in UI). */
 export type TimeFilter = "weekend" | "today" | "week" | "all";
 

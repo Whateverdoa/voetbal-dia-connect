@@ -87,7 +87,7 @@ describe('SoundToggle', () => {
       
       await waitFor(() => {
         const button = screen.getByRole('button');
-        expect(button).toHaveClass('text-dia-green');
+        expect(button).toHaveClass('text-dia-black');
       });
     });
 

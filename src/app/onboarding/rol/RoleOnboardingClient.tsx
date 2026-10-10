@@ -79,7 +79,7 @@ export function RoleOnboardingClient() {
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-md p-6 space-y-5">
-        <h1 className="text-2xl font-bold text-dia-green">Account koppelen</h1>
+        <h1 className="text-2xl font-bold text-dia-black">Account koppelen</h1>
         <p className="text-sm text-gray-600">
           We koppelen je account automatisch op basis van je e-mailadres en bestaande gegevens
           in DIA Wedstrijduitslagen Live.

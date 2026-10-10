@@ -5,6 +5,7 @@ export const TEAM_COACH_DATA_PART_2: TeamCoachSeed[] = [
     teamSlug: "jo13-2",
     coaches: [
       { name: "Ilya Betten", email: "ilyabetten@gmail.com" },
+      { name: "Remco Hendriks", email: "rrrremcobreda@gmail.com" },
     ],
   },
   {

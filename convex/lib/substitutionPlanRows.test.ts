@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildSubstitutionPlanOrderAfterInsert } from "./substitutionPlanRows";
+import {
+  buildSubstitutionPlanOrderAfterInsert,
+  planRowsAfterClearPending,
+} from "./substitutionPlanRows";
 
 function row(
   id: string,
@@ -76,5 +79,27 @@ describe("buildSubstitutionPlanOrderAfterInsert", () => {
     );
 
     expect(ordered).toEqual(["done", "q1", "new", "quarterless"]);
+  });
+});
+
+describe("planRowsAfterClearPending", () => {
+  it("keeps executed and skipped rows in sequence order", () => {
+    const kept = planRowsAfterClearPending([
+      row("pending-a", 0, "pending", 1),
+      row("done", 1, "executed", 1),
+      row("pending-b", 2, "pending", 2),
+      row("skipped", 3, "skipped", 2),
+    ]);
+
+    expect(kept).toEqual(["done", "skipped"]);
+  });
+
+  it("returns an empty list when every row is pending", () => {
+    expect(
+      planRowsAfterClearPending([
+        row("a", 0, "pending", 1),
+        row("b", 1, "pending", 2),
+      ])
+    ).toEqual([]);
   });
 });

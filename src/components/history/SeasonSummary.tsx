@@ -2,16 +2,21 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import clsx from "clsx";
 import { Trophy, TrendingUp } from "lucide-react";
 import { StatCard } from "./StatCard";
 
 interface SeasonSummaryProps {
   teamId: string;
+  seasonKey: string;
 }
 
-export function SeasonSummary({ teamId }: SeasonSummaryProps) {
-  const stats = useQuery(api.teams.getSeasonStats, { teamId: teamId as any });
+export function SeasonSummary({ teamId, seasonKey }: SeasonSummaryProps) {
+  const stats = useQuery(api.teams.getSeasonStats, {
+    teamId: teamId as Id<"teams">,
+    seasonKey,
+  });
 
   if (!stats) {
     return (

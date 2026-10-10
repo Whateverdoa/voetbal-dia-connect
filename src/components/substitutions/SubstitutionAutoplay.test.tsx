@@ -162,6 +162,38 @@ describe("automatic execution of the approved substitution plan", () => {
     expect(screen.getByRole("button", { name: "Jody 2 op LB" })).toBeVisible();
   });
 
+  it.each([
+    ["Krijn 10 op CM", "Revi 5 op CB"],
+    ["Revi 5 op CB", "Krijn 10 op CM"],
+  ])("does not repeat an early planned position swap selected as %s then %s", (first, second) => {
+    fakeClock();
+    renderReeshof();
+    approve();
+    click("+1 minuut");
+    click("Voer wissel uit: Tygo 11 eruit, Lucas 7 erin");
+    click("Voer wissel uit: Olivier 9 eruit, Revi 5 erin");
+    click("Posities ruilen");
+    click(first);
+    click(second);
+    click("Ruil posities");
+
+    expect(screen.getByRole("button", { name: "Krijn 10 op CB" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Revi 5 op CM" })).toBeVisible();
+    expect(events()).toHaveLength(3);
+
+    click("Hervatten");
+    advance(9000);
+    click("Pauzeren");
+    expect(screen.getByTestId("demo-clock")).toHaveTextContent("10:00");
+    expect(events()).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Krijn 10 op CB" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Revi 5 op CM" })).toBeVisible();
+    expect(events()[0]).toHaveTextContent("01:00Krijn 10 ↔ Revi 5");
+    expect(events()[0]).toHaveTextContent("(plan 10′)");
+    expect(screen.getByText("Gepland 20′")).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("pauses on a conflicting planned group without applying its valid first action", () => {
     fakeClock();
     renderReeshof();

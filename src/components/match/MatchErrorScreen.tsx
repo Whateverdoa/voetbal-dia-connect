@@ -23,7 +23,7 @@ export function MatchErrorScreen({
         <Link
           href={backHref}
           className="inline-block px-6 py-3 bg-dia-green text-white rounded-xl font-semibold
-                     min-h-[48px] hover:bg-dia-green-light transition-colors"
+                     min-h-[48px] hover:bg-dia-green-dark transition-colors"
         >
           {backLabel}
         </Link>

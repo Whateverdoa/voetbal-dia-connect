@@ -13,6 +13,11 @@ import {
 } from "../src/lib/admin/assignmentBoard";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { assertValidMatchTiming } from "./lib/matchTiming";
+import { assertMatchAcceptsRosterAdd } from "./lib/lateMatchRoster";
+import { seasonKeyFromMs } from "./lib/season";
+import { isActiveSeasonMatch } from "./lib/season";
+import { hasScheduleOverlap } from "../src/lib/referee/eligibility";
+import { internal } from "./_generated/api";
 
 type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
 
@@ -45,7 +50,11 @@ async function getCoachForMatch(
 }
 
 export const listAllMatches = query({
-  args: { limit: v.optional(v.number()) },
+  args: {
+    limit: v.optional(v.number()),
+    /** When set, hide matches from other seasons (legacy rows without seasonKey stay visible). */
+    seasonKey: v.optional(v.string()),
+  },
   handler: async (ctx, args): Promise<AdminMatchRow[]> => {
     await requireAdminAccess(ctx);
     if (args.limit !== undefined && args.limit <= 0) {
@@ -56,10 +65,13 @@ export const listAllMatches = query({
       .query("matches")
       .withIndex("by_createdAt")
       .order("desc");
-    const matches =
+    const matchesRaw =
       args.limit !== undefined
         ? await matchesQuery.take(args.limit)
         : await matchesQuery.collect();
+    const matches = args.seasonKey
+      ? matchesRaw.filter((m) => isActiveSeasonMatch(m, args.seasonKey!))
+      : matchesRaw;
 
     const enriched: AdminMatchRow[] = await Promise.all(
       matches.map(async (match) => {
@@ -102,14 +114,20 @@ export const listAllMatches = query({
 });
 
 export const listAssignmentBoard = query({
-  handler: async (ctx): Promise<AssignmentBoardRow[]> => {
+  args: {
+    seasonKey: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<AssignmentBoardRow[]> => {
     await requireAdminAccess(ctx);
 
-    const matches = await ctx.db
+    const matchesRaw = await ctx.db
       .query("matches")
       .withIndex("by_createdAt")
       .order("desc")
       .collect();
+    const matches = args.seasonKey
+      ? matchesRaw.filter((m) => isActiveSeasonMatch(m, args.seasonKey!))
+      : matchesRaw;
 
     const enriched: AssignmentBoardRow[] = await Promise.all(
       matches.map(async (match) => {
@@ -238,6 +256,7 @@ export const createMatch = mutation({
     const quarterCount = args.quarterCount ?? 4;
     const regulationMinutes = args.regulationDurationMinutes ?? 60;
     assertValidMatchTiming(quarterCount, regulationMinutes);
+    const seasonBase = args.scheduledAt ?? Date.now();
     const matchId = await ctx.db.insert("matches", {
       teamId: args.teamId,
       publicCode: code,
@@ -245,6 +264,7 @@ export const createMatch = mutation({
       opponent: args.opponent.trim(),
       isHome: args.isHome,
       scheduledAt: args.scheduledAt,
+      seasonKey: seasonKeyFromMs(seasonBase),
       status: "scheduled",
       currentQuarter: 1,
       quarterCount,
@@ -335,6 +355,33 @@ export const updateMatch = mutation({
     }
 
     if (args.refereeId !== undefined) {
+      if (args.refereeId !== null) {
+        const referee = await ctx.db.get(args.refereeId);
+        if (!referee || !referee.active) {
+          throw new Error("Scheidsrechter niet gevonden of inactief");
+        }
+        const scheduledAt = args.scheduledAt ?? match.scheduledAt;
+        if (scheduledAt !== undefined) {
+          const mine = await ctx.db
+            .query("matches")
+            .withIndex("by_refereeId", (q) => q.eq("refereeId", args.refereeId!))
+            .collect();
+          const others = mine.filter((m) => m._id !== match._id);
+          if (
+            hasScheduleOverlap(
+              {
+                scheduledAt,
+                regulationDurationMinutes:
+                  args.regulationDurationMinutes ??
+                  match.regulationDurationMinutes,
+              },
+              others
+            )
+          ) {
+            throw new Error("Scheidsrechter heeft al een overlappende wedstrijd");
+          }
+        }
+      }
       patch.refereeId = args.refereeId === null ? undefined : args.refereeId;
     }
 
@@ -378,6 +425,21 @@ export const updateMatch = mutation({
       await ctx.db.patch(args.matchId, patch);
     }
 
+    if (args.refereeId && args.refereeId !== null) {
+      const team = await ctx.db.get(match.teamId);
+      await ctx.scheduler.runAfter(
+        0,
+        internal.refereeNotifications.notifyAssigned,
+        {
+          refereeId: args.refereeId,
+          matchId: args.matchId,
+          body: `Je bent toegewezen aan ${team?.name ?? "Team"} vs ${
+            args.opponent?.trim() || match.opponent
+          }.`,
+        }
+      );
+    }
+
     return { success: true };
   },
 });
@@ -392,9 +454,7 @@ export const addPlayerToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const player = await ctx.db.get(args.playerId);
     if (!player || player.teamId !== match.teamId) {
@@ -434,9 +494,7 @@ export const createPlayerAndAddToMatch = mutation({
 
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
-    if (match.status !== "scheduled") {
-      throw new Error("Spelers kunnen alleen worden toegevoegd voor de aftrap");
-    }
+    assertMatchAcceptsRosterAdd(match.status);
 
     const trimmed = args.name.trim();
     if (!trimmed) throw new Error("Naam is verplicht");

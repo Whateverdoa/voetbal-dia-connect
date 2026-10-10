@@ -3,16 +3,29 @@
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import {
+  availabilityStatus,
+  type PlayerAvailabilityStatus,
+} from "@/lib/matchPlayerAvailability";
+import { disciplineBadgeByPlayerId } from "@/lib/cards/cardRules";
 import { PlayerCard } from "./PlayerCard";
-import type { MatchPlayer } from "./types";
+import type { MatchEvent, MatchPlayer } from "./types";
 
 interface PlayerListProps {
   matchId: Id<"matches">;
   playersOnField: MatchPlayer[];
   playersOnBench: MatchPlayer[];
   playersAbsent?: MatchPlayer[];
+  playersInjured?: MatchPlayer[];
   canEdit?: boolean;
+  canToggleAvailability?: boolean;
+  /** Limit which availability buttons show (default both). */
+  availabilityActions?: Array<"absent" | "injured">;
+  /** @deprecated use canToggleAvailability */
   canToggleAbsent?: boolean;
+  /** Season minutes by playerId for lineup planning context. */
+  seasonMinutesByPlayerId?: Map<string, number>;
+  events?: MatchEvent[];
 }
 
 export function PlayerList({
@@ -20,18 +33,48 @@ export function PlayerList({
   playersOnField,
   playersOnBench,
   playersAbsent = [],
+  playersInjured = [],
   canEdit = true,
+  canToggleAvailability,
+  availabilityActions = ["absent", "injured"],
   canToggleAbsent = false,
+  seasonMinutesByPlayerId,
+  events = [],
 }: PlayerListProps) {
   const toggleOnField = useMutation(api.matchActions.togglePlayerOnField);
   const toggleKeeper = useMutation(api.matchActions.toggleKeeper);
-  const toggleAbsent = useMutation(api.matchActions.togglePlayerAbsent);
+  const setAvailability = useMutation(api.matchActions.setPlayerAvailability);
+  const canSetAvailability = canToggleAvailability ?? canToggleAbsent;
+  const disciplineByPlayer = disciplineBadgeByPlayerId(
+    events.map((e) => ({
+      type: e.type,
+      playerId: e.playerId ? String(e.playerId) : undefined,
+      isOpponentCard: e.isOpponentCard,
+    }))
+  );
+
+  const seasonOf = (playerId: Id<"players">) =>
+    seasonMinutesByPlayerId?.get(String(playerId));
+  const badgeOf = (playerId: Id<"players">) =>
+    disciplineByPlayer.get(String(playerId));
+
+  const setStatus = (
+    playerId: Id<"players">,
+    status: PlayerAvailabilityStatus
+  ) => setAvailability({ matchId, playerId, status });
+
+  const helpText = availabilityActions.includes("absent")
+    ? "Afw = afwezig · Bles = geblesseerd (ook tijdens de wedstrijd)."
+    : "Bles = geblesseerd tijdens de wedstrijd (speler gaat van het veld).";
 
   return (
     <div className="space-y-4">
+      {canSetAvailability ? (
+        <p className="text-xs text-gray-500">{helpText}</p>
+      ) : null}
       <section className="bg-white rounded-xl shadow-md p-4">
-        <h2 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
-          <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+        <h2 className="font-semibold mb-3 text-dia-black flex items-center gap-2">
+          <span className="w-3 h-3 bg-dia-yellow rounded-full"></span>
           Op het veld ({playersOnField.length})
         </h2>
         {playersOnField.length === 0 ? (
@@ -47,12 +90,33 @@ export function PlayerList({
                 number={player.number}
                 isKeeper={player.isKeeper}
                 onField={player.onField}
+                availability={availabilityStatus(player)}
+                seasonMinutes={seasonOf(player.playerId)}
+                disciplineBadge={badgeOf(player.playerId)}
                 onToggleField={
-                  canEdit ? () => toggleOnField({ matchId, playerId: player.playerId }) : undefined
+                  canEdit
+                    ? () =>
+                        toggleOnField({
+                          matchId,
+                          playerId: player.playerId,
+                        })
+                    : undefined
                 }
                 onToggleKeeper={
-                  canEdit ? () => toggleKeeper({ matchId, playerId: player.playerId }) : undefined
+                  canEdit
+                    ? () =>
+                        toggleKeeper({
+                          matchId,
+                          playerId: player.playerId,
+                        })
+                    : undefined
                 }
+                onSetAvailability={
+                  canSetAvailability
+                    ? (status) => setStatus(player.playerId, status)
+                    : undefined
+                }
+                availabilityActions={availabilityActions}
               />
             ))}
           </div>
@@ -77,25 +141,40 @@ export function PlayerList({
                 number={player.number}
                 isKeeper={player.isKeeper}
                 onField={player.onField}
+                availability="available"
+                seasonMinutes={seasonOf(player.playerId)}
+                disciplineBadge={badgeOf(player.playerId)}
                 onToggleField={
-                  canEdit ? () => toggleOnField({ matchId, playerId: player.playerId }) : undefined
-                }
-                onToggleKeeper={
-                  canEdit ? () => toggleKeeper({ matchId, playerId: player.playerId }) : undefined
-                }
-                onToggleAbsent={
-                  canToggleAbsent
-                    ? () => toggleAbsent({ matchId, playerId: player.playerId })
+                  canEdit
+                    ? () =>
+                        toggleOnField({
+                          matchId,
+                          playerId: player.playerId,
+                        })
                     : undefined
                 }
-                absent={false}
+                onToggleKeeper={
+                  canEdit
+                    ? () =>
+                        toggleKeeper({
+                          matchId,
+                          playerId: player.playerId,
+                        })
+                    : undefined
+                }
+                onSetAvailability={
+                  canSetAvailability
+                    ? (status) => setStatus(player.playerId, status)
+                    : undefined
+                }
+                availabilityActions={availabilityActions}
               />
             ))}
           </div>
         )}
       </section>
 
-      {playersAbsent.length > 0 && (
+      {playersAbsent.length > 0 ? (
         <section className="bg-white rounded-xl shadow-md p-4">
           <h2 className="font-semibold mb-3 text-amber-700 flex items-center gap-2">
             <span className="w-3 h-3 bg-amber-500 rounded-full"></span>
@@ -109,17 +188,49 @@ export function PlayerList({
                 number={player.number}
                 isKeeper={player.isKeeper}
                 onField={false}
-                absent={true}
-                onToggleAbsent={
-                  canToggleAbsent
-                    ? () => toggleAbsent({ matchId, playerId: player.playerId })
+                availability="absent"
+                seasonMinutes={seasonOf(player.playerId)}
+                disciplineBadge={badgeOf(player.playerId)}
+                onSetAvailability={
+                  canSetAvailability
+                    ? (status) => setStatus(player.playerId, status)
                     : undefined
                 }
+                availabilityActions={availabilityActions}
               />
             ))}
           </div>
         </section>
-      )}
+      ) : null}
+
+      {playersInjured.length > 0 ? (
+        <section className="bg-white rounded-xl shadow-md p-4">
+          <h2 className="font-semibold mb-3 text-rose-700 flex items-center gap-2">
+            <span className="w-3 h-3 bg-rose-500 rounded-full"></span>
+            Geblesseerd ({playersInjured.length})
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {playersInjured.map((player) => (
+              <PlayerCard
+                key={player.playerId}
+                name={player.name}
+                number={player.number}
+                isKeeper={player.isKeeper}
+                onField={false}
+                availability="injured"
+                seasonMinutes={seasonOf(player.playerId)}
+                disciplineBadge={badgeOf(player.playerId)}
+                onSetAvailability={
+                  canSetAvailability
+                    ? (status) => setStatus(player.playerId, status)
+                    : undefined
+                }
+                availabilityActions={availabilityActions}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

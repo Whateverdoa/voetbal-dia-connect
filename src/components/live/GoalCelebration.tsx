@@ -34,14 +34,14 @@ export function GoalCelebration({
       <div
         className={clsx(
           "text-center animate-bounce",
-          isOurGoal ? "text-green-500" : "text-gray-500"
+          isOurGoal ? "text-dia-yellow-deep" : "text-gray-500"
         )}
       >
         <div
           className={clsx(
             "text-6xl md:text-8xl font-black tracking-wider",
             "animate-pulse drop-shadow-lg",
-            isOurGoal ? "text-green-500" : "text-red-500"
+            isOurGoal ? "text-dia-yellow-deep" : "text-red-500"
           )}
         >
           {isOurGoal ? "GOAL!" : "TEGEN"}

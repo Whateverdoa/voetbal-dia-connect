@@ -87,22 +87,8 @@ export function getFormationIds(): string[] {
   return Object.keys(FORMATIONS);
 }
 
-/** Formation IDs grouped for dropdown display. */
+/** Formation IDs grouped for dropdown display (11-tal first). */
 export const FORMATION_GROUPS = [
-  {
-    label: "8-tal",
-    formations: [
-      { id: "8v8_1-3-3-1", name: F8_1331.name },
-      { id: "8v8_1-3-2-2", name: F8_1322.name },
-      { id: "8v8_1-2-3-2", name: F8_1232.name },
-      { id: "8v8_1-3-1-3", name: F8_1313.name },
-      { id: "8v8_1-4-2-1", name: F8_1421.name },
-      { id: "8v8_1-4-1-2", name: F8_1412.name },
-      { id: "8v8_1-5-2", name: F8_152.name },
-      { id: "8v8_1-2-4-1", name: F8_1241.name },
-      { id: "8v8_1-1-3-3", name: F8_1133.name },
-    ],
-  },
   {
     label: "11-tal",
     formations: [
@@ -117,6 +103,20 @@ export const FORMATION_GROUPS = [
       { id: "11v11_3-4-1-2", name: F11_3412.name },
       { id: "11v11_1-4-3-2-1", name: F11_14321.name },
       { id: "11v11_1-3-4-3", name: F11_1343.name },
+    ],
+  },
+  {
+    label: "8-tal",
+    formations: [
+      { id: "8v8_1-3-3-1", name: F8_1331.name },
+      { id: "8v8_1-3-2-2", name: F8_1322.name },
+      { id: "8v8_1-2-3-2", name: F8_1232.name },
+      { id: "8v8_1-3-1-3", name: F8_1313.name },
+      { id: "8v8_1-4-2-1", name: F8_1421.name },
+      { id: "8v8_1-4-1-2", name: F8_1412.name },
+      { id: "8v8_1-5-2", name: F8_152.name },
+      { id: "8v8_1-2-4-1", name: F8_1241.name },
+      { id: "8v8_1-1-3-3", name: F8_1133.name },
     ],
   },
 ];

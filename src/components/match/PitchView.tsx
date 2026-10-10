@@ -7,11 +7,13 @@ import { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import { createCorrelationId } from "@/lib/correlationId";
+import { firstNameOf } from "@/lib/cards/formatCardName";
+import { disciplineBadgeByPlayerId } from "@/lib/cards/cardRules";
 import { FieldLines } from "./FieldLines";
 import { FormationLines } from "./FormationLines";
 import { FieldPlayerCard } from "./FieldPlayerCard";
 import { PitchBench } from "./PitchBench";
-import type { MatchPlayer, MatchStatus } from "./types";
+import type { MatchEvent, MatchPlayer, MatchStatus } from "./types";
 
 interface PitchViewProps {
   matchId: Id<"matches">;
@@ -21,6 +23,8 @@ interface PitchViewProps {
   customFormationKind?: "8v8" | "11v11";
   status: MatchStatus;
   canEdit?: boolean;
+  seasonMinutesByPlayerId?: Map<string, number>;
+  events?: MatchEvent[];
 }
 
 export function PitchView({
@@ -31,6 +35,8 @@ export function PitchView({
   customFormationKind,
   status,
   canEdit = true,
+  seasonMinutesByPlayerId,
+  events = [],
 }: PitchViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<Id<"players"> | null>(null);
   const assignToSlot = useMutation(api.matchActions.assignPlayerToSlot);
@@ -39,6 +45,13 @@ export function PitchView({
   const substituteFromField = useMutation(api.matchActions.substituteFromField);
 
   const isLiveOrHalftime = status === "live" || status === "halftime";
+  const disciplineByPlayer = disciplineBadgeByPlayerId(
+    events.map((e) => ({
+      type: e.type,
+      playerId: e.playerId ? String(e.playerId) : undefined,
+      isOpponentCard: e.isOpponentCard,
+    }))
+  );
 
   const formation = resolvedFormation;
   const fieldMode = fieldModeFromFormation(formationId, {
@@ -47,7 +60,12 @@ export function PitchView({
   const cfg = FIELDS[fieldMode];
 
   const onField = players.filter((player) => player.onField);
-  const onBench = players.filter((player) => !player.onField && !(player.absent ?? false));
+  const onBench = players.filter(
+    (player) =>
+      !player.onField &&
+      !(player.absent ?? false) &&
+      !(player.injured ?? false)
+  );
   const onFieldUnassigned = onField.filter(
     (player) => player.fieldSlotIndex === undefined || player.fieldSlotIndex === null
   );
@@ -64,10 +82,8 @@ export function PitchView({
   const slotOfPlayer = (id: Id<"players">): number | undefined =>
     onField.find((player) => player.playerId === id)?.fieldSlotIndex ?? undefined;
 
-  const nameLabel = (player: MatchPlayer): string => {
-    const firstName = player.name.trim().split(/\s+/)[0] || player.name;
-    return firstName.slice(0, 12);
-  };
+  const nameLabel = (player: MatchPlayer): string =>
+    firstNameOf(player.name) || player.name;
 
   const handleFieldPlayerClick = (player: MatchPlayer, slotId: number) => {
     if (!canEdit) return;
@@ -204,6 +220,16 @@ export function PitchView({
                 isSelected={player ? selectedPlayerId === player.playerId : false}
                 isDimmed={selectedPlayerId !== null && (!player || selectedPlayerId !== player.playerId)}
                 isEmpty={isEmpty}
+                seasonMinutes={
+                  player
+                    ? seasonMinutesByPlayerId?.get(String(player.playerId))
+                    : undefined
+                }
+                disciplineBadge={
+                  player
+                    ? disciplineByPlayer.get(String(player.playerId))
+                    : undefined
+                }
                 onClick={() =>
                   player
                     ? handleFieldPlayerClick(player, slot.id)
@@ -222,6 +248,8 @@ export function PitchView({
         onPlayerClick={handleBenchPlayerClick}
         onDeselect={() => setSelectedPlayerId(null)}
         nameLabel={nameLabel}
+        seasonMinutesByPlayerId={seasonMinutesByPlayerId}
+        disciplineByPlayerId={disciplineByPlayer}
       />
     </div>
   );

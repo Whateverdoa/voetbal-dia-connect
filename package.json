@@ -14,6 +14,8 @@
     "test:run": "npm run test:pin-guard && vitest run",
     "test:coverage": "vitest run --coverage",
     "test:pin-guard": "node scripts/check-no-pin-deps.mjs",
+    "check:clerk-jwt": "node scripts/check-clerk-convex-jwt.mjs",
+    "fix:clerk-jwt": "node scripts/ensure-clerk-convex-jwt.mjs",
     "results:update": "npx convex run import/weeklyUpdate:runNow",
     "predev": "convex dev --until-success",
     "postinstall": "npx convex codegen || true"
@@ -21,9 +23,9 @@
   "dependencies": {
     "@clerk/nextjs": "^7.0.1",
     "clsx": "^2.1.1",
-    "convex": "^1.17.4",
+    "convex": "^1.44.0",
     "lucide-react": "^0.468.0",
-    "next": "^16.1.4",
+    "next": "^16.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -37,7 +39,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.1.4",
+    "eslint-config-next": "^16.3.1",
     "jsdom": "^28.0.0",
     "npm-run-all": "^4.1.5",
     "sharp": "^0.34.5",

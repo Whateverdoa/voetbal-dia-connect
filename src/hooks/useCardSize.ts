@@ -2,8 +2,10 @@
 
 /**
  * Responsive card dimensions for field and bench player cards.
- * Returns smaller sizes on phones (<640px), larger on tablet/desktop.
- * Mobile-first default prevents layout flash on the primary device (pitch-side phone).
+ * Phone / tablet / presentation (TV) breakpoints.
+ *
+ * Phone vs tablet uses the *short* viewport side so landscape phones
+ * stay on compact cards (width alone hits 640px+ and used to jump to TABLET).
  */
 
 import { useState, useEffect } from "react";
@@ -17,16 +19,17 @@ export interface CardSize {
   posFont: number;
 }
 
-const PHONE: CardSize = {
-  card: 70,
-  avatar: 34,
-  icon: 22,
+/** Compact phone cards to reduce pitch overlap; fonts stay readable. */
+export const PHONE: CardSize = {
+  card: 48,
+  avatar: 24,
+  icon: 14,
   nameFont: 9,
   numFont: 11,
   posFont: 8,
 };
 
-const TABLET: CardSize = {
+export const TABLET: CardSize = {
   card: 90,
   avatar: 45,
   icon: 28,
@@ -35,18 +38,43 @@ const TABLET: CardSize = {
   posFont: 10,
 };
 
-const BREAKPOINT = "(min-width: 640px)";
+/** TV / beamer presentation (~140px cards). */
+export const PRESENTATION: CardSize = {
+  card: 140,
+  avatar: 72,
+  icon: 40,
+  nameFont: 14,
+  numFont: 20,
+  posFont: 12,
+};
 
-export function useCardSize(): CardSize {
-  const [isWide, setIsWide] = useState(false);
+/** Compact when the shorter side is phone-sized (covers portrait + landscape). */
+const COMPACT_MAX_SHORT_SIDE = 520;
+
+export type CardSizeMode = "auto" | "presentation";
+
+function isCompactViewport(): boolean {
+  if (typeof window === "undefined") return true;
+  return Math.min(window.innerWidth, window.innerHeight) < COMPACT_MAX_SHORT_SIDE;
+}
+
+export function useCardSize(mode: CardSizeMode = "auto"): CardSize {
+  const [compact, setCompact] = useState(true);
 
   useEffect(() => {
-    const mql = window.matchMedia(BREAKPOINT);
-    setIsWide(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsWide(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
+    if (mode === "presentation") return;
 
-  return isWide ? TABLET : PHONE;
+    const update = () => setCompact(isCompactViewport());
+    update();
+
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, [mode]);
+
+  if (mode === "presentation") return PRESENTATION;
+  return compact ? PHONE : TABLET;
 }

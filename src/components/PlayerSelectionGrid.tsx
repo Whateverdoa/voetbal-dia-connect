@@ -40,7 +40,7 @@ export function PlayerSelectionGrid({
         </div>
         <button
           onClick={allSelected ? onDeselectAll : onSelectAll}
-          className="text-sm text-dia-green hover:underline font-medium min-h-[44px] px-2"
+          className="text-sm text-dia-black hover:underline font-medium min-h-[44px] px-2"
         >
           {allSelected ? "Deselecteer alle" : "Selecteer alle"}
         </button>
@@ -67,7 +67,7 @@ export function PlayerSelectionGrid({
                   onClick={() => onTogglePlayer(player._id)}
                   className={`p-3 rounded-xl border-2 text-left transition-all min-h-[56px] active:scale-[0.98] ${
                     isSelected
-                      ? "border-dia-green bg-green-50"
+                      ? "border-dia-green bg-dia-green-light"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >

@@ -76,6 +76,7 @@ export const updatePlayer = mutation({
     name: v.optional(v.string()),
     number: v.optional(v.number()),
     active: v.optional(v.boolean()),
+    teamId: v.optional(v.id("teams")),
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
   },
@@ -87,6 +88,25 @@ export const updatePlayer = mutation({
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
     await ctx.db.patch(playerId, filtered);
+  },
+});
+
+/** Ops: search players by name substring (admin). */
+export const searchPlayersByName = query({
+  args: { q: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx);
+    const needle = args.q.trim().toLowerCase();
+    if (needle.length < 2) return [];
+    const all = await ctx.db.query("players").collect();
+    return all
+      .filter((p) => p.name.toLowerCase().includes(needle))
+      .map((p) => ({
+        _id: p._id,
+        name: p.name,
+        teamId: p.teamId,
+        active: p.active,
+      }));
   },
 });
 

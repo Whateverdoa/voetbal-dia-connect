@@ -21,8 +21,17 @@ describe("isolated review seed", () => {
     vi.stubEnv("DIA_TEST_MODE", "true");
     vi.stubEnv("CONVEX_SITE_URL", "https://sincere-spider-515.convex.site");
     const insert = vi.fn();
-    const db = { insert, query: () => ({ withIndex: () => ({ unique: async () => ({ _id: "team-1" }) }) }) };
+    const patch = vi.fn();
+    const db = { insert, patch, query: () => ({ withIndex: () => ({
+      unique: async () => ({ _id: "team-1" }),
+      take: async () => [
+        { _id: "old-avatar", photoUrl: "/cards/review-portrait.svg" },
+        { _id: "real-photo", photoUrl: "https://example.test/upload.jpg" },
+        { _id: "no-photo" },
+      ],
+    }) }) };
     expect(await invoke({ db })).toEqual({ teamId: "team-1", teamSlug: "fc27-test", created: false });
     expect(insert).not.toHaveBeenCalled();
+    expect(patch).toHaveBeenCalledExactlyOnceWith("old-avatar", { photoUrl: undefined });
   });
 });

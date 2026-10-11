@@ -38,7 +38,7 @@ Schemawijzigingen aan bestaande spelers zijn optioneel. Bij uitrol moeten de fro
 
 De branch `codex/fc27-cards-voting` heeft een eigen Convex-project `dia-fc27-review`, ontwikkeldeployment `sincere-spider-515`. Alleen de branchgebonden Vercel Preview-variabelen `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL` en `DIA_TEST_MODE=true` wijzen hierheen. Productie `nautical-condor-5` en andere previews behouden hun eigen instellingen.
 
-De omgeving toont een gele testbalk en bevat `FC27 Testteam` (`fc27-test`) met zes fictieve spelers en een getekend voorbeeldportret. De bestaande beheerdersaccounts uit de lokale configuratie hebben uitsluitend in deze testdatabase coachtoegang gekregen. Er zijn geen spelersgegevens uit productie gekopieerd. Automatische Clerk-rolwijzigingen, clubimports en herinneringscrons zijn uitgeschakeld; de kaartenscheduler voor sluiten en vervallen blijft werkzaam.
+De omgeving toont een gele testbalk en bevat `FC27 Testteam` (`fc27-test`) met zes fictieve spelers zonder foto: zij tonen een DIA-shirt. Gebruik uitsluitend aangeleverde spelersfoto's, nooit getekende voorbeeldhoofdjes als vervanging. De bestaande beheerdersaccounts uit de lokale configuratie hebben uitsluitend in deze testdatabase coachtoegang gekregen. Er zijn geen spelersgegevens uit productie gekopieerd. Automatische Clerk-rolwijzigingen, clubimports en herinneringscrons zijn uitgeschakeld; de kaartenscheduler voor sluiten en vervallen blijft werkzaam.
 
 De interne CLI-seed `ops/seedFc27Review:apply` vereist zowel testmodus als de exacte testdeployment-URL. Herhalen reset geen beoordelingen. Gebruik bij backendupdates altijd een afzonderlijk genegeerd env-bestand met `CONVEX_DEPLOY_KEY=<ignore_deploy_key>` en `CONVEX_DEPLOYMENT=dev:sincere-spider-515`:
 

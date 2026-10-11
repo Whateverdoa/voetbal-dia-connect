@@ -14,7 +14,16 @@ export const apply = internalMutation({
     if (!emails.length || emails.some((email) => !email.includes("@"))) throw new Error("Een geldig testcoachaccount is vereist");
     const teamSlug = "fc27-test";
     const existing = await ctx.db.query("teams").withIndex("by_slug_only", (q) => q.eq("slug", teamSlug)).unique();
-    if (existing) return { teamId: existing._id, teamSlug, created: false };
+    if (existing) {
+      const players = await ctx.db.query("players").withIndex("by_team", (q) => q.eq("teamId", existing._id)).take(64);
+      for (const player of players) {
+        // Remove the retired demo avatar, preserving real uploads and all ratings.
+        if (player.photoUrl === "/cards/review-portrait.svg" && !player.photoStorageId) {
+          await ctx.db.patch(player._id, { photoUrl: undefined });
+        }
+      }
+      return { teamId: existing._id, teamSlug, created: false };
+    }
     const now = Date.now();
     const clubId = await ctx.db.insert("clubs", { name: "DIA Testomgeving", slug: "dia", createdAt: now });
     const teamId = await ctx.db.insert("teams", { clubId, name: "FC27 Testteam", slug: teamSlug, isSelectionTeam: true, active: true, createdAt: now });
@@ -25,7 +34,6 @@ export const apply = internalMutation({
     for (const [index, name] of ["Sam", "Noor", "Milan", "Yara", "Alex", "Robin"].entries()) {
       const playerId = await ctx.db.insert("players", {
         teamId, name: `${name} Voorbeeld`, number: index + 7, active: true, positionPrimary: "CM", createdAt: now,
-        photoUrl: index % 2 === 0 ? "/cards/review-portrait.svg" : undefined,
         fcRatings: index === 5 ? { snl: 80, sch: 78 } : { snl: 80, sch: 78 + index, pas: 82, dri: 81, vrd: 77, fys: 80 },
         playStyleIds: ["dribbler", "tireless"],
       });

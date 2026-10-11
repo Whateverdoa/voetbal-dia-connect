@@ -2,7 +2,7 @@
 
 Deze uitbreiding geldt voor teams met `isSelectionTeam: true`. De coach opent het beheer onder **Team → Spelerskaarten**. Spelers en ouders gebruiken `/team/[slug]/app`, met **Kaarten** en **Stemmen**. Het bestaande kaartenoverzicht in de presentatie is weer beschikbaar.
 
-Het paarse schild met turquoise/gouden rand is de kaart voor **Team van de week**. Gewone kaarten gebruiken een blauwe basis; maandkaarten behouden hun gouden accenten. Deze vormgeving geldt ook voor compacte veld- en bankkaarten.
+**Team van de week** gebruikt het bestaande zwart/gouden DIA-teamportaalschild met stadionlichten en geel shirt (`public/team-portal/dia-gold-shield-v1-480.webp` en de 960px-variant). Dit originele artwork is ongewijzigd overgenomen; naam, portret, DIA-logo, beoordeling en speelstijlen worden erboven getoond. Gewone kaarten gebruiken het paarse vectorschild met turquoise/gouden rand; maandkaarten behouden hun gouden accenten. Deze vormgeving geldt ook voor compacte veld- en bankkaarten.
 
 ## Beoordelingen
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FC_ATTRIBUTES, PLAY_STYLES, withCardBonus, type FcCardData } from "@/lib/cards/fc27";
 import { useCardTime } from "@/hooks/useCardTime";
 import type { DisciplineBadge } from "@/lib/cards/cardRules";
@@ -7,11 +8,13 @@ import { PlayStyleIcon } from "./PlayStyleIcon";
 import { ShieldCard } from "./ShieldCard";
 import { FootballShieldContent } from "./FootballShieldContent";
 import { toFootballShieldStats } from "@/lib/cards/footballRatings";
+import { PlayerShirt } from "./PlayerShirt";
 
 export interface FcPlayerShieldProps extends FcCardData {
   name: string;
   number?: number | null;
   position?: string | null;
+  /** Server-filtered URL: public/team views pass null when photo consent is absent. */
   photoUrl?: string | null;
   compact?: boolean;
   width?: number;
@@ -27,6 +30,8 @@ export function FcPlayerShield({
   name, number, position, photoUrl, fcRatings, playStyleIds = [], recognitions = [],
   compact = false, width, seasonMinutes, disciplineBadge, className = "",
 }: FcPlayerShieldProps) {
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const portrait = photoUrl && photoUrl !== failedPhoto ? photoUrl : null;
   const now = useCardTime(recognitions);
   const card = withCardBonus(fcRatings, recognitions, now);
   const isWeek = card.kind === "week";
@@ -51,20 +56,17 @@ export function FcPlayerShield({
       <div className={`relative ${isWeek ? "aspect-[107/147] [container-type:inline-size]" : ""}`}>
       {isWeek ? (
         <div className="absolute inset-0 text-[#fff3d6]" aria-hidden="true">
-          {/* Reuse the original artwork unchanged, including its transparent edge. */}
+          {/* Never place a portrait over artwork with a baked-in shirt. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/team-portal/dia-gold-shield-v1-480.webp"
-            srcSet="/team-portal/dia-gold-shield-v1-480.webp 480w, /team-portal/dia-gold-shield-v1-960.webp 960w"
+          <img src={portrait ? "/team-portal/dia-gold-shield-empty-v2-480.webp" : "/team-portal/dia-gold-shield-v1-480.webp"}
+            srcSet={portrait ? "/team-portal/dia-gold-shield-empty-v2-480.webp 480w, /team-portal/dia-gold-shield-empty-v2-960.webp 960w" : "/team-portal/dia-gold-shield-v1-480.webp 480w, /team-portal/dia-gold-shield-v1-960.webp 960w"}
             sizes={width ? `${width}px` : "(max-width: 639px) 45vw, 240px"}
             alt="" width={1070} height={1470} decoding="async"
             className="absolute inset-0 h-full w-full drop-shadow-[0_5px_6px_rgba(0,0,0,0.4)]" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/dia.png" alt="" width={80} height={88}
-            className={`absolute h-auto object-contain drop-shadow-md ${compact ? "left-[11%] top-[50%] w-[16%]" : "right-[9%] top-[16%] w-[20%]"}`} />
-          {photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl} alt="" className="absolute left-[23%] top-[30%] h-[33%] w-[54%] rounded-[12%] object-cover object-top" />
-          ) : !compact && number != null ? (
+            className={`absolute z-10 h-auto object-contain drop-shadow-md ${compact ? "left-[11%] top-[50%] w-[16%]" : "right-[9%] top-[16%] w-[20%]"}`} />
+          {!portrait && !compact && number != null ? (
             <span className="absolute inset-x-0 top-[35%] text-center text-[26cqw] font-black leading-none tracking-tighter text-[#171713] [text-shadow:0_1px_1px_#fff7a5]">{number}</span>
           ) : null}
           {!compact ? <>
@@ -93,6 +95,14 @@ export function FcPlayerShield({
         </> : null}
       </ShieldCard>
       )}
+      {portrait ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={portrait} src={portrait} alt="" data-player-portrait
+          onError={() => setFailedPhoto(portrait)}
+          className={`pointer-events-none absolute top-[23%] rounded-[10%] bg-[#13171c] object-cover object-top ${isWeek ? "left-[27%] h-[38%] w-[53%]" : "left-[34%] w-[48%]"} ${!isWeek ? (compact ? "h-[38%]" : "h-[32%]") : ""}`} />
+      ) : !isWeek ? (
+        <div className="pointer-events-none absolute left-[24%] top-[23%] h-[32%] w-[57%]" aria-hidden="true"><PlayerShirt number={compact ? undefined : number} /></div>
+      ) : null}
       {compact ? (
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <span className="absolute left-[11%] top-[17%] font-black leading-none tabular-nums" style={{ fontSize: compactFonts.overall }}>{card.overall ?? "—"}</span>

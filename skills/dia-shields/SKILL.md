@@ -36,9 +36,9 @@ import { FootballShieldContent } from "@/components/cards/FootballShieldContent"
 
 ## Afgesproken indeling
 
-- Geen shirt, spelersfoto, persoon of silhouet in deze schildseries.
+- Bak geen shirt, spelersfoto, persoon of silhouet in de lege collectieframes. Echte spelerskaarten tonen in een aparte laag óf een toegestane spelersfoto óf een DIA-shirt als vervanging. Toon nooit beide tegelijk.
 - Linksboven staat het **afgeronde rekenkundige gemiddelde van alle zes statistieken**, geen rugnummer. `averageFootballShieldRating` berekent dit; pas geen eigen formule toe bij de integratie.
-- De positie staat onder het gemiddelde. Het grote middenvlak blijft vrij.
+- De positie staat onder het gemiddelde. Het grote middenvlak is gereserveerd voor de foto of het vervangende shirt; in de ontwerpgalerij blijft het vrij.
 - Onderaan staat de naam, daaronder één horizontale rij **SNL SCH PAS DRI VRD FYS**. Labels staan boven hun waarden.
 - Het **DIA-logo staat gecentreerd onder de statistieken**, via `/logos/dia.png`.
 - Gebruik `contentLayout="football"`; huidige marges zijn links/rechts 14%, boven 15% en onder 13%. De ondermarge houdt het onderste blok vrij van de schildpunt. De gewone `safe`-inhoudslaag heeft onder 22%.
@@ -86,4 +86,4 @@ Rapporteer wat is veranderd, waar het zichtbaar is en welke controles zijn gesla
 
 ## Kaartsoorten in de featurebranch
 
-Basis: abstract DIA. Maand: premium Kristal. Week: het eerder door de gebruiker gekozen zwart/gouden teamportaalschild met geel shirt; deze bestaande uitzondering is geen onderdeel van de lege collectie. Nieuwe pictogrammen worden parallel ontwikkeld en kunnen via `PlayStyleIcon` worden aangesloten; behoud de twaalf stabiele speelstijl-ID’s.
+Basis: abstract DIA. Maand: premium Kristal. Week: het eerder door de gebruiker gekozen zwart/gouden teamportaalschild. Bij een toegestane foto gebruikt de weekkaart de lege `dia-gold-shield-empty-v2`-achtergrond; zonder bruikbare foto gebruikt hij het originele `dia-gold-shield-v1` met shirt. Publieke foto's vereisen foto- én publiekeweergavetoestemming; gebruik uitsluitend servergefilterde URL's. Nieuwe pictogrammen worden parallel ontwikkeld en kunnen via `PlayStyleIcon` worden aangesloten; behoud de twaalf stabiele speelstijl-ID’s.

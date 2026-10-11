@@ -71,6 +71,16 @@ describe("card query privacy", () => {
     expect(await invoke(getTeamDeckPublic, ctx, { teamSlug: "jo13-1" })).toEqual([]);
   });
 
+  it("removes a revoked photo URL while retaining consented team card scores", async () => {
+    const { tables, ctx } = fixture();
+    const allowed = await invoke<RedactedPlayer[]>(getTeamDeckPublic, ctx, { teamSlug: "jo13-1" });
+    expect(allowed[0].photoUrl).toBe("portrait.jpg");
+    tables.playerConsents.find((row) => row.consentType === "photo")!.status = "revoked";
+    const revoked = await invoke<RedactedPlayer[]>(getTeamDeckPublic, ctx, { teamSlug: "jo13-1" });
+    expect(revoked[0]).toMatchObject({ displayName: "Sam", photoUrl: null, fcRatings: { snl: 80 } });
+    expect(JSON.stringify(revoked)).not.toContain("portrait.jpg");
+  });
+
   it("denies the formerly unprotected deck query to nonstaff", async () => {
     const { ctx } = fixture();
     await expect(invoke(getTeamDeck, ctx, { teamId: "t1" })).rejects.toThrow("Geen teamtoegang");

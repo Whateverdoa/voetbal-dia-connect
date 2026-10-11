@@ -58,14 +58,42 @@ describe("FcPlayerShield", () => {
     vi.setSystemTime(start);
     const { container, rerender } = render(<FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" fcRatings={ratings} />);
     expect(container.querySelector('img[src="/cards/shields/abstract/dia-shield-dia-abstract-v1.webp"]')).toBeInTheDocument();
-    expect(container.querySelector('img[src="https://example.test/jan.jpg"]')).toBeNull();
+    expect(container.querySelector('img[src="https://example.test/jan.jpg"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-player-shirt]')).toBeNull();
     expect(container.querySelector('img[alt="DIA"]')).toBeInTheDocument();
     rerender(<FcPlayerShield name="Jan" fcRatings={ratings} recognitions={[award("month", start + 1000)]} />);
     expect(container.querySelector('img[src="/cards/shields/dia-shield-crystal-v1.webp"]')).toBeInTheDocument();
     expect(screen.getByText("82", { selector: "span" })).toBeInTheDocument();
     rerender(<FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" recognitions={[award("week", start + 1000)]} />);
-    expect(container.querySelector('img[src="/team-portal/dia-gold-shield-v1-480.webp"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="/team-portal/dia-gold-shield-empty-v2-480.webp"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="/team-portal/dia-gold-shield-v1-480.webp"]')).toBeNull();
     expect(container.querySelector('img[src="https://example.test/jan.jpg"]')).toBeInTheDocument();
+  });
+
+  it.each(["base", "week", "month"] as const)("switches %s from photo to shirt immediately when the permitted URL is removed", (kind) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(start);
+    const recognitions = kind === "base" ? [] : [award(kind, start + 1000)];
+    const { container, rerender } = render(<FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" recognitions={recognitions} />);
+    expect(container.querySelectorAll('[data-player-portrait]')).toHaveLength(1);
+    expect(container.querySelector('[data-player-shirt]')).toBeNull();
+    rerender(<FcPlayerShield name="Jan" photoUrl={null} recognitions={recognitions} />);
+    expect(container.querySelector('[data-player-portrait]')).toBeNull();
+    expect(container.querySelector('[src="https://example.test/jan.jpg"]')).toBeNull();
+    if (kind === "week") {
+      expect(container.querySelector('[src="/team-portal/dia-gold-shield-v1-480.webp"]')).toBeInTheDocument();
+      expect(container.querySelector('[src="/team-portal/dia-gold-shield-empty-v2-480.webp"]')).toBeNull();
+    } else expect(container.querySelector('[data-player-shirt]')).toBeInTheDocument();
+  });
+
+  it("falls back to a shirt after an image error and accepts a new permitted photo", () => {
+    const { container, rerender } = render(<FcPlayerShield name="Jan" photoUrl="https://example.test/missing.jpg" compact />);
+    fireEvent.error(container.querySelector('[data-player-portrait]')!);
+    expect(container.querySelector('[data-player-portrait]')).toBeNull();
+    expect(container.querySelector('[data-player-shirt]')).toBeInTheDocument();
+    rerender(<FcPlayerShield name="Jan" photoUrl="https://example.test/replacement.jpg" compact />);
+    expect(container.querySelector('[data-player-portrait]')).toHaveAttribute("src", "https://example.test/replacement.jpg");
+    expect(container.querySelector('[data-player-shirt]')).toBeNull();
   });
 
   it("keeps compact phone identity and discipline readable without scaling their text", () => {

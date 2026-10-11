@@ -29,8 +29,8 @@ export function FcPlayerShield({
   const id = useId().replace(/:/g, "");
   const now = useCardTime(recognitions);
   const card = withCardBonus(fcRatings, recognitions, now);
-  const accent = card.kind === "month" ? "#FFE713" : card.kind === "week" ? "#9af5dc" : "#68e9c5";
-  const base = card.kind === "month" ? "#6b4814" : card.kind === "week" ? "#143d53" : "#3d1764";
+  const accent = card.kind === "month" ? "#FFE713" : card.kind === "week" ? "#68e9c5" : "#9af5dc";
+  const base = card.kind === "month" ? "#6b4814" : card.kind === "week" ? "#3d1764" : "#143d53";
   const shortName = name.trim() || "Speler";
   const label = [shortName, position, card.overall === null ? "Nog niet beoordeeld" : `Algemeen ${card.overall}`,
     card.kind ? AWARD_NAME[card.kind] : null,

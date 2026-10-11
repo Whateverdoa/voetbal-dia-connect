@@ -2,6 +2,8 @@
 
 Deze uitbreiding geldt voor teams met `isSelectionTeam: true`. De coach opent het beheer onder **Team → Spelerskaarten**. Spelers en ouders gebruiken `/team/[slug]/app`, met **Kaarten** en **Stemmen**. Het bestaande kaartenoverzicht in de presentatie is weer beschikbaar.
 
+Het paarse schild met turquoise/gouden rand is de kaart voor **Team van de week**. Gewone kaarten gebruiken een blauwe basis; maandkaarten behouden hun gouden accenten. Deze vormgeving geldt ook voor compacte veld- en bankkaarten.
+
 ## Beoordelingen
 
 De coach beoordeelt SNL, SCH, PAS, DRI, VRD en FYS met gehele getallen van 1–99. Onbeoordeelde kenmerken mogen leeg blijven, ook na opslaan. Pas wanneer alle zes kenmerken zijn ingevuld, verschijnt het afgeronde gemiddelde. Een afzonderlijke totaalscore bestaat niet. De referenties 75/80/85 en observatiehulp staan bij het formulier.

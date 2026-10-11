@@ -13,7 +13,7 @@ Dezelfde componenten verzorgen basis-, week- en maandkaarten op alle schermen:
 `1cqw` is 1% van de buitenste kaartbreedte. Voeg binnen het schild geen tweede schaalcontainer toe.
 
 - Gemiddelde: linksboven, 17cqw. Positie: eronder, 5cqw, tussenruimte 1cqw.
-- Midden: uitsluitend een losse toegestane foto of `PlayerShirt`, achter de tekst. De galerij laat dit vlak leeg. `media` is een optionele ReactNode van `FootballShieldContent`.
+- Midden: uitsluitend een losse toegestane foto of `PlayerShirt`, achter de tekst. De galerij laat dit vlak leeg. `PlayerShirt` gebruikt de vrijgemaakte realistische `dia-yellow-shirt-v1-480.webp` uit het goedgekeurde weekshirt; vervang dit niet door een vereenvoudigde tekening. `media` is een optionele ReactNode van `FootballShieldContent`.
 - Onderblok: absoluut aan de onderzijde van de inhoudslaag. Naam 7cqw, maximaal twee regels; extra tekst groeit naar boven.
 - Statistieken: 3cqw onder de naam, zes gelijke kolommen met 0.5cqw afstand. Volg `FOOTBALL_SHIELD_STATS`: SNL SCH PAS DRI VRD FYS. Label boven waarde; label `max(9px,3.8cqw)`, waarde 5.3cqw en 0.5cqw tussenruimte.
 - DIA-logo: `/logos/dia.png`, gecentreerd, verhouding 180:200, hoogte 13cqw, 2.5cqw onder scores.

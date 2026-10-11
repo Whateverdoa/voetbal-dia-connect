@@ -41,6 +41,7 @@ export async function bootstrapFullAccessIfEligible(): Promise<{
   applied: boolean;
   error?: string;
 }> {
+  if (process.env.DIA_TEST_MODE === "true") return { applied: false };
   const { userId } = await auth();
   if (!userId) return { applied: false };
 
@@ -75,6 +76,7 @@ function parseRolesFromMetadata(metadata: unknown): string[] {
 }
 
 export async function setUserRole(role: AssignableRole): Promise<RoleActionResult> {
+  if (process.env.DIA_TEST_MODE === "true") return { ok: false, error: "Testrollen worden uitsluitend in de aparte testdatabase beheerd." };
   if (!["admin", "coach", "referee"].includes(role)) {
     return { ok: false, error: "Onbekende rol." };
   }
@@ -110,6 +112,7 @@ export async function setUserRole(role: AssignableRole): Promise<RoleActionResul
 
 /** After choosing Coach, try automatic e-mail based role linking. */
 export async function tryBootstrapCoach(): Promise<{ linked: boolean }> {
+  if (process.env.DIA_TEST_MODE === "true") return { linked: false };
   const result = await getLinkedRoleForRole("coach");
   return { linked: result.ok };
 }
@@ -119,6 +122,7 @@ export async function bootstrapRoleLinksFromEmail(): Promise<{
   applied: boolean;
   assignedRoles: Array<"admin" | "coach" | "referee">;
 }> {
+  if (process.env.DIA_TEST_MODE === "true") return { applied: false, assignedRoles: [] };
   const { userId } = await auth();
   if (!userId) return { applied: false, assignedRoles: [] };
 

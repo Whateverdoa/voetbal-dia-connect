@@ -3,6 +3,8 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
+// Review deployments contain synthetic data and never run club imports or reminders.
+if (process.env.DIA_TEST_MODE !== "true") {
 /**
  * Sportlink programma → matches (tijdverzettingen, nieuwe fixtures).
  * 2× per dag: 11:00 UTC (~13:00 NL-zomer) en 17:00 UTC (~19:00 NL-zomer).
@@ -56,5 +58,6 @@ crons.cron(
   "0 12 * * *",
   internal.refereeNotifications.createWindowClosingReminders,
 );
+}
 
 export default crons;

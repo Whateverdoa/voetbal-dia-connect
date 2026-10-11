@@ -122,6 +122,7 @@ import type * as ops_correctTscJo132Guests from "../ops/correctTscJo132Guests.js
 import type * as ops_deleteMatchByCode from "../ops/deleteMatchByCode.js";
 import type * as ops_ensureSandboxTeam from "../ops/ensureSandboxTeam.js";
 import type * as ops_equalizeTscJo132Minutes from "../ops/equalizeTscJo132Minutes.js";
+import type * as ops_seedFc27Review from "../ops/seedFc27Review.js";
 import type * as ops_setJo132ActiveRoster from "../ops/setJo132ActiveRoster.js";
 import type * as pinHelpers from "../pinHelpers.js";
 import type * as playerCards from "../playerCards.js";
@@ -295,6 +296,7 @@ declare const fullApi: ApiFromModules<{
   "ops/deleteMatchByCode": typeof ops_deleteMatchByCode;
   "ops/ensureSandboxTeam": typeof ops_ensureSandboxTeam;
   "ops/equalizeTscJo132Minutes": typeof ops_equalizeTscJo132Minutes;
+  "ops/seedFc27Review": typeof ops_seedFc27Review;
   "ops/setJo132ActiveRoster": typeof ops_setJo132ActiveRoster;
   pinHelpers: typeof pinHelpers;
   playerCards: typeof playerCards;

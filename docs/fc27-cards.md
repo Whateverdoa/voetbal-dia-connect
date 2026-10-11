@@ -34,6 +34,20 @@ Schemawijzigingen aan bestaande spelers zijn optioneel. Bij uitrol moeten de fro
 
 ## Controle
 
+### Afzonderlijke reviewomgeving
+
+De branch `codex/fc27-cards-voting` heeft een eigen Convex-project `dia-fc27-review`, ontwikkeldeployment `sincere-spider-515`. Alleen de branchgebonden Vercel Preview-variabelen `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL` en `DIA_TEST_MODE=true` wijzen hierheen. Productie `nautical-condor-5` en andere previews behouden hun eigen instellingen.
+
+De omgeving toont een gele testbalk en bevat `FC27 Testteam` (`fc27-test`) met zes fictieve spelers en een getekend voorbeeldportret. De bestaande beheerdersaccounts uit de lokale configuratie hebben uitsluitend in deze testdatabase coachtoegang gekregen. Er zijn geen spelersgegevens uit productie gekopieerd. Automatische Clerk-rolwijzigingen, clubimports en herinneringscrons zijn uitgeschakeld; de kaartenscheduler voor sluiten en vervallen blijft werkzaam.
+
+De interne CLI-seed `ops/seedFc27Review:apply` vereist zowel testmodus als de exacte testdeployment-URL. Herhalen reset geen beoordelingen. Gebruik bij backendupdates altijd een afzonderlijk genegeerd env-bestand met `CONVEX_DEPLOY_KEY=<ignore_deploy_key>` en `CONVEX_DEPLOYMENT=dev:sincere-spider-515`:
+
+```powershell
+npx convex dev --env-file .env.fc27-test --once
+```
+
+De Vercel-build blijft alleen de frontend bouwen; push de backend naar deze testdeployment vóór een frontendupdate die nieuwe functies nodig heeft. De reviewomgeving is geen productie-uitrol.
+
 De gerichte tests controleren scoreberekening, gedeeltelijke beoordelingen, bonusmaximum, overlap, tijdgrenzen, Amsterdamse zomer-/wintertijd en maandultimo. Backendtests roepen de echte handlers aan met geïndexeerde testgegevens en controleren toegang, uitnodigingen, snapshots, biljetten, zelfstemmen, nul stemmen, gelijke standen, veto's en privacy. UI-tests bewaken de beoordeling, het stemformulier, navigatie, modaltoegang en bestaande wisselbediening.
 
 Het schild, overzicht, detail en compacte veldkaarten zijn daarnaast met fictieve spelers in een lokale browser bekeken op telefoon- en tabletformaat. Een echte Clerk/Convex-smoketest na deployment blijft onderdeel van de gebruikelijke releasecontrole.

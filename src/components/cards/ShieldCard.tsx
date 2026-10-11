@@ -11,10 +11,12 @@ interface ShieldCardProps {
   children?: ReactNode;
   className?: string;
   label?: string;
+  /** Existing empty artwork; content always follows the shared layout. */
+  backgroundSrc?: string;
 }
 
 /** Decorative frame with an independent, scalable content layer. */
-export function ShieldCard({ theme, series = "premium", contentLayout = "safe", children, className = "", label }: ShieldCardProps) {
+export function ShieldCard({ theme, series = "premium", contentLayout = "safe", children, className = "", label, backgroundSrc }: ShieldCardProps) {
   const definition = SHIELD_THEMES.find((item) => item.id === theme)!;
 
   return (
@@ -25,7 +27,7 @@ export function ShieldCard({ theme, series = "premium", contentLayout = "safe", 
       aria-label={label}
     >
       <Image
-        src={shieldAsset(theme, "webp", series)}
+        src={backgroundSrc ?? shieldAsset(theme, "webp", series)}
         alt=""
         fill
         sizes="(max-width: 640px) 80vw, (max-width: 1024px) 45vw, 360px"
@@ -33,7 +35,7 @@ export function ShieldCard({ theme, series = "premium", contentLayout = "safe", 
         draggable={false}
         unoptimized
       />
-      {children ? <div className={`absolute inset-x-[14%] top-[15%] ${contentLayout === "football" ? "bottom-[13%]" : "bottom-[22%]"}`}>{children}</div> : null}
+      {children ? <div className={`absolute inset-x-[14%] top-[15%] ${contentLayout === "football" ? "bottom-[15%]" : "bottom-[22%]"}`}>{children}</div> : null}
     </div>
   );
 }

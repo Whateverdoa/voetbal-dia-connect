@@ -7,6 +7,10 @@ description: Gebruik of wijzig de abstracte en premium FC-geïnspireerde spelers
 
 Werk in de huidige DIA Live-checkout. Lees de lokale `AGENTS.md` en de relevante Next.js-documentatie voordat je code wijzigt. De oorspronkelijke collectie staat in `C:/PROJECTS/VOETBAL/Voetbal-dial-connect/voetbal-dia-connect`; gebruik bij werk in een andere checkout de bestanden uit die checkout. Ontbreken daar de componenten of assets, controleer eerst de branch en beschikbare bestanden.
 
+## Opbouwlogica
+
+Lees [references/build-logic.md](references/build-logic.md) voor de gedeelde laagopbouw, vaste ankers en badgeplaatsing.
+
 ## Bestaande onderdelen gebruiken
 
 - `src/components/cards/ShieldCard.tsx`: schaalbaar schildframe met losse inhoudslaag.
@@ -40,8 +44,9 @@ import { FootballShieldContent } from "@/components/cards/FootballShieldContent"
 - Linksboven staat het **afgeronde rekenkundige gemiddelde van alle zes statistieken**, geen rugnummer. `averageFootballShieldRating` berekent dit; pas geen eigen formule toe bij de integratie.
 - De positie staat onder het gemiddelde. Het grote middenvlak is gereserveerd voor de foto of het vervangende shirt; in de ontwerpgalerij blijft het vrij.
 - Onderaan staat de naam, daaronder één horizontale rij **SNL SCH PAS DRI VRD FYS**. Labels staan boven hun waarden.
-- Het **DIA-logo staat gecentreerd onder de statistieken**, via `/logos/dia.png`.
-- Gebruik `contentLayout="football"`; huidige marges zijn links/rechts 14%, boven 15% en onder 13%. De ondermarge houdt het onderste blok vrij van de schildpunt. De gewone `safe`-inhoudslaag heeft onder 22%.
+- Het **DIA-logo staat gecentreerd onder de statistieken**, via `/logos/dia.png`, met verhouding 180:200 en hoogte 13cqw.
+- Direct onder het logo staat een vaste rij van 9cqw hoog voor maximaal drie unieke speelstijlbadges, op 1.5cqw afstand. Reserveer deze ruimte ook zonder badges; scores en logo blijven op hun plek.
+- Gebruik `contentLayout="football"`; huidige marges zijn links/rechts 14%, boven 15% en onder 15%. De ondermarge houdt het onderste blok vrij van de schildpunt. De gewone `safe`-inhoudslaag heeft onder 22%.
 - Houd de huidige, iets verhoogde onderkant aan. Controleer bij wijzigingen vooral de eerste en laatste statistiek en het logo tegen de schuine randen.
 
 Dit volgt de gebruikersreferentie: https://www.futbin.com/27/fut-card-creator. De referentie is voor indeling; de lokale collectie bevat eigen ontwerpen. Routine-integratie vereist geen download van externe FC-assets.
@@ -86,4 +91,4 @@ Rapporteer wat is veranderd, waar het zichtbaar is en welke controles zijn gesla
 
 ## Kaartsoorten in de featurebranch
 
-Basis: abstract DIA. Maand: premium Kristal. Week: het eerder door de gebruiker gekozen zwart/gouden teamportaalschild. Bij een toegestane foto gebruikt de weekkaart de lege `dia-gold-shield-empty-v2`-achtergrond; zonder bruikbare foto gebruikt hij het originele `dia-gold-shield-v1` met shirt. Publieke foto's vereisen foto- én publiekeweergavetoestemming; gebruik uitsluitend servergefilterde URL's. Nieuwe pictogrammen worden parallel ontwikkeld en kunnen via `PlayStyleIcon` worden aangesloten; behoud de twaalf stabiele speelstijl-ID’s.
+Basis: abstract DIA. Maand: premium Kristal. Week: het eerder door de gebruiker gekozen zwart/gouden teamportaalschild. Alle weekkaarten gebruiken het bestaande lege `dia-gold-shield-empty-v2`-frame met dezelfde `ShieldCard`-inhoudslaag. Een toegestane foto of het DIA-shirt wordt los in het midden geplaatst; de oorspronkelijke assets blijven bewaard. Publieke foto's vereisen foto- én publiekeweergavetoestemming; gebruik uitsluitend servergefilterde URL's. Nieuwe pictogrammen worden parallel ontwikkeld en kunnen via `PlayStyleIcon` worden aangesloten; behoud de twaalf stabiele speelstijl-ID’s.

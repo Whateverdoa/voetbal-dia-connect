@@ -9,6 +9,16 @@ interface PlayStyleIconProps extends Omit<SVGProps<SVGSVGElement>, "id"> {
 
 const BALL = <><circle cx="26" cy="27" r="6" /><path d="m26 23 3 2-1 4h-4l-1-4z" /></>;
 
+/** Presentation guard only; persistence validates IDs and the maximum server-side. */
+export function PlayStyleStrip({ ids }: { ids: readonly string[] }) {
+  const styles = PLAY_STYLES.filter((style) => ids.includes(style.id)).slice(0, 3);
+  return <div className="flex justify-center gap-[1.5cqw]">
+    {styles.map((style) => <span key={style.id} title={`${style.name}: ${style.description}`}>
+      <PlayStyleIcon styleId={style.id} className="h-[9cqw] w-[9cqw]" />
+    </span>)}
+  </div>;
+}
+
 /** Original DIA football pictograms, sharing the familiar diamond silhouette. */
 export function PlayStyleIcon({
   styleId,

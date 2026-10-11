@@ -2,7 +2,7 @@
 
 Deze uitbreiding geldt voor teams met `isSelectionTeam: true`. De coach opent het beheer onder **Team → Spelerskaarten**. Spelers en ouders gebruiken `/team/[slug]/app`, met **Kaarten** en **Stemmen**. Het bestaande kaartenoverzicht in de presentatie is weer beschikbaar.
 
-**Team van de week** gebruikt het bestaande zwart/gouden DIA-teamportaalschild met stadionlichten. Met een toegestane foto gebruikt de kaart de lege achtergrond `public/team-portal/dia-gold-shield-empty-v2-480.webp` (ook beschikbaar op 960px); zonder foto blijft het originele artwork met geel shirt zichtbaar (`dia-gold-shield-v1`). Een portret staat nooit over het ingebakken shirt. Gewone kaarten gebruiken het abstracte DIA-schild uit de collectie op `/kaarten`; maandkaarten gebruiken het premium Kristal-schild. Beide tonen eveneens óf de toegestane foto óf een geel DIA-shirt. Ook bij een niet-laadbare foto verschijnt het shirt. `FcPlayerShield` koppelt de bestaande `ShieldCard` en `FootballShieldContent` aan de toegestane spelergegevens en actieve bonussen. Deze keuze geldt ook voor compacte veld- en bankkaarten. De ontwerpgalerij toont lege frames; foto en shirt zijn spelerinhoud.
+**Team van de week** gebruikt het bestaande zwart/gouden DIA-teamportaalschild met stadionlichten. Alle weekkaarten gebruiken de lege achtergrond `public/team-portal/dia-gold-shield-empty-v2-960.webp` met een afzonderlijke toegestane foto of DIA-shirt. Het oorspronkelijke artwork blijft bewaard. Een portret en shirt verschijnen nooit tegelijk. Gewone kaarten gebruiken het abstracte DIA-schild uit de collectie op `/kaarten`; maandkaarten gebruiken het premium Kristal-schild. Beide tonen eveneens óf de toegestane foto óf een geel DIA-shirt. Ook bij een niet-laadbare foto verschijnt het shirt. `FcPlayerShield` koppelt de bestaande `ShieldCard` en `FootballShieldContent` aan de toegestane spelergegevens en actieve bonussen. Deze keuze geldt ook voor compacte veld- en bankkaarten. De ontwerpgalerij toont lege frames; foto en shirt zijn spelerinhoud.
 
 ## Beoordelingen
 
@@ -61,3 +61,7 @@ De zes lange ontwerpkeys (`pace`, `shooting`, `passing`, `dribbling`, `defending
 Het voorstel uit de andere taak voor afzonderlijke privéconcepten, publicatiemomenten en beoordelingshistorie is een aanvullende vervolgrichting. Dat wijzigt de hier goedgekeurde opslag- en toestemmingsregels niet stilzwijgend. De bestaande week-/maandhistorie en veto-audit blijven behouden.
 
 De oorspronkelijke schildbestanden zijn als momentopname overgenomen uit de hoofdcheckout. De taak voor nieuwe iconen blijft eigenaar van die nieuwe ontwerpen. Deze integratie behoudt de bestaande twaalf stabiele speelstijl-ID's en `PlayStyleIcon`; de latere pictogrammen kunnen daar worden aangesloten zonder scores, stemregels of opgeslagen badge-ID's te wijzigen.
+
+## Gedeelde schildopbouw
+
+Alle grote kaarten volgen `skills/dia-shields/references/build-logic.md`: gemiddelde en positie linksboven, vrij midden voor foto of shirt, naam, zes scores, gecentreerd DIA-logo (180:200, 13cqw) en maximaal drie badges direct daaronder. De badgerij houdt ook zonder badges 9cqw ruimte. De voetbalinhoud heeft 15% ondermarge; de vaste ankers voorkomen verschuiving bij badgekeuze. Kenmerkiconen staan naast de beoordelingsvelden. Compacte kaarten behouden hun identiteit en wedstrijdstatus.

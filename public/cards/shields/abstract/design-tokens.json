@@ -2,7 +2,7 @@
   "version": 1,
   "canvas": { "width": 1152, "height": 1536 },
   "contentInsetsPercent": { "left": 14, "right": 14, "top": 15, "bottom": 22 },
-  "footballContentInsetsPercent": { "left": 14, "right": 14, "top": 15, "bottom": 13 },
+  "footballContentInsetsPercent": { "left": 14, "right": 14, "top": 15, "bottom": 15 },
   "geometry": {
     "outline": "M280 104 H872 L1024 256 V1096 L928 1240 L576 1424 L224 1240 L128 1096 V256 Z",
     "inset": "M290 128 H862 L1000 266 V1089 L911 1221 L576 1397 L241 1221 L152 1089 V266 Z",

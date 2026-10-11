@@ -44,7 +44,7 @@ import { FootballShieldContent } from "@/components/cards/FootballShieldContent"
 
 Zonder `series` blijft `ShieldCard` de bestaande premiumserie gebruiken. De galerij start op Abstract. Bestaande wedstrijd- en spelersschermen worden niet automatisch vervangen.
 
-De standaardinhoudsmarges zijn links/rechts 14%, boven 15% en onder 22%. Met `contentLayout="football"` is de ondermarge 13%: alleen het gecentreerde DIA-logo staat in dit lagere, schuine gedeelte. Houd `contentInsetsPercent`, `footballContentInsetsPercent` en de marges in `ShieldCard.tsx` gelijk bij een vormwijziging.
+De standaardinhoudsmarges zijn links/rechts 14%, boven 15% en onder 22%. Met `contentLayout="football"` is de ondermarge 15%: het gecentreerde DIA-logo en de vaste rij met maximaal drie badges blijven boven de schildpunt. Houd `contentInsetsPercent`, `footballContentInsetsPercent` en de marges in `ShieldCard.tsx` gelijk bij een vormwijziging.
 
 `FootballShieldContent` toont exact deze volgorde: naam → SNL, SCH, PAS, DRI, VRD, FYS (labels boven waarden, in één rij) → DIA-logo. De statkeys zijn respectievelijk `pace`, `shooting`, `passing`, `dribbling`, `defending`, `physical`. Een ontbrekende waarde verschijnt als een streepje; nul blijft zichtbaar als 0. Het voorbeeld hierboven bevat alleen ontwerpwaarden. De galerij laat ze lokaal aanpassen en slaat ze niet op.
 

@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { FOOTBALL_SHIELD_STATS, averageFootballShieldRating, type FootballShieldStats } from "@/lib/cards/footballRatings";
+import { averageFootballShieldRating, type FootballShieldStats } from "@/lib/cards/footballRatings";
+import { FootballShieldStatsRow } from "./FootballShieldStatsRow";
 export { FOOTBALL_SHIELD_STATS, averageFootballShieldRating, type FootballShieldStats } from "@/lib/cards/footballRatings";
 
 interface FootballShieldContentProps {
@@ -19,16 +20,9 @@ export function FootballShieldContent({ name, position, stats }: FootballShieldC
       </div>
 
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center text-center">
-        <p title={name} className="line-clamp-2 w-full break-words text-[max(11px,7cqw)] font-bold uppercase leading-tight tracking-tight">{name}</p>
-        <dl className="mt-[3cqw] grid w-full grid-cols-6 gap-[0.5cqw]">
-          {FOOTBALL_SHIELD_STATS.map(({ key, label, name: statName }) => (
-            <div key={key} className="min-w-0">
-              <dt aria-label={statName} className="text-[max(8px,3.8cqw)] font-semibold leading-tight">{label}</dt>
-              <dd className="mt-[0.5cqw] text-[max(10px,5.3cqw)] font-bold leading-none tabular-nums">{stats?.[key] ?? "—"}</dd>
-            </div>
-          ))}
-        </dl>
-        <Image src="/logos/dia.png" alt="DIA" width={64} height={64} className="mt-[3cqw] h-[12cqw] w-[12cqw] object-contain" />
+        <p title={name} className="line-clamp-2 w-full break-words text-[5.8cqw] font-bold uppercase leading-tight tracking-tight">{name}</p>
+        <div className="mt-[2cqw] w-full"><FootballShieldStatsRow stats={stats} /></div>
+        <Image src="/logos/dia.png" alt="DIA" width={64} height={64} className="mt-[2cqw] h-[10cqw] w-[10cqw] object-contain" />
       </div>
     </div>
   );

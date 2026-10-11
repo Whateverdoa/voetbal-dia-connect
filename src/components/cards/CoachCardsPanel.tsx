@@ -99,7 +99,7 @@ function PlayerRatingEditor({ player, players }: { player: StaffPlayer; players:
         <p className="mt-2">Dit voetbalprofiel gebruikt scores van 1–99. Interne ontwikkelbeoordelingen van 1–5, wedstrijdfeedback en XP staan hier los van.</p>
         <p className="mt-2">Na opslaan worden deze kaartgegevens zichtbaar waar de toestemmingen van de speler dat toelaten.</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_224px]">
         <div className="grid grid-cols-2 gap-3">
           {FC_ATTRIBUTES.map((attribute) => (
             <label key={attribute.key} htmlFor={`${id}-${attribute.key}`} className="text-sm font-semibold text-slate-800">
@@ -114,7 +114,7 @@ function PlayerRatingEditor({ player, players }: { player: StaffPlayer; players:
           ))}
           <p className="col-span-2 text-sm text-slate-600">Basistotaalscore: <strong className="text-xl text-slate-900">{overall ?? "—"}</strong> · afgerond gemiddelde van de zes kenmerken.</p>
         </div>
-        <div className="mx-auto w-44 self-start">
+        <div className="mx-auto w-56 max-w-full self-start">
           <FcPlayerShield name={player.name} number={player.number} position={player.positionPrimary} photoUrl={player.photoUrl} fcRatings={ratings} playStyleIds={styles} recognitions={player.recognitions} />
           <p className="mt-2 text-center text-xs text-slate-500">Kaartvoorbeeld met eventuele actieve bonus.</p>
         </div>

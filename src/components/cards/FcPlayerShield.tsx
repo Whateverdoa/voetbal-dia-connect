@@ -9,6 +9,7 @@ import { ShieldCard } from "./ShieldCard";
 import { FootballShieldContent } from "./FootballShieldContent";
 import { toFootballShieldStats } from "@/lib/cards/footballRatings";
 import { PlayerShirt } from "./PlayerShirt";
+import { FootballShieldStatsRow } from "./FootballShieldStatsRow";
 
 export interface FcPlayerShieldProps extends FcCardData {
   name: string;
@@ -78,12 +79,8 @@ export function FcPlayerShield({
             {disciplineBadge ? <span className="absolute right-[10%] top-[36%] rounded-[2px] shadow-sm ring-1 ring-black/30" title={disciplineBadge === "red" ? "Rode kaart" : "Gele kaart"} style={{ width: 9, height: 13, background: disciplineBadge === "red" ? "#dc2626" : "#facc15" }} /> : null}
             <span className="absolute inset-x-[9%] top-[64.5%] flex h-[9%] items-center justify-center truncate text-center font-black uppercase leading-none tracking-[-0.035em] [text-shadow:0_2px_5px_#000]" title={shortName}
               style={{ fontSize: `${Math.min(12, 110 / Math.max(shortName.length, 1))}cqw` }}>{shortName}</span>
-            <div className="absolute inset-x-[14%] top-[74%] grid h-[13%] grid-cols-6 gap-0.5 rounded bg-black/70 text-center leading-none">
-              {FC_ATTRIBUTES.map((attribute) => <div key={attribute.key} className="flex min-w-0 flex-col items-center justify-between">
-                <PlayStyleIcon styleId={attribute.icon} decorative style={{ width: "3.8cqw", height: "3.8cqw", color: accent }} />
-                <span className="block text-[max(8px,3.8cqw)] font-bold text-[#dfc16b]">{attribute.label}</span>
-                <span className="block text-[max(10px,5.5cqw)] font-extrabold tabular-nums">{card.ratings?.[attribute.key] ?? "—"}</span>
-              </div>)}
+            <div className="absolute inset-x-[13%] top-[74%] rounded bg-black/80 py-[0.8cqw] text-[#fff3d6]">
+              <FootballShieldStatsRow stats={stats} />
             </div>
           </> : null}
         </div>
@@ -99,9 +96,9 @@ export function FcPlayerShield({
         // eslint-disable-next-line @next/next/no-img-element
         <img key={portrait} src={portrait} alt="" data-player-portrait
           onError={() => setFailedPhoto(portrait)}
-          className={`pointer-events-none absolute top-[23%] rounded-[10%] bg-[#13171c] object-cover object-top ${isWeek ? "left-[27%] h-[38%] w-[53%]" : "left-[34%] w-[48%]"} ${!isWeek ? (compact ? "h-[38%]" : "h-[32%]") : ""}`} />
+          className={`pointer-events-none absolute top-[23%] rounded-[10%] bg-[#13171c] object-cover object-top ${isWeek ? "left-[27%] h-[38%] w-[53%]" : "left-[34%] w-[48%]"} ${!isWeek ? (compact ? "h-[38%]" : "h-[26%]") : ""}`} />
       ) : !isWeek ? (
-        <div className="pointer-events-none absolute left-[24%] top-[23%] h-[32%] w-[57%]" aria-hidden="true"><PlayerShirt number={compact ? undefined : number} /></div>
+        <div className={`pointer-events-none absolute left-[24%] top-[23%] w-[57%] ${compact ? "h-[32%]" : "h-[26%]"}`} aria-hidden="true"><PlayerShirt number={compact ? undefined : number} /></div>
       ) : null}
       {compact ? (
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -114,9 +111,11 @@ export function FcPlayerShield({
         </div>
       ) : null}
       </div>
-      {card.kind && !compact ? <span className="block text-center text-[10px] font-extrabold" style={{ color: accent }}>{AWARD_NAME[card.kind].toUpperCase()} +{card.bonus}</span> : null}
-      {!compact && styles.length > 0 ? <div className="mt-1 flex justify-center gap-2" aria-hidden="true" style={{ color: accent }}>
-        {styles.map((style) => <span key={style.id} title={`${style.name}: ${style.description}`}><PlayStyleIcon styleId={style.id} decorative size={24} /></span>)}
+      {!compact && (card.kind || styles.length > 0) ? <div className="mx-auto mt-1 flex w-fit max-w-full flex-col items-center gap-2 rounded-xl bg-[#101720] px-3 py-2" style={{ color: accent }}>
+        {card.kind ? <span className="text-center text-[10px] font-extrabold">{AWARD_NAME[card.kind].toUpperCase()} +{card.bonus}</span> : null}
+        {styles.length > 0 ? <div className="flex justify-center gap-2" aria-hidden="true">
+          {styles.map((style) => <span key={style.id} title={`${style.name}: ${style.description}`}><PlayStyleIcon styleId={style.id} decorative size={28} /></span>)}
+        </div> : null}
       </div> : null}
       {seasonMinutes !== undefined ? <span className="block text-center text-[10px] font-semibold tabular-nums text-white/90">{seasonMinutes}′</span> : null}
       {!compact ? <span className="sr-only">{FC_ATTRIBUTES.map(({ key, name: attributeName }) => `${attributeName} ${card.ratings?.[key] ?? "nog niet beoordeeld"}`).join(", ")}</span> : null}

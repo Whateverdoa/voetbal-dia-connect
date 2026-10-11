@@ -33,14 +33,14 @@ export function TeamDeckGrid({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-4">
         {players.map((p) => (
           <button
             key={p.playerId}
             type="button"
             onClick={() => setSelectedId(p.playerId)}
             aria-label={`Details ${p.displayName}`}
-            className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
+            className="mx-auto w-full max-w-72 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
           >
             <PlayerCardGamified
               displayName={p.displayName}

@@ -53,12 +53,19 @@ describe("FcPlayerShield", () => {
     expect(screen.getAllByText("99")).toHaveLength(7);
   });
 
-  it("uses separate vector IDs for cards and an integrated portrait", () => {
-    const { container } = render(<><FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" /><FcPlayerShield name="Piet" /></>);
-    const ids = [...container.querySelectorAll("[id]")].map((node) => node.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(container.querySelector('image[href="https://example.test/jan.jpg"]')).toHaveAttribute("mask");
-    expect(container.querySelector('image[href="/logos/dia.png"]')).toBeInTheDocument();
+  it("uses the collection frames for base/month and preserves the original weekly artwork", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(start);
+    const { container, rerender } = render(<FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" fcRatings={ratings} />);
+    expect(container.querySelector('img[src="/cards/shields/abstract/dia-shield-dia-abstract-v1.webp"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="https://example.test/jan.jpg"]')).toBeNull();
+    expect(container.querySelector('img[alt="DIA"]')).toBeInTheDocument();
+    rerender(<FcPlayerShield name="Jan" fcRatings={ratings} recognitions={[award("month", start + 1000)]} />);
+    expect(container.querySelector('img[src="/cards/shields/dia-shield-crystal-v1.webp"]')).toBeInTheDocument();
+    expect(screen.getByText("82", { selector: "span" })).toBeInTheDocument();
+    rerender(<FcPlayerShield name="Jan" photoUrl="https://example.test/jan.jpg" recognitions={[award("week", start + 1000)]} />);
+    expect(container.querySelector('img[src="/team-portal/dia-gold-shield-v1-480.webp"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="https://example.test/jan.jpg"]')).toBeInTheDocument();
   });
 
   it("keeps compact phone identity and discipline readable without scaling their text", () => {

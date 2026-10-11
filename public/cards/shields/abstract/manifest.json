@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "source": "design-tokens.json",
+  "generator": "scripts/generate-abstract-shields.mjs",
+  "contentInsetsPercent": {
+    "left": 14,
+    "right": 14,
+    "top": 15,
+    "bottom": 22
+  },
+  "footballContentInsetsPercent": {
+    "left": 14,
+    "right": 14,
+    "top": 15,
+    "bottom": 13
+  },
+  "assets": [
+    {
+      "id": "bronze",
+      "name": "Brons",
+      "svg": "dia-shield-bronze-abstract-v1.svg",
+      "png": "dia-shield-bronze-abstract-v1.png",
+      "webp": "dia-shield-bronze-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    },
+    {
+      "id": "silver",
+      "name": "Zilver",
+      "svg": "dia-shield-silver-abstract-v1.svg",
+      "png": "dia-shield-silver-abstract-v1.png",
+      "webp": "dia-shield-silver-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    },
+    {
+      "id": "gold",
+      "name": "Goud",
+      "svg": "dia-shield-gold-abstract-v1.svg",
+      "png": "dia-shield-gold-abstract-v1.png",
+      "webp": "dia-shield-gold-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    },
+    {
+      "id": "dia",
+      "name": "DIA",
+      "svg": "dia-shield-dia-abstract-v1.svg",
+      "png": "dia-shield-dia-abstract-v1.png",
+      "webp": "dia-shield-dia-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    },
+    {
+      "id": "crystal",
+      "name": "Kristal",
+      "svg": "dia-shield-crystal-abstract-v1.svg",
+      "png": "dia-shield-crystal-abstract-v1.png",
+      "webp": "dia-shield-crystal-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    },
+    {
+      "id": "elite",
+      "name": "Elite",
+      "svg": "dia-shield-elite-abstract-v1.svg",
+      "png": "dia-shield-elite-abstract-v1.png",
+      "webp": "dia-shield-elite-abstract-v1.webp",
+      "width": 1152,
+      "height": 1536
+    }
+  ]
+}

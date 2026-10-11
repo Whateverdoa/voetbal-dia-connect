@@ -96,6 +96,8 @@ function PlayerRatingEditor({ player, players }: { player: StaffPlayer; players:
       <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
         <p className="font-semibold">Dezelfde meetlat voor het hele team</p>
         <p>80 = verwacht teamniveau · 75 = ontwikkelpunt · 85 = sterk punt. Beoordeel op meerdere observaties. Andere scores zijn mogelijk.</p>
+        <p className="mt-2">Dit voetbalprofiel gebruikt scores van 1–99. Interne ontwikkelbeoordelingen van 1–5, wedstrijdfeedback en XP staan hier los van.</p>
+        <p className="mt-2">Na opslaan worden deze kaartgegevens zichtbaar waar de toestemmingen van de speler dat toelaten.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
         <div className="grid grid-cols-2 gap-3">

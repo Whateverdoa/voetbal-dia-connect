@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "canvas": { "width": 1152, "height": 1536 },
+  "contentInsetsPercent": { "left": 14, "right": 14, "top": 15, "bottom": 22 },
+  "footballContentInsetsPercent": { "left": 14, "right": 14, "top": 15, "bottom": 13 },
+  "geometry": {
+    "outline": "M280 104 H872 L1024 256 V1096 L928 1240 L576 1424 L224 1240 L128 1096 V256 Z",
+    "inset": "M290 128 H862 L1000 266 V1089 L911 1221 L576 1397 L241 1221 L152 1089 V266 Z",
+    "facets": ["M688 104 H872 L1024 256 V484 Z", "M880 408 L1024 484 V776 Z"],
+    "edgeWidth": 7,
+    "insetWidth": 2
+  },
+  "themes": [
+    { "id": "bronze", "name": "Brons", "accent": "#CF9B77", "base": "#241E1C", "elevated": "#39302A", "facet": "#71523F" },
+    { "id": "silver", "name": "Zilver", "accent": "#C2CED8", "base": "#1C2329", "elevated": "#303C46", "facet": "#637381" },
+    { "id": "gold", "name": "Goud", "accent": "#D6BE7C", "base": "#24231C", "elevated": "#3B3728", "facet": "#73643B" },
+    { "id": "dia", "name": "DIA", "accent": "#89C69F", "base": "#102C23", "elevated": "#1D4435", "facet": "#39765A" },
+    { "id": "crystal", "name": "Kristal", "accent": "#B5A1DF", "base": "#252035", "elevated": "#3B3052", "facet": "#6F5897" },
+    { "id": "elite", "name": "Elite", "accent": "#89BDE1", "base": "#152737", "elevated": "#253F56", "facet": "#426E92" }
+  ]
+}

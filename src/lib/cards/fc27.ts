@@ -1,3 +1,5 @@
+import { averageFootballShieldRating, toFootballShieldStats } from "./footballRatings";
+
 /** Shared, serializable card rules. Coach assessments never include award bonuses. */
 export const FC_ATTRIBUTES = [
   { key: "snl", label: "SNL", name: "Snelheid", help: "Versnelling en sprint, met en zonder bal.", icon: "quick_start" },
@@ -67,7 +69,7 @@ export function isFcRatings(value: unknown): value is FcRatings {
 
 export function ratingOverall(ratings: FcAssessment | null | undefined): number | null {
   if (!isFcRatings(ratings)) return null;
-  return Math.round(FC_ATTRIBUTES.reduce((sum, { key }) => sum + ratings[key], 0) / 6);
+  return averageFootballShieldRating(toFootballShieldStats(ratings));
 }
 
 export function activeRecognitions(recognitions: readonly CardRecognition[] = [], now = Date.now()): CardRecognition[] {

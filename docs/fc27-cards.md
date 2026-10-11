@@ -2,7 +2,7 @@
 
 Deze uitbreiding geldt voor teams met `isSelectionTeam: true`. De coach opent het beheer onder **Team → Spelerskaarten**. Spelers en ouders gebruiken `/team/[slug]/app`, met **Kaarten** en **Stemmen**. Het bestaande kaartenoverzicht in de presentatie is weer beschikbaar.
 
-**Team van de week** gebruikt het bestaande zwart/gouden DIA-teamportaalschild met stadionlichten en geel shirt (`public/team-portal/dia-gold-shield-v1-480.webp` en de 960px-variant). Dit originele artwork is ongewijzigd overgenomen; naam, portret, DIA-logo, beoordeling en speelstijlen worden erboven getoond. Gewone kaarten gebruiken het paarse vectorschild met turquoise/gouden rand; maandkaarten behouden hun gouden accenten. Deze vormgeving geldt ook voor compacte veld- en bankkaarten.
+**Team van de week** gebruikt het bestaande zwart/gouden DIA-teamportaalschild met stadionlichten en geel shirt (`public/team-portal/dia-gold-shield-v1-480.webp` en de 960px-variant). Dit originele artwork is ongewijzigd overgenomen; naam, portret, DIA-logo, beoordeling en speelstijlen worden erboven getoond. Gewone kaarten gebruiken het abstracte DIA-schild uit de collectie op `/kaarten`; maandkaarten gebruiken het premium Kristal-schild. `FcPlayerShield` koppelt de bestaande `ShieldCard` en `FootballShieldContent` aan de toegestane spelergegevens en actieve bonussen. De collectieframes bevatten geen portret, shirt of silhouet; het bestaande weekschild blijft de afgesproken uitzondering. Deze vormgeving geldt ook voor compacte veld- en bankkaarten.
 
 ## Beoordelingen
 
@@ -28,7 +28,7 @@ De scheduler publiceert alle positief scorende kandidaten boven de grens, inclus
 
 Publieke foto's vereisen foto- én publiekeweergavetoestemming. Scores, speelstijlen, onderscheidingen en verkiesbaarheid vereisen gamificatie- én publiekeweergavetoestemming. Intrekking wordt bij iedere query opnieuw toegepast, ook op kandidaten, winnaars en opgeslagen eigen keuzes. Publieke kaarten bevatten geen contactgegevens, uitnodigingen, stemtotalen of coachminuten. Alleen staff ziet de ranglijst; individuele biljetten worden uitsluitend aan hun eigenaar teruggegeven.
 
-De gedeelde regels staan in `src/lib/cards/fc27.ts` en `cardPeriods.ts`; de schermen gebruiken `FcPlayerShield`. Backendtoegang en expliciete projecties staan in `convex/playerCards.ts` en de kaarthelpers. Unieke geïndexeerde zoekopdrachten binnen Convex-transacties bewaken ronde- en biljetuniciteit. Schedulerfuncties zijn intern en herhaalbaar. Het beheer leest maximaal 64 spelers, 128 stemrechten en de laatste 100 rondes per team; oudere rondes blijven opgeslagen.
+De gedeelde regels staan in `src/lib/cards/fc27.ts`, `footballRatings.ts` en `cardPeriods.ts`; de schermen gebruiken `FcPlayerShield`. Backendtoegang en expliciete projecties staan in `convex/playerCards.ts` en de kaarthelpers. Unieke geïndexeerde zoekopdrachten binnen Convex-transacties bewaken ronde- en biljetuniciteit. Schedulerfuncties zijn intern en herhaalbaar. Het beheer leest maximaal 64 spelers, 128 stemrechten en de laatste 100 rondes per team; oudere rondes blijven opgeslagen.
 
 Schemawijzigingen aan bestaande spelers zijn optioneel. Bij uitrol moeten de frontend en Convex-backend samen worden bijgewerkt via de bestaande productie-buildworkflow. Deze featurebranch voert zelf geen productie-deploy of wijzigingen aan bestaande teamgegevens uit.
 
@@ -37,3 +37,13 @@ Schemawijzigingen aan bestaande spelers zijn optioneel. Bij uitrol moeten de fro
 De gerichte tests controleren scoreberekening, gedeeltelijke beoordelingen, bonusmaximum, overlap, tijdgrenzen, Amsterdamse zomer-/wintertijd en maandultimo. Backendtests roepen de echte handlers aan met geïndexeerde testgegevens en controleren toegang, uitnodigingen, snapshots, biljetten, zelfstemmen, nul stemmen, gelijke standen, veto's en privacy. UI-tests bewaken de beoordeling, het stemformulier, navigatie, modaltoegang en bestaande wisselbediening.
 
 Het schild, overzicht, detail en compacte veldkaarten zijn daarnaast met fictieve spelers in een lokale browser bekeken op telefoon- en tabletformaat. Een echte Clerk/Convex-smoketest na deployment blijft onderdeel van de gebruikelijke releasecontrole.
+
+## Aansluiting op de parallelle teamportaaltaak
+
+De interne coachwerkplek beoordeelt vijf ontwikkelonderdelen op 1–5. Die feedback blijft intern en wordt niet omgerekend naar de zes kaartkenmerken. Deze feature leest of publiceert geen interne ontwikkelbeoordelingen. Voor kaartbeoordelingen geldt het goedgekeurde plan: gehele scores 1–99, referenties 75/80/85 en zichtbaarheid na bewust opslaan volgens de bestaande toestemmingen. De coach ziet dit vooraf bij het formulier.
+
+De zes lange ontwerpkeys (`pace`, `shooting`, `passing`, `dribbling`, `defending`, `physical`) worden via `toFootballShieldStats` alleen vertaald vanuit de korte opgeslagen keys (`snl`, `sch`, `pas`, `dri`, `vrd`, `fys`). Er is één gedeelde gemiddeldeberekening. De galerij blijft een lokale ontwerpomgeving met 0–99 als demonstratieschaal; opgeslagen coachbeoordelingen accepteren alleen 1–99. Geen onbedoelde migratie van nul, ontbrekende scores, XP of 1–5-feedback.
+
+Het voorstel uit de andere taak voor afzonderlijke privéconcepten, publicatiemomenten en beoordelingshistorie is een aanvullende vervolgrichting. Dat wijzigt de hier goedgekeurde opslag- en toestemmingsregels niet stilzwijgend. De bestaande week-/maandhistorie en veto-audit blijven behouden.
+
+De oorspronkelijke schildbestanden zijn als momentopname overgenomen uit de hoofdcheckout. De taak voor nieuwe iconen blijft eigenaar van die nieuwe ontwerpen. Deze integratie behoudt de bestaande twaalf stabiele speelstijl-ID's en `PlayStyleIcon`; de latere pictogrammen kunnen daar worden aangesloten zonder scores, stemregels of opgeslagen badge-ID's te wijzigen.

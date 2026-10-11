@@ -64,6 +64,9 @@ convex/
 
 ## Common Tasks
 
+### Use or modify player shields
+Read `skills/dia-shields/SKILL.md` for the shared card collection and the integration with `FcPlayerShield`. Card ratings are separate from internal 1–5 coach reviews and XP.
+
 ### Add a new Convex query
 1. Add to appropriate file in `convex/`
 2. Use proper indexes from schema

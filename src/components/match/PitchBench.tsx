@@ -9,6 +9,8 @@ import { useCardSize } from "@/hooks/useCardSize";
 import type { DisciplineBadge } from "@/lib/cards/cardRules";
 import type { MatchPlayer } from "./types";
 import { DisciplineCardMark } from "./DisciplineCardMark";
+import { FcPlayerShield } from "@/components/cards/FcPlayerShield";
+import { formatFieldLabel } from "@/lib/cards/formatCardName";
 
 interface PitchBenchProps {
   onBench: MatchPlayer[];
@@ -42,6 +44,15 @@ function MiniCard({
 }) {
   const sz = useCardSize();
   const rc = getRoleColor(player.positionPrimary);
+  if (player.useFcShield || player.fcRatings || player.playStyleIds?.length || player.recognitions?.length) {
+    return <button type="button" onClick={onClick} aria-label={formatFieldLabel(player.name, player.number)} aria-pressed={isSelected}
+      className={`rounded-xl transition-transform focus-visible:outline-2 focus-visible:outline-dia-yellow ${isSelected ? "scale-110 drop-shadow-[0_0_6px_rgba(255,231,19,0.6)]" : ""}`}
+      style={{ opacity: isDimmed ? 0.4 : 1 }}>
+      <FcPlayerShield name={nameLabel(player)} number={player.number} position={player.positionPrimary}
+        photoUrl={player.photoUrl} fcRatings={player.fcRatings} playStyleIds={player.playStyleIds}
+        recognitions={player.recognitions} compact width={sz.card} seasonMinutes={seasonMinutes} disciplineBadge={disciplineBadge} />
+    </button>;
+  }
   return (
     <div
       onClick={onClick}

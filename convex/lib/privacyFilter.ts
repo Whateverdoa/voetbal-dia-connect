@@ -1,3 +1,6 @@
+import type { CardProfile, FcCardData } from "../../src/lib/cards/fc27";
+export type { CardProfile } from "../../src/lib/cards/fc27";
+
 /**
  * Privacy redaction for public / presentation queries (AVG / JO13 consent).
  */
@@ -10,21 +13,7 @@ export type ConsentRow = {
   status: ConsentStatus;
 };
 
-export type CardProfile = {
-  xp: number;
-  level: number;
-  rarity: "common" | "rare" | "epic";
-  seasonStats: {
-    matches: number;
-    minutes: number;
-    goals: number;
-    assists: number;
-    cleanSheets: number;
-  };
-  badges?: string[];
-};
-
-export type PlayerPrivacyInput = {
+export type PlayerPrivacyInput = FcCardData & {
   _id: string;
   name: string;
   number?: number;
@@ -43,10 +32,13 @@ export type RedactedPlayer = {
   photoUrl: string | null;
   cardProfile: CardProfile | null;
   showFullIdentity: boolean;
+  fcRatings: NonNullable<FcCardData["fcRatings"]> | null;
+  playStyleIds: string[];
+  recognitions: NonNullable<FcCardData["recognitions"]>;
 };
 
 function hasGranted(consents: ConsentRow[], type: ConsentType): boolean {
-  return consents.some((c) => c.consentType === type && c.status === "granted");
+  return !isRevoked(consents, type) && consents.some((c) => c.consentType === type && c.status === "granted");
 }
 
 function isRevoked(consents: ConsentRow[], type: ConsentType): boolean {
@@ -69,14 +61,16 @@ function firstNameFromName(name: string): string {
 /**
  * Redact a player for public/TV presentation based on consent rows.
  * Public screens show first names only (no last names) unless public_display
- * was revoked — then initials. Photo/XP follow their own granted flags.
+ * was revoked — then initials. Photos and gamification require public-display
+ * permission as well as their individual grants. Minutes stay staff-only.
  */
 export function redactPlayerForPublic(
   player: PlayerPrivacyInput,
   consents: ConsentRow[]
 ): RedactedPlayer {
-  const photoOk = hasGranted(consents, "photo");
-  const gameOk = hasGranted(consents, "gamification");
+  const publicOk = hasGranted(consents, "public_display");
+  const photoOk = publicOk && hasGranted(consents, "photo");
+  const gameOk = publicOk && hasGranted(consents, "gamification");
   const hideName = isRevoked(consents, "public_display");
 
   return {
@@ -88,8 +82,22 @@ export function redactPlayerForPublic(
     positionPrimary: player.positionPrimary ?? null,
     positionSecondary: player.positionSecondary ?? null,
     photoUrl: photoOk ? player.photoUrl ?? null : null,
-    cardProfile: gameOk ? player.cardProfile ?? null : null,
+    cardProfile: gameOk && player.cardProfile ? {
+      xp: player.cardProfile.xp,
+      level: player.cardProfile.level,
+      rarity: player.cardProfile.rarity,
+      seasonStats: {
+        matches: player.cardProfile.seasonStats.matches,
+        goals: player.cardProfile.seasonStats.goals,
+        assists: player.cardProfile.seasonStats.assists,
+        cleanSheets: player.cardProfile.seasonStats.cleanSheets,
+      },
+      ...(player.cardProfile.badges ? { badges: player.cardProfile.badges } : {}),
+    } : null,
     showFullIdentity: false,
+    fcRatings: gameOk ? player.fcRatings ?? null : null,
+    playStyleIds: gameOk ? player.playStyleIds ?? [] : [],
+    recognitions: gameOk ? player.recognitions ?? [] : [],
   };
 }
 

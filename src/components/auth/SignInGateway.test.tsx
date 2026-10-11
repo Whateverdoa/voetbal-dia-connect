@@ -21,5 +21,17 @@ describe("SignInGateway", () => {
 
     expect(screen.getByText("Clerk SignIn -> /onboarding/rol")).toBeInTheDocument();
   });
+
+  it("returns invited members to the portal without staff onboarding", () => {
+    render(<SignInGateway clerkEnabled returnTo="/team/jo13-1/app/invite/token" />);
+    expect(screen.getByText("Clerk SignIn -> /team/jo13-1/app/invite/token")).toBeInTheDocument();
+    expect(screen.getByText("Log in voor je team")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Naar admin" })).not.toBeInTheDocument();
+  });
+
+  it("rejects an external return destination", () => {
+    render(<SignInGateway clerkEnabled returnTo="https://evil.example" />);
+    expect(screen.getByText("Clerk SignIn -> /onboarding/rol")).toBeInTheDocument();
+  });
 });
 

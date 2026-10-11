@@ -42,7 +42,7 @@ const players = [
     onField: true,
     fieldSlotIndex: 7,
   },
-];
+].map((player) => ({ ...player, useFcShield: true }));
 
 describe("HalfPitchPerspective", () => {
   it("tilts the grass plane and counter-rotates each card", () => {
@@ -57,11 +57,11 @@ describe("HalfPitchPerspective", () => {
     const plane = screen.getByTestId("half-pitch-plane");
     expect(plane.style.transform).toContain(`rotateX(${TILT_DEG}deg)`);
 
-    expect(screen.getByText("Keeper 1")).toBeTruthy();
-    expect(screen.getByText("Spits 9")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Keeper 1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Spits 9" })).toBeTruthy();
 
     const card = screen
-      .getByText("Keeper 1")
+      .getByRole("button", { name: "Keeper 1" })
       .closest<HTMLElement>("div.absolute");
     expect(card?.style.transform).toContain(`rotateX(${-TILT_DEG}deg)`);
     expect(card?.style.transform).toContain("translateZ(");

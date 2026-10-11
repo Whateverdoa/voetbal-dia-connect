@@ -66,6 +66,7 @@ export const getCoachTeamSetup = query({
         _id: team._id,
         name: team.name,
         slug: team.slug,
+        isSelectionTeam: team.isSelectionTeam === true,
       },
       players,
     };

@@ -49,4 +49,21 @@ describe("TeamDeckGrid", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("locks background scrolling and restores focus and scrolling after Escape", () => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "auto";
+    render(<TeamDeckGrid players={[player]} />);
+    const openButton = screen.getByRole("button", { name: "Details Jan Jansen" });
+    openButton.focus();
+    fireEvent.click(openButton);
+    expect(screen.getByRole("dialog")).toHaveClass("z-[200]");
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(screen.getByRole("button", { name: "Sluiten detail" })).toHaveFocus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("auto");
+    expect(openButton).toHaveFocus();
+    document.body.style.overflow = previousOverflow;
+  });
 });

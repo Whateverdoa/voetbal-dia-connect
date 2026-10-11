@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useAppNavHeight } from "@/hooks/useAppNavHeight";
+import { teamPortalReturnTo } from "@/lib/auth/returnTo";
 import {
   canPresentTactics,
   parseRolesFromMetadata,
@@ -21,18 +22,21 @@ import {
 export function ClerkNav() {
   const pathname = usePathname();
 
-  // Shared match links are spectator pages; account navigation stays elsewhere.
-  if (pathname.startsWith("/live/")) return null;
+  // Auth widgets preserve invitation return paths through their own login/signup links.
+  if (pathname.startsWith("/live/") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
   return <ClerkNavContent />;
 }
 
 function ClerkNavContent() {
+  const pathname = usePathname();
+  const authDestination = teamPortalReturnTo(pathname) ?? "/onboarding/rol";
   const headerRef = useRef<HTMLElement>(null);
   useAppNavHeight(headerRef);
   const { signOut } = useClerk();
   const { user, isSignedIn } = useUser();
   const access = useQuery(api.userQueries.getMyRoles);
+  const memberTeams = useQuery(api.playerCards.getMyTeams, isSignedIn ? {} : "skip");
   const clerkRoles = parseRolesFromMetadata(user?.publicMetadata);
   const convexRoles = access?.roles ?? [];
   const roles: AppRole[] = [...clerkRoles];
@@ -84,6 +88,7 @@ function ClerkNavContent() {
             <Link href="/help" className="font-medium text-gray-600 hover:text-gray-900">
               Handleiding
             </Link>
+            {memberTeams?.map((team) => <Link key={team.teamId} href={`/team/${encodeURIComponent(team.teamSlug)}/app`} className="inline-flex min-h-11 items-center font-medium text-dia-green">{memberTeams.length === 1 ? "Mijn team" : team.teamName}</Link>)}
           </nav>
         ) : (
           <nav className="flex items-center text-xs sm:text-sm">
@@ -121,7 +126,7 @@ function ClerkNavContent() {
             </>
           ) : (
             <>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl={authDestination} signUpForceRedirectUrl={authDestination}>
                 <button
                   type="button"
                   className="text-sm font-medium text-dia-black hover:text-dia-black"
@@ -129,7 +134,7 @@ function ClerkNavContent() {
                   Inloggen
                 </button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" forceRedirectUrl={authDestination} signInForceRedirectUrl={authDestination}>
                 <button
                   type="button"
                   className="text-sm font-medium text-white bg-dia-green px-3 py-1.5 rounded-lg hover:bg-dia-green-dark"

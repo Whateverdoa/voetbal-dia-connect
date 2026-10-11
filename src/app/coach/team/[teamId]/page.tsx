@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { TeamRosterEditor } from "@/components/coach/TeamRosterEditor";
 import { TeamSeasonMinutesPanel } from "@/components/coach/TeamSeasonMinutesPanel";
+import { CoachCardsPanel } from "@/components/cards/CoachCardsPanel";
 
 export default function CoachTeamRosterPage() {
   const params = useParams();
@@ -64,6 +65,7 @@ export default function CoachTeamRosterPage() {
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         <TeamSeasonMinutesPanel teamId={teamId} />
+        {setup.team.isSelectionTeam ? <CoachCardsPanel teamId={teamId} /> : null}
 
         <div>
           <h2 className="font-bold text-lg text-gray-900 mb-1">

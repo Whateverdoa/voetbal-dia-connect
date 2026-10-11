@@ -1,11 +1,17 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import { authPageUrl, teamPortalReturnTo } from "@/lib/auth/returnTo";
 
 const hasClerkPublishableKey = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 );
 
-export default function SignUpPage() {
+export default async function SignUpPage({ searchParams }: {
+  searchParams: Promise<{ returnTo?: string | string[]; redirect_url?: string | string[] }>;
+}) {
+  const query = await searchParams;
+  const returnTo = teamPortalReturnTo(query.returnTo) ?? teamPortalReturnTo(query.redirect_url);
+  const destination = returnTo ?? "/onboarding/rol";
   if (!hasClerkPublishableKey) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
@@ -33,8 +39,10 @@ export default function SignUpPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <SignUp
-        fallbackRedirectUrl="/onboarding/rol"
-        forceRedirectUrl="/onboarding/rol"
+        fallbackRedirectUrl={destination}
+        forceRedirectUrl={destination}
+        signInForceRedirectUrl={destination}
+        signInUrl={authPageUrl("sign-in", destination)}
       />
     </main>
   );

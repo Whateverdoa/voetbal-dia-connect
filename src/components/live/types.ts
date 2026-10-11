@@ -1,5 +1,6 @@
 // Shared types for live match components
 import type { AssistKind } from "@/lib/assistKind";
+import type { FcCardData } from "@/lib/cards/fc27";
 
 export interface MatchData {
   id: string;
@@ -60,12 +61,13 @@ export interface MatchEvent {
   displayExtraMinute?: number;
 }
 
-export interface LineupPlayer {
+export interface LineupPlayer extends FcCardData {
   id: string;
   name: string;
   number?: number;
   onField: boolean;
   isKeeper: boolean;
   fieldSlotIndex?: number;
-  photoUrl?: string;
+  photoUrl?: string | null;
+  useFcShield?: boolean;
 }

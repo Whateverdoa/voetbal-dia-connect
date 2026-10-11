@@ -15,6 +15,7 @@ vi.mock('convex/react', () => ({
   useQuery: vi.fn(),
   useMutation: vi.fn(() => vi.fn()),
   useAction: vi.fn(() => vi.fn()),
+  useConvexAuth: vi.fn(() => ({ isLoading: false, isAuthenticated: true })),
   useConvexConnectionState: vi.fn(() => 'connected'),
   ConvexProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

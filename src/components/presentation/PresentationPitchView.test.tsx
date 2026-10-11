@@ -30,11 +30,11 @@ const players: PresentationPlayer[] = [
     onField: true,
     fieldSlotIndex: 7,
   },
-];
+].map((player) => ({ ...player, useFcShield: true }));
 
 /** The positioned wrapper that carries the slot's left/top percentages. */
 function cardAt(label: string): HTMLElement {
-  const box = screen.getByText(label).closest<HTMLElement>("div.absolute");
+  const box = screen.getByRole("button", { name: label }).closest<HTMLElement>("div.absolute");
   if (!box) throw new Error(`no positioned card found for "${label}"`);
   return box;
 }
@@ -105,6 +105,6 @@ describe("PresentationPitchView", () => {
     );
 
     expect(screen.getByTestId("half-pitch-plane")).toBeTruthy();
-    expect(screen.getByText("Keeper 1")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Keeper 1" })).toBeTruthy();
   });
 });

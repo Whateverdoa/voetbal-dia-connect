@@ -6,6 +6,7 @@ import {
   parseRolesFromSessionClaims,
   type AppRole,
 } from "@/lib/auth/roles";
+import { teamPortalReturnTo } from "@/lib/auth/returnTo";
 
 const hasClerkEnv =
   Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) &&
@@ -17,6 +18,7 @@ const isProtectedRoute = createRouteMatcher([
   "/scheidsrechter(.*)",
 ]);
 const isRoleOnboardingRoute = createRouteMatcher(["/onboarding/rol(.*)"]);
+const isTeamPortalRoute = createRouteMatcher(["/team/:slug/app(.*)"]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isCoachRoute = createRouteMatcher(["/coach(.*)"]);
@@ -42,6 +44,18 @@ function unauthorizedRedirect(req: NextRequest): NextResponse {
 
 const clerkHandler = hasClerkEnv
   ? clerkMiddleware(async (auth, req) => {
+      // Team membership is checked by Convex and grants no staff role.
+      if (isTeamPortalRoute(req)) {
+        const authResult = await auth();
+        if (!authResult.userId) {
+          const signIn = new URL("/sign-in", req.url);
+          const returnTo = teamPortalReturnTo(`${req.nextUrl.pathname}${req.nextUrl.search}`);
+          if (returnTo) signIn.searchParams.set("returnTo", returnTo);
+          return NextResponse.redirect(signIn);
+        }
+        return NextResponse.next();
+      }
+
       if (isRoleOnboardingRoute(req)) {
         await auth.protect();
         const authResult = await auth();

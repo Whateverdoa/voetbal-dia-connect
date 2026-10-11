@@ -1,13 +1,16 @@
 import { Id } from "@/convex/_generated/dataModel";
 import type { AssistKind } from "@/lib/assistKind";
+import type { FcCardData } from "@/lib/cards/fc27";
 
 export type MatchStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
 export type SubstitutionPlanKind = "substitution" | "positionSwap";
 
-export interface MatchPlayer {
+export interface MatchPlayer extends FcCardData {
   matchPlayerId: Id<"matchPlayers">;
   playerId: Id<"players">;
   name: string;
+  photoUrl?: string | null;
+  useFcShield?: boolean;
   number?: number;
   onField: boolean;
   isKeeper: boolean;

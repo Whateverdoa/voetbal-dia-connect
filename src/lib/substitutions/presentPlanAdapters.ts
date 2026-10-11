@@ -1,12 +1,13 @@
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatFieldLabel } from "@/lib/cards/formatCardName";
+import type { FcCardData } from "@/lib/cards/fc27";
 import type {
   MatchPlayer,
   SubstitutionPlanKind,
   SubstitutionPlanRow,
 } from "@/components/match/types";
 
-export type PresentPlanPlayer = {
+export type PresentPlanPlayer = FcCardData & {
   playerId: string;
   displayName: string;
   number: number | null;
@@ -16,6 +17,7 @@ export type PresentPlanPlayer = {
   absent: boolean;
   injured?: boolean;
   photoUrl?: string | null;
+  useFcShield?: boolean;
   positionPrimary?: string | null;
 };
 
@@ -126,6 +128,11 @@ export function toMatchPlayers(players: PresentPlanPlayer[]): MatchPlayer[] {
     matchPlayerId: `present-${player.playerId}` as Id<"matchPlayers">,
     playerId: player.playerId as Id<"players">,
     name: player.displayName,
+    photoUrl: player.photoUrl,
+    useFcShield: player.useFcShield,
+    fcRatings: player.fcRatings,
+    playStyleIds: player.playStyleIds,
+    recognitions: player.recognitions,
     number: player.number ?? undefined,
     onField: player.onField,
     isKeeper: player.isKeeper,

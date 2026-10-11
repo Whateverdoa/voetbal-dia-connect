@@ -17,14 +17,16 @@ import {
   toHalfPitchSlots,
 } from "@/lib/halfPitchLayout";
 import type { CardSizeMode } from "@/hooks/useCardSize";
+import type { FcCardData } from "@/lib/cards/fc27";
 
-export type HalfPitchPlayer = {
+export type HalfPitchPlayer = FcCardData & {
   playerId: string;
   displayName: string;
   number: number | null;
   onField: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
+  useFcShield?: boolean;
   seasonMinutes?: number;
 };
 
@@ -143,6 +145,10 @@ export function HalfPitchPerspective({
                 number={player?.number}
                 position={slot.position}
                 photoUrl={player?.photoUrl}
+                useFcShield={player?.useFcShield}
+                fcRatings={player?.fcRatings}
+                playStyleIds={player?.playStyleIds}
+                recognitions={player?.recognitions}
                 sizeMode={sizeMode}
                 x={slot.x}
                 y={slot.y}

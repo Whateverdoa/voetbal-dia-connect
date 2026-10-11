@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { cardAwardAuditTable, cardBallotsTable, cardRoundsTable, cardVoterInvitationsTable, cardVoterMembershipsTable, fcRatingsValidator } from "./cardSchema";
 import {
   cardProfileValidator,
   playerConsentsTable,
@@ -142,6 +143,8 @@ export default defineSchema({
     photoStorageId: v.optional(v.id("_storage")),
     /** Gamification card profile (selection teams only; respect consent). */
     cardProfile: v.optional(cardProfileValidator),
+    fcRatings: v.optional(fcRatingsValidator),
+    playStyleIds: v.optional(v.array(v.string())),
     createdAt: v.number(),
   }).index("by_team", ["teamId"]),
 
@@ -378,4 +381,9 @@ export default defineSchema({
   tacticBoards: tacticBoardsTable,
   standings: standingsTable,
   standingsPollState: standingsPollStateTable,
+  cardVoterMemberships: cardVoterMembershipsTable,
+  cardVoterInvitations: cardVoterInvitationsTable,
+  cardRounds: cardRoundsTable,
+  cardBallots: cardBallotsTable,
+  cardAwardAudit: cardAwardAuditTable,
 });

@@ -26,6 +26,10 @@ export function LivePitchSection({
     onField: p.onField,
     fieldSlotIndex: p.fieldSlotIndex ?? null,
     photoUrl: p.photoUrl ?? null,
+    useFcShield: p.useFcShield,
+    fcRatings: p.fcRatings,
+    playStyleIds: p.playStyleIds,
+    recognitions: p.recognitions,
   }));
 
   return (

@@ -8,6 +8,7 @@ import { ShieldCard } from "./ShieldCard";
 import { FootballShieldContent } from "./FootballShieldContent";
 import { toFootballShieldStats } from "@/lib/cards/footballRatings";
 import { PlayerShirt } from "./PlayerShirt";
+import { FootballShieldBack } from "./FootballShieldBack";
 
 export interface FcPlayerShieldProps extends FcCardData {
   name: string;
@@ -20,6 +21,7 @@ export interface FcPlayerShieldProps extends FcCardData {
   seasonMinutes?: number;
   disciplineBadge?: DisciplineBadge;
   className?: string;
+  side?: "front" | "back";
 }
 
 const AWARD_NAME = { week: "Team van de week", month: "Team van de maand" } as const;
@@ -27,7 +29,7 @@ const AWARD_NAME = { week: "Team van de week", month: "Team van de maand" } as c
 /** Shared card face; the week award uses the existing DIA team-portal artwork. */
 export function FcPlayerShield({
   name, number, position, photoUrl, fcRatings, playStyleIds = [], recognitions = [],
-  compact = false, width, seasonMinutes, disciplineBadge, className = "",
+  compact = false, width, seasonMinutes, disciplineBadge, className = "", side = "front",
 }: FcPlayerShieldProps) {
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const portrait = photoUrl && photoUrl !== failedPhoto ? photoUrl : null;
@@ -51,17 +53,17 @@ export function FcPlayerShield({
       : { name: 9, number: 11, position: 8, overall: 11 };
 
   return (
-    <div className={`relative isolate text-white ${className}`} style={{ width: width ?? "100%" }} role="img" aria-label={label} data-card-kind={card.kind ?? "base"}>
+    <div className={`relative isolate text-white ${className}`} style={{ width: width ?? "100%" }} role={side === "back" ? "group" : "img"} aria-label={side === "back" ? `Achterkant van ${shortName}` : label} data-card-kind={card.kind ?? "base"}>
       <div className="relative">
         <ShieldCard theme={isWeek ? "gold" : theme} series={card.kind === "month" ? "premium" : "abstract"} contentLayout="football"
           backgroundSrc={isWeek ? "/team-portal/dia-gold-shield-empty-v2-960.webp" : undefined}>
-          {!compact ? <>
+          {!compact && side === "back" ? <FootballShieldBack name={shortName} number={number} position={position} playStyleIds={playStyleIds} /> : !compact ? <>
             <FootballShieldContent name={shortName} position={position ?? undefined} stats={stats} playStyleIds={playStyleIds}
               media={portrait ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={portrait} src={portrait} alt="" data-player-portrait onError={() => setFailedPhoto(portrait)}
                   className="h-full w-full rounded-[10%] object-contain object-bottom" />
-              ) : <PlayerShirt number={number} />} />
+              ) : <PlayerShirt />} />
             {disciplineBadge ? <span className="absolute right-0 top-[5%] rounded-[2px] shadow-sm ring-1 ring-black/30" title={disciplineBadge === "red" ? "Rode kaart" : "Gele kaart"} style={{ width: 9, height: 13, background: disciplineBadge === "red" ? "#dc2626" : "#facc15" }} /> : null}
           </> : null}
         </ShieldCard>
@@ -86,7 +88,7 @@ export function FcPlayerShield({
         {AWARD_NAME[card.kind].toUpperCase()} +{card.bonus}
       </div> : null}
       {seasonMinutes !== undefined ? <span className="block text-center text-[10px] font-semibold tabular-nums text-white/90">{seasonMinutes}′</span> : null}
-      {!compact ? <span className="sr-only">{FC_ATTRIBUTES.map(({ key, name: attributeName }) => `${attributeName} ${card.ratings?.[key] ?? "nog niet beoordeeld"}`).join(", ")}</span> : null}
+      {!compact && side === "front" ? <span className="sr-only">{FC_ATTRIBUTES.map(({ key, name: attributeName }) => `${attributeName} ${card.ratings?.[key] ?? "nog niet beoordeeld"}`).join(", ")}</span> : null}
     </div>
   );
 }

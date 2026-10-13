@@ -7,7 +7,7 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { FC_ATTRIBUTES, PLAY_STYLES, isFcAssessment, ratingOverall, ratingSpread, type FcAttribute, type FcAssessment } from "@/lib/cards/fc27";
-import { FcPlayerShield } from "@/components/cards/FcPlayerShield";
+import { FlippablePlayerShield } from "@/components/cards/FlippablePlayerShield";
 import { PlayStyleIcon } from "@/components/cards/PlayStyleIcon";
 import { CardRoundManager } from "@/components/cards/CardRoundManager";
 import { VoterInvitationManager } from "@/components/cards/VoterInvitationManager";
@@ -115,7 +115,7 @@ function PlayerRatingEditor({ player, players }: { player: StaffPlayer; players:
           <p className="col-span-2 text-sm text-slate-600">Basistotaalscore: <strong className="text-xl text-slate-900">{overall ?? "—"}</strong> · afgerond gemiddelde van de zes kenmerken.</p>
         </div>
         <div className="mx-auto w-56 max-w-full self-start">
-          <FcPlayerShield name={player.name} number={player.number} position={player.positionPrimary} photoUrl={player.photoUrl} fcRatings={ratings} playStyleIds={styles} recognitions={player.recognitions} />
+          <FlippablePlayerShield name={player.name} number={player.number} position={player.positionPrimary} photoUrl={player.photoUrl} fcRatings={ratings} playStyleIds={styles} recognitions={player.recognitions} />
           <p className="mt-2 text-center text-xs text-slate-500">Kaartvoorbeeld met eventuele actieve bonus.</p>
         </div>
       </div>

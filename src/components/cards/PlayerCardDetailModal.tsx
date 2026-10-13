@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { FC_ATTRIBUTES, PLAY_STYLES, withCardBonus, type CardProfile, type FcCardData } from "@/lib/cards/fc27";
 import { useCardTime } from "@/hooks/useCardTime";
-import { FcPlayerShield } from "./FcPlayerShield";
+import { FlippablePlayerShield } from "./FlippablePlayerShield";
 import { PlayStyleIcon } from "./PlayStyleIcon";
 
 export type DeckPlayer = FcCardData & {
@@ -60,7 +60,7 @@ export function PlayerCardDetailModal({ player, onClose, showMinutes = false }: 
             <h2 id="player-card-detail-title" className="text-xl font-bold">{player.displayName}</h2></div>
           <button ref={closeRef} type="button" onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 text-xl" aria-label="Sluiten detail">×</button>
         </div>
-        <FcPlayerShield name={player.displayName} number={player.number} position={player.positionPrimary} photoUrl={player.photoUrl}
+        <FlippablePlayerShield name={player.displayName} number={player.number} position={player.positionPrimary} photoUrl={player.photoUrl}
           fcRatings={player.fcRatings} recognitions={player.recognitions} playStyleIds={player.playStyleIds} width={220} className="mx-auto mb-4" />
         <h3 className="mb-2 text-sm font-bold text-dia-yellow">Kenmerken</h3>
         {card.ratings ? <>

@@ -30,3 +30,7 @@ Gebruik `averageFootballShieldRating` voor het afgeronde gemiddelde van alle zes
 ## Controle
 
 Controleer beide collecties, het weekframe, lange namen, ontbrekende/nulwaarden en nul tot drie badges op telefoon en desktop. Logo en badges blijven binnen de rand; de onderste vaste ankers verschuiven niet bij badgekeuze. Bij margeaanpassing synchroniseer je `design-tokens.json` en genereer je het manifest via `scripts/generate-abstract-shields.mjs`. Originele schildafbeeldingen blijven ongewijzigd.
+
+## Voor- en achterkant
+
+Grote kaarten gebruiken `FlippablePlayerShield` in het kaartenoverzicht, coachvoorbeeld en detail. De voorkant toont het realistische shirt zonder rugnummer. De achterkant (`FootballShieldBack`) toont naam, rugnummer, positie en maximaal drie toegewezen speelstijlen uit dezelfde toegestane gegevens. Beide kanten gebruiken hetzelfde lege frame. De knop Achterkant/Voorkant bekijken draait de kaart; de inactieve kant is verborgen voor schermlezers en inert. Bewegingsreductie wordt gerespecteerd. Compacte veld- en bankkaarten behouden hun nummer voor de wedstrijd- en wisselbediening.

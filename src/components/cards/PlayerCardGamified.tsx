@@ -3,7 +3,7 @@
 import { xpProgressInLevel } from "@/lib/gamification/levels";
 import { cardNameLines } from "@/lib/cards/formatCardName";
 import type { CardProfile, FcCardData } from "@/lib/cards/fc27";
-import { FcPlayerShield } from "./FcPlayerShield";
+import { FlippablePlayerShield } from "./FlippablePlayerShield";
 
 interface PlayerCardGamifiedProps extends FcCardData {
   displayName: string;
@@ -27,7 +27,7 @@ export function PlayerCardGamified({
 
   return (
     <article className="flex h-full flex-col rounded-2xl border border-white/10 bg-dia-black p-1 text-white">
-      <FcPlayerShield name={name} number={number} position={positionPrimary} photoUrl={photoUrl}
+      <FlippablePlayerShield name={name} number={number} position={positionPrimary} photoUrl={photoUrl}
         fcRatings={fcRatings} playStyleIds={playStyleIds} recognitions={recognitions} />
       <div className="space-y-1.5 px-2 pb-2">
         {cardProfile ? <>

@@ -65,3 +65,7 @@ De oorspronkelijke schildbestanden zijn als momentopname overgenomen uit de hoof
 ## Gedeelde schildopbouw
 
 Alle grote kaarten volgen `skills/dia-shields/references/build-logic.md`: gemiddelde en positie linksboven, vrij midden voor foto of shirt, naam, zes scores, gecentreerd DIA-logo (180:200, 13cqw) en maximaal drie badges direct daaronder. De badgerij houdt ook zonder badges 9cqw ruimte. De voetbalinhoud heeft 15% ondermarge; de vaste ankers voorkomen verschuiving bij badgekeuze. Kenmerkiconen staan naast de beoordelingsvelden. Compacte kaarten behouden hun identiteit en wedstrijdstatus.
+
+## Draaibare kaarten
+
+In het teamoverzicht, coachvoorbeeld en kaartdetail staat Achterkant bekijken. De achterkant bevat rugnummer, positie en toegewezen speelstijlen; de voorkant heeft geen gedrukt rugnummer meer. Alle spelerinfo opent nog steeds het uitgebreide detail. Bediening kan via aanraking of toetsenbord; de niet-actieve zijde is ontoegankelijk voor schermlezers en de animatie respecteert verminderde beweging. Hiervoor worden geen nieuwe persoonsgegevens of backendvelden opgehaald. Compacte wedstrijdkaarten houden het rugnummer.

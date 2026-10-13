@@ -16,6 +16,7 @@ const EMAIL_SHORTCODE = /\{\{\s*user\.primary_email_address\s*\}\}/;
 export const TEMPLATE_CLAIMS = {
   aud: "convex",
   email: "{{user.primary_email_address}}",
+  email_verified: "{{user.email_verified}}",
   name: "{{user.full_name}}",
   picture: "{{user.image_url}}",
 };

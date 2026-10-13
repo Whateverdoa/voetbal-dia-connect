@@ -94,6 +94,7 @@ import type * as lib_sportlinkRoster from "../lib/sportlinkRoster.js";
 import type * as lib_stoppageAdvisory from "../lib/stoppageAdvisory.js";
 import type * as lib_substitutionPlanGuards from "../lib/substitutionPlanGuards.js";
 import type * as lib_substitutionPlanRows from "../lib/substitutionPlanRows.js";
+import type * as lib_teamPortalAccess from "../lib/teamPortalAccess.js";
 import type * as lib_timezone from "../lib/timezone.js";
 import type * as lib_userAccess from "../lib/userAccess.js";
 import type * as matchActions from "../matchActions.js";
@@ -163,6 +164,9 @@ import type * as stats from "../stats.js";
 import type * as stoppageActions from "../stoppageActions.js";
 import type * as substitutionPlans from "../substitutionPlans.js";
 import type * as tacticBoards from "../tacticBoards.js";
+import type * as teamPortal from "../teamPortal.js";
+import type * as teamPortalActions from "../teamPortalActions.js";
+import type * as teamPortalSchema from "../teamPortalSchema.js";
 import type * as teams from "../teams.js";
 import type * as userQueries from "../userQueries.js";
 
@@ -259,6 +263,7 @@ declare const fullApi: ApiFromModules<{
   "lib/stoppageAdvisory": typeof lib_stoppageAdvisory;
   "lib/substitutionPlanGuards": typeof lib_substitutionPlanGuards;
   "lib/substitutionPlanRows": typeof lib_substitutionPlanRows;
+  "lib/teamPortalAccess": typeof lib_teamPortalAccess;
   "lib/timezone": typeof lib_timezone;
   "lib/userAccess": typeof lib_userAccess;
   matchActions: typeof matchActions;
@@ -328,6 +333,9 @@ declare const fullApi: ApiFromModules<{
   stoppageActions: typeof stoppageActions;
   substitutionPlans: typeof substitutionPlans;
   tacticBoards: typeof tacticBoards;
+  teamPortal: typeof teamPortal;
+  teamPortalActions: typeof teamPortalActions;
+  teamPortalSchema: typeof teamPortalSchema;
   teams: typeof teams;
   userQueries: typeof userQueries;
 }>;

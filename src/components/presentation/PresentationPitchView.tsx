@@ -10,19 +10,21 @@ import { FIELDS, fieldModeFromFormation } from "@/lib/fieldConfig";
 import type { Formation } from "@/lib/formations/types";
 import type { CardSizeMode } from "@/hooks/useCardSize";
 import type { PitchLayout } from "@/lib/halfPitchLayout";
+import type { FcCardData } from "@/lib/cards/fc27";
 import {
   orientAspect,
   orientSlots,
   type PitchOrientation,
 } from "@/lib/pitchOrientation";
 
-export type PresentationPlayer = {
+export type PresentationPlayer = FcCardData & {
   playerId: string;
   displayName: string;
   number: number | null;
   onField: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
+  useFcShield?: boolean;
   position?: string;
 };
 
@@ -120,6 +122,10 @@ export function PresentationPitchView({
             number={player?.number}
             position={slot.position}
             photoUrl={player?.photoUrl}
+            useFcShield={player?.useFcShield}
+            fcRatings={player?.fcRatings}
+            playStyleIds={player?.playStyleIds}
+            recognitions={player?.recognitions}
             sizeMode={sizeMode}
             x={slot.x}
             y={slot.y}

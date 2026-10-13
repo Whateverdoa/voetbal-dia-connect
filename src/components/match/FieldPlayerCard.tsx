@@ -7,8 +7,10 @@ import { useCardSize, type CardSizeMode } from "@/hooks/useCardSize";
 import { firstNameOf, type CardNameMode } from "@/lib/cards/formatCardName";
 import type { DisciplineBadge } from "@/lib/cards/cardRules";
 import { DisciplineCardMark } from "./DisciplineCardMark";
+import type { FcCardData } from "@/lib/cards/fc27";
+import { FcPlayerShield } from "@/components/cards/FcPlayerShield";
 
-interface FieldPlayerCardProps {
+interface FieldPlayerCardProps extends FcCardData {
   name: string;
   number: number | null | undefined;
   position: string;
@@ -19,6 +21,7 @@ interface FieldPlayerCardProps {
   isEmpty: boolean;
   onClick: () => void;
   photoUrl?: string | null;
+  useFcShield?: boolean;
   sizeMode?: CardSizeMode;
   nameDisplay?: CardNameMode;
   /** Season total minutes (coach card toggle). */
@@ -54,6 +57,10 @@ export function FieldPlayerCard({
   seasonMinutes,
   disciplineBadge,
   extraTransform,
+  useFcShield,
+  fcRatings,
+  playStyleIds,
+  recognitions,
 }: FieldPlayerCardProps) {
   const sz = useCardSize(sizeMode);
   const rc = getRoleColor(position);
@@ -97,6 +104,25 @@ export function FieldPlayerCard({
     nameDisplay === "full" ? name.trim() : firstNameOf(name);
   const displayNumber = number != null ? String(number) : "?";
   const isPresentation = sizeMode === "presentation";
+
+  if (useFcShield || fcRatings || playStyleIds?.length || recognitions?.length) {
+    return (
+      <div
+        className="absolute flex flex-col items-center"
+        style={{ left: `${x}%`, top: `${y}%`, transform: cardTransform, ...preserve3d,
+          zIndex: isSelected ? 100 : Math.round(y), opacity: isDimmed ? 0.4 : 1,
+          filter: isDimmed ? "grayscale(0.5)" : undefined,
+          transition: "transform 0.35s, opacity 0.35s" }}
+      >
+        <button type="button" onClick={onClick} aria-label={`${fieldLabel}${number != null ? ` ${number}` : ""}`} aria-pressed={isSelected}
+          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dia-yellow ${isSelected ? "drop-shadow-[0_0_8px_rgba(255,231,19,0.8)]" : ""}`}>
+          <FcPlayerShield name={fieldLabel} number={number} position={posLabel} photoUrl={photoUrl}
+            fcRatings={fcRatings} playStyleIds={playStyleIds} recognitions={recognitions}
+            compact width={sz.card} seasonMinutes={seasonMinutes} disciplineBadge={disciplineBadge} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

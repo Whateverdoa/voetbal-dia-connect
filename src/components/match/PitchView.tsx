@@ -214,6 +214,11 @@ export function PitchView({
                 key={slot.id}
                 name={player?.name ?? ""}
                 number={player?.number}
+                photoUrl={player?.photoUrl}
+                useFcShield={player?.useFcShield}
+                fcRatings={player?.fcRatings}
+                playStyleIds={player?.playStyleIds}
+                recognitions={player?.recognitions}
                 position={slot.position}
                 x={slot.x}
                 y={slot.y}

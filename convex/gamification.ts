@@ -5,6 +5,8 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { getCurrentUserAccess, requireCoachForTeam } from "./lib/userAccess";
+import { hasAdminRole } from "./lib/adminOverride";
 import {
   levelFromXp,
   minutesToXp,
@@ -158,7 +160,13 @@ export const awardMatchXp = mutation({
     updated: v.number(),
     skipped: v.number(),
   }),
-  handler: async (ctx, args) => awardMatchXpCore(ctx, args.matchId),
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden");
+    const access = await getCurrentUserAccess(ctx);
+    if (!hasAdminRole(access)) await requireCoachForTeam(ctx, match.teamId);
+    return awardMatchXpCore(ctx, args.matchId);
+  },
 });
 
 export const getTeamDeck = query({
@@ -194,8 +202,10 @@ export const getTeamDeck = query({
     })
   ),
   handler: async (ctx, args) => {
+    const access = await getCurrentUserAccess(ctx);
+    if (!hasAdminRole(access)) await requireCoachForTeam(ctx, args.teamId);
     const team = await ctx.db.get(args.teamId);
-    if (!team) return [];
+    if (!team?.isSelectionTeam) return [];
 
     const players = await ctx.db
       .query("players")

@@ -213,6 +213,16 @@ describe("fieldPositionLookup", () => {
 });
 
 describe("toMatchPlayers injured", () => {
+  it("preserves redacted card data and the selection flag through planner projections", () => {
+    const player: PresentPlanPlayer = {
+      playerId: "a", displayName: "J.", number: 7, onField: true, fieldSlotIndex: 1,
+      isKeeper: false, absent: false, photoUrl: null, useFcShield: true, fcRatings: null,
+      playStyleIds: [], recognitions: [],
+    };
+    const [mapped] = toMatchPlayers([player]);
+    expect(mapped).toMatchObject({ name: "J.", photoUrl: null, useFcShield: true, fcRatings: null, playStyleIds: [], recognitions: [] });
+  });
+
   it("copies injured onto MatchPlayer so projection excludes them", () => {
     const players: PresentPlanPlayer[] = [
       {

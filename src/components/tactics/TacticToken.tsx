@@ -1,6 +1,8 @@
 import { formatFieldLabel } from "@/lib/cards/formatCardName";
+import type { FcCardData } from "@/lib/cards/fc27";
+import { FcPlayerShield } from "@/components/cards/FcPlayerShield";
 
-export type TacticTokenModel = {
+export type TacticTokenModel = FcCardData & {
   playerId: string;
   x: number;
   y: number;
@@ -8,6 +10,8 @@ export type TacticTokenModel = {
   name: string;
   number: number | null;
   photoUrl: string | null;
+  useFcShield?: boolean;
+  positionPrimary?: string | null;
 };
 
 interface TacticTokenProps {
@@ -18,12 +22,14 @@ interface TacticTokenProps {
 
 export function TacticToken({ token, dragging, onPointerDown }: TacticTokenProps) {
   const label = formatFieldLabel(token.name, token.number);
+  const useShield = token.useFcShield || token.fcRatings || token.playStyleIds?.length || token.recognitions?.length;
 
   return (
     <button
       type="button"
       onPointerDown={onPointerDown}
-      className="absolute flex flex-col items-center touch-none select-none"
+      aria-label={label}
+      className="absolute flex flex-col items-center touch-none select-none rounded-xl focus-visible:outline-2 focus-visible:outline-dia-yellow"
       style={{
         left: `${token.x}%`,
         top: `${token.y}%`,
@@ -33,6 +39,8 @@ export function TacticToken({ token, dragging, onPointerDown }: TacticTokenProps
         cursor: dragging ? "grabbing" : "grab",
       }}
     >
+      {useShield ? <FcPlayerShield name={token.name} number={token.number} position={token.positionPrimary} photoUrl={token.photoUrl}
+        fcRatings={token.fcRatings} playStyleIds={token.playStyleIds} recognitions={token.recognitions} compact width={58} /> : <>
       <span className="w-12 h-12 rounded-full overflow-hidden border-2 border-dia-yellow bg-dia-black shadow-lg flex items-center justify-center">
         {token.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -46,6 +54,7 @@ export function TacticToken({ token, dragging, onPointerDown }: TacticTokenProps
       <span className="mt-1 px-1.5 py-0.5 rounded bg-dia-black/80 text-white text-[11px] font-semibold whitespace-nowrap">
         {label}
       </span>
+      </>}
     </button>
   );
 }

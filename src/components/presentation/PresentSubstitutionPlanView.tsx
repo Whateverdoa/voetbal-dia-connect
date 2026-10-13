@@ -122,6 +122,10 @@ export function PresentSubstitutionPlanView({
         onField: true,
         fieldSlotIndex: player.fieldSlotIndex ?? null,
         photoUrl: original?.photoUrl ?? null,
+        useFcShield: original?.useFcShield,
+        fcRatings: original?.fcRatings,
+        playStyleIds: original?.playStyleIds,
+        recognitions: original?.recognitions,
         position: player.positionPrimary,
       };
     });

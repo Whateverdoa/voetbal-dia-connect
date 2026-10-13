@@ -49,6 +49,11 @@ export function ProjectedPlannerPitch({
     number: player.number ?? null,
     onField: true,
     fieldSlotIndex: player.fieldSlotIndex ?? null,
+    photoUrl: player.photoUrl,
+    useFcShield: player.useFcShield,
+    fcRatings: player.fcRatings,
+    playStyleIds: player.playStyleIds,
+    recognitions: player.recognitions,
     seasonMinutes: seasonMinutesByPlayerId?.get(String(player.playerId)),
   }));
 
@@ -84,6 +89,11 @@ export function ProjectedPlannerPitch({
         key={slot.id}
         name={player?.name ?? ""}
         number={player?.number}
+        photoUrl={player?.photoUrl}
+        useFcShield={player?.useFcShield}
+        fcRatings={player?.fcRatings}
+        playStyleIds={player?.playStyleIds}
+        recognitions={player?.recognitions}
         position={slot.position}
         x={slot.x}
         y={slot.y}

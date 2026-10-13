@@ -22,6 +22,7 @@ import {
 import { hasAdminRole } from "./lib/adminOverride";
 import { coachScreenMayControlClock } from "./lib/officialDuty";
 import { redactPlayerForPublic, type ConsentRow } from "./lib/privacyFilter";
+import { loadTeamRecognitions } from "./lib/cardRecognitions";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -48,6 +49,7 @@ export const getByPublicCode = query({
 
     const team = await ctx.db.get(match.teamId);
     const club = team ? await ctx.db.get(team.clubId) : null;
+    const recognitions = team?.isSelectionTeam ? await loadTeamRecognitions(ctx, team._id) : new Map();
 
     const events = await ctx.db
       .query("matchEvents")
@@ -100,14 +102,15 @@ export const getByPublicCode = query({
               name: player.name,
               number: player.number,
               photoUrl: player.photoUrl,
+              fcRatings: team?.isSelectionTeam ? player.fcRatings : undefined,
+              playStyleIds: team?.isSelectionTeam ? player.playStyleIds : undefined,
+              recognitions: recognitions.get(String(player._id)) ?? [],
             },
             consents as ConsentRow[]
           );
 
           const selection = team?.isSelectionTeam === true;
-          const displayName = selection
-            ? redacted.displayName
-            : player.name.split(/\s+/).filter(Boolean)[0] ?? player.name;
+          const displayName = redacted.displayName;
 
           return {
             id: mp.playerId,
@@ -116,9 +119,12 @@ export const getByPublicCode = query({
             onField: mp.onField,
             isKeeper: mp.isKeeper,
             fieldSlotIndex: mp.fieldSlotIndex,
-            photoUrl: selection
-              ? (redacted.photoUrl ?? undefined)
-              : player.photoUrl,
+            positionPrimary: player.positionPrimary,
+            useFcShield: selection,
+            fcRatings: redacted.fcRatings,
+            playStyleIds: redacted.playStyleIds,
+            recognitions: redacted.recognitions,
+            photoUrl: redacted.photoUrl ?? undefined,
           };
         })
       );
@@ -193,6 +199,7 @@ export const getForCoach = query({
     const now = Date.now();
     const team = await ctx.db.get(match.teamId);
     const club = team ? await ctx.db.get(team.clubId) : null;
+    const recognitions = team?.isSelectionTeam ? await loadTeamRecognitions(ctx, team._id) : new Map();
 
     const matchPlayers = await ctx.db
       .query("matchPlayers")
@@ -227,6 +234,11 @@ export const getForCoach = query({
           positionPrimary: player.positionPrimary,
           positionSecondary: player.positionSecondary,
           fieldSlotIndex: mp.fieldSlotIndex,
+          photoUrl: player.photoUrl ?? null,
+          useFcShield: team?.isSelectionTeam === true,
+          fcRatings: team?.isSelectionTeam ? player.fcRatings ?? null : null,
+          playStyleIds: team?.isSelectionTeam ? player.playStyleIds ?? [] : [],
+          recognitions: recognitions.get(String(player._id)) ?? [],
         };
       })
     );

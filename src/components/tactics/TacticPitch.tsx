@@ -12,8 +12,10 @@ import { formatFieldLabel } from "@/lib/cards/formatCardName";
 import { useTacticDrag } from "@/hooks/useTacticDrag";
 import { seedTacticTokens } from "@/lib/tactics/seedTokens";
 import { TacticToken, type TacticTokenModel } from "./TacticToken";
+import type { FcCardData } from "@/lib/cards/fc27";
+import { FcPlayerShield } from "@/components/cards/FcPlayerShield";
 
-type LineupPlayer = {
+type LineupPlayer = FcCardData & {
   playerId: string;
   displayName: string;
   number: number | null;
@@ -22,6 +24,8 @@ type LineupPlayer = {
   injured?: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
+  useFcShield?: boolean;
+  positionPrimary?: string | null;
 };
 
 interface TacticPitchProps {
@@ -68,11 +72,24 @@ export function TacticPitch({
         name: player?.displayName ?? "",
         number: player?.number ?? null,
         photoUrl: player?.photoUrl ?? null,
+        useFcShield: player?.useFcShield,
+        positionPrimary: player?.positionPrimary,
+        fcRatings: player?.fcRatings,
+        playStyleIds: player?.playStyleIds,
+        recognitions: player?.recognitions,
       };
     });
   }, [players, seeded]);
 
-  const serverTokens = board?.tokens ?? fallback;
+  // Board positions are persisted independently; card data always follows the roster.
+  const serverTokens = useMemo(() => {
+    const roster = new Map(players.map((player) => [player.playerId, player]));
+    return (board?.tokens ?? fallback).map((token) => {
+      const player = roster.get(token.playerId);
+      return { ...token, useFcShield: player?.useFcShield, positionPrimary: player?.positionPrimary,
+        fcRatings: player?.fcRatings, playStyleIds: player?.playStyleIds, recognitions: player?.recognitions };
+    });
+  }, [board?.tokens, fallback, players]);
 
   useEffect(() => {
     if (!canEdit || board !== null) return;
@@ -148,10 +165,14 @@ export function TacticPitch({
             <button
               key={token.playerId}
               type="button"
+              aria-label={formatFieldLabel(token.name, token.number)}
               onPointerDown={(event) => startDrag(token.playerId, event)}
               className="px-3 py-2 rounded-lg bg-dia-black text-white border border-dia-yellow/40 min-h-[44px] font-semibold"
             >
-              {formatFieldLabel(token.name, token.number)}
+              {token.useFcShield || token.fcRatings ? <FcPlayerShield name={token.name} number={token.number}
+                position={token.positionPrimary} photoUrl={token.photoUrl} fcRatings={token.fcRatings}
+                playStyleIds={token.playStyleIds} recognitions={token.recognitions} compact width={58} />
+                : formatFieldLabel(token.name, token.number)}
             </button>
           ))}
         </div>

@@ -15,7 +15,7 @@ interface TeamDeckGridProps {
   showMinutes?: boolean;
 }
 
-/** Dense overview of all team spelerskaarten; tap opens season-stat detail. */
+/** Flippable team collection with a separate action for season-stat detail. */
 export function TeamDeckGrid({
   players,
   showMinutes = false,
@@ -33,15 +33,9 @@ export function TeamDeckGrid({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 sm:gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-4">
         {players.map((p) => (
-          <button
-            key={p.playerId}
-            type="button"
-            onClick={() => setSelectedId(p.playerId)}
-            aria-label={`Details ${p.displayName}`}
-            className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dia-yellow"
-          >
+          <div key={p.playerId} className="mx-auto flex w-full max-w-72 flex-col rounded-2xl bg-dia-black text-left">
             <PlayerCardGamified
               displayName={p.displayName}
               number={p.number}
@@ -50,8 +44,15 @@ export function TeamDeckGrid({
               cardProfile={p.cardProfile}
               showFullIdentity={p.showFullIdentity}
               showMinutes={showMinutes}
+              fcRatings={p.fcRatings}
+              playStyleIds={p.playStyleIds}
+              recognitions={p.recognitions}
             />
-          </button>
+            <button type="button" onClick={() => setSelectedId(p.playerId)} aria-label={`Details ${p.displayName}`}
+              className="min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-white underline decoration-white/40 underline-offset-4 focus-visible:outline-2 focus-visible:outline-emerald-400">
+              Alle spelerinfo
+            </button>
+          </div>
         ))}
       </div>
 

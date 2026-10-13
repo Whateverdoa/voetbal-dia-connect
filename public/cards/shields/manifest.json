@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "tool": "Built-in Codex ImageGen",
+  "assets": [
+    {
+      "id": "bronze",
+      "png": "dia-shield-bronze-v1.png",
+      "webp": "dia-shield-bronze-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.334,
+      "bounds": {
+        "left": 81,
+        "top": 45,
+        "right": 1070,
+        "bottom": 1456
+      },
+      "prompt": "Use case: stylized-concept. Input image is the style and geometry reference: the gold blank football shield. Generate ONE BRONZE companion shield for the SAME professional app asset family. Keep exactly the reference's front-on symmetric outline, crown top, double bevel rail, pointed curved base, aspect ratio, same size and position. Change materials and colours to: warm brushed copper and antique bronze, restrained rose-copper highlights, dark chocolate satin interior with very subtle copper geometric facets at the right edge. Exception: ensure the entire top tip and bottom tip fit safely inside canvas with at least 3% transparent padding on ALL sides; do not crop any edge. Retain crisp 3D metal material, engraved diagonal micro-lines, studio specular highlights. Extremely quiet interior, central 65% and bottom 30% empty for app text. Preserve complete opaque interior and genuine transparent alpha exterior. Outer edges perfectly clean, no coloured chroma-key fringe. NO person, face, silhouette, body, shirt, jersey, text, number, logo, badge, icon, ball, watermark, surrounding scene or collage. ONE clean production-ready empty shield, transparent background."
+    },
+    {
+      "id": "silver",
+      "png": "dia-shield-silver-v1.png",
+      "webp": "dia-shield-silver-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.334,
+      "bounds": {
+        "left": 84,
+        "top": 47,
+        "right": 1068,
+        "bottom": 1453
+      },
+      "prompt": "Use case: stylized-concept. Input image is the style and geometry reference: the gold blank football shield. Generate ONE SILVER companion shield for the SAME professional app asset family. Keep exactly the reference's front-on symmetric outline, crown top, double bevel rail, pointed curved base, aspect ratio, same size and position. Change materials and colours to: polished platinum and brushed silver, cool pearl highlights, opaque deep charcoal satin interior with restrained silver geometric facets at the right edge. Exception: ensure the entire top tip and bottom tip fit safely inside canvas with at least 3% transparent padding on ALL sides; do not crop any edge. Retain crisp 3D metal material, engraved diagonal micro-lines, studio specular highlights. Extremely quiet interior, central 65% and bottom 30% empty for app text. Preserve complete opaque interior and genuine transparent alpha exterior. Outer edges perfectly clean, no coloured chroma-key fringe. NO person, face, silhouette, body, shirt, jersey, text, number, logo, badge, icon, ball, watermark, surrounding scene or collage. ONE clean production-ready empty shield, transparent background."
+    },
+    {
+      "id": "gold",
+      "png": "dia-shield-gold-v1.png",
+      "webp": "dia-shield-gold-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.336,
+      "bounds": {
+        "left": 84,
+        "top": 53,
+        "right": 1067,
+        "bottom": 1455
+      },
+      "prompt": "Edit the reference blank gold football card shield. Keep its original premium champagne-gold double metallic bevel frame, engraved diagonal side rails, dark espresso satin interior, faint facets near right border, symmetric crown shoulders and pointed base. Fix only canvas framing and alpha edge quality: ALL of the shield including top crown tip must be visible, surrounded by at least 3% genuinely transparent padding on every side. Remove any red/yellow chroma-key coloured edge contamination or stray pixels. Perfect clean antialiased alpha exterior, opaque dark interior. Same portrait 3:4 proportions, complete single shield, precise front orthographic view. No person, shirt, silhouette, words, numbers, symbols, icons, logos or watermark. Entire middle and lower region remains blank for app overlays. Production-ready transparent PNG asset."
+    },
+    {
+      "id": "dia",
+      "png": "dia-shield-dia-v1.png",
+      "webp": "dia-shield-dia-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.332,
+      "bounds": {
+        "left": 83,
+        "top": 47,
+        "right": 1068,
+        "bottom": 1453
+      },
+      "prompt": "Use case: stylized-concept. Input image is the style and geometry reference: the gold blank football shield. Generate ONE DIA companion shield for the SAME professional app asset family. Keep exactly the reference's front-on symmetric outline, crown top, double bevel rail, pointed curved base, aspect ratio, same size and position. Change materials and colours to: champagne-gold and polished emerald green double-layer frame, opaque deep forest-green satin interior (#0d3d14), subtle emerald facets only at the right edge, sophisticated green-and-gold Dutch football club palette. Exception: ensure the entire top tip and bottom tip fit safely inside canvas with at least 3% transparent padding on ALL sides; do not crop any edge. Retain crisp 3D metal material, engraved diagonal micro-lines, studio specular highlights. Extremely quiet interior, central 65% and bottom 30% empty for app text. Preserve complete opaque interior and genuine transparent alpha exterior. Outer edges perfectly clean, no coloured chroma-key fringe. NO person, face, silhouette, body, shirt, jersey, text, number, logo, badge, icon, ball, watermark, surrounding scene or collage. ONE clean production-ready empty shield, transparent background."
+    },
+    {
+      "id": "crystal",
+      "png": "dia-shield-crystal-v1.png",
+      "webp": "dia-shield-crystal-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.32,
+      "bounds": {
+        "left": 80,
+        "top": 47,
+        "right": 1082,
+        "bottom": 1452
+      },
+      "prompt": "Use case: stylized-concept. Input image is the style and geometry reference: the gold blank football shield. Generate ONE CRYSTAL companion shield for the SAME professional app asset family. Keep exactly the reference's front-on symmetric outline, crown top, double bevel rail, pointed curved base, aspect ratio, same size and position. Change materials and colours to: iridescent platinum frame with vivid violet and mint-cyan crystalline accents, opaque deep midnight-purple satin interior, elegant small prismatic crystal facets ONLY along the right outer rail, purple-and-turquoise future-star collectible aesthetic. Exception: ensure the entire top tip and bottom tip fit safely inside canvas with at least 3% transparent padding on ALL sides; do not crop any edge. Retain crisp 3D metal material, engraved diagonal micro-lines, studio specular highlights. Extremely quiet interior, central 65% and bottom 30% empty for app text. Preserve complete opaque interior and genuine transparent alpha exterior. Outer edges perfectly clean, no coloured chroma-key fringe. NO person, face, silhouette, body, shirt, jersey, text, number, logo, badge, icon, ball, watermark, surrounding scene or collage. ONE clean production-ready empty shield, transparent background."
+    },
+    {
+      "id": "elite",
+      "png": "dia-shield-elite-v1.png",
+      "webp": "dia-shield-elite-v1.webp",
+      "width": 1152,
+      "height": 1536,
+      "transparentFraction": 0.329,
+      "bounds": {
+        "left": 82,
+        "top": 49,
+        "right": 1070,
+        "bottom": 1462
+      },
+      "prompt": "Use case: stylized-concept. Input image is the style and geometry reference: the gold blank football shield. Generate ONE ELITE companion shield for the SAME professional app asset family. Keep exactly the reference's front-on symmetric outline, crown top, double bevel rail, pointed curved base, aspect ratio, same size and position. Change materials and colours to: brushed dark titanium and polished ice-blue double-layer frame, icy electric blue highlights, opaque deep midnight-navy satin interior, precise blue geometric facets at the right edge, ultra-premium elite collectible aesthetic. Exception: ensure the entire top tip and bottom tip fit safely inside canvas with at least 3% transparent padding on ALL sides; do not crop any edge. Retain crisp 3D metal material, engraved diagonal micro-lines, studio specular highlights. Extremely quiet interior, central 65% and bottom 30% empty for app text. Preserve complete opaque interior and genuine transparent alpha exterior. Outer edges perfectly clean, no coloured chroma-key fringe. NO person, face, silhouette, body, shirt, jersey, text, number, logo, badge, icon, ball, watermark, surrounding scene or collage. ONE clean production-ready empty shield, transparent background."
+    }
+  ]
+}

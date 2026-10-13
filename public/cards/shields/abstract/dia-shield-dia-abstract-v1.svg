@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="1536" viewBox="0 0 1152 1536">
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#1D4435"/><stop offset="1" stop-color="#102C23"/></linearGradient>
+    <clipPath id="shield"><path d="M280 104 H872 L1024 256 V1096 L928 1240 L576 1424 L224 1240 L128 1096 V256 Z"/></clipPath>
+  </defs>
+  <path d="M280 104 H872 L1024 256 V1096 L928 1240 L576 1424 L224 1240 L128 1096 V256 Z" fill="url(#surface)"/>
+  <g clip-path="url(#shield)"><path d="M688 104 H872 L1024 256 V484 Z" fill="#39765A" opacity="0.32"/><path d="M880 408 L1024 484 V776 Z" fill="#39765A" opacity="0.18"/></g>
+  <path d="M280 104 H872 L1024 256 V1096 L928 1240 L576 1424 L224 1240 L128 1096 V256 Z" fill="none" stroke="#89C69F" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M290 128 H862 L1000 266 V1089 L911 1221 L576 1397 L241 1221 L152 1089 V266 Z" fill="none" stroke="#89C69F" stroke-width="2" opacity="0.22" stroke-linejoin="round"/>
+</svg>

@@ -4,14 +4,16 @@ import { PresentationPitchView } from "@/components/presentation/PresentationPit
 import { getFormation } from "@/lib/formations";
 import { MatchClock } from "@/components/match/MatchClock";
 import type { PitchLayout } from "@/lib/halfPitchLayout";
+import type { FcCardData } from "@/lib/cards/fc27";
 
-type PresentPlayer = {
+type PresentPlayer = FcCardData & {
   playerId: string;
   displayName: string;
   number: number | null;
   onField: boolean;
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
+  useFcShield?: boolean;
   isKeeper: boolean;
   absent: boolean;
   injured?: boolean;

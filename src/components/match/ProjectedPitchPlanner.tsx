@@ -147,7 +147,7 @@ export function ProjectedPitchPlanner({
 
   return (
     <div className={fill ? "flex h-full min-h-0 flex-col gap-2" : "space-y-3"}>
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <div role="group" aria-label="Planperiode" className="flex shrink-0 flex-wrap gap-2">
         {Array.from({ length: quarterCount }, (_, index) => index + 1).map(
           (quarter) => (
             <button

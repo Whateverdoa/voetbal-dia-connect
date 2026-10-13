@@ -47,9 +47,14 @@ export default function RootLayout({
         <AppProviders>
           {hasClerkPublishableKey ? (
             <>
-              <SignedInRoleSync />
+              {process.env.DIA_TEST_MODE !== "true" ? <SignedInRoleSync /> : null}
               <ClerkNav />
             </>
+          ) : null}
+          {process.env.DIA_TEST_MODE === "true" ? (
+            <div role="status" className="border-b border-amber-300 bg-amber-100 px-4 py-3 text-center text-sm font-semibold text-amber-950">
+              Testomgeving · fictieve spelers · wijzigingen hebben geen invloed op live teams.
+            </div>
           ) : null}
           {children}
         </AppProviders>

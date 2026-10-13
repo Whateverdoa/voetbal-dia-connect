@@ -10,6 +10,12 @@ DIA Live is een realtime jeugdvoetbal-app voor DIA.
 
 Repo: Next.js 16 + Convex + Clerk.
 
+## Spelerskaarten en teamstemmen
+
+Selectieteams beheren FC-spelersschilden, zes coachbeoordelingen en maximaal drie speelstijlen via **Team → Spelerskaarten**. De totaalscore verschijnt bij zes ingevulde kenmerken en is hun afgeronde gemiddelde. Week- en maandkaarten komen via coachselectie of teamstemmen, met coachveto. Spelers en ouders gebruiken `/team/[slug]/app`; hun stemlidmaatschap geeft geen personeelsrechten.
+
+Zie **[docs/fc27-cards.md](docs/fc27-cards.md)** voor beoordeling, uitnodigingen, stemregels, privacy, Amsterdamse geldigheid en releasecontrole. Deze uitbreiding gebruikt optionele spelersvelden en aparte geïndexeerde kaarttabellen; frontend en Convex moeten bij release samen worden bijgewerkt.
+
 ## Wisselplan hersteld (3 oktober 2026)
 
 De coachinterface gebruikt dezelfde opgeslagen `substitutionPlans` op beide schermformaten:

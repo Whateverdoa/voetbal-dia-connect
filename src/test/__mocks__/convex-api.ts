@@ -2,6 +2,13 @@
 // This replaces @/convex/_generated/api in tests
 
 export const api = {
+  playerCards: {
+    getStaffTeam: "playerCards:getStaffTeam", updatePlayerCard: "playerCards:updatePlayerCard",
+    inviteVoter: "playerCards:inviteVoter", revokeVoter: "playerCards:revokeVoter",
+    getMyTeams: "playerCards:getMyTeams", getPortal: "playerCards:getPortal",
+    acceptInvite: "playerCards:acceptInvite", createRound: "playerCards:createRound",
+    castBallot: "playerCards:castBallot", setVeto: "playerCards:setVeto",
+  },
   matches: {
     verifyCoachAccess: "matches:verifyCoachAccess",
     getByPublicCode: "matches:getByPublicCode",

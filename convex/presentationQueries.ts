@@ -2,6 +2,8 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { redactPlayerForPublic } from "./lib/privacyFilter";
 import type { ConsentRow } from "./lib/privacyFilter";
+import { fcPublicCardFields, publicCardProfileValidator } from "./lib/fcCardValidators";
+import { loadTeamRecognitions } from "./lib/cardRecognitions";
 import {
   listStaffPresentationSubstitutionPlans,
   presentationPlanValidator,
@@ -111,26 +113,9 @@ export const getMatchPresentation = query({
           positionPrimary: v.union(v.string(), v.null()),
           positionSecondary: v.union(v.string(), v.null()),
           photoUrl: v.union(v.string(), v.null()),
-          cardProfile: v.union(
-            v.object({
-              xp: v.number(),
-              level: v.number(),
-              rarity: v.union(
-                v.literal("common"),
-                v.literal("rare"),
-                v.literal("epic")
-              ),
-              seasonStats: v.object({
-                matches: v.number(),
-                minutes: v.number(),
-                goals: v.number(),
-                assists: v.number(),
-                cleanSheets: v.number(),
-              }),
-              badges: v.optional(v.array(v.string())),
-            }),
-            v.null()
-          ),
+          cardProfile: publicCardProfileValidator,
+          ...fcPublicCardFields,
+          useFcShield: v.boolean(),
           showFullIdentity: v.boolean(),
           onField: v.boolean(),
           fieldSlotIndex: v.union(v.number(), v.null()),
@@ -158,6 +143,7 @@ export const getMatchPresentation = query({
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
       .collect();
 
+    const recognitions = team.isSelectionTeam ? await loadTeamRecognitions(ctx, team._id) : new Map();
     const players = [];
     for (const mp of matchPlayers) {
       const player = await ctx.db.get(mp.playerId);
@@ -177,12 +163,16 @@ export const getMatchPresentation = query({
           positionSecondary: player.positionSecondary,
           photoUrl: player.photoUrl,
           cardProfile: player.cardProfile,
+          fcRatings: team.isSelectionTeam ? player.fcRatings : undefined,
+          playStyleIds: team.isSelectionTeam ? player.playStyleIds : undefined,
+          recognitions: recognitions.get(String(player._id)) ?? [],
         },
         consents as ConsentRow[]
       );
 
       players.push({
         ...redacted,
+        useFcShield: team.isSelectionTeam === true,
         onField: mp.onField,
         fieldSlotIndex: mp.fieldSlotIndex ?? null,
         isKeeper: mp.isKeeper,
@@ -234,26 +224,8 @@ export const getTeamDeckPublic = query({
       positionPrimary: v.union(v.string(), v.null()),
       positionSecondary: v.union(v.string(), v.null()),
       photoUrl: v.union(v.string(), v.null()),
-      cardProfile: v.union(
-        v.object({
-          xp: v.number(),
-          level: v.number(),
-          rarity: v.union(
-            v.literal("common"),
-            v.literal("rare"),
-            v.literal("epic")
-          ),
-          seasonStats: v.object({
-            matches: v.number(),
-            minutes: v.number(),
-            goals: v.number(),
-            assists: v.number(),
-            cleanSheets: v.number(),
-          }),
-          badges: v.optional(v.array(v.string())),
-        }),
-        v.null()
-      ),
+      cardProfile: publicCardProfileValidator,
+      ...fcPublicCardFields,
       showFullIdentity: v.boolean(),
     })
   ),
@@ -269,6 +241,7 @@ export const getTeamDeckPublic = query({
       .withIndex("by_team", (q) => q.eq("teamId", team._id))
       .collect();
 
+    const recognitions = await loadTeamRecognitions(ctx, team._id);
     const out = [];
     for (const player of players.filter((p) => p.active)) {
       const consents = await ctx.db
@@ -285,6 +258,9 @@ export const getTeamDeckPublic = query({
             positionSecondary: player.positionSecondary,
             photoUrl: player.photoUrl,
             cardProfile: player.cardProfile,
+            fcRatings: player.fcRatings,
+            playStyleIds: player.playStyleIds,
+            recognitions: recognitions.get(String(player._id)) ?? [],
           },
           consents as ConsentRow[]
         )

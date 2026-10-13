@@ -6,6 +6,7 @@ import {
   portalAccess,
   projectPlayer,
   teamPlayer,
+  inPortalRoster,
 } from "./lib/teamPortalAccess";
 import { feedbackContent, memberRole, taskStatus } from "./teamPortalSchema";
 import { activeSeasonKey, isActiveSeasonMatch } from "./lib/season";
@@ -70,7 +71,7 @@ export const overview = query({
         ownPlayerIds: a.ownPlayerIds,
       },
       players: await Promise.all(
-        players.filter((p) => p.active).map((p) => projectPlayer(ctx, a, p)),
+        players.filter((p) => inPortalRoster(slug, p)).map((p) => projectPlayer(ctx, a, p)),
       ),
       matches: matches
         .filter((m) => isActiveSeasonMatch(m, activeSeasonKey(Date.now())))

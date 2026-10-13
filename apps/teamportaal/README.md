@@ -27,6 +27,8 @@ De zeven openbare verslagruimten blijven op `/team/jo13-2/verslagen`. Er staat n
 
 Foto’s worden nog niet gerenderd. De nieuwe toestemmingskeuzes betreffen uitsluitend profiel en voornaam. Ratings blijven ontbrekend zolang er geen echte toegestane cijfers beschikbaar zijn.
 
+Het compacte teamoverzicht schaalt ook statlabels mee met de schildbreedte (3.8cqw, zonder vaste ondergrens), zodat zes labels op smalle telefoons niet overlappen. Alle overige kaartankers blijven gelijk; de spelerspagina toont het grotere schild.
+
 ## Configuratie
 
 Vercel heeft `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` en `NEXT_PUBLIC_CONVEX_URL` nodig. Gebruik de bestaande Clerk-instantie. Het `convex` JWT-template moet `email: {{user.primary_email_address}}` en `email_verified: {{user.email_verified}}` bevatten. Alleen daadwerkelijk geverifieerde e-mailclaims geven e-mailgebonden toegang. Clerk werkt momenteel met de bestaande ontwikkelinstantie; een productie-identiteitsmigratie moet beide apps en Convex gezamenlijk meenemen.

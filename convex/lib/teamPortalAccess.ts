@@ -4,6 +4,14 @@ import type { QueryCtx, MutationCtx } from "../_generated/server";
 import { getCurrentUserAccess } from "./userAccess";
 
 type Ctx = QueryCtx | MutationCtx;
+// These JO13-1 guests are not part of the JO13-2 portal roster.
+const jo13GuestIds = new Set<string>([
+  "js7frzp82xprg54q860z5sm7j18ddd7x",
+  "js7e814yag7herbs5fjgptm0c18dcjaz",
+]);
+export function inPortalRoster(slug: string, player: Pick<Doc<"players">, "_id" | "active">) {
+  return player.active && (slug !== "jo13-2" || !jo13GuestIds.has(player._id));
+}
 export function demand(
   value: unknown,
   message = "Geen toegang tot dit onderdeel.",
@@ -56,7 +64,7 @@ export async function portalAccess(ctx: Ctx, slug: string) {
     [...new Set(linked)].map((id) => ctx.db.get(id)),
   );
   const ownPlayerIds = linkedPlayers
-    .filter((p) => p?.teamId === team._id && p.active)
+    .filter((p) => p?.teamId === team._id && inPortalRoster(slug, p))
     .map((p) => p!._id);
   return {
     team,
@@ -79,7 +87,7 @@ export async function teamPlayer(
 ) {
   const player = await ctx.db.get(playerId);
   demand(
-    player?.active && player.teamId === access.team._id,
+    player && player.teamId === access.team._id && inPortalRoster(access.team.slug, player),
     "Deze speler is niet beschikbaar.",
   );
   return player;

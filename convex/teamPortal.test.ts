@@ -3,10 +3,13 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
+import { inPortalRoster } from "./lib/teamPortalAccess";
+import type { Id } from "./_generated/dataModel";
 
 const modules = {
   "./teamPortal.ts": () => import("./teamPortal"),
   "./teamPortalActions.ts": () => import("./teamPortalActions"),
+  "./adminPlayers.ts": () => import("./adminPlayers"),
   "./_generated/server.ts": () => import("./_generated/server"),
 };
 const slug = "jo13-2";
@@ -161,6 +164,18 @@ const draft = {
 };
 
 describe("real team portal authorization", () => {
+  it("excludes only the known JO13-1 guests from the JO13-2 portal", () => {
+    const guest = { _id: "js7frzp82xprg54q860z5sm7j18ddd7x" as Id<"players">, active: true };
+    expect(inPortalRoster("jo13-2", guest)).toBe(false);
+    expect(inPortalRoster("jo13-1", guest)).toBe(true);
+  });
+  it("does not bypass portal privacy through the legacy admin roster query", async () => {
+    const { t, parent, manager, admin, ids } = await fixture();
+    for (const reader of [t, parent, manager]) {
+      await expect(reader.query(api.adminPlayers.listPlayersByTeam, { teamId: ids.teamId })).rejects.toThrow();
+    }
+    expect(await admin.query(api.adminPlayers.listPlayersByTeam, { teamId: ids.teamId })).toHaveLength(2);
+  });
   it("returns anonymous shields to visitors without names, photos or IDs", async () => {
     const { t } = await fixture();
     const result = await t.query(api.teamPortal.overview, { slug });

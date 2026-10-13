@@ -63,6 +63,7 @@ export const createPlayers = mutation({
 export const listPlayersByTeam = query({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
+    await requireAdminAccess(ctx);
     return await ctx.db
       .query("players")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))

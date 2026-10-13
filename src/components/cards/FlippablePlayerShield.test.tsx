@@ -3,6 +3,17 @@ import { describe, expect, it } from "vitest";
 import { FlippablePlayerShield } from "./FlippablePlayerShield";
 
 describe("FlippablePlayerShield", () => {
+  it("turns in both directions when the card itself is clicked", () => {
+    render(<FlippablePlayerShield name="Jan" number={7} />);
+    const card = screen.getByRole("button", { name: "Kaart van Jan draaien" });
+    fireEvent.click(card);
+    expect(card).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("group", { name: "Achterkant van Jan" })).toBeVisible();
+    fireEvent.click(card);
+    expect(card).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("group", { name: "Achterkant van Jan" })).toBeNull();
+  });
+
   it("removes the printed number, exposes only the active face and turns back", () => {
     const { container } = render(<FlippablePlayerShield name="Jan" number={7} position="CM" playStyleIds={["dribbler"]} />);
     const button = screen.getByRole("button", { name: "Kaart van Jan omdraaien" });

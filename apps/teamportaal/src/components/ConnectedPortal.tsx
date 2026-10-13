@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   portal,
-  button,
   panel,
   secondary,
   dateLabel,
@@ -21,6 +20,7 @@ import { ShieldCard } from "./cards/ShieldCard";
 import { FootballShieldContent } from "./cards/FootballShieldContent";
 import { PlayerPage } from "./PlayerPage";
 import { OrganizationPage } from "./OrganizationPage";
+import { MatchLink } from "./MatchLink";
 
 type View =
   | "team"
@@ -149,20 +149,7 @@ function MatchList({ data, limit }: { data: Overview; limit?: number }) {
                   Verslag
                 </Link>
               ) : null}
-              <a
-                className={secondary}
-                href={`${liveAppOrigin}/live/${encodeURIComponent(m.publicCode)}`}
-              >
-                Wedstrijd bekijken
-              </a>
-              {data.access.isCoach ? (
-                <a
-                  className={button}
-                  href={`${liveAppOrigin}/coach/match/${m.id}`}
-                >
-                  Wedstrijd bedienen
-                </a>
-              ) : null}
+              <MatchLink match={m} isCoach={data.access.isCoach} />
             </div>
           </article>
         ))}

@@ -1,0 +1,23 @@
+name: Team portal access
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  authorization:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx vitest run convex/teamPortal.test.ts
+      - run: npx tsc --noEmit
+      - run: npx eslint convex/teamPortal.ts convex/teamPortalActions.ts convex/teamPortalSchema.ts convex/lib/teamPortalAccess.ts
+      - run: npm ci --ignore-scripts
+        working-directory: apps/teamportaal
+      - run: npx vitest run --config apps/teamportaal/vitest.config.ts
+      - run: npm run lint && npm run typecheck
+        working-directory: apps/teamportaal

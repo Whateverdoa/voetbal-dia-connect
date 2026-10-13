@@ -1,0 +1,78 @@
+{
+  "placed-ball": {
+    "name": "Geplaatste bal", "category": "finishing",
+    "description": "Plaatst schoten gericht in de hoek, met gevoel voor richting en effect.",
+    "ink": ["M23 19H45V41"],
+    "ball": [28, 35, 11],
+    "football": "classic"
+  },
+  "power-shot": {
+    "name": "Krachtig schot", "category": "finishing",
+    "description": "Schiet met overtuiging en veel kracht op doel.",
+    "ink": [],
+    "overlay": ["M34 19L23 34H31L29 45L42 28H34Z"],
+    "ball": [32, 32, 17],
+    "football": "classic"
+  },
+  "through-pass": {
+    "name": "Dieptepass", "category": "passing",
+    "description": "Ziet de ruimte achter de verdediging en speelt een passende bal vooruit.",
+    "ink": ["M31 32H48M40 24L48 32L40 40"],
+    "ball": [20, 32, 8],
+    "football": "classic"
+  },
+  "accurate-cross": {
+    "name": "Nauwkeurige voorzet", "category": "passing",
+    "description": "Brengt vanaf de zijkant een gerichte voorzet naar een medespeler.",
+    "ink": ["M23 28V27Q23 20 32 20H45M38 13L45 20L38 27"],
+    "ball": [23, 39, 8],
+    "football": "classic"
+  },
+  "interceptor": {
+    "name": "Onderschepper", "category": "defending",
+    "description": "Leest het spel en stapt op tijd in de lijn van een pass.",
+    "ink": ["M16 32H35M28 25L35 32L28 39", "M44 20V44"]
+  },
+  "strong-tackle": {
+    "name": "Sterke tackle", "category": "defending",
+    "description": "Kiest het juiste moment en verovert de bal met een stevige, gecontroleerde tackle.",
+    "ink": [],
+    "solid": ["M22 20H30V32L44 37Q47 38 47 42V45H18V38L22 34Z"],
+    "ball": [41, 25, 5]
+  },
+  "ball-control": {
+    "name": "Balcontrole", "category": "control",
+    "description": "Neemt de bal rustig aan en houdt hem dicht bij de voet.",
+    "ink": ["M19 25V34Q19 47 32 47Q45 47 45 34V25"],
+    "ball": [32, 29, 9],
+    "football": "classic"
+  },
+  "dribbler": {
+    "name": "Dribbelaar", "category": "control",
+    "description": "Beweegt met de bal langs tegenstanders en verandert vlot van richting.",
+    "ink": ["M21 44L41 35L23 27L42 18M34 18H42V26"]
+  },
+  "quick-starter": {
+    "name": "Snelle starter", "category": "physical",
+    "description": "Komt snel op gang en versnelt over de eerste meters.",
+    "ink": ["M19 22L29 32L19 42", "M34 22L44 32L34 42"]
+  },
+  "relentless": {
+    "name": "Onvermoeibaar", "category": "physical",
+    "description": "Blijft bewegen, biedt zich aan en houdt de inzet vol.",
+    "ink": ["M32 32C24 18 15 20 15 32S24 46 32 32S49 18 49 32S40 46 32 32"]
+  },
+  "reflex-keeper": {
+    "name": "Reflexkeeper", "category": "goalkeeping",
+    "description": "Reageert snel op schoten van dichtbij en onverwachte ballen.",
+    "ink": ["M25 34V22Q25 18 29 18H35Q39 18 39 22V32L43 29Q47 27 48 31L41 44Q40 47 36 47H29Q25 47 22 42L17 33Q15 29 19 28Z"],
+    "ball": [21, 21, 4]
+  },
+  "high-ball": {
+    "name": "Hoge bal", "category": "goalkeeping",
+    "description": "Schat hoge ballen goed in en vangt of verwerkt ze met vertrouwen.",
+    "ink": ["M32 49V34M25 41L32 34L39 41"],
+    "ball": [32, 21, 9],
+    "football": "classic"
+  }
+}

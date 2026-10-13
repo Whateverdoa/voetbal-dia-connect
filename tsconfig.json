@@ -40,6 +40,7 @@
     "**/*.mts"
   ],
   "exclude": [
+    "apps",
     "node_modules",
     "tmp",
     "scripts/archive"

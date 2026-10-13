@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { portalTables } from "./teamPortalSchema";
 import {
   cardProfileValidator,
   playerConsentsTable,
@@ -10,6 +11,7 @@ import {
 } from "./schemaFragments";
 
 export default defineSchema({
+  ...portalTables,
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"

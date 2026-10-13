@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { nlNL } from "@clerk/localizations";
 import { PortalProviders } from "@/components/PortalProviders";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
@@ -26,6 +27,7 @@ export default function RootLayout({
           Naar de inhoud
         </a>
         <ClerkProvider
+          localization={nlNL}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           signInFallbackRedirectUrl="/start"

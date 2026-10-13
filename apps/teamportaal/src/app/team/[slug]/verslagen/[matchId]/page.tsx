@@ -8,12 +8,8 @@ import {
   matchTeams,
   publicMatches,
 } from "@/lib/match-reports";
-import {
-  liveAppOrigin,
-  reportsPath,
-  teamMatchesUrl,
-  teamSlug,
-} from "@/lib/team";
+import { reportsPath, teamSlug } from "@/lib/team";
+import { ReportMatchLink } from "@/components/MatchLink";
 
 type RouteProps = { params: Promise<{ slug: string; matchId: string }> };
 export const dynamicParams = false;
@@ -120,22 +116,10 @@ export default async function MatchReportPage({ params }: RouteProps) {
           Rondom de wedstrijd
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-[#aaa99f]">
-          De actuele wedstrijdregistratie staat in de voetbal-dia-connect-app.
-          Coaches openen de wedstrijd met hun bestaande account.
+          Bekijk de wedstrijd en de actuele registratie in DIA Live.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a
-            href={teamMatchesUrl}
-            className="inline-flex min-h-12 items-center rounded-xl bg-[#efc44b] px-5 py-3 text-sm font-bold text-[#171810] hover:bg-[#ffda67]"
-          >
-            Uitslagen in DIA Live ↗
-          </a>
-          <a
-            href={`${liveAppOrigin}/coach/match/${encodeURIComponent(match.id)}`}
-            className="inline-flex min-h-12 items-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:text-[#efc44b]"
-          >
-            Open wedstrijd als coach ↗
-          </a>
+          <ReportMatchLink slug={slug} matchId={match.id} />
         </div>
       </section>
       <p className="mt-7 text-xs leading-relaxed text-[#888a7e]">

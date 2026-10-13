@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { ConnectedPortal } from "./ConnectedPortal";
+import { ReportMatchLink } from "./MatchLink";
 import type { Overview, PlayerDetail } from "@/lib/portal";
 const mocked = vi.hoisted(() => ({ query: vi.fn(), mutate: vi.fn(), replace: vi.fn(), userId: null as string | null }));
 vi.mock("convex/react", () => ({ useQuery: mocked.query, useMutation: () => mocked.mutate, useConvexAuth: () => ({ isLoading: false, isAuthenticated: Boolean(mocked.userId) }) }));
@@ -21,6 +22,15 @@ beforeEach(() => {
   mocked.query.mockImplementation(ref => { const name = getFunctionName(ref); if (name === "teamPortal:overview") return overview; if (name === "teamPortal:player") return detail; return null; });
 });
 describe("connected portal interface", () => {
+  it.each(["visitor", "parent", "player", "manager", "coach"])("opens the match in the right view for %s with one neutral link", (role) => {
+    mocked.userId = role === "visitor" ? null : role;
+    overview.access = { ...overview.access, signedIn: role !== "visitor", isCoach: role === "coach", isParent: role === "parent", isManager: role === "manager" };
+    overview.matches = [{ id: "match-1", publicCode: "ABC123", opponent: "Testteam", isHome: true, scheduledAt: null, status: "finished", homeScore: 2, awayScore: 1, venue: null }];
+    render(<ReportMatchLink slug="jo13-2" matchId="match-1" />);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Open wedstrijd ↗" })).toHaveAttribute("href", role === "coach" ? "https://dialive.online/coach/match/match-1" : "https://dialive.online/live/ABC123");
+    expect(screen.queryByText(/als coach/)).not.toBeInTheDocument();
+  });
   it("does not show staff navigation to a visitor", () => {
     render(<ConnectedPortal />);
     expect(screen.queryByRole("link", { name: "Coachwerkplek" })).not.toBeInTheDocument();

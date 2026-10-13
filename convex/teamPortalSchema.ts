@@ -50,6 +50,8 @@ export const portalTables = {
     updatedAt: v.number(),
   })
     .index("by_player_author", ["playerId", "author"])
+    .index("by_team_player_author", ["teamId", "playerId", "author"])
+    .index("by_team_player", ["teamId", "playerId"])
     .index("by_player", ["playerId"]),
   portalTasks: defineTable({
     teamId: v.id("teams"),

@@ -39,12 +39,13 @@ export const setMembership = mutation({
         : `email:${account.toLowerCase()}`;
     const ids = [...new Set(args.playerIds)];
     demand(
-      ids.length <= 10 &&
-        (args.role === "team_manager" ? ids.length === 0 : ids.length > 0),
+      !args.active ||
+        (ids.length <= 10 &&
+          (args.role === "team_manager" ? ids.length === 0 : ids.length > 0)),
       "Koppel de juiste spelers aan dit account.",
     );
     demand(
-      args.role !== "player" || ids.length === 1,
+      !args.active || args.role !== "player" || ids.length === 1,
       "Een spelertoegang hoort bij één speler.",
     );
     demand(
@@ -143,8 +144,8 @@ export const saveFeedback = mutation({
     await teamPlayer(ctx, a, args.playerId);
     const current = await ctx.db
       .query("portalFeedback")
-      .withIndex("by_player_author", (q) =>
-        q.eq("playerId", args.playerId).eq("author", a.identity!.subject),
+      .withIndex("by_team_player_author", (q) =>
+        q.eq("teamId", a.team._id).eq("playerId", args.playerId).eq("author", a.identity!.subject),
       )
       .unique();
     demand(

@@ -411,6 +411,38 @@ describe("real team portal authorization", () => {
       ).published,
     ).toEqual([]);
   });
+  it("does not carry consent or feedback to a new team and allows revoking the old link", async () => {
+    const { coach, parent, t, ids } = await fixture();
+    await parent.mutation(api.teamPortalActions.setConsent, {
+      slug, playerId: ids.player, teamProfile: true, publicProfile: true,
+    });
+    await coach.mutation(api.teamPortalActions.saveFeedback, {
+      slug, playerId: ids.player, content: draft, revision: 0, action: "publish",
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(ids.player, { teamId: ids.otherTeam });
+      await ctx.db.patch(ids.coachId, { teamIds: [ids.teamId, ids.otherTeam] });
+    });
+    const newTeam = await t.query(api.teamPortal.overview, { slug: "jo13-1" });
+    expect(newTeam.players.every((p) => p.id === null)).toBe(true);
+    const newDetail = await coach.query(api.teamPortal.player, {
+      slug: "jo13-1", playerId: ids.player,
+    });
+    expect(newDetail.published).toEqual([]);
+    expect(newDetail.draft).toBeNull();
+    await coach.mutation(api.teamPortalActions.saveFeedback, {
+      slug: "jo13-1", playerId: ids.player, content: { ...draft, report: "Nieuw team" }, revision: 0, action: "save",
+    });
+    await coach.mutation(api.teamPortalActions.setMembership, {
+      slug, role: "parent", label: "Ouder", account: "parent@example.test",
+      playerIds: [], active: false, guardianApproved: false,
+    });
+    await expect(parent.query(api.teamPortal.organization, { slug })).rejects.toThrow();
+    await t.run((ctx) => ctx.db.patch(ids.player, { teamId: ids.teamId }));
+    const original = await coach.query(api.teamPortal.player, { slug, playerId: ids.player });
+    expect(original.published[0].content.report).toBe(draft.report);
+    expect(original.draft?.content.report).toBe(draft.report);
+  });
   it("rejects stale feedback edits", async () => {
     const { coach, ids } = await fixture();
     const args = {

@@ -92,10 +92,11 @@ export async function projectPlayer(
   access: PortalAccess,
   player: Doc<"players">,
 ) {
-  const consent = await ctx.db
+  const savedConsent = await ctx.db
     .query("portalConsents")
     .withIndex("by_player", (q) => q.eq("playerId", player._id))
     .unique();
+  const consent = savedConsent?.teamId === access.team._id ? savedConsent : null;
   const own = access.ownPlayerIds.includes(player._id);
   const known =
     access.isStaff ||

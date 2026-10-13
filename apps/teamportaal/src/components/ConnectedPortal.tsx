@@ -15,6 +15,7 @@ import {
   type PlayerView,
 } from "@/lib/portal";
 import { liveAppOrigin } from "@/lib/team";
+import { publicMatches } from "@/lib/match-reports";
 import { PortalSession } from "./PortalSession";
 import { ShieldCard } from "./cards/ShieldCard";
 import { FootballShieldContent } from "./cards/FootballShieldContent";
@@ -140,7 +141,7 @@ function MatchList({ data, limit }: { data: Overview; limit?: number }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {m.status === "finished" && data.team.slug === "jo13-2" ? (
+              {m.status === "finished" && data.team.slug === "jo13-2" && publicMatches.some((report) => report.id === m.id) ? (
                 <Link
                   className={secondary}
                   href={`/team/${data.team.slug}/verslagen/${m.id}`}

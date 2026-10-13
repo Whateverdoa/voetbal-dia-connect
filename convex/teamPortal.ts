@@ -131,7 +131,7 @@ export const player = query({
     const feedback = development
       ? await ctx.db
           .query("portalFeedback")
-          .withIndex("by_player", (q) => q.eq("playerId", playerId))
+          .withIndex("by_team_player", (q) => q.eq("teamId", a.team._id).eq("playerId", playerId))
           .take(100)
       : [];
     const own = a.isCoach
@@ -144,8 +144,8 @@ export const player = query({
       canConsent,
       consent: canConsent
         ? {
-            teamProfile: consent?.teamProfile ?? false,
-            publicProfile: consent?.publicProfile ?? false,
+            teamProfile: consent?.teamId === a.team._id && consent.teamProfile,
+            publicProfile: consent?.teamId === a.team._id && consent.publicProfile,
           }
         : null,
       published: feedback

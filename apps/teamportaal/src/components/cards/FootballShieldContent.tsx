@@ -84,7 +84,7 @@ export function FootballShieldContent({
             <div key={key} className="min-w-0">
               <dt
                 aria-label={statName}
-                className="text-[max(9px,3.8cqw)] font-semibold leading-tight"
+                className="text-[3.8cqw] font-semibold leading-tight"
               >
                 {label}
               </dt>

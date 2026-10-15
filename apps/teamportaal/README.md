@@ -33,6 +33,8 @@ Het compacte teamoverzicht schaalt ook statlabels mee met de schildbreedte (3.8c
 
 Vercel heeft `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` en `NEXT_PUBLIC_CONVEX_URL` nodig. Gebruik de bestaande Clerk-instantie. Het `convex` JWT-template moet `email: {{user.primary_email_address}}` en `email_verified: {{user.email_verified}}` bevatten. Alleen daadwerkelijk geverifieerde e-mailclaims geven e-mailgebonden toegang. Clerk werkt momenteel met de bestaande ontwikkelinstantie; een productie-identiteitsmigratie moet beide apps en Convex gezamenlijk meenemen.
 
+`PortalProviders` gebruikt `usePortalAuth` om altijd dit benoemde template op te vragen. De standaard Convex/Clerk-adapter kiest anders het sessietoken zodra `aud=convex`; dat token kan de e-mailclaims missen, waardoor een ingelogde coach alleen bezoekersrechten krijgt. Een mislukte templateaanvraag geeft geen terugval naar dat onvolledige token.
+
 ## Controle en release
 
 In de repo: `npx vitest run convex/teamPortal.test.ts` en `npx tsc --noEmit`. In deze map: `npm run lint`, `npm run typecheck`, `npm run build`. Controleer altijd poort en eigenaar vóór een serverstart.

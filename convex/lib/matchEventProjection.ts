@@ -59,15 +59,18 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
     const ordered = [...enrichments].sort(
       (a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id))
     );
-    const latest = ordered[ordered.length - 1];
+    // Enrichments are partial patches; omitted fields retain earlier values.
+    const enriched = ordered.reduce<EventWithNames>((goal, enrichment) => ({
+      ...goal,
+      playerId: enrichment.playerId ?? goal.playerId,
+      relatedPlayerId: enrichment.relatedPlayerId ?? goal.relatedPlayerId,
+      playerName: enrichment.playerName ?? goal.playerName,
+      relatedPlayerName: enrichment.relatedPlayerName ?? goal.relatedPlayerName,
+      assistKind: enrichment.assistKind ?? goal.assistKind,
+    }), event);
 
     return {
-      ...event,
-      playerId: latest.playerId ?? event.playerId,
-      relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
-      playerName: latest.playerName ?? event.playerName,
-      relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
-      assistKind: latest.assistKind ?? event.assistKind,
+      ...enriched,
       matchMs: toMs(event),
     };
   });

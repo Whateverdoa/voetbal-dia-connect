@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { portalTables } from "./teamPortalSchema";
+import { mobilePilotScopes } from "./mobilePilotSchema";
 import {
   cardProfileValidator,
   playerConsentsTable,
@@ -12,6 +13,7 @@ import {
 
 export default defineSchema({
   ...portalTables,
+  mobilePilotScopes,
   clubs: defineTable({
     name: v.string(),
     slug: v.string(), // "dia"
@@ -325,6 +327,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_match", ["matchId"])
+    .index("by_match_and_target_and_type", ["matchId", "targetEventId", "type"])
     .index("by_match_type", ["matchId", "type"]),
 
   // Reusable custom pitch formations per team (coach-editable slots)

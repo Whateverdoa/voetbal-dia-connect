@@ -29,7 +29,7 @@ export const appointCoach = mutation({
     }
     if (match.refereePolicy.commandVersion !== args.expectedVersion) throw new ConvexError("VERSION_CONFLICT");
     // A disabled referee still occupies the task until explicitly unassigned.
-    if (match.refereeId || match.cancelledAt || match.status === "finished") throw new ConvexError("OFFICIAL_DUTY_UNAVAILABLE");
+    if (match.refereeId || match.cancelledAt !== undefined || match.status === "finished") throw new ConvexError("OFFICIAL_DUTY_UNAVAILABLE");
     if (!isAdmin && match.leadCoachId) throw new ConvexError("OFFICIAL_DUTY_OCCUPIED");
     const now = Date.now();
     const version = args.expectedVersion + 1;

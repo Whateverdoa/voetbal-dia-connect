@@ -4,10 +4,12 @@ import { makeFunctionReference } from "convex/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import schema from "./schema";
 import type { Id } from "./_generated/dataModel";
+import type { RefereeAction } from "./lib/refereeRegistrationContract";
 
 const modules = {
   "./mobileReferee.ts": () => import("./mobileReferee"),
   "./mobilePilotScopes.ts": () => import("./mobilePilotScopes"),
+  "./refereePolicy.ts": () => import("./refereePolicy"),
   "./_generated/server.ts": () => import("./_generated/server"),
 };
 const session = makeFunctionReference<"query", Record<string, never>>("mobileReferee:session");
@@ -16,6 +18,7 @@ const timeline = makeFunctionReference<"query", { matchId: Id<"matches">; pagina
 const configure = makeFunctionReference<"mutation", { subject: string; matchId: Id<"matches">; teamId: Id<"teams">; enabled: boolean; expiresAt: number }, Id<"mobilePilotScopes">>("mobilePilotScopes:configure");
 const expire = makeFunctionReference<"mutation", { scopeId: Id<"mobilePilotScopes">; expiresAt: number }, null>("mobilePilotScopes:expire");
 const identity = { subject: "pilot-ref", email: "ref@example.test", emailVerified: true };
+const command = makeFunctionReference<"mutation", { matchId: Id<"matches">; expectedVersion: number; correlationId: string; action: RefereeAction }>("mobileReferee:command");
 
 async function fixture() {
   const t = convexTest(schema, modules);
@@ -41,7 +44,7 @@ async function fixture() {
 }
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-15T19:00:00Z")); });
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllEnvs(); });
 
 describe("mobile pilot read-only access", () => {
   it("denies access by default and anonymous requests", async () => {
@@ -168,4 +171,100 @@ describe("mobile pilot read-only access", () => {
     expect(result.page.find((e: { quarter: number }) => e.quarter === 1)).toMatchObject({ playerName: "Corrected scorer" });
     expect(result.isDone).toBe(true);
   });
+});
+
+async function enrolledFixture() {
+  const f = await fixture();
+  const scopeId = await f.grant({ expiresAt: Date.now() + 86400_000 });
+  await f.t.run(async ctx => {
+    await ctx.db.patch(scopeId, { writesEnabled: true });
+    await ctx.db.patch(f.ids.matchId, { refereePolicy: { version: 1, generation: 0, commandVersion: 0,
+      elapsedMs: 0, runningSince: null, periodStartedElapsedMs: 0, safetyMarginMinutes: 10, confirmedStoppageMs: 0 } });
+  });
+  return { ...f, scopeId, start: { matchId: f.ids.matchId, expectedVersion: 0, correlationId: "start-fixture", action: { kind: "start" as const } } };
+}
+
+describe("default-closed mobile command boundary", () => {
+  it("server permission defaults off even for an enrolled match and exact scope", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "false");
+    const f = await enrolledFixture();
+    await expect(f.actor.mutation(command, f.start)).rejects.toThrow("PILOT_WRITES_DISABLED");
+    expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ canControl: false, writesEnabled: false, clockPolicyVersion: 1, version: 0 });
+  });
+  it("server permission cannot replace exact-scope write approval or the match policy", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture();
+    await f.t.run(ctx => ctx.db.patch(f.scopeId, { writesEnabled: false }));
+    await expect(f.actor.mutation(command, f.start)).rejects.toThrow("PILOT_WRITES_DISABLED");
+    await f.t.run(async ctx => { await ctx.db.patch(f.scopeId, { writesEnabled: true }); await ctx.db.patch(f.ids.matchId, { refereePolicy: undefined }); });
+    await expect(f.actor.mutation(command, f.start)).rejects.toThrow("PILOT_WRITES_DISABLED");
+  });
+  it("reads and commands agree on cutoff and predicted version after 600 minutes", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture();
+    const kickoff = Date.now();
+    await f.actor.mutation(command, f.start);
+    vi.setSystemTime(kickoff + 600 * 60_000);
+    const match = await f.actor.query(getMatch, { matchId: f.ids.matchId });
+    expect(match).toMatchObject({ version: 2, canControl: true, clock: { elapsedMs: 25 * 60_000, runningSince: null, clockReviewReason: "period_limit", clockLimitAt: kickoff + 25 * 60_000 } });
+    await f.actor.mutation(command, { matchId: f.ids.matchId, expectedVersion: match.version, correlationId: "finish-late", action: { kind: "finish" } });
+    expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ status: "finished", version: 3, canControl: false, canAnnotate: true, clock: { elapsedMs: 25 * 60_000 } });
+  });
+  it("accepts a goal once and exposes its append-only exact correction", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture(); await f.actor.mutation(command, f.start);
+    const args = { matchId: f.ids.matchId, expectedVersion: 1, correlationId: "goal-once", action: { kind: "goal" as const, team: "home" as const } };
+    const results = await Promise.all([f.actor.mutation(command, args), f.actor.mutation(command, args)]);
+    expect(results[0]).toEqual(results[1]);
+    await f.actor.mutation(command, { matchId: f.ids.matchId, expectedVersion: 2, correlationId: "correct-exact", action: { kind: "correct_goal", eventId: results[0].commandEventId } });
+    const log = await f.actor.query(timeline, { matchId: f.ids.matchId, paginationOpts: { numItems: 100, cursor: null } });
+    expect(log.page.find((e: { type: string }) => e.type === "goal")).toMatchObject({ id: results[0].commandEventId, corrected: true });
+    expect(log.page.find((e: { type: string }) => e.type === "goal_correction")).toMatchObject({ targetEventId: results[0].commandEventId });
+    expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ homeScore: 0, version: 3 });
+  });
+  it("different simultaneous commands cannot both consume the same version", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture(); await f.actor.mutation(command, f.start);
+    const args = { matchId: f.ids.matchId, expectedVersion: 1, correlationId: "first", action: { kind: "goal" as const, team: "home" as const } };
+    const results = await Promise.allSettled([f.actor.mutation(command, args), f.actor.mutation(command, { ...args, correlationId: "second" })]);
+    expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
+    expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ homeScore: 1, version: 2 });
+  });
+  it("revoking writes blocks even retries but preserves the official clock policy", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture(); await f.actor.mutation(command, f.start);
+    await f.t.run(ctx => ctx.db.patch(f.scopeId, { writesEnabled: false }));
+    await expect(f.actor.mutation(command, f.start)).rejects.toThrow("PILOT_WRITES_DISABLED");
+    expect(await f.t.run(ctx => ctx.db.get(f.ids.matchId))).toMatchObject({ status: "live", refereePolicy: { version: 1 } });
+  });
+  it("expired scope rejects commands and prior receipts", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture(); await f.actor.mutation(command, f.start);
+    vi.setSystemTime(Date.now() + 86400_001);
+    await expect(f.actor.mutation(command, f.start)).rejects.toThrow("PILOT_ACCESS_DENIED");
+  });
+  it("later card details appear on the same timeline row without changing the original", async () => {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture(); await f.actor.mutation(command, f.start);
+    const card = await f.actor.mutation(command, { matchId: f.ids.matchId, expectedVersion: 1, correlationId: "card", action: { kind: "yellow_card", team: "away" } });
+    await f.actor.mutation(command, { matchId: f.ids.matchId, expectedVersion: 2, correlationId: "details", action: { kind: "annotate_event", eventId: card.commandEventId, reportedName: "Later", reportedNumber: 7 } });
+    const log = await f.actor.query(timeline, { matchId: f.ids.matchId, paginationOpts: { numItems: 100, cursor: null } });
+    expect(log.page).toHaveLength(1);
+    expect(log.page[0]).toMatchObject({ id: card.commandEventId, type: "yellow_card", playerName: "Later", isOpponentCard: true });
+    expect(await f.t.run(ctx => ctx.db.get(card.commandEventId))).not.toHaveProperty("reportedNumber");
+  });
+});
+
+it("disabling server writes does not disable already scheduled safety enforcement", async () => {
+  vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+  const f = await enrolledFixture(); const kickoff = Date.now();
+  await f.actor.mutation(command, f.start);
+  const before = (await f.t.run(ctx => ctx.db.get(f.ids.matchId)))!;
+  vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "false");
+  vi.setSystemTime(kickoff + 600 * 60_000);
+  const guard = makeFunctionReference<"mutation", { matchId: Id<"matches">; generation: number }, null>("refereePolicy:guardClock");
+  await f.t.mutation(guard, { matchId: f.ids.matchId, generation: before.refereePolicy!.generation });
+  const after = (await f.t.run(ctx => ctx.db.get(f.ids.matchId)))!;
+  expect(after.refereePolicy).toMatchObject({ runningSince: null, elapsedMs: 25 * 60_000, clockReviewReason: "period_limit" });
+  expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ canControl: false, writesEnabled: false });
 });

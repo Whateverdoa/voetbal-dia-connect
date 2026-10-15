@@ -305,6 +305,9 @@ export default defineSchema({
       v.literal("goal_enrichment"),
       v.literal("clock_guard"),
       v.literal("official_audit"),
+      v.literal("goal_correction"),
+      v.literal("incident"),
+      v.literal("official_annotation"),
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
@@ -333,6 +336,8 @@ export default defineSchema({
     actorSubject: v.optional(v.string()),
     observedElapsedMs: v.optional(v.number()),
     observedStoppageMs: v.optional(v.number()),
+    stoppageStartedAt: v.optional(v.number()),
+    stoppageDisposition: v.optional(v.union(v.literal("include"), v.literal("discard"))),
     effectiveAt: v.optional(v.number()),
     timestamp: v.number(), // When event occurred
     gameSecond: v.optional(v.number()), // Nominal match second (without extra-time suffix)

@@ -7,7 +7,7 @@ const expireReference = makeFunctionReference<"mutation", { scopeId: Id<"mobileP
 
 // Operator-only; there is deliberately no public grant or role-sync mutation.
 export const configure = internalMutation({
-  args: { subject: v.string(), matchId: v.id("matches"), teamId: v.id("teams"), enabled: v.boolean(), expiresAt: v.number() },
+  args: { subject: v.string(), matchId: v.id("matches"), teamId: v.id("teams"), enabled: v.boolean(), expiresAt: v.number(), writesEnabled: v.optional(v.boolean()) },
   returns: v.id("mobilePilotScopes"),
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -19,8 +19,9 @@ export const configure = internalMutation({
     if (!match || match.teamId !== args.teamId) throw new ConvexError("PILOT_ACCESS_DENIED");
     const previous = await ctx.db.query("mobilePilotScopes")
       .withIndex("by_subject_and_match", q => q.eq("subject", args.subject).eq("matchId", args.matchId)).unique();
-    const scopeId = previous?._id ?? await ctx.db.insert("mobilePilotScopes", { ...args, updatedAt: now });
-    if (previous) await ctx.db.patch(scopeId, { ...args, updatedAt: now });
+    const scope = { ...args, writesEnabled: args.writesEnabled === true, updatedAt: now };
+    const scopeId = previous?._id ?? await ctx.db.insert("mobilePilotScopes", scope);
+    if (previous) await ctx.db.patch(scopeId, scope);
     if (args.enabled) await ctx.scheduler.runAt(args.expiresAt, expireReference, { scopeId, expiresAt: args.expiresAt });
     return scopeId;
   },

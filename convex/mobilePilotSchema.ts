@@ -7,6 +7,7 @@ export const mobilePilotScopes = defineTable({
   matchId: v.id("matches"),
   teamId: v.id("teams"),
   enabled: v.boolean(),
+  writesEnabled: v.optional(v.boolean()),
   expiresAt: v.number(),
   updatedAt: v.number(),
 }).index("by_subject", ["subject"])

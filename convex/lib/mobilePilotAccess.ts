@@ -29,7 +29,8 @@ export async function officialDutyEligibility(ctx: Reader, match: Doc<"matches">
   const eligible = match.refereeId ? assignedReferee : ownCoach && match.leadCoachId === coach?._id;
   return {
     canRead: access.roles.includes("admin") || assignedReferee || ownCoach,
-    eligibleToControl: !!eligible && !match.cancelledAt && match.status !== "finished",
+    isOfficialRegistrar: !!eligible,
+    eligibleToControl: !!eligible && match.cancelledAt === undefined && match.status !== "finished",
     controller: match.refereeId ? "referee" as const : match.leadCoachId ? "coach" as const : "none" as const,
   };
 }

@@ -11,6 +11,7 @@ import type { MatchPlayer } from "./types";
 import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface PitchBenchProps {
+  canEdit?: boolean;
   onBench: MatchPlayer[];
   onFieldUnassigned: MatchPlayer[];
   selectedPlayerId: Id<"players"> | null;
@@ -24,6 +25,7 @@ interface PitchBenchProps {
 }
 
 function MiniCard({
+  interactive,
   player,
   isSelected,
   isDimmed,
@@ -32,6 +34,7 @@ function MiniCard({
   seasonMinutes,
   disciplineBadge,
 }: {
+  interactive: boolean;
   player: MatchPlayer;
   isSelected: boolean;
   isDimmed: boolean;
@@ -44,6 +47,17 @@ function MiniCard({
   const rc = getRoleColor(player.positionPrimary);
   return (
     <div
+      data-testid={`bench-player-${player.playerId}`}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${nameLabel(player)}, nummer ${player.number ?? "?"}` : undefined}
+      aria-pressed={interactive ? isSelected : undefined}
+      onKeyDown={interactive ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
       onClick={onClick}
       className="flex flex-col items-center cursor-pointer"
       style={{
@@ -117,6 +131,7 @@ function MiniCard({
 }
 
 export function PitchBench({
+  canEdit = false,
   onBench,
   onFieldUnassigned,
   selectedPlayerId,
@@ -174,6 +189,7 @@ export function PitchBench({
             {onBench.map((p) => (
               <MiniCard
                 key={p.playerId}
+                interactive={canEdit}
                 player={p}
                 isSelected={selectedPlayerId === p.playerId}
                 isDimmed={selectedPlayerId !== null && selectedPlayerId !== p.playerId}

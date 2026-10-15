@@ -132,12 +132,12 @@ describe("PresentSubstitutionPlanView", () => {
 
     expect(screen.getByText("Piet 7 (CM) → Henk 11")).toBeTruthy();
     expect(screen.getByText("Beginopstelling")).toBeTruthy();
-    expect(screen.getByText("Piet 7")).toBeTruthy();
+    expect(screen.getByTestId("field-player-a")).toBeTruthy();
 
     fireEvent.click(screen.getByText("Piet 7 (CM) → Henk 11"));
 
-    expect(screen.getByText("Henk 11")).toBeTruthy();
-    expect(screen.queryByText("Piet 7")).toBeNull();
+    expect(screen.getByTestId("field-player-c")).toBeTruthy();
+    expect(screen.queryByTestId("field-player-a")).toBeNull();
   });
 
   it("labels bench substitutions and position changes apart", () => {
@@ -218,7 +218,7 @@ describe("PresentSubstitutionPlanView", () => {
 
     expect(screen.queryByText("Geen openstaande wissels")).toBeNull();
     expect(screen.getByText("Begin")).toBeTruthy();
-    expect(screen.getByText("Piet 7")).toBeTruthy();
+    expect(screen.getByTestId("field-player-a")).toBeTruthy();
     expect(screen.getByText(/Tik veldspeler/i)).toBeTruthy();
     expect(screen.getByText(/Wisselspelers/i)).toBeTruthy();
     expect(screen.getByLabelText("Min")).toBeTruthy();
@@ -240,8 +240,8 @@ describe("PresentSubstitutionPlanView", () => {
       </div>
     );
 
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("Jan 10"));
+    fireEvent.click(screen.getByTestId("field-player-a"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalled();
@@ -277,7 +277,7 @@ describe("PresentSubstitutionPlanView", () => {
     );
 
     // After the swap moment, Piet and Jan have exchanged slots — Jan is at CM.
-    expect(screen.getByText("Jan 10")).toBeTruthy();
+    expect(screen.getByTestId("field-player-b")).toBeTruthy();
     expect(screen.getByText("Start kwart 1")).toBeTruthy();
   });
 
@@ -298,8 +298,8 @@ describe("PresentSubstitutionPlanView", () => {
 
     // After the planned swap: Henk is on field, Piet on the bench.
     fireEvent.click(screen.getByText("Piet 7 (CM) → Henk 11"));
-    fireEvent.click(screen.getByText("Jan 10"));
-    fireEvent.click(screen.getByText("PIET"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
+    fireEvent.click(screen.getByTestId("bench-player-a"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith(
@@ -331,8 +331,8 @@ describe("PresentSubstitutionPlanView", () => {
     );
 
     fireEvent.click(screen.getByText("Begin"));
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("Jan 10"));
+    fireEvent.click(screen.getByTestId("field-player-a"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith(
@@ -367,8 +367,8 @@ describe("PresentSubstitutionPlanView", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Min"), { target: { value: "15" } });
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("Jan 10"));
+    fireEvent.click(screen.getByTestId("field-player-a"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith(

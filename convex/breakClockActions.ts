@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { recordPlayingTime } from "./playingTimeHelpers";
@@ -13,6 +14,7 @@ export const configureBreakClock = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
     if (!(await verifyClockPin(ctx, match, undefined, referee))) {
@@ -36,7 +38,7 @@ export const autoResumeFromBreak = internalMutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
-    if (!match) return;
+    if (!match || match.refereePolicy) return;
     if (match.status !== "halftime") return;
     if (match.scheduledBreakEndAt !== args.expectedBreakEndAt) return;
     if (match.breakClockAutoStart === false) return;

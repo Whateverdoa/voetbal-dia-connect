@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { portalTables } from "./teamPortalSchema";
+import { refereePolicyValidator } from "./refereePolicySchema";
 import { mobilePilotScopes } from "./mobilePilotSchema";
 import {
   cardProfileValidator,
@@ -181,6 +182,8 @@ export default defineSchema({
     scoreDiscrepancySportlinkAway: v.optional(v.number()),
 
     // Match state
+    // Opt-in only. Revoking mobile access must never remove this policy.
+    refereePolicy: v.optional(refereePolicyValidator),
     status: v.union(
       v.literal("scheduled"),
       v.literal("lineup"),
@@ -267,6 +270,10 @@ export default defineSchema({
     matchId: v.id("matches"),
     commandType: v.string(),
     correlationId: v.string(),
+    actorSubject: v.optional(v.string()),
+    fingerprint: v.optional(v.string()),
+    commandEventId: v.optional(v.id("matchEvents")),
+    commandVersion: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_match_command_correlation", [
     "matchId",
@@ -296,6 +303,8 @@ export default defineSchema({
       v.literal("substitution_executed"),
       v.literal("substitution_cancelled"),
       v.literal("goal_enrichment"),
+      v.literal("clock_guard"),
+      v.literal("official_audit"),
       v.literal("quarter_start"),
       v.literal("quarter_end"),
       v.literal("yellow_card"),
@@ -320,6 +329,11 @@ export default defineSchema({
     correlationId: v.optional(v.string()), // Required for UI-initiated writes
     commandType: v.optional(v.string()), // Command that produced this event
     note: v.optional(v.string()),
+    actorKind: v.optional(v.union(v.literal("system"), v.literal("user"))),
+    actorSubject: v.optional(v.string()),
+    observedElapsedMs: v.optional(v.number()),
+    observedStoppageMs: v.optional(v.number()),
+    effectiveAt: v.optional(v.number()),
     timestamp: v.number(), // When event occurred
     gameSecond: v.optional(v.number()), // Nominal match second (without extra-time suffix)
     displayMinute: v.optional(v.number()), // Minute shown in UI, e.g. 10 -> "10'"

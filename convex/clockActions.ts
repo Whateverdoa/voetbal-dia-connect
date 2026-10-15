@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Legacy clock pause/resume mutations.
  *
@@ -18,6 +19,7 @@ export const pauseClock = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
@@ -67,6 +69,7 @@ export const resumeClock = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
@@ -124,6 +127,7 @@ export const clearLegacyPausedClockState = internalMutation({
 
     let updated = 0;
     for (const match of liveMatches) {
+      if (match.refereePolicy) continue;
       if (match.pausedAt == null && match.accumulatedPauseTime == null) continue;
 
       await ctx.db.patch(match._id, {

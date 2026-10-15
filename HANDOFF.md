@@ -1,5 +1,54 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Afgeschermde iPhone-integratie: tussenstand (15 oktober 2026)
+
+Dit is een **draft, niet activeerbaar als live-proef**. Webbaseline-PR #69 is
+gemerged; deze branch bevat ook de actuele main inclusief #70. Mobiele writes
+blijven expliciet uit (`writesEnabled: false`, `canControl: false`). Geen
+productiedeployment, scope-activering, matchmigratie of toestelinstallatie gedaan.
+
+Lokaal gerealiseerd:
+- `mobileReferee`: session/listMatches/getMatch/timeline, uitsluitend lezen,
+  echte geverifieerde Clerk-identiteit, bestaande rechten en exacte scopes.
+- Scopes standaard leeg, expliciet eindig en intern configureerbaar. Een
+  verouderde vervaltaak kan een verlengde scope niet intrekken.
+- Optioneel `matches.refereePolicy`: een klok op de bestaande wedstrijd, geen
+  tweede match-state/event-table. Nog geen activatiefunctie beschikbaar.
+- Hergebruik van de begrensde klok; interne generatiegebonden controle stopt op
+  het berekende grensmoment en schrijft een systeemevent zonder gebruikersactor.
+- Pure gedeelde klokcommando-regels: echte pauzes, absolute marge, expliciete
+  beoordeling van lange onderbrekingen, geen automatische volgende periode.
+  De transactionele command-API die deze regels moet aanroepen is nog niet af.
+- Oude incompatibele klok/score/kaart/undo/verrijkingsroutes en directe
+  adminwijziging/verwijdering weigeren wedstrijden met deze policy. Oude
+  auto-resume en pauze-opruiming slaan ze over. Coachwissels blijven gescheiden.
+- `refereeDuty.appointCoach`: bestaande actieve adminrechten voor aanwijzing;
+  eigen-teamcoach alleen zelf bij lege officiële taak. Versie, vaste sleutel,
+  inhoudscontrole, bevestiging en append-only audit. Een toegewezen inactieve
+  scheidsrechter geeft niet automatisch toestemming voor coachfallback.
+
+Verificatie: **861 tests in 113 bestanden groen**, TypeScript, gerichte ESLint,
+PIN-guard en diffcontrole slagen. Daarbij: negen tijd/margecombinaties, openen na
+600 minuten, verouderde taken, lange pauze met opnemen/afwijzen, absolute marge,
+gelijktijdige coachclaims, retries, ingetrokken toegang en oude write-routes.
+Dit is lokale convex-test-verificatie, geen gedeployde backend of fysieke proef.
+
+Nog verplicht voordat deze draft kan worden gemerged/geactiveerd:
+1. Volledige gedeelde officiële command-API: doelpunt, exacte append-only
+   correctie, kaart/incident, scorer/assist/teamzijde/beschikbaarheid en receipts.
+2. Webbediening en alle klok/read/player-time projections aansluiten; overige
+   import/archief/claimroutes auditen. De huidige blokkades zijn geen vervanging
+   voor bruikbare nieuwe webbediening.
+3. Alle tien nieuwe contractgates op de nieuwe opt-in routes laten slagen.
+4. Native adapter, apart live-testtarget/cache/outbox en API/capabilitybewaking;
+   volledige Swift unit/UI-regressie en geïsoleerde end-to-end test.
+5. Exacte wedstrijd-ID/account alleen-lezen bevestigen; review en afzonderlijke
+   deploymentgoedkeuring; pas daarna beperkte scope en toestelinstallatie.
+
+De eigenaar heeft een wedstrijd in `TEST sandbox team` aangeboden. Exacte code
+en ID zijn nog niet bevestigd; dit is geen club- of teambrede toestemming.
+Productielogs zijn met de huidige lokale Convex-accounttoegang niet uitleesbaar.
+
 ## Webtestbaseline voor native integratie (15 oktober 2026)
 
 Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande

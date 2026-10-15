@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Match lifecycle mutations - create, start, quarters
  */
@@ -105,6 +106,7 @@ export const start = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
     if (!(await verifyClockPin(ctx, match, undefined, referee))) {
@@ -171,6 +173,7 @@ export const nextQuarter = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
     if (!(await verifyClockPin(ctx, match, undefined, referee))) {
@@ -282,6 +285,7 @@ export const resumeFromHalftime = mutation({
   args: { matchId: v.id("matches") },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     const referee = await fetchRefereeForMatch(ctx, match);
     if (!(await verifyClockPin(ctx, match, undefined, referee))) {

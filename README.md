@@ -51,7 +51,7 @@ precedes optional player selection. Public clocks receive only elapsed time,
 running anchor and limit; private actor/audit metadata is not exposed. Legacy
 non-pilot clock behavior remains unchanged.
 
-Local verification on 2026-10-15: 906 tests pass in 118 files, app and Convex
+Local verification on 2026-10-15: 908 tests pass in 118 files, app and Convex
 TypeScript pass, PIN dependency guard passes. New-component lint passes; wider
 changed-file lint retains two existing LiveMatch render-ref warnings. This is
 local fixture/simulator evidence, not a deployment or field-test acceptance.

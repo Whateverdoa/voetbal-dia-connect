@@ -164,3 +164,15 @@ it("a cancelled marker at epoch zero still blocks registration", async () => {
  const f = await fixture(); await f.t.run(ctx => ctx.db.patch(f.matchId, { cancelledAt: 0 }));
  await expect(f.act({ kind: "start" })).rejects.toThrow("OFFICIAL_REGISTRATOR_REQUIRED");
 });
+it.each([true, false])("opponent own goal works home=%s without borrowing DIA players or assists", async isHome => {
+ const f = await fixture(); await f.t.run(ctx => ctx.db.patch(f.matchId, { isHome })); await f.act({ kind: "start" });
+ const team = isHome ? "home" as const : "away" as const;
+ await expect(f.act({ kind: "goal", team, isOwnGoal: true, scorerId: f.playerId })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+ await expect(f.act({ kind: "goal", team, isOwnGoal: true, assistId: f.assistId })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+ const goal = await f.act({ kind: "goal", team, isOwnGoal: true });
+ expect(await f.row()).toMatchObject(isHome ? { homeScore: 1, awayScore: 0 } : { homeScore: 0, awayScore: 1 });
+ await expect(f.act({ kind: "enrich_goal", eventId: goal.commandEventId, scorerId: f.playerId })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+ await f.act({ kind: "correct_goal", eventId: goal.commandEventId });
+ expect(await f.row()).toMatchObject({ homeScore: 0, awayScore: 0 });
+ expect((await f.events()).filter(e => e.type === "goal")).toHaveLength(1);
+});

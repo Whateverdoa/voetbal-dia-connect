@@ -27,9 +27,8 @@ function ownSide(match: Doc<"matches">, team: "home" | "away") {
 }
 async function goalPlayers(ctx: MutationCtx, match: Doc<"matches">, opponent: boolean, ownGoal: boolean,
   scorerId?: Id<"players">, assistId?: Id<"players">) {
-  if (ownGoal && !opponent) throw new ConvexError("OWN_GOAL_SIDE_MISMATCH");
   if (scorerId) {
-    if (opponent && !ownGoal) throw new ConvexError("PLAYER_TEAM_SIDE_MISMATCH");
+    if (opponent !== ownGoal) throw new ConvexError("PLAYER_TEAM_SIDE_MISMATCH");
     await selectedPlayer(ctx, match, scorerId);
   }
   if (assistId) {

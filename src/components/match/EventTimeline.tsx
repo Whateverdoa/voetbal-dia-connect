@@ -66,11 +66,14 @@ function getEventText(
 ): string {
   switch (event.type) {
     case "goal":
+      if (event.corrected) return "Doelpunt teruggedraaid";
       return describeGoalEvent(
         event,
         teamName || "Ons team",
         opponentName || "Tegenstander",
       );
+    case "goal_correction":
+      return "Doelpuntcorrectie";
     case "assist":
       return (
         formatAssistLine(event.playerName, event.assistKind) ??

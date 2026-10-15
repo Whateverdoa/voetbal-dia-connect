@@ -20,7 +20,7 @@ export const refereeActionValidator = v.union(
   v.object({ kind: v.literal("annotate_event"), eventId: v.id("matchEvents"), note: v.optional(v.string()), reportedName: v.optional(v.string()), reportedNumber: v.optional(v.number()) }),
 );
 export const refereeCommandArgs = {
-  matchId: v.id("matches"), expectedVersion: v.number(), correlationId: v.string(), action: refereeActionValidator,
+  matchId: v.id("matches"), expectedVersion: v.number(), correlationId: v.string(), actorSubject: v.optional(v.string()), action: refereeActionValidator,
 };
 export const refereeCommandResult = v.object({
   commandEventId: v.id("matchEvents"), commandCorrelationId: v.string(), version: v.number(),

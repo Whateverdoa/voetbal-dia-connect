@@ -166,6 +166,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         pausedAt={match.pausedAt}
         accumulatedPauseTime={match.accumulatedPauseTime}
         frozenClockMs={match.frozenClockMs}
+        refereeClock={match.refereeClock}
         publicCode={match.publicCode}
         scheduledAt={match.scheduledAt}
         venueField={match.venueField}
@@ -178,6 +179,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           isPc && activeTab === "wisselplan" ? "max-w-7xl" : "max-w-2xl"
         } mx-auto p-4 space-y-4`}
       >
+        {match.officialPolicyVersion === 1 && <Link href={`/scheidsrechter/match/${match._id}`} className="block rounded-xl bg-dia-green p-4 text-center font-semibold text-white">Open officiële wedstrijdregistratie</Link>}
         {match.refereeId ? (
           <OfficialDutyNotice refereeName={match.refereeName} />
         ) : null}
@@ -227,7 +229,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           currentRefereeName={match.refereeName}
         />
 
-        {isPregame && <MatchSettingsEdit match={match} />}
+        {isPregame && match.officialPolicyVersion !== 1 && <MatchSettingsEdit match={match} />}
 
         <MatchLeadBadge
           matchId={match._id}
@@ -317,13 +319,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            <GoalEnrichmentPanel
+            {match.officialPolicyVersion !== 1 && <GoalEnrichmentPanel
               matchId={match._id}
               events={match.events}
               players={match.players}
               teamName={match.teamName}
               opponentName={match.opponent}
-            />
+            />}
           </>
         )}
 
@@ -352,13 +354,13 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               teamName={match.teamName}
               opponentName={match.opponent}
             />
-            <GoalEnrichmentPanel
+            {match.officialPolicyVersion !== 1 && <GoalEnrichmentPanel
               matchId={match._id}
               events={match.events}
               players={match.players}
               teamName={match.teamName}
               opponentName={match.opponent}
-            />
+            />}
           </>
         )}
 

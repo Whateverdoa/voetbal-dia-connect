@@ -111,6 +111,19 @@ export function isCoachOnlyEvent(event: Doc<"matchEvents">): boolean {
     event.type === "substitution_staged" ||
     event.type === "substitution_executed" ||
     event.type === "substitution_cancelled" ||
-    event.type === "goal_enrichment"
+    event.type === "goal_enrichment" ||
+    event.type === "clock_guard" || event.type === "official_audit" ||
+    event.type === "official_annotation" || event.type === "incident"
   );
+}
+
+/** Pilot-only public projection. Do not expose authentication actor metadata. */
+export function projectPublicMatchEvents(events: EventWithNames[]) {
+  const corrected = new Set(events.filter(e => e.type === "goal_correction").map(e => e.targetEventId));
+  return applyGoalEnrichments(events).filter(e => !isCoachOnlyEvent(e)).map(event => {
+    const result = { ...event, corrected: event.type === "goal" && corrected.has(event._id) };
+    delete result.actorSubject;
+    delete result.actorKind;
+    return result;
+  });
 }

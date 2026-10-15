@@ -57,3 +57,15 @@ describe("matchClock engine", () => {
     ).toBeNull();
   });
 });
+
+describe("opt-in bounded public clock", () => {
+ it.each([0, 10, 30])("caps after 600 minutes with margin %i, leaving the legacy path unchanged", margin => {
+  const snapshot = { currentQuarter: 1, quarterCount: 2, status: "live" as const, quarterStartedAt: 1000 };
+  const limitElapsedMs = (30 + margin) * 60000;
+  expect(computeElapsedMs({ ...snapshot, refereeClock: { elapsedMs: 0, runningSince: 1000, limitElapsedMs } }, 1000 + 600 * 60000)).toBe(limitElapsedMs);
+  expect(computeElapsedMs(snapshot, 1000 + 600 * 60000)).toBe(600 * 60000);
+ });
+ it("does not count a real pause twice or advance a safety pause", () => {
+  expect(computeElapsedMs({ currentQuarter: 1, quarterCount: 2, status: "live", refereeClock: { elapsedMs: 120000, runningSince: null, limitElapsedMs: 2400000 } }, 600 * 60000)).toBe(120000);
+ });
+});

@@ -26,6 +26,12 @@ export function getQuarterBaseMs(snapshot: Pick<
 }
 
 export function computeElapsedMs(snapshot: MatchClockSnapshot, now: number): number | null {
+  // Only the opt-in public clock takes this path. The legacy calculation is unchanged.
+  if (snapshot.refereeClock) {
+    const clock = snapshot.refereeClock;
+    const elapsed = clock.elapsedMs + (clock.runningSince === null ? 0 : Math.max(0, now - clock.runningSince));
+    return Math.max(0, Math.min(clock.limitElapsedMs ?? clock.elapsedMs, elapsed));
+  }
   if (snapshot.status === "halftime" || snapshot.status === "finished") {
     return snapshot.frozenClockMs ?? null;
   }

@@ -1,5 +1,6 @@
 // Shared types for live match components
 import type { AssistKind } from "@/lib/assistKind";
+import type { PublicRefereeClock } from "@/lib/matchClock/types";
 
 export interface MatchData {
   id: string;
@@ -21,6 +22,7 @@ export interface MatchData {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   frozenClockMs?: number;
+  refereeClock?: PublicRefereeClock;
   activeStoppageStartedAt?: number;
   stoppageAdvisoryMs?: number;
   useBreakClock?: boolean;
@@ -52,6 +54,7 @@ export interface MatchEvent {
   quarter: number;
   matchMs?: number;
   isOwnGoal?: boolean;
+  corrected?: boolean;
   isOpponentGoal?: boolean;
   note?: string;
   timestamp: number;

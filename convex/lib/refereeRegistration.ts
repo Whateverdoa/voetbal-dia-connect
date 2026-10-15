@@ -51,9 +51,10 @@ function validateAnnotation(action: RefereeAction) {
 /** Shared transaction core, not a public endpoint. Mobile scope is an additional
  * wrapper requirement, never a replacement for current official-duty rights. */
 export async function executeRefereeRegistration(ctx: MutationCtx, args: {
-  matchId: Id<"matches">; expectedVersion: number; correlationId: string; action: RefereeAction;
+  matchId: Id<"matches">; expectedVersion: number; correlationId: string; actorSubject?: string; action: RefereeAction;
 }) {
   const actor = await pilotIdentity(ctx);
+  if (args.actorSubject !== undefined && args.actorSubject !== actor.subject) throw new ConvexError("SESSION_CHANGED");
   let match = await ctx.db.get(args.matchId);
   if (!match?.refereePolicy) throw new ConvexError("PILOT_POLICY_REQUIRED");
   const duty = await officialDutyEligibility(ctx, match, actor.access);

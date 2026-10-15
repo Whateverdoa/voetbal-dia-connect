@@ -111,6 +111,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                     pausedAt={match.pausedAt}
                     accumulatedPauseTime={match.accumulatedPauseTime}
                     frozenClockMs={match.frozenClockMs}
+                    refereeClock={match.refereeClock}
                     status={match.status}
                   />
                 </span>
@@ -124,6 +125,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                     regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
                     quarterStartedAt={match.quarterStartedAt}
                     frozenClockMs={match.frozenClockMs}
+                    refereeClock={match.refereeClock}
                     status={match.status}
                   />
                 </span>
@@ -137,6 +139,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                     regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
                     quarterStartedAt={match.quarterStartedAt}
                     frozenClockMs={match.frozenClockMs}
+                    refereeClock={match.refereeClock}
                     status={match.status}
                   />
                 </span>

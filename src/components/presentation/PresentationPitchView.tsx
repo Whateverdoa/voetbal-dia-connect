@@ -116,6 +116,8 @@ export function PresentationPitchView({
         return (
           <FieldPlayerCard
             key={slot.id}
+            playerId={player?.playerId}
+            interactive={canEdit && !!player && !!onPlayerClick}
             name={player?.displayName ?? ""}
             number={player?.number}
             position={slot.position}

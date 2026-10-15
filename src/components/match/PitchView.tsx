@@ -212,6 +212,8 @@ export function PitchView({
             return (
               <FieldPlayerCard
                 key={slot.id}
+                playerId={player?.playerId}
+                interactive={canEdit && !!player}
                 name={player?.name ?? ""}
                 number={player?.number}
                 position={slot.position}
@@ -242,6 +244,7 @@ export function PitchView({
       </div>
 
       <PitchBench
+        canEdit={canEdit}
         onBench={onBench}
         onFieldUnassigned={onFieldUnassigned}
         selectedPlayerId={selectedPlayerId}

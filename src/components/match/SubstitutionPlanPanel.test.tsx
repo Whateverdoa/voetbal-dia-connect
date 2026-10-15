@@ -180,17 +180,17 @@ describe("SubstitutionPlanPanel", () => {
     expect(inSelect).toBeTruthy();
     const outOptions = within(outSelect!)
       .getAllByRole("option")
-      .map((option) => option.textContent);
+      .map((option) => (option as HTMLOptionElement).value);
     const inOptions = within(inSelect!)
       .getAllByRole("option")
-      .map((option) => option.textContent);
+      .map((option) => (option as HTMLOptionElement).value);
 
-    expect(outOptions).toContain("Henk");
-    expect(outOptions).toContain("Piet");
-    expect(outOptions).not.toContain("Jan");
-    expect(inOptions).toContain("Jan");
-    expect(inOptions).toContain("Bas");
-    expect(inOptions).not.toContain("Henk");
+    expect(outOptions).toContain("c");
+    expect(outOptions).toContain("b");
+    expect(outOptions).not.toContain("a");
+    expect(inOptions).toContain("a");
+    expect(inOptions).toContain("d");
+    expect(inOptions).not.toContain("c");
   });
 
   it("shows the minutes toggle and season minutes on plan-field cards", () => {
@@ -217,10 +217,10 @@ describe("SubstitutionPlanPanel", () => {
 
     fireEvent.click(screen.getByText("Planweergave"));
 
-    expect(screen.getByText("K1")).toBeInTheDocument();
-    expect(screen.getByText("K2")).toBeInTheDocument();
-    expect(screen.getByText("K3")).toBeInTheDocument();
-    expect(screen.getByText("K4")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "K1" })).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "K2" })).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "K3" })).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "K4" })).toBeInTheDocument();
   });
 
   it("renders half tabs for two-period matches in field mode", () => {
@@ -228,17 +228,17 @@ describe("SubstitutionPlanPanel", () => {
 
     fireEvent.click(screen.getByText("Planweergave"));
 
-    expect(screen.getByText("H1")).toBeInTheDocument();
-    expect(screen.getByText("H2")).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "H1" })).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "H2" })).toBeInTheDocument();
   });
 
   it("appends a field-created plan row for the selected quarter without a minute", async () => {
     renderPanel();
 
     fireEvent.click(screen.getByText("Planweergave"));
-    fireEvent.click(screen.getByText("K2"));
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("JAN"));
+    fireEvent.click(within(screen.getByRole("group", { name: "Planperiode" })).getByRole("button", { name: "K2" }));
+    fireEvent.click(screen.getByTestId("field-player-b"));
+    fireEvent.click(screen.getByTestId("bench-player-a"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({
@@ -255,8 +255,8 @@ describe("SubstitutionPlanPanel", () => {
     renderPanel();
 
     fireEvent.click(screen.getByText("Planweergave"));
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("Keeper 1"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
+    fireEvent.click(screen.getByTestId("field-player-gk"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({
@@ -277,8 +277,8 @@ describe("SubstitutionPlanPanel", () => {
     fireEvent.change(screen.getByLabelText("Min"), {
       target: { value: "14" },
     });
-    fireEvent.click(screen.getByText("Piet 7"));
-    fireEvent.click(screen.getByText("JAN"));
+    fireEvent.click(screen.getByTestId("field-player-b"));
+    fireEvent.click(screen.getByTestId("bench-player-a"));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({
@@ -304,13 +304,14 @@ describe("SubstitutionPlanPanel", () => {
     );
     fireEvent.change(outSelect!, { target: { value: "b" } });
     fireEvent.change(inSelect!, { target: { value: "d" } });
-    fireEvent.click(screen.getByRole("button", { name: "Toevoegen aan plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wissel toevoegen" }));
 
     await waitFor(() => {
       expect(mockAddPlanItem).toHaveBeenCalledWith({
         matchId,
         playerOutId: "b",
         playerInId: "d",
+        kind: "substitution",
         insertAtQuarterBoundary: false,
       });
     });

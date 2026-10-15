@@ -33,9 +33,9 @@ const players: PresentationPlayer[] = [
 ];
 
 /** The positioned wrapper that carries the slot's left/top percentages. */
-function cardAt(label: string): HTMLElement {
-  const box = screen.getByText(label).closest<HTMLElement>("div.absolute");
-  if (!box) throw new Error(`no positioned card found for "${label}"`);
+function cardAt(playerId: string): HTMLElement {
+  const box = screen.getByTestId(`field-player-${playerId}`);
+  if (!box) throw new Error(`no positioned card found for "${playerId}"`);
   return box;
 }
 
@@ -56,8 +56,8 @@ describe("PresentationPitchView", () => {
     );
 
     expect(pitchBox(container).style.aspectRatio).toBe("425 / 640");
-    expect(cardAt("Keeper 1").style.top).toBe("90%");
-    expect(cardAt("Spits 9").style.top).toBe("20%");
+    expect(cardAt("p0").style.top).toBe("90%");
+    expect(cardAt("p7").style.top).toBe("20%");
   });
 
   it("turns the pitch a quarter turn in landscape", () => {
@@ -72,9 +72,9 @@ describe("PresentationPitchView", () => {
 
     expect(pitchBox(container).style.aspectRatio).toBe("640 / 425");
     // Own goal left, attack right: the keeper trades his `y` for an `x`.
-    expect(cardAt("Keeper 1").style.left).toBe("10%");
-    expect(cardAt("Spits 9").style.left).toBe("80%");
-    expect(cardAt("Keeper 1").style.top).toBe("50%");
+    expect(cardAt("p0").style.left).toBe("10%");
+    expect(cardAt("p7").style.left).toBe("80%");
+    expect(cardAt("p0").style.top).toBe("50%");
   });
 
   it("rotates the field markings with the players", () => {
@@ -105,6 +105,6 @@ describe("PresentationPitchView", () => {
     );
 
     expect(screen.getByTestId("half-pitch-plane")).toBeTruthy();
-    expect(screen.getByText("Keeper 1")).toBeTruthy();
+    expect(screen.getByTestId("field-player-p0")).toBeTruthy();
   });
 });

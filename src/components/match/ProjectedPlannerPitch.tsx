@@ -82,6 +82,8 @@ export function ProjectedPlannerPitch({
     return (
       <FieldPlayerCard
         key={slot.id}
+        playerId={player?.playerId}
+        interactive={canEdit && !!player}
         name={player?.name ?? ""}
         number={player?.number}
         position={slot.position}

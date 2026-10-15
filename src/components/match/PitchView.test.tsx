@@ -105,12 +105,25 @@ describe("PitchView", () => {
     setupMocks();
   });
 
+  it("executes the same bench-to-field substitution with keyboard controls", () => {
+    renderPitchView();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Henk, nummer 11" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Jan, nummer 10" }), { key: " " });
+    expect(mockSubstituteFromField).toHaveBeenCalledTimes(1);
+    expect(mockSubstituteFromField).toHaveBeenCalledWith({
+      matchId, playerOutId: "p1", playerInId: "p3",
+      correlationId: expect.stringMatching(/^sub-field-/),
+    });
+    expect(mockAssign).not.toHaveBeenCalled();
+    expect(mockToggle).not.toHaveBeenCalled();
+  });
+
   describe("bench ↔ field substitution (live)", () => {
     it("calls substituteFromField when bench player selected then field player clicked", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("HENK 11"));
-      fireEvent.click(screen.getByText("Jan 10"));
+      fireEvent.click(screen.getByTestId("bench-player-p3"));
+      fireEvent.click(screen.getByTestId("field-player-p1"));
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
@@ -125,8 +138,8 @@ describe("PitchView", () => {
     it("calls substituteFromField when field player selected then bench player clicked", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("Jan 10"));
-      fireEvent.click(screen.getByText("HENK 11"));
+      fireEvent.click(screen.getByTestId("field-player-p1"));
+      fireEvent.click(screen.getByTestId("bench-player-p3"));
 
       expect(mockSubstituteFromField).toHaveBeenCalledWith({
         matchId,
@@ -143,8 +156,8 @@ describe("PitchView", () => {
     it("calls swapFieldPositions when two field players selected", () => {
       renderPitchView("live");
 
-      fireEvent.click(screen.getByText("Jan 10"));
-      fireEvent.click(screen.getByText("Piet 7"));
+      fireEvent.click(screen.getByTestId("field-player-p1"));
+      fireEvent.click(screen.getByTestId("field-player-p2"));
 
       expect(mockSwap).toHaveBeenCalledWith({
         matchId,
@@ -159,8 +172,8 @@ describe("PitchView", () => {
     it("calls assignPlayerToSlot and togglePlayerOnField when bench→field in pre-game", () => {
       renderPitchView("scheduled");
 
-      fireEvent.click(screen.getByText("HENK 11"));
-      fireEvent.click(screen.getByText("Jan 10"));
+      fireEvent.click(screen.getByTestId("bench-player-p3"));
+      fireEvent.click(screen.getByTestId("field-player-p1"));
 
       expect(mockAssign).toHaveBeenCalledWith({
         matchId,

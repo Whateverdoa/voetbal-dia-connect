@@ -57,11 +57,11 @@ describe("HalfPitchPerspective", () => {
     const plane = screen.getByTestId("half-pitch-plane");
     expect(plane.style.transform).toContain(`rotateX(${TILT_DEG}deg)`);
 
-    expect(screen.getByText("Keeper 1")).toBeTruthy();
-    expect(screen.getByText("Spits 9")).toBeTruthy();
+    expect(screen.getByTestId("field-player-gk")).toBeTruthy();
+    expect(screen.getByTestId("field-player-st")).toBeTruthy();
 
     const card = screen
-      .getByText("Keeper 1")
+      .getByTestId("field-player-gk")
       .closest<HTMLElement>("div.absolute");
     expect(card?.style.transform).toContain(`rotateX(${-TILT_DEG}deg)`);
     expect(card?.style.transform).toContain("translateZ(");

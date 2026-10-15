@@ -9,6 +9,8 @@ import type { DisciplineBadge } from "@/lib/cards/cardRules";
 import { DisciplineCardMark } from "./DisciplineCardMark";
 
 interface FieldPlayerCardProps {
+  playerId?: string;
+  interactive?: boolean;
   name: string;
   number: number | null | undefined;
   position: string;
@@ -39,6 +41,8 @@ function PlayerIcon({ size = 20, color = "#fff" }: { size?: number; color?: stri
 }
 
 export function FieldPlayerCard({
+  playerId,
+  interactive = false,
   name,
   number,
   position,
@@ -100,6 +104,17 @@ export function FieldPlayerCard({
 
   return (
     <div
+      data-testid={playerId ? `field-player-${playerId}` : undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${fieldLabel}, nummer ${displayNumber}` : undefined}
+      aria-pressed={interactive ? isSelected : undefined}
+      onKeyDown={interactive ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
       onClick={onClick}
       className="absolute flex flex-col items-center cursor-pointer"
       style={{

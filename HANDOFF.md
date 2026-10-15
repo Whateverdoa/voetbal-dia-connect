@@ -1,5 +1,24 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Webtestbaseline voor native integratie (15 oktober 2026)
+
+Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande
+testfouten zijn hersteld zonder assertions te verwijderen: veld/bank-kaarten
+hebben stabiele speleridentificatie, periodeknoppen worden binnen Planperiode
+gezocht en de lijsttest controleert de opgeslagen speler-ID's en volledige
+mutation-payload. Naam en rugnummer blijven afzonderlijk zichtbaar.
+
+Interactieve veld- en bankkaarten ondersteunen Enter/Spatie en geven hun selectie
+aan assistieve technologie door. Presentatiekaarten zijn geen toetsenbordknoppen.
+Vier aanvullende regressietests bewaken identiteit, zichtbare labels en bediening.
+Vormgeving, planning en bestaande mutation-routes zijn niet gewijzigd.
+
+Verificatie: 823 tests in 109 bestanden groen (819 bestaand + 4 nieuw), TypeScript,
+gerichte ESLint, PIN-guard en `git diff --check` slagen. Geen backend/schema,
+productiegegevens, deploymentinstellingen, Android of native app gewijzigd.
+De afzonderlijke afgeschermde backend en mobiele adapter zijn nog vervolgwerk;
+deze testbaseline is geen goedkeuring om de iPhone naar productie om te zetten.
+
 ## Product
 DIA Live is een realtime jeugdvoetbal-app voor DIA.
 

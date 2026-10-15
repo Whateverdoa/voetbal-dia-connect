@@ -289,6 +289,7 @@ export function PresentSubstitutionPlanView({
         {editable && selected ? (
           <div className="shrink-0 max-h-[28vh] overflow-y-auto">
             <PitchBench
+              canEdit={editable}
               onBench={selected.bench}
               onFieldUnassigned={onFieldUnassigned}
               selectedPlayerId={effectiveOutId}

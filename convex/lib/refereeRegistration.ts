@@ -107,9 +107,13 @@ export async function executeRefereeRegistration(ctx: MutationCtx, args: {
     }
     case "enrich_goal": {
       const goal = await targetGoal(ctx, match, action.eventId);
-      if (action.scorerId === undefined && action.assistId === undefined) throw new ConvexError("VALIDATION_ERROR");
+      if (action.scorerId === undefined && action.assistId === undefined && action.scorerNumber === undefined) throw new ConvexError("VALIDATION_ERROR");
+      if (action.scorerNumber !== undefined) {
+        if (!Number.isInteger(action.scorerNumber) || action.scorerNumber < 0 || action.scorerNumber > 999) throw new ConvexError("VALIDATION_ERROR");
+        if (!goal.isOpponentGoal || goal.isOwnGoal || action.scorerId !== undefined || action.assistId !== undefined) throw new ConvexError("PLAYER_TEAM_SIDE_MISMATCH");
+      }
       await goalPlayers(ctx, match, goal.isOpponentGoal === true, goal.isOwnGoal === true, action.scorerId, action.assistId);
-      event = { ...base, type: "goal_enrichment", quarter: goal.quarter, targetEventId: goal._id, playerId: action.scorerId, relatedPlayerId: action.assistId };
+      event = { ...base, type: "goal_enrichment", quarter: goal.quarter, targetEventId: goal._id, playerId: action.scorerId, relatedPlayerId: action.assistId, reportedNumber: action.scorerNumber };
       break;
     }
     case "yellow_card": case "red_card": {

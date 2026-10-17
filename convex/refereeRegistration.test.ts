@@ -176,3 +176,30 @@ it.each([true, false])("opponent own goal works home=%s without borrowing DIA pl
  expect(await f.row()).toMatchObject({ homeScore: 0, awayScore: 0 });
  expect((await f.events()).filter(e => e.type === "goal")).toHaveLength(1);
 });
+it.each([true, false])("reports opponent jersey without a player ID home=%s and keeps original goal/score", async isHome => {
+ const f = await fixture(); await f.t.run(ctx => ctx.db.patch(f.matchId, { isHome })); await f.act({ kind: "start" });
+ const goal = await f.act({ kind: "goal", team: isHome ? "away" : "home" });
+ const before = (await f.row())!;
+ const command = await f.command({ kind: "enrich_goal", eventId: goal.commandEventId, scorerNumber: 12 });
+ const receipt = await f.ref.run(ctx => execute(ctx, command));
+ expect(await f.ref.run(ctx => execute(ctx, command))).toEqual(receipt);
+ await f.act({ kind: "enrich_goal", eventId: goal.commandEventId, scorerNumber: 23 });
+ const after = (await f.row())!;
+ expect([after.homeScore, after.awayScore, after.refereePolicy!.elapsedMs]).toEqual([before.homeScore, before.awayScore, before.refereePolicy!.elapsedMs]);
+ const events = await f.events(); const original = events.find(e => e._id === goal.commandEventId)!;
+ expect(original.reportedNumber).toBeUndefined(); expect(original.playerId).toBeUndefined();
+ expect(events.filter(e => e.type === "goal_enrichment")).toHaveLength(2);
+ expect(applyGoalEnrichments(events).find(e => e._id === goal.commandEventId)).toMatchObject({ reportedNumber: 23, playerName: "Nr. 23" });
+});
+it("rejects invalid/opposite jersey metadata and mixed player identity without changing scores", async () => {
+ const f = await fixture(); await f.act({ kind: "start" });
+ const own = await f.act({ kind: "goal", team: "home" }); const opponent = await f.act({ kind: "goal", team: "away" });
+ const ownGoal = await f.act({ kind: "goal", team: "away", isOwnGoal: true });
+ for (const eventId of [own.commandEventId, ownGoal.commandEventId]) {
+  await expect(f.act({ kind: "enrich_goal", eventId, scorerNumber: 12 })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+ }
+ for (const scorerNumber of [-1, 1000, 1.5]) await expect(f.act({ kind: "enrich_goal", eventId: opponent.commandEventId, scorerNumber })).rejects.toThrow("VALIDATION_ERROR");
+ await expect(f.act({ kind: "enrich_goal", eventId: opponent.commandEventId, scorerNumber: 12, scorerId: f.playerId })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+ expect((await f.events()).filter(e => e.type === "goal_enrichment")).toHaveLength(0);
+ expect(await f.row()).toMatchObject({ homeScore: 1, awayScore: 2 });
+});

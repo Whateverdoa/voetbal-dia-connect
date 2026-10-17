@@ -13,7 +13,7 @@ export const refereeActionValidator = v.union(
   v.object({ kind: v.literal("set_safety_margin"), safetyMarginMinutes: v.number() }),
   v.object({ kind: v.literal("goal"), team, scorerId: v.optional(v.id("players")), assistId: v.optional(v.id("players")), isOwnGoal: v.optional(v.boolean()) }),
   v.object({ kind: v.literal("correct_goal"), eventId: v.id("matchEvents") }),
-  v.object({ kind: v.literal("enrich_goal"), eventId: v.id("matchEvents"), scorerId: v.optional(v.id("players")), assistId: v.optional(v.id("players")) }),
+  v.object({ kind: v.literal("enrich_goal"), scorerNumber: v.optional(v.number()), eventId: v.id("matchEvents"), scorerId: v.optional(v.id("players")), assistId: v.optional(v.id("players")) }),
   v.object({ kind: v.literal("yellow_card"), team, playerId: v.optional(v.id("players")), reportedName: v.optional(v.string()), reportedNumber: v.optional(v.number()) }),
   v.object({ kind: v.literal("red_card"), team, playerId: v.optional(v.id("players")), reportedName: v.optional(v.string()), reportedNumber: v.optional(v.number()) }),
   v.object({ kind: v.literal("incident"), note: v.optional(v.string()) }),

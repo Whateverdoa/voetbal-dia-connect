@@ -36,7 +36,7 @@ const clockView = v.union(v.null(), v.object({ elapsedMs: v.number(), runningSin
   stoppageStartedAt: v.optional(v.number()), clockReviewReason: v.optional(v.string()),
   clockLimitElapsedMs: v.optional(v.number()), clockLimitAt: v.optional(v.number()), regularTimeReached: v.boolean() }));
 
-export const refereeDetailValidator = v.object({ ...compatibility, ...matchFields, clock: clockView, players: v.array(v.object({ playerId: v.id("players"), name: v.string(), number: v.optional(v.number()) })) });
+export const refereeDetailValidator = v.object({ ...compatibility, ...matchFields, opponentScorerNumberEnabled: v.optional(v.boolean()), clock: clockView, players: v.array(v.object({ playerId: v.id("players"), name: v.string(), number: v.optional(v.number()) })) });
 export type RefereeDetail = Infer<typeof refereeDetailValidator>;
 export async function readRefereeDetail(ctx: QueryCtx, rights: RefereeReadRights, writesEnabled: boolean, expiresAt: number): Promise<RefereeDetail> {
     const rows = await ctx.db.query("matchPlayers").withIndex("by_match", q => q.eq("matchId", rights.match._id)).take(101);
@@ -56,7 +56,7 @@ export async function readRefereeDetail(ctx: QueryCtx, rights: RefereeReadRights
       clockReviewReason: protectedClock.clockReviewReason, clockLimitElapsedMs: protectedClock.clockLimitElapsedMs,
       clockLimitAt: protectedClock.clockLimitAt, regularTimeReached: protectedClock.periodStartedElapsedMs !== undefined &&
         playingElapsedMs(protectedClock, Date.now()) - protectedClock.periodStartedElapsedMs >= protectedClock.periodMinutes * 60_000 } : null;
-    return { apiVersion: 1 as const, clockPolicyVersion: rights.match.refereePolicy ? 1 as const : 0 as const, writesEnabled, ...matchSummary(rights, writesEnabled, expiresAt), players, clock };
+    return { apiVersion: 1 as const, clockPolicyVersion: rights.match.refereePolicy ? 1 as const : 0 as const, writesEnabled, ...matchSummary(rights, writesEnabled, expiresAt), players, clock, opponentScorerNumberEnabled: true };
 }
 export const timelineEvent = v.object({ id: v.id("matchEvents"), type: v.string(), quarter: v.number(),
   matchMs: v.optional(v.number()), timestamp: v.number(), playerName: v.optional(v.string()),
@@ -87,7 +87,7 @@ export async function readRefereeTimeline(ctx: QueryCtx, rights: RefereeReadRigh
         .reduce((prior, patch) => ({ ...prior, reportedName: patch.reportedName ?? prior.reportedName,
           reportedNumber: patch.reportedNumber ?? prior.reportedNumber, note: patch.note ?? prior.note }), event);
       page.push({ id: event._id, type: event.type, quarter: event.quarter, matchMs: enriched.matchMs,
-        timestamp: event.timestamp, playerName: recordedPlayerName(displayed, player?.teamId === rights.team._id ? player.name : undefined),
+        timestamp: event.timestamp, playerName: recordedPlayerName(event.type === "goal" ? enriched : displayed, player?.teamId === rights.team._id ? player.name : undefined),
         assistName: assist?.teamId === rights.team._id ? assist.name : undefined, note: displayed.note,
         targetEventId: event.targetEventId, corrected: !!correction, isOpponentCard: event.isOpponentCard,
         isOpponentGoal: event.isOpponentGoal, isOwnGoal: event.isOwnGoal });

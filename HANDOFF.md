@@ -463,3 +463,17 @@ Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
 
 **Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.
 
+
+## Optional opponent scorer number (local only, 17 October)
+
+The draft enrich_goal contract now accepts scorerNumber (integer 0-999) only
+for an opponent-beneficiary normal goal, without scorerId/assistId. It appends
+reportedNumber metadata on the exact goal; corrections, score and clock remain
+unchanged. Projection retains latest supplied number per field and exposes
+"Nr. N" without inventing a player ID. getMatch advertises the optional
+opponentScorerNumberEnabled capability; older native APIs default it off.
+All 911 tests pass, plus root/Convex TypeScript, changed-file ESLint and PIN guard.
+The iOS branch prepares a separate default-closed Live Test target, not a backend
+activation. Neither this addition nor the original pilot has been deployed or
+allowlisted. All earlier review, writer/playing-time and real isolated E2E gates
+remain open. Never enable mobile access merely because the app is installed.

@@ -64,7 +64,8 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
       ...goal,
       playerId: enrichment.playerId ?? goal.playerId,
       relatedPlayerId: enrichment.relatedPlayerId ?? goal.relatedPlayerId,
-      playerName: enrichment.playerName ?? goal.playerName,
+      reportedNumber: enrichment.reportedNumber ?? goal.reportedNumber,
+      playerName: enrichment.reportedNumber !== undefined ? `Nr. ${enrichment.reportedNumber}` : enrichment.playerName ?? goal.playerName,
       relatedPlayerName: enrichment.relatedPlayerName ?? goal.relatedPlayerName,
       assistKind: enrichment.assistKind ?? goal.assistKind,
     }), event);

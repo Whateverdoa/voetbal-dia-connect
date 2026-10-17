@@ -7,7 +7,7 @@ interface GoalsSectionProps {
 }
 
 export function GoalsSection({ events, teamName }: GoalsSectionProps) {
-  const goals = events.filter((e) => e.type === "goal" && !e.isOpponentGoal);
+  const goals = events.filter((e) => e.type === "goal" && !e.isOpponentGoal && !e.corrected);
   if (goals.length === 0) return null;
 
   return (

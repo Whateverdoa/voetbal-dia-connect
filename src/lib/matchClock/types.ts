@@ -1,4 +1,5 @@
 export type MatchClockStatus = "scheduled" | "lineup" | "live" | "halftime" | "finished";
+export type PublicRefereeClock = { elapsedMs: number; runningSince: number | null; limitElapsedMs?: number };
 
 export type MatchClockSnapshot = {
   currentQuarter: number;
@@ -7,4 +8,5 @@ export type MatchClockSnapshot = {
   quarterStartedAt?: number;
   frozenClockMs?: number;
   status: MatchClockStatus;
+  refereeClock?: PublicRefereeClock;
 };

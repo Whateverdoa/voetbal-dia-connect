@@ -11,6 +11,7 @@ import { listSeasonMatchesForAdminView } from "./lib/adminLiveView";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
 import { isUnavailable } from "./lib/matchPlayerAvailability";
 import { listOfficialMatchEvents } from "./lib/officialEvents";
+import { officialDutyEligibility } from "./lib/mobilePilotAccess";
 
 const REFEREE_STATUS_ORDER: Record<string, number> = {
   live: 0,
@@ -34,7 +35,10 @@ export const getForReferee = query({
         : null;
 
       let refereeName = assigned?.name ?? ADMIN_DISPLAY_NAME;
-      if (!viewingAsAdmin) {
+      if (match.refereePolicy) {
+        if (!access || !(await officialDutyEligibility(ctx, match, access)).canRead) return null;
+        refereeName = assigned?.name ?? "Coach (wedstrijdleider)";
+      } else if (!viewingAsAdmin) {
         const referee = await requireRefereeForMatch(ctx, match);
         refereeName = referee.name;
       }
@@ -96,6 +100,7 @@ export const getForReferee = query({
         diaPlayers,
         events,
         viewingAsAdmin,
+        officialPolicyVersion: match.refereePolicy?.version ?? null,
       };
     } catch {
       return null;

@@ -477,3 +477,22 @@ The iOS branch prepares a separate default-closed Live Test target, not a backen
 activation. Neither this addition nor the original pilot has been deployed or
 allowlisted. All earlier review, writer/playing-time and real isolated E2E gates
 remain open. Never enable mobile access merely because the app is installed.
+
+## Current Selected Test Supersedes Y25MDQ - 17 October
+
+Owner explicitly requested assigning the existing active Mike referee to public
+code 2P23BS, TEST Sandbox - test iphone 2 (jn7cw69dexmjjmg88jbwsxj4kx8gecgr).
+Saved through the real signed-in owner's existing DIA Live admin assignment UI.
+The active referee email matches the owner account, and this exact match appears
+in the owner's referee match list. Public read-only recheck: scheduled, 0-0, zero
+events, referee assigned. No account, roles, coach, dates, clock, score or claim
+round were changed. This was a single authorized assignment, not a deployment or
+mobile-scope activation. Coachfallback does not apply while a referee is assigned.
+
+The closed native preparation build now pins only 2P23BS instead of Y25MDQ;
+ZVWTQT was explicitly rejected by the owner. Future allowlist/policy setup must
+use the new exact match after rechecking actual account/team IDs and expiry.
+No server scope, write flag, policy or backend code was activated/deployed.
+Native login/JWT/redirect, isolated E2E and all earlier release gates remain open;
+the legacy dual-role web detail still labels the account Admin and does not by
+itself prove referee-only transactional or native authorization.

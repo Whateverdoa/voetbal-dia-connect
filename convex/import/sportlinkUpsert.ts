@@ -31,7 +31,8 @@ export const upsertBySportlinkCode = mutation({
     action: v.union(
       v.literal("created"),
       v.literal("updated"),
-      v.literal("skipped_unknown_team")
+      v.literal("skipped_unknown_team"),
+      v.literal("skipped_referee_policy")
     ),
     matchId: v.optional(v.id("matches")),
   }),
@@ -58,6 +59,7 @@ export const upsertBySportlinkCode = mutation({
     const seasonKey = seasonKeyFromMs(args.scheduledAt);
 
     if (existing) {
+      if (existing.refereePolicy) return { dryRun, action: "skipped_referee_policy" as const, matchId: existing._id };
       if (!dryRun) {
         await ctx.db.patch(existing._id, {
           scheduledAt: args.scheduledAt,

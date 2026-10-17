@@ -7,6 +7,7 @@ import { applyRefereeClockCommand } from "./refereeClockCommands";
 import { playingElapsedMs } from "./officialMatchClock";
 import { isUnavailable } from "./matchPlayerAvailability";
 import type { RefereeAction } from "./refereeRegistrationContract";
+import { officialPlayerMinutes } from "./refereePlayingTime";
 
 // Canonical JSON makes object key order irrelevant, but not changed content.
 function fingerprint(value: unknown): string {
@@ -20,7 +21,8 @@ function fingerprint(value: unknown): string {
 async function selectedPlayer(ctx: MutationCtx, match: Doc<"matches">, id: Id<"players">) {
   const player = await ctx.db.get(id);
   const selection = await ctx.db.query("matchPlayers").withIndex("by_match_player", q => q.eq("matchId", match._id).eq("playerId", id)).unique();
-  if (!player?.active || player.teamId !== match.teamId || !selection || isUnavailable(selection)) throw new ConvexError("PLAYER_NOT_AVAILABLE_FOR_MATCH");
+  if (!player?.active || player.teamId !== match.teamId || !selection || isUnavailable({ absent: selection.absent, injured: selection.injured })) throw new ConvexError("PLAYER_NOT_AVAILABLE_FOR_MATCH");
+  return selection;
 }
 function ownSide(match: Doc<"matches">, team: "home" | "away") {
   return match.isHome ? team === "home" : team === "away";
@@ -120,7 +122,13 @@ export async function executeRefereeRegistration(ctx: MutationCtx, args: {
       const opponent = !ownSide(match, action.team);
       if (action.playerId) {
         if (opponent) throw new ConvexError("PLAYER_TEAM_SIDE_MISMATCH");
-        await selectedPlayer(ctx, match, action.playerId);
+        const selection = await selectedPlayer(ctx, match, action.playerId);
+        if (selection.dismissed) throw new ConvexError("PLAYER_ALREADY_DISMISSED");
+        if (action.kind === "red_card") {
+          await ctx.db.patch(selection._id, { onField: false, dismissed: true,
+            fieldSlotIndex: undefined, minutesPlayed: officialPlayerMinutes(selection, base.matchMs),
+            lastSubbedInAt: undefined, officialEnteredElapsedMs: undefined });
+        }
       }
       event = { ...base, type: action.kind, playerId: action.playerId, isOpponentCard: opponent,
         reportedName: action.reportedName?.trim() || undefined, reportedNumber: action.reportedNumber };

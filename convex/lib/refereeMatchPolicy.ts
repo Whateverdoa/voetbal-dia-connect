@@ -2,7 +2,8 @@ import { ConvexError } from "convex/values";
 import { makeFunctionReference } from "convex/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { guardOfficialClock, nextOfficialClockGuardAt } from "./officialMatchClock";
+import { guardOfficialClock, nextOfficialClockGuardAt, playingElapsedMs } from "./officialMatchClock";
+import { syncRefereePlayingTime } from "./refereePlayingTime";
 
 const guardReference = makeFunctionReference<"mutation", { matchId: Id<"matches">; generation: number }, null>("refereePolicy:guardClock");
 
@@ -24,6 +25,8 @@ export async function saveRefereeClock(ctx: MutationCtx, match: Doc<"matches">, 
   const projection = projectRefereeClock(match, now);
   if (!projection || !match.refereePolicy) throw new ConvexError("CLOCK_POLICY_REQUIRED");
   const { state } = projection;
+  await syncRefereePlayingTime(ctx, match, playingElapsedMs(state, now),
+    match.status === "live" && state.runningSince !== null, now);
   const policy = { ...match.refereePolicy, elapsedMs: state.elapsedMs, runningSince: state.runningSince,
     stoppageStartedAt: state.stoppageStartedAt, safetyMarginMinutes: state.safetyMarginMinutes,
     clockReviewReason: state.clockReviewReason, clockLimitAt: state.clockLimitAt,

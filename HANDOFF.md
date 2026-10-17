@@ -496,3 +496,91 @@ No server scope, write flag, policy or backend code was activated/deployed.
 Native login/JWT/redirect, isolated E2E and all earlier release gates remain open;
 the legacy dual-role web detail still labels the account Admin and does not by
 itself prove referee-only transactional or native authorization.
+
+## Remaining 2P23BS checks - 17 October 2026
+
+No live activation/deployment this turn. Fresh public read: scheduled, 0-0,
+referee assigned, zero events. Added a genuine localhost Convex integration
+harness (synthetic JWT/accounts/matches only), plus a real Swift HTTP test.
+14 server contract checks pass. Two demonstrated release blockers remain:
+kickoff does not begin player-minute intervals; red cards leave players onField.
+Import routes were hardened locally against overwriting protected match state;
+11 regression tests added, full backend suite 922 passed. Root/Convex TS and
+changed-file lint pass. See docs/local-referee-integration.md for scope/commands.
+No production credentials/data enter the local harness. Hosted Clerk native
+login/redirect, actual server scope, writer/playing-time audit, remaining native
+command parity and separate review/deployment/activation approval stay open.
+
+## Three Requested Repairs - 17 October 2026 (supersedes two player blockers)
+
+Source-only player-time and red-card repairs complete. Optional
+matchPlayers.officialEnteredElapsedMs anchors protected player intervals to the
+bounded clock; lastSubbedInAt is retained for compatibility. Shared helpers cover
+coach swaps and playing-time reads. Pause/break/safety/finish close intervals;
+resume/new periods reopen eligible field players only. Identified red closes
+exact minutes, clears field position and marks dismissed; re-entry rejected.
+Unknown/opponent numbers do not guess a local player. Historical goal enrichment
+still accepts a dismissed scorer. Nine added transaction regressions, 930 total
+backend tests pass; both TS checks, lint and harness safety checks pass.
+
+Real localhost test .artifacts/local-referee-e2e-SAzAma/result.json: 15 server
+checks plus explicit native HTTP/GUI-bridge check pass, no skipped network test,
+no local product blockers. Production was not deployed, activated or backfilled.
+Remaining broader native command parity/writer audit, hosted Clerk identity,
+exact expiring scope and separate review/deployment/live approvals still apply.
+
+Final follow-up also excludes dismissed players from coach substitution advice,
+with an extra regression (nine added; 931 total). Final source is pushed only to
+a fresh localhost server and all 15 server checks pass:
+.artifacts/local-referee-e2e-LfVtkm/result.json. The earlier explicit Swift real
+HTTP test also passes with an identified red card. No live activation occurred.
+
+## Read-only registrar diagnosis repair - 17 October 2026
+
+Owner reports physical build 3: account roles confirmed, registrar unconfirmed,
+"gecontroleerde API niet beschikbaar". Existing diagnostic UI caught all errors
+under that misleading label. Also `refereeRegistration:getMatch` only returns a
+strict detail after policy version 1 is active, so it cannot independently prove
+pre-activation registrar eligibility.
+
+Added public query `refereeRegistration:diagnose`, with typed arguments/returns,
+strict pilotIdentity claims and current role resolution. It checks existing match
+read rights and active team, uses the same officialDutyEligibility as commands,
+and exposes only the current subject's registrar/eligibility, policy state and
+indexed exact-match own-scope state. It does not activate policy, create scopes,
+change assignments, return roster/events or grant commands. All existing exports
+and command guards remain intact. Anonymous, unverified, revoked, unrelated-team,
+admin-not-referee, explicit coach fallback, inactive referee, finished/cancelled
+and missing/disabled/expired/wrong-team scopes have local regressions.
+
+Verification: all 939 backend tests pass, root and Convex TypeScript pass. Changed
+Convex files lint clean; the JS harness is excluded by the existing lint config.
+Three local harness guard tests pass. Actual fresh local Convex push and 16 HTTP
+checks passed, including diagnosis of a fixture with no policy or scope and an
+unchanged match/events snapshot. Evidence:
+.artifacts/local-referee-e2e-2q4506/result.json.
+
+No production deployment/activation, mutation, role, assignment or scope changes.
+Read-only production function metadata could not be inspected: the local Convex
+CLI account reports no access to selected nautical-condor-5 project. No login,
+project switch or configuration change was attempted. A generic production HTTP
+error does NOT establish whether the old function is missing, crashing, denying
+claims, or returning an incompatible response. Live registrar confirmation remains
+pending review and separately approved backend deployment, then manual diagnosis.
+
+## Backend PR review and Convex account investigation - 17 October 2026
+
+Reviewed pending backend delta; no additional blocking defect identified. Review
+scope, evidence and remaining release gates are in docs/backend-pilot-review.md.
+Fresh full suite: 939 tests / 120 files pass; root/Convex TS, changed-source lint,
+PIN guard and diff check pass. Existing PR #71 is mergeable but remains draft:
+merging main can deploy production Convex through scripts/build.mjs, and deployment
+has not been approved. Prepared PR update must not imply activation permission.
+
+Convex login status is valid. The current CLI identity sees team mike-ten-hoonte,
+with development projects but no live DIA project. A read-only authenticated
+management lookup for nautical-condor-5 returns HTTP 404 DeploymentNotFound.
+No secrets were printed or exported. Do not run convex dev to repair this: it can
+create/select/push a different project. Next step is interactive login to the
+account/team that owns the existing live deployment, then repeat function metadata
+inspection. Do not grant roles or create a new database to work around this.

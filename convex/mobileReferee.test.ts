@@ -7,6 +7,7 @@ import type { Id } from "./_generated/dataModel";
 import type { RefereeAction } from "./lib/refereeRegistrationContract";
 
 const modules = {
+  "./matchQueries.ts": () => import("./matchQueries"),
   "./mobileReferee.ts": () => import("./mobileReferee"),
   "./mobilePilotScopes.ts": () => import("./mobilePilotScopes"),
   "./refereePolicy.ts": () => import("./refereePolicy"),
@@ -267,4 +268,162 @@ it("disabling server writes does not disable already scheduled safety enforcemen
   const after = (await f.t.run(ctx => ctx.db.get(f.ids.matchId)))!;
   expect(after.refereePolicy).toMatchObject({ runningSince: null, elapsedMs: 25 * 60_000, clockReviewReason: "period_limit" });
   expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ canControl: false, writesEnabled: false });
+});
+
+// These tests exercise the same transaction core as web and native commands.
+describe("official player-time intervals and dismissal", () => {
+  async function playersFixture() {
+    vi.stubEnv("MOBILE_REFEREE_WRITES_ENABLED", "true");
+    const f = await enrolledFixture();
+    const players = await f.t.run(async ctx => {
+      const rows = [];
+      for (const onField of [true, false]) {
+        const playerId = await ctx.db.insert("players", { teamId: f.ids.teamId, name: onField ? "Field" : "Bench", active: true, createdAt: 1 });
+        const rowId = await ctx.db.insert("matchPlayers", { matchId: f.ids.matchId, playerId, onField, isKeeper: false,
+          fieldSlotIndex: onField ? 1 : undefined, minutesPlayed: 0, createdAt: 1 });
+        rows.push({ playerId, rowId });
+      }
+      return rows;
+    });
+    let nextKey = 0;
+    const act = async (action: RefereeAction, correlationId = `player-test-${++nextKey}`) => {
+      const state = await f.actor.query(getMatch, { matchId: f.ids.matchId });
+      return f.actor.mutation(command, { matchId: f.ids.matchId, expectedVersion: state.version, correlationId, action });
+    };
+    const row = (index = 0) => f.t.run(ctx => ctx.db.get(players[index].rowId));
+    return { ...f, players, act, row };
+  }
+
+  it("starts only on-field intervals, with an exact idempotent kickoff", async () => {
+    const f = await playersFixture(); const now = Date.now();
+    const receipt = await f.actor.mutation(command, f.start);
+    expect(await f.row()).toMatchObject({ lastSubbedInAt: now, officialEnteredElapsedMs: 0, minutesPlayed: 0 });
+    expect((await f.row(1))!.lastSubbedInAt).toBeUndefined();
+    vi.setSystemTime(now + 60_000);
+    expect(await f.actor.mutation(command, f.start)).toEqual(receipt);
+    expect((await f.row())!.lastSubbedInAt).toBe(now);
+    const { playerMinutesAt } = await import("./playingTimeHelpers");
+    const match = await f.t.run(ctx => ctx.db.get(f.ids.matchId));
+    expect(playerMinutesAt(match!, (await f.row())!, Date.now())).toBe(1);
+  });
+
+  it("excludes pauses, halftime and safety pauses; resumes without double counting", async () => {
+    const f = await playersFixture(); const now = Date.now();
+    await f.act({ kind: "start" });
+    vi.setSystemTime(now + 2 * 60_000); await f.act({ kind: "pause" });
+    expect(await f.row()).toMatchObject({ minutesPlayed: 2 });
+    expect((await f.row())!.officialEnteredElapsedMs).toBeUndefined();
+    vi.setSystemTime(now + 7 * 60_000); await f.act({ kind: "resume" });
+    expect(await f.row()).toMatchObject({ minutesPlayed: 2, officialEnteredElapsedMs: 2 * 60_000 });
+    vi.setSystemTime(now + 8 * 60_000); await f.act({ kind: "end_period" });
+    expect(await f.row()).toMatchObject({ minutesPlayed: 3 });
+    vi.setSystemTime(now + 20 * 60_000); await f.act({ kind: "start_period" });
+    vi.setSystemTime(now + 620 * 60_000);
+    const { playerMinutesAt } = await import("./playingTimeHelpers");
+    const match = await f.t.run(ctx => ctx.db.get(f.ids.matchId));
+    expect(playerMinutesAt(match!, (await f.row())!, Date.now())).toBe(28);
+    await f.act({ kind: "finish" });
+    expect(await f.row()).toMatchObject({ minutesPlayed: 28 });
+    expect((await f.row())!.lastSubbedInAt).toBeUndefined();
+  });
+
+  it("scheduled cutoff closes intervals at the exact limit and stale jobs do nothing", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    const guard = makeFunctionReference<"mutation", { matchId: Id<"matches">; generation: number }, null>("refereePolicy:guardClock");
+    const before = await f.t.run(ctx => ctx.db.get(f.ids.matchId));
+    vi.setSystemTime(now + 600 * 60_000);
+    await f.t.mutation(guard, { matchId: f.ids.matchId, generation: before!.refereePolicy!.generation - 1 });
+    expect((await f.row())!.minutesPlayed).toBe(0);
+    await f.t.mutation(guard, { matchId: f.ids.matchId, generation: before!.refereePolicy!.generation });
+    expect((await f.row())!.minutesPlayed).toBe(25);
+    expect((await f.row())!.lastSubbedInAt).toBeUndefined();
+    await f.act({ kind: "set_safety_margin", safetyMarginMinutes: 30 }); await f.act({ kind: "resume" });
+    vi.setSystemTime(Date.now() + 60_000); await f.act({ kind: "pause" });
+    expect((await f.row())!.minutesPlayed).toBe(26);
+  });
+
+  it("red closes the exact player's interval/slot once and prevents re-entry", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    vi.setSystemTime(now + 90_000);
+    const args = { matchId: f.ids.matchId, expectedVersion: 1, correlationId: "red-once",
+      action: { kind: "red_card" as const, team: "home" as const, playerId: f.players[0].playerId } };
+    const receipt = await f.actor.mutation(command, args);
+    const sentOff = (await f.row())!;
+    expect(sentOff).toMatchObject({ onField: false, dismissed: true, minutesPlayed: 1.5 });
+    expect(sentOff.fieldSlotIndex).toBeUndefined(); expect(sentOff.lastSubbedInAt).toBeUndefined();
+    expect(sentOff.officialEnteredElapsedMs).toBeUndefined();
+    vi.setSystemTime(now + 5 * 60_000);
+    expect(await f.actor.mutation(command, args)).toEqual(receipt);
+    await expect(f.act(args.action)).rejects.toThrow("PLAYER_ALREADY_DISMISSED");
+    const { startPlayingTime } = await import("./playingTimeHelpers");
+    await expect(f.t.run(ctx => startPlayingTime(ctx, f.players[0].rowId, Date.now()))).rejects.toThrow("rode kaart");
+    await f.act({ kind: "pause" }); await f.act({ kind: "resume" });
+    await f.act({ kind: "end_period" }); await f.act({ kind: "start_period" });
+    expect(await f.row()).toEqual(sentOff);
+    const events = await f.t.run(ctx => ctx.db.query("matchEvents").withIndex("by_match", q => q.eq("matchId", f.ids.matchId)).collect());
+    expect(events.filter(e => e.type === "red_card")).toHaveLength(1);
+    expect(events.find(e => e._id === receipt.commandEventId)?.playerId).toBe(f.players[0].playerId);
+  });
+
+  it("yellow and unidentified/opponent red do not remove an unrelated player", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    vi.setSystemTime(now + 60_000);
+    await f.act({ kind: "yellow_card", team: "home", playerId: f.players[0].playerId });
+    await f.act({ kind: "red_card", team: "away", reportedNumber: 12 });
+    await f.act({ kind: "red_card", team: "home" });
+    expect(await f.row()).toMatchObject({ onField: true, minutesPlayed: 1 });
+    expect((await f.row())!.dismissed).toBeUndefined();
+    await expect(f.act({ kind: "red_card", team: "away", playerId: f.players[0].playerId })).rejects.toThrow("PLAYER_TEAM_SIDE_MISMATCH");
+    expect((await f.row())!.onField).toBe(true);
+  });
+
+  it("red during pause adds no interruption time; historical goal enrichment stays possible", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    const goal = await f.act({ kind: "goal", team: "home" });
+    vi.setSystemTime(now + 60_000); await f.act({ kind: "pause" });
+    vi.setSystemTime(now + 11 * 60_000);
+    await f.act({ kind: "red_card", team: "home", playerId: f.players[0].playerId });
+    expect(await f.row()).toMatchObject({ minutesPlayed: 1, onField: false, dismissed: true });
+    await f.act({ kind: "finish" });
+    await f.act({ kind: "enrich_goal", eventId: goal.commandEventId, scorerId: f.players[0].playerId });
+    expect(await f.actor.query(getMatch, { matchId: f.ids.matchId })).toMatchObject({ homeScore: 1 });
+  });
+
+  it("coach substitution shares the protected clock during play and pauses", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    const { applyBenchSubstitutionWithSlotTransfer } = await import("./lib/benchSubstitutionCore");
+    const swap = (out: number, into: number) => f.t.run(ctx => applyBenchSubstitutionWithSlotTransfer(ctx, {
+      matchId: f.ids.matchId, playerOutId: f.players[out].playerId, playerInId: f.players[into].playerId,
+      commandType: "LOCAL_COACH_SUBSTITUTION", reconcilePlan: false,
+    }));
+    vi.setSystemTime(now + 90_000); await swap(0, 1);
+    expect(await f.row()).toMatchObject({ onField: false, minutesPlayed: 1.5 });
+    expect(await f.row(1)).toMatchObject({ onField: true, officialEnteredElapsedMs: 90_000 });
+    vi.setSystemTime(now + 150_000); await f.act({ kind: "pause" });
+    expect((await f.row(1))!.minutesPlayed).toBe(1);
+    vi.setSystemTime(now + 450_000); await swap(1, 0);
+    expect((await f.row())!.officialEnteredElapsedMs).toBeUndefined();
+    await f.act({ kind: "resume" });
+    vi.setSystemTime(now + 510_000); await f.act({ kind: "finish" });
+    expect((await f.row())!.minutesPlayed).toBe(2.5);
+    expect((await f.row(1))!.minutesPlayed).toBe(1);
+  });
+
+  it("frequent official commands retain sub-minute precision", async () => {
+    const f = await playersFixture(); const now = Date.now(); await f.act({ kind: "start" });
+    for (let n = 1; n <= 20; n++) {
+      vi.setSystemTime(now + n * 1000); await f.act({ kind: "incident" });
+    }
+    expect((await f.row())!.minutesPlayed).toBeCloseTo(1 / 3, 12);
+    await f.act({ kind: "finish" });
+    expect((await f.row())!.minutesPlayed).toBeCloseTo(1 / 3, 12);
+  });
+
+  it("coach advice never proposes a dismissed player as a bench substitute", async () => {
+    const f = await playersFixture(); await f.act({ kind: "start" });
+    await f.act({ kind: "red_card", team: "home", playerId: f.players[1].playerId });
+    await f.t.run(ctx => ctx.db.patch(f.ids.accessId, { roles: ["coach", "referee"], coachId: f.ids.coachId }));
+    const suggestions = makeFunctionReference<"query", { matchId: Id<"matches"> }>("matchQueries:getSuggestedSubstitutions");
+    expect(await f.actor.query(suggestions, { matchId: f.ids.matchId })).toMatchObject({ onFieldCount: 1, benchCount: 0, suggestions: [] });
+  });
 });

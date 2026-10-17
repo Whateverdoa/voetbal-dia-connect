@@ -259,6 +259,8 @@ export default defineSchema({
     // Playing time tracking
     minutesPlayed: v.optional(v.number()), // Total minutes played this match
     lastSubbedInAt: v.optional(v.number()), // Timestamp when player went on field
+    officialEnteredElapsedMs: v.optional(v.number()), // Protected clock, excludes interruptions
+    dismissed: v.optional(v.boolean()), // Sent off; cannot return through coach substitutions
     createdAt: v.number(),
   })
     .index("by_match", ["matchId"])

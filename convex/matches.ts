@@ -1,3 +1,4 @@
+import { playerMinutesAt } from "./playingTimeHelpers";
 /**
  * Match queries - public and coach views
  * 
@@ -210,15 +211,7 @@ export const getForCoach = query({
         const player = await ctx.db.get(mp.playerId);
         if (!player) return null;
 
-        let totalMinutes = mp.minutesPlayed ?? 0;
-        if (
-          mp.onField &&
-          mp.lastSubbedInAt &&
-          match.status === "live" &&
-          match.activeStoppageStartedAt == null
-        ) {
-          totalMinutes += (now - mp.lastSubbedInAt) / 60000;
-        }
+        const totalMinutes = playerMinutesAt(match, mp, now);
 
         return {
           matchPlayerId: mp._id,

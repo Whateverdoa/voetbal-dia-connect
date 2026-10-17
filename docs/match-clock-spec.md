@@ -374,3 +374,28 @@ Als de nominale speeltijd is bereikt:
 - de app mag een waarschuwing geven
 - de app mag ook het actuele advies extra tijd tonen
 - maar de scheidsrechter beslist zelf of hij meteen affluit of laat doorspelen
+
+## Protected pilot player time - 17 October 2026
+
+For matches with refereePolicy, player intervals use the same bounded cumulative
+playing clock as official commands/queries. Optional matchPlayers field
+`officialEnteredElapsedMs` is the accounting anchor; `lastSubbedInAt` remains a
+compatibility timestamp, not a wall-clock source of extra minutes. The existing
+non-pilot clock/interval rules are unchanged.
+
+Kickoff, resume and the next period open intervals for present, eligible on-field
+players. Pause, period end, finish and scheduled safety cutoff materialize and
+close intervals. The cutoff uses effective clock elapsed, never a delayed job's
+arrival time. Safety pauses, ordinary pauses, halftime and a 600-minute absence
+cannot silently accrue player minutes. Fractional minutes remain unrounded in
+pilot storage; queries round only their existing display output.
+
+Coach substitutions use the same helper; entering during pause starts no interval
+until the clock resumes. An identified own-team red card transactionally closes
+that player's interval and clears onField/fieldSlotIndex/anchors, setting the
+optional `dismissed` marker. Coach entry/substitution validation rejects that
+marker. Yellow cards do not remove the player. Skipped identification/opponent
+reported numbers never guess a local player. Append-only card events and retry
+receipts remain; discarded red cards are not automatically undoable through a
+legacy endpoint. Historical goal enrichment can still identify a dismissed
+scorer without changing score/time. No production backfill/activation occurs.

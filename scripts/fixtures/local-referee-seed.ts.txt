@@ -1,0 +1,71 @@
+// Copied ONLY into an isolated localhost project by local-referee-e2e.mjs.
+import { internalMutation, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
+
+export const seed = internalMutation({
+  args: {},
+  handler: async ctx => {
+    const now = Date.now();
+    const clubId = await ctx.db.insert("clubs", { name: "Synthetic club", slug: "localhost-only", createdAt: now });
+    const teamId = await ctx.db.insert("teams", { clubId, name: "Synthetic team", slug: "localhost-only", createdAt: now });
+    const otherTeamId = await ctx.db.insert("teams", { clubId, name: "Other synthetic team", slug: "other-local", createdAt: now });
+    const refereeId = await ctx.db.insert("referees", { name: "Synthetic referee", email: "ref@localhost.test", active: true, createdAt: now });
+    const coachId = await ctx.db.insert("coaches", { name: "Synthetic coach", email: "coach@localhost.test", teamIds: [teamId], createdAt: now });
+    const accessId = await ctx.db.insert("userAccess", { email: "ref@localhost.test", roles: ["referee"], refereeId, active: true, source: "admin_manual", createdAt: now, updatedAt: now, lastSyncedAt: now });
+    await ctx.db.insert("userAccess", { email: "admin@localhost.test", roles: ["admin"], active: true, source: "admin_manual", createdAt: now, updatedAt: now, lastSyncedAt: now });
+    await ctx.db.insert("userAccess", { email: "coach@localhost.test", roles: ["coach"], coachId, active: true, source: "admin_manual", createdAt: now, updatedAt: now, lastSyncedAt: now });
+    const policy = { version: 1 as const, commandVersion: 0, generation: 0, elapsedMs: 0, runningSince: null, periodStartedElapsedMs: 0, safetyMarginMinutes: 10, confirmedStoppageMs: 0 };
+    const template = { teamId, refereeId, leadCoachId: coachId, publicCode: "LOCAL_ONLY_A", opponent: "Synthetic opponent", isHome: true, status: "scheduled" as const, currentQuarter: 1, quarterCount: 2, regulationDurationMinutes: 60, homeScore: 0, awayScore: 0, showLineup: false, refereePolicy: policy, createdAt: now };
+    const matchId = await ctx.db.insert("matches", { ...template, sportlinkWedstrijdcode: "LOCAL_ONLY_LINK" });
+    const otherMatchId = await ctx.db.insert("matches", { ...template, publicCode: "LOCAL_ONLY_B" });
+    const nativeMatchId = await ctx.db.insert("matches", { ...template, publicCode: "LOCAL_ONLY_NATIVE" });
+    const diagnosticMatchId = await ctx.db.insert("matches", { ...template, publicCode: "LOCAL_ONLY_DIAGNOSIS", refereePolicy: undefined });
+    const players = [];
+    for (const [name, absent, team] of [["Synthetic scorer", false, teamId], ["Synthetic assist", false, teamId], ["Synthetic absent", true, teamId], ["Synthetic foreign", false, otherTeamId]] as const) {
+      const playerId = await ctx.db.insert("players", { name, number: players.length + 7, teamId: team, active: true, createdAt: now });
+      players.push(playerId);
+      for (const selectedMatch of [matchId, nativeMatchId]) await ctx.db.insert("matchPlayers", { matchId: selectedMatch, playerId, absent, isKeeper: false, onField: !absent && team === teamId, createdAt: now });
+    }
+    const scopes = [];
+    for (const subject of ["local-referee", "local-admin", "local-coach"]) {
+      for (const selectedMatch of [matchId, nativeMatchId]) scopes.push(await ctx.db.insert("mobilePilotScopes", { subject, teamId, matchId: selectedMatch, enabled: true, writesEnabled: true, expiresAt: now + 3600000, updatedAt: now }));
+    }
+    return { diagnosticMatchId, matchId, otherMatchId, nativeMatchId, teamId, refereeId, coachId, accessId, players, scopes };
+  },
+});
+export const inspect = internalQuery({
+  args: { matchId: v.id("matches") },
+  handler: async (ctx, { matchId }) => ({ match: await ctx.db.get(matchId),
+    players: await ctx.db.query("matchPlayers").withIndex("by_match", q => q.eq("matchId", matchId)).collect(),
+    events: await ctx.db.query("matchEvents").withIndex("by_match", q => q.eq("matchId", matchId)).collect() }),
+});
+export const alter = internalMutation({
+  args: { matchId: v.id("matches"), mode: v.string(), periods: v.optional(v.number()), minutes: v.optional(v.number()), margin: v.optional(v.number()), generation: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match?.publicCode.startsWith("LOCAL_ONLY_") || !match.refereePolicy) throw new Error("LOCAL_FIXTURE_REQUIRED");
+    const referee = await ctx.db.query("referees").withIndex("by_email", q => q.eq("email", "ref@localhost.test")).first();
+    const policy = match.refereePolicy; const now = Date.now();
+    if (args.mode === "unassign") await ctx.db.patch(match._id, { refereeId: undefined });
+    else if (args.mode === "assign") await ctx.db.patch(match._id, { refereeId: referee!._id });
+    else if (args.mode === "cap") {
+      const periods = args.periods ?? 2, minutes = args.minutes ?? 30, margin = args.margin ?? 10;
+      const rows = await ctx.db.query("matchPlayers").withIndex("by_match", q => q.eq("matchId", match._id)).collect();
+      for (const row of rows) await ctx.db.patch(row._id, { minutesPlayed: 0, officialEnteredElapsedMs: row.onField ? 0 : undefined,
+        lastSubbedInAt: row.onField ? now - 600 * 60000 : undefined });
+      await ctx.db.patch(match._id, { status: "live", currentQuarter: 1, quarterCount: periods, regulationDurationMinutes: periods * minutes, startedAt: now - 600 * 60000,
+        refereePolicy: { ...policy, generation: policy.generation + 1, elapsedMs: 0, runningSince: now - 600 * 60000, periodStartedElapsedMs: 0, safetyMarginMinutes: margin, confirmedStoppageMs: 0, clockReviewReason: undefined, stoppageStartedAt: undefined, clockLimitAt: undefined } });
+    } else if (args.mode === "healthy") {
+      await ctx.db.patch(match._id, { status: "live", currentQuarter: 1, quarterCount: 2, regulationDurationMinutes: 60,
+        refereePolicy: { ...policy, generation: policy.generation + 1, elapsedMs: 0, runningSince: now, periodStartedElapsedMs: 0, safetyMarginMinutes: 10, confirmedStoppageMs: 0, clockReviewReason: undefined, stoppageStartedAt: undefined, clockLimitAt: undefined } });
+    } else if (args.mode === "long_pause") {
+      await ctx.db.patch(match._id, { status: "live", currentQuarter: 1, quarterCount: 2, regulationDurationMinutes: 60,
+        refereePolicy: { ...policy, generation: policy.generation + 1, elapsedMs: 12 * 60000, runningSince: null, periodStartedElapsedMs: 0,
+          safetyMarginMinutes: 10, confirmedStoppageMs: 0, clockReviewReason: undefined, stoppageStartedAt: now - 600 * 60000, clockLimitAt: undefined } });
+    } else if (args.mode === "revoke" || args.mode === "restore") {
+      const scope = await ctx.db.query("mobilePilotScopes").withIndex("by_subject_and_match", q => q.eq("subject", "local-referee").eq("matchId", match._id)).unique();
+      await ctx.db.patch(scope!._id, { enabled: args.mode === "restore" });
+    } else throw new Error("UNKNOWN_FIXTURE_OPERATION");
+    return null;
+  },
+});

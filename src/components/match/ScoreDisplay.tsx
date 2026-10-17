@@ -20,6 +20,7 @@ interface ScoreDisplayProps {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   frozenClockMs?: number;
+  refereeClock?: import("@/lib/matchClock/types").PublicRefereeClock;
   publicCode: string;
   scheduledAt?: number;
   /** Home pitch only; omit for away matches. */
@@ -42,6 +43,7 @@ export function ScoreDisplay({
   pausedAt,
   accumulatedPauseTime,
   frozenClockMs,
+  refereeClock,
   publicCode,
   scheduledAt,
   venueField,
@@ -110,6 +112,7 @@ export function ScoreDisplay({
                   pausedAt={pausedAt}
                   accumulatedPauseTime={accumulatedPauseTime}
                   frozenClockMs={frozenClockMs}
+                  refereeClock={refereeClock}
                   status={status}
                 />
               )}

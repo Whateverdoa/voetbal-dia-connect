@@ -1,3 +1,4 @@
+import { playerMinutesAt } from "./playingTimeHelpers";
 /**
  * Match queries - public and coach views
  * 
@@ -11,7 +12,9 @@ import {
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
   recordedPlayerName,
+  projectPublicMatchEvents,
 } from "./lib/matchEventProjection";
+import { projectRefereeClock } from "./lib/refereeMatchPolicy";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
@@ -74,7 +77,7 @@ export const getByPublicCode = query({
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
-    const projectedEvents = applyGoalEnrichments(enrichedEvents).filter(
+    const projectedEvents = match.refereePolicy ? projectPublicMatchEvents(enrichedEvents) : applyGoalEnrichments(enrichedEvents).filter(
       (event) => !isCoachOnlyEvent(event)
     );
 
@@ -127,6 +130,7 @@ export const getByPublicCode = query({
 
     const refFields = await getPublicRefereeFields(ctx, match.refereeId);
     const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, Date.now());
+    const clock = projectRefereeClock(match, Date.now())?.state;
 
     return {
       id: match._id,
@@ -147,6 +151,9 @@ export const getByPublicCode = query({
       pausedAt: match.pausedAt,
       accumulatedPauseTime: match.accumulatedPauseTime,
       frozenClockMs: match.frozenClockMs,
+      // Explicit public allowlist: no policy object, versions, generations or actors.
+      ...(clock ? { refereeClock: { elapsedMs: clock.elapsedMs, runningSince: clock.runningSince,
+        limitElapsedMs: clock.clockLimitElapsedMs } } : {}),
       activeStoppageStartedAt: match.activeStoppageStartedAt,
       stoppageAdvisoryMs,
       useBreakClock: match.useBreakClock,
@@ -204,15 +211,7 @@ export const getForCoach = query({
         const player = await ctx.db.get(mp.playerId);
         if (!player) return null;
 
-        let totalMinutes = mp.minutesPlayed ?? 0;
-        if (
-          mp.onField &&
-          mp.lastSubbedInAt &&
-          match.status === "live" &&
-          match.activeStoppageStartedAt == null
-        ) {
-          totalMinutes += (now - mp.lastSubbedInAt) / 60000;
-        }
+        const totalMinutes = playerMinutesAt(match, mp, now);
 
         return {
           matchPlayerId: mp._id,
@@ -295,6 +294,7 @@ export const getForCoach = query({
     const isCurrentCoachLead =
       viewingAsAdmin || (coach !== null && match.leadCoachId === coach._id);
     const canControlClock =
+      !match.refereePolicy &&
       coachScreenMayControlClock(match) &&
       (viewingAsAdmin || isCurrentCoachLead);
 
@@ -378,7 +378,12 @@ export const getForCoach = query({
       leadCoachName: leadCoach?.name ?? null,
       hasLead: !!match.leadCoachId,
       isCurrentCoachLead,
-      canControlClock,
+canControlClock,
+officialPolicyVersion: match.refereePolicy?.version ?? null,
+...(match.refereePolicy ? (() => {
+  const clock = projectRefereeClock(match, Date.now())!.state;
+  return { refereeClock: { elapsedMs: clock.elapsedMs, runningSince: clock.runningSince, limitElapsedMs: clock.clockLimitElapsedMs } };
+})() : {}),
       viewingAsAdmin,
     };
   },

@@ -1,5 +1,78 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Afgeschermde iPhone-integratie: tussenstand (15 oktober 2026)
+
+Dit is een **draft, niet activeerbaar als live-proef**. Webbaseline-PR #69 is
+gemerged; deze branch bevat ook de actuele main inclusief #70. Mobiele writes
+blijven standaard uit: servervlag `MOBILE_REFEREE_WRITES_ENABLED` en de exacte
+scope moeten beide expliciet schrijven toestaan, naast de matchpolicy en
+actuele registratorrechten. Geen servervlag of live scope ingesteld. Geen
+productiedeployment, scope-activering, matchmigratie of toestelinstallatie gedaan.
+
+Lokaal gerealiseerd:
+- `mobileReferee`: session/listMatches/getMatch/timeline/command; standaard
+  alleen-lezen, echte geverifieerde Clerk-identiteit, bestaande rechten en scopes.
+- Scopes standaard leeg, expliciet eindig en intern configureerbaar. Een
+  verouderde vervaltaak kan een verlengde scope niet intrekken.
+- Optioneel `matches.refereePolicy`: een klok op de bestaande wedstrijd, geen
+  tweede match-state/event-table. Nog geen activatiefunctie beschikbaar.
+- Hergebruik van de begrensde klok; interne generatiegebonden controle stopt op
+  het berekende grensmoment en schrijft een systeemevent zonder gebruikersactor.
+- Pure gedeelde klokcommando-regels: echte pauzes, absolute marge, expliciete
+  beoordeling van lange onderbrekingen, geen automatische volgende periode.
+  De transactionele command-API gebruikt dezelfde regels en voorspelde
+  klokcontroleversie als de mobiele query bij vertraagde geplande verwerking.
+- Gedeelde officiële registratiekern: goals, exacte append-only correcties,
+  kaarten/incidenten met optionele identiteit, latere annotatie en gedeeltelijke
+  scorer/assistverrijking. Servercontrole op selectie, beschikbaarheid en zijde;
+  expliciete eigen doelpunten behouden. Geen admin-registratiebypass.
+- Receipts verwijzen naar het exacte command-event. Identieke retries geven
+  dezelfde bevestiging; andere inhoud/actor onder dezelfde sleutel wordt
+  geweigerd. Rechten worden ook bij een retry opnieuw gecontroleerd.
+- De mobiele tijdlijn markeert gecorrigeerde goals en projecteert latere
+  kaart-/incidentgegevens zonder het oorspronkelijke event te wijzigen.
+- Oude incompatibele klok/score/kaart/undo/verrijkingsroutes en directe
+  adminwijziging/verwijdering weigeren wedstrijden met deze policy. Oude
+  auto-resume en pauze-opruiming slaan ze over. Coachwissels blijven gescheiden.
+- `refereeDuty.appointCoach`: bestaande actieve adminrechten voor aanwijzing;
+  eigen-teamcoach alleen zelf bij lege officiële taak. Versie, vaste sleutel,
+  inhoudscontrole, bevestiging en append-only audit. Een toegewezen inactieve
+  scheidsrechter geeft niet automatisch toestemming voor coachfallback.
+
+Verificatie: **885 tests in 114 bestanden groen**, inclusief 15 nieuwe
+registratiekern-tests en negen aanvullende mobiele boundary-tests. TypeScript,
+gerichte ESLint, PIN-guard en diffcontrole slagen. Daarbij: negen tijd/margecombinaties, openen na
+600 minuten, verouderde taken, lange pauze met opnemen/afwijzen, absolute marge,
+gelijktijdige coachclaims, retries, ingetrokken toegang en oude write-routes.
+Dit is lokale convex-test-verificatie, geen gedeployde backend of fysieke proef.
+Een eerdere run had 885 geslaagde assertions maar een onbehandelde late
+React-update uit twee bestaande wisseltests. Die tests wachten nu ook op het
+einde van de mockactie; geen assertion verwijderd. De latere volledige run is
+schoon. Beide logs zijn lokaal bewaard onder `.artifacts/`.
+
+Nog verplicht voordat deze draft kan worden gemerged/geactiveerd:
+1. Nieuwe command-API integreren met bestaande kaart-/disciplineregels en
+   speler-speeltijd. De huidige kern is nog geen volledige coach/discipline-app.
+2. Webbediening en alle klok/read/player-time projections aansluiten; overige
+   import/archief/claimroutes auditen. De huidige blokkades zijn geen vervanging
+   voor bruikbare nieuwe webbediening.
+3. Alle tien nieuwe contractgates op de nieuwe opt-in routes laten slagen.
+4. Native adapter, apart live-testtarget/cache/outbox en API/capabilitybewaking;
+   volledige Swift unit/UI-regressie en geïsoleerde end-to-end test.
+5. Exacte Clerk-subject/JWT-claims en teamscope voor mobiel bevestigen; review en afzonderlijke
+   deploymentgoedkeuring; pas daarna beperkte scope en toestelinstallatie.
+
+De eigenaar heeft code `Y25MDQ` aangeboden. Alleen-lezen bevestigd: bestaande
+match `jn76f7jpdzjq60dm6c8d2bgjf58gbqfa`, TEST Sandbox tegen Nac test,
+gepland op 16 oktober om 09:00 Europe/Amsterdam, 0-0, twee perioden.
+Na de eigenaarwijziging staat Mike als coach en scheidsrechter op het adminbord.
+De ingelogde eigenaar heeft adminwerkplektoegang; zijn accountadres komt overeen
+met het actieve scheidsrechterrecord en het coachrecord met TEST Sandbox-scope.
+Coachfallback is niet van toepassing zolang die scheidsrechter toegewezen is.
+Geen toewijzing of rol door deze agent veranderd. Dit is geen club- of teambrede
+toestemming en geen mobiele scope-activering. Privé-identifiers/JWTs niet gekopieerd.
+Productielogs zijn met de huidige lokale Convex-accounttoegang niet uitleesbaar.
+
 ## Webtestbaseline voor native integratie (15 oktober 2026)
 
 Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande
@@ -390,3 +463,124 @@ Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
 
 **Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.
 
+
+## Optional opponent scorer number (local only, 17 October)
+
+The draft enrich_goal contract now accepts scorerNumber (integer 0-999) only
+for an opponent-beneficiary normal goal, without scorerId/assistId. It appends
+reportedNumber metadata on the exact goal; corrections, score and clock remain
+unchanged. Projection retains latest supplied number per field and exposes
+"Nr. N" without inventing a player ID. getMatch advertises the optional
+opponentScorerNumberEnabled capability; older native APIs default it off.
+All 911 tests pass, plus root/Convex TypeScript, changed-file ESLint and PIN guard.
+The iOS branch prepares a separate default-closed Live Test target, not a backend
+activation. Neither this addition nor the original pilot has been deployed or
+allowlisted. All earlier review, writer/playing-time and real isolated E2E gates
+remain open. Never enable mobile access merely because the app is installed.
+
+## Current Selected Test Supersedes Y25MDQ - 17 October
+
+Owner explicitly requested assigning the existing active Mike referee to public
+code 2P23BS, TEST Sandbox - test iphone 2 (jn7cw69dexmjjmg88jbwsxj4kx8gecgr).
+Saved through the real signed-in owner's existing DIA Live admin assignment UI.
+The active referee email matches the owner account, and this exact match appears
+in the owner's referee match list. Public read-only recheck: scheduled, 0-0, zero
+events, referee assigned. No account, roles, coach, dates, clock, score or claim
+round were changed. This was a single authorized assignment, not a deployment or
+mobile-scope activation. Coachfallback does not apply while a referee is assigned.
+
+The closed native preparation build now pins only 2P23BS instead of Y25MDQ;
+ZVWTQT was explicitly rejected by the owner. Future allowlist/policy setup must
+use the new exact match after rechecking actual account/team IDs and expiry.
+No server scope, write flag, policy or backend code was activated/deployed.
+Native login/JWT/redirect, isolated E2E and all earlier release gates remain open;
+the legacy dual-role web detail still labels the account Admin and does not by
+itself prove referee-only transactional or native authorization.
+
+## Remaining 2P23BS checks - 17 October 2026
+
+No live activation/deployment this turn. Fresh public read: scheduled, 0-0,
+referee assigned, zero events. Added a genuine localhost Convex integration
+harness (synthetic JWT/accounts/matches only), plus a real Swift HTTP test.
+14 server contract checks pass. Two demonstrated release blockers remain:
+kickoff does not begin player-minute intervals; red cards leave players onField.
+Import routes were hardened locally against overwriting protected match state;
+11 regression tests added, full backend suite 922 passed. Root/Convex TS and
+changed-file lint pass. See docs/local-referee-integration.md for scope/commands.
+No production credentials/data enter the local harness. Hosted Clerk native
+login/redirect, actual server scope, writer/playing-time audit, remaining native
+command parity and separate review/deployment/activation approval stay open.
+
+## Three Requested Repairs - 17 October 2026 (supersedes two player blockers)
+
+Source-only player-time and red-card repairs complete. Optional
+matchPlayers.officialEnteredElapsedMs anchors protected player intervals to the
+bounded clock; lastSubbedInAt is retained for compatibility. Shared helpers cover
+coach swaps and playing-time reads. Pause/break/safety/finish close intervals;
+resume/new periods reopen eligible field players only. Identified red closes
+exact minutes, clears field position and marks dismissed; re-entry rejected.
+Unknown/opponent numbers do not guess a local player. Historical goal enrichment
+still accepts a dismissed scorer. Nine added transaction regressions, 930 total
+backend tests pass; both TS checks, lint and harness safety checks pass.
+
+Real localhost test .artifacts/local-referee-e2e-SAzAma/result.json: 15 server
+checks plus explicit native HTTP/GUI-bridge check pass, no skipped network test,
+no local product blockers. Production was not deployed, activated or backfilled.
+Remaining broader native command parity/writer audit, hosted Clerk identity,
+exact expiring scope and separate review/deployment/live approvals still apply.
+
+Final follow-up also excludes dismissed players from coach substitution advice,
+with an extra regression (nine added; 931 total). Final source is pushed only to
+a fresh localhost server and all 15 server checks pass:
+.artifacts/local-referee-e2e-LfVtkm/result.json. The earlier explicit Swift real
+HTTP test also passes with an identified red card. No live activation occurred.
+
+## Read-only registrar diagnosis repair - 17 October 2026
+
+Owner reports physical build 3: account roles confirmed, registrar unconfirmed,
+"gecontroleerde API niet beschikbaar". Existing diagnostic UI caught all errors
+under that misleading label. Also `refereeRegistration:getMatch` only returns a
+strict detail after policy version 1 is active, so it cannot independently prove
+pre-activation registrar eligibility.
+
+Added public query `refereeRegistration:diagnose`, with typed arguments/returns,
+strict pilotIdentity claims and current role resolution. It checks existing match
+read rights and active team, uses the same officialDutyEligibility as commands,
+and exposes only the current subject's registrar/eligibility, policy state and
+indexed exact-match own-scope state. It does not activate policy, create scopes,
+change assignments, return roster/events or grant commands. All existing exports
+and command guards remain intact. Anonymous, unverified, revoked, unrelated-team,
+admin-not-referee, explicit coach fallback, inactive referee, finished/cancelled
+and missing/disabled/expired/wrong-team scopes have local regressions.
+
+Verification: all 939 backend tests pass, root and Convex TypeScript pass. Changed
+Convex files lint clean; the JS harness is excluded by the existing lint config.
+Three local harness guard tests pass. Actual fresh local Convex push and 16 HTTP
+checks passed, including diagnosis of a fixture with no policy or scope and an
+unchanged match/events snapshot. Evidence:
+.artifacts/local-referee-e2e-2q4506/result.json.
+
+No production deployment/activation, mutation, role, assignment or scope changes.
+Read-only production function metadata could not be inspected: the local Convex
+CLI account reports no access to selected nautical-condor-5 project. No login,
+project switch or configuration change was attempted. A generic production HTTP
+error does NOT establish whether the old function is missing, crashing, denying
+claims, or returning an incompatible response. Live registrar confirmation remains
+pending review and separately approved backend deployment, then manual diagnosis.
+
+## Backend PR review and Convex account investigation - 17 October 2026
+
+Reviewed pending backend delta; no additional blocking defect identified. Review
+scope, evidence and remaining release gates are in docs/backend-pilot-review.md.
+Fresh full suite: 939 tests / 120 files pass; root/Convex TS, changed-source lint,
+PIN guard and diff check pass. Existing PR #71 is mergeable but remains draft:
+merging main can deploy production Convex through scripts/build.mjs, and deployment
+has not been approved. Prepared PR update must not imply activation permission.
+
+Convex login status is valid. The current CLI identity sees team mike-ten-hoonte,
+with development projects but no live DIA project. A read-only authenticated
+management lookup for nautical-condor-5 returns HTTP 404 DeploymentNotFound.
+No secrets were printed or exported. Do not run convex dev to repair this: it can
+create/select/push a different project. Next step is interactive login to the
+account/team that owns the existing live deployment, then repeat function metadata
+inspection. Do not grant roles or create a new database to work around this.

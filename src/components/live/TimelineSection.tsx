@@ -65,8 +65,11 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
   switch (event.type) {
     case "goal":
       icon = "⚽";
-      text = describeGoalEvent(event, teamName, opponentName);
-      highlight = !event.isOpponentGoal && !event.isOwnGoal;
+      text = event.corrected ? "Doelpunt teruggedraaid" : describeGoalEvent(event, teamName, opponentName);
+      highlight = !event.corrected && !event.isOpponentGoal && !event.isOwnGoal;
+      break;
+    case "goal_correction":
+      text = "Doelpuntcorrectie";
       break;
     case "assist":
       icon = "👟";

@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Referee assignment mutations.
  *
@@ -18,6 +19,7 @@ export const assignReferee = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }

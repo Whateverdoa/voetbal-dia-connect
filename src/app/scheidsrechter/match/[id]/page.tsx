@@ -8,6 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { RefereeMatchConsole } from "@/components/referee/RefereeMatchConsole";
 import type { MatchEvent, MatchStatus } from "@/components/match/types";
 import { resolveLogoUrl } from "@/lib/logos";
+import { PilotRefereeConsole } from "@/components/referee/pilot/PilotRefereeConsole";
 export default function RefereeMatchPage() {
   const params = useParams();
   const matchIdParam = params.id;
@@ -77,7 +78,7 @@ export default function RefereeMatchPage() {
         </div>
       </nav>
 
-      <RefereeMatchConsole
+      {match.officialPolicyVersion === 1 ? <PilotRefereeConsole key={matchId} matchId={matchId} /> : <RefereeMatchConsole
         matchId={match.id as Id<"matches">}
         status={match.status as MatchStatus}
         currentQuarter={match.currentQuarter}
@@ -102,7 +103,7 @@ export default function RefereeMatchPage() {
         diaTeamSide={match.isHome ? "home" : "away"}
         diaPlayers={match.diaPlayers ?? []}
         events={(match.events ?? []) as MatchEvent[]}
-      />
+      />}
     </main>
   );
 }

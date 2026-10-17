@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Match lead (wedstrijdleider) mutations
  *
@@ -21,6 +22,7 @@ export const claimMatchLead = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
@@ -46,6 +48,7 @@ export const releaseMatchLead = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }

@@ -30,6 +30,7 @@ export interface MatchEvent {
     | "substitution_executed"
     | "substitution_cancelled"
     | "goal_enrichment"
+    | "goal_correction"
     | "quarter_start"
     | "quarter_end"
     | "yellow_card"
@@ -44,6 +45,7 @@ export interface MatchEvent {
   quarter: number;
   matchMs?: number;
   isOwnGoal?: boolean;
+  corrected?: boolean;
   isOpponentGoal?: boolean;
   isOpponentCard?: boolean;
   reportedNumber?: number;
@@ -119,6 +121,8 @@ export interface Match {
   leadCoachName?: string | null;
   hasLead?: boolean;
   isCurrentCoachLead?: boolean;
+  officialPolicyVersion?: number | null;
+  refereeClock?: import("@/lib/matchClock/types").PublicRefereeClock;
   canControlClock?: boolean;
   viewingAsAdmin?: boolean;
   capabilities?: {

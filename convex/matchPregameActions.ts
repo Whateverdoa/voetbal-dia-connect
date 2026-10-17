@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Match pregame mutations - metadata and player assignment
  */
@@ -121,6 +122,7 @@ export const updateMatchMetadata = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }
@@ -185,6 +187,7 @@ export const updateStatus = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }

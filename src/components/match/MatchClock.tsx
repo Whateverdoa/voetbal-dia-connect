@@ -2,6 +2,7 @@
 
 import { formatElapsed, useMatchClock } from "@/lib/matchClock";
 import type { MatchStatus } from "./types";
+import type { PublicRefereeClock } from "@/lib/matchClock/types";
 
 interface MatchClockProps {
   currentQuarter: number;
@@ -12,6 +13,7 @@ interface MatchClockProps {
   pausedAt?: number;
   accumulatedPauseTime?: number;
   frozenClockMs?: number;
+  refereeClock?: PublicRefereeClock;
   status: MatchStatus;
   className?: string;
 }
@@ -36,6 +38,7 @@ export function MatchClock({
   regulationDurationMinutes = 60,
   quarterStartedAt,
   frozenClockMs,
+  refereeClock,
   status,
   className = "",
 }: MatchClockProps) {
@@ -45,6 +48,7 @@ export function MatchClock({
     regulationDurationMinutes,
     quarterStartedAt,
     frozenClockMs,
+    refereeClock,
     status,
   });
 

@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['**/*.test.{ts,tsx}'],
-    exclude: ['node_modules', 'convex/_generated', 'tmp/**', 'apps/**'],
+    exclude: ['node_modules', 'convex/_generated', 'tmp/**', 'apps/**', '**/.artifacts/**'],
     coverage: {
       reporter: ['text', 'html'],
       exclude: ['convex/_generated/**', 'node_modules/**'],

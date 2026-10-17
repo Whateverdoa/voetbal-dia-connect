@@ -3,7 +3,7 @@
  */
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { recordPlayingTime } from "../playingTimeHelpers";
+import { recordPlayingTime, startPlayingTime } from "../playingTimeHelpers";
 import {
   buildEventGameTimeStamp,
   getEffectiveEventTime,
@@ -74,14 +74,8 @@ export async function applyBenchSubstitutionWithSlotTransfer(
     fieldSlotIndex: undefined,
   });
 
-  const mpInUpdates: {
-    onField: boolean;
-    lastSubbedInAt: number;
-    fieldSlotIndex?: number;
-  } = {
-    onField: true,
-    lastSubbedInAt: now,
-  };
+  await startPlayingTime(ctx, mpIn._id, now);
+  const mpInUpdates: { fieldSlotIndex?: number } = {};
   if (slotToTransfer !== undefined && slotToTransfer !== null) {
     mpInUpdates.fieldSlotIndex = slotToTransfer;
   }

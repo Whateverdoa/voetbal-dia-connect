@@ -226,7 +226,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
   let createdMatchPlayers = 0;
   let backfilledMatchRosters = 0;
   let skippedExisting = 0;
-  let skippedExistingWithResult = 0;
+  const skippedExistingWithResult = 0;
   let skippedNoDiaTeam = 0;
   let skippedUnknownTeam = 0;
   let skippedCancelled = 0;
@@ -277,6 +277,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     // AFGELAST: mark the matching local row cancelled (if not already finished/live).
     if (wedstrijd.status === "afgelast") {
       const existingMatch = resolveExisting();
+      if (existingMatch?.refereePolicy) { skippedExisting++; continue; }
       const isLiveOrFinished =
         existingMatch &&
         (isLiveOrHalftime(existingMatch.status) ||
@@ -304,6 +305,8 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
     let existingMatch = resolveExisting();
 
     if (existingMatch) {
+      // Official event registration is authoritative, including after finishing.
+      if (existingMatch.refereePolicy) { skippedExisting++; continue; }
       // Correct team when Sportlink mapping changed (e.g. O13-2JM → jo13-2).
       if (existingMatch.teamId !== team._id) {
         const canReplaceRoster =
@@ -416,7 +419,7 @@ async function performSyncAll(ctx: MutationCtx, dryRun: boolean) {
           awayGoals,
           Date.now(),
         );
-        if (result.kind === "skipped_live") {
+        if (result.kind === "skipped_live" || result.kind === "skipped_referee_policy") {
           skippedExisting++;
           continue;
         }

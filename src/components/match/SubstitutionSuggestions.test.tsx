@@ -300,6 +300,7 @@ describe('SubstitutionSuggestions', () => {
       fireEvent.click(executeButtons[0]);
 
       expect(screen.getByText('Bezig...')).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByText('Bezig...')).not.toBeInTheDocument());
     });
 
     it('disables button while executing', async () => {
@@ -312,6 +313,7 @@ describe('SubstitutionSuggestions', () => {
 
       const busyButton = screen.getByText('Bezig...').closest('button');
       expect(busyButton).toBeDisabled();
+      await waitFor(() => expect(busyButton).toBeEnabled());
     });
   });
 

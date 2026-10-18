@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Discipline cards (yellow / red). Official duty: assigned referee,
  * or match lead when no referee is using the app.
@@ -44,6 +45,7 @@ export const addCard = mutation({
   returns: addCardResult,
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (match.status !== "live" && match.status !== "halftime") {
       throw new Error("Kaarten alleen tijdens de wedstrijd");

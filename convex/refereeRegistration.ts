@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { query } from "./_generated/server";
 import { getCurrentUserAccess } from "./lib/userAccess";
 
-// Diagnosis-only production patch. No pilot schema, policy, command or scope rollout.
+// The original strictly pinned read-only diagnostic remains available.
 const DIAGNOSIS_OWNER_EMAIL = "mjtenhoonte@gmail.com";
 const TEST_MATCH_ID = "jn7cw69dexmjjmg88jbwsxj4kx8gecgr";
 export const diagnose = query({
@@ -12,7 +12,7 @@ export const diagnose = query({
     actorSubject: v.string(), matchId: v.id("matches"),
     controller: v.union(v.literal("referee"), v.literal("coach"), v.literal("none")),
     isOfficialRegistrar: v.boolean(), eligibleToControl: v.boolean(),
-    policyActive: v.literal(false), mobileScopeStatus: v.literal("unavailable"),
+    policyActive: v.boolean(), mobileScopeStatus: v.union(v.literal("unavailable"), v.literal("missing"), v.literal("disabled"), v.literal("expired"), v.literal("team_mismatch"), v.literal("ready")),
   }),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -35,11 +35,15 @@ export const diagnose = query({
     const assignedReferee = !!referee?.active && access.roles.includes("referee") && access.refereeId === referee._id;
     if (!access.roles.includes("admin") && !assignedReferee && !ownCoach) throw new ConvexError("FORBIDDEN");
     const isOfficialRegistrar = !!(match.refereeId ? assignedReferee : ownCoach && match.leadCoachId === coach?._id);
+    const scope = match.refereePolicy ? await ctx.db.query("mobilePilotScopes")
+      .withIndex("by_subject_and_match", q => q.eq("subject", identity.subject).eq("matchId", match._id)).unique() : null;
+    const mobileScopeStatus = !match.refereePolicy ? "unavailable" as const : !scope ? "missing" as const :
+      !scope.enabled ? "disabled" as const : scope.teamId !== match.teamId ? "team_mismatch" as const :
+      scope.expiresAt <= Date.now() ? "expired" as const : "ready" as const;
     return { diagnosticVersion: 1 as const, readOnly: true as const,
       actorSubject: identity.subject, matchId: match._id,
       controller: match.refereeId ? "referee" as const : match.leadCoachId ? "coach" as const : "none" as const,
       isOfficialRegistrar, eligibleToControl: isOfficialRegistrar && match.cancelledAt === undefined && match.status !== "finished",
-      // No mobile match API is deployed; scope availability must not be inferred from leftover tables.
-      policyActive: false as const, mobileScopeStatus: "unavailable" as const };
+      policyActive: !!match.refereePolicy, mobileScopeStatus };
   },
 });

@@ -35,7 +35,7 @@ function toMs(event: Doc<"matchEvents">): number | undefined {
   return undefined;
 }
 
-export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[] {
+export function applyGoalEnrichments(events: EventWithNames[], partialFields = false): EventWithNames[] {
   const byGoal = new Map<string, EventWithNames[]>();
   for (const event of events) {
     if (event.type === "goal_enrichment" && event.targetEventId) {
@@ -59,15 +59,27 @@ export function applyGoalEnrichments(events: EventWithNames[]): EventWithNames[]
     const ordered = [...enrichments].sort(
       (a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id))
     );
-    const latest = ordered[ordered.length - 1];
+    if (!partialFields) {
+      const latest = ordered[ordered.length - 1];
+      return { ...event, playerId: latest.playerId ?? event.playerId,
+        relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
+        playerName: latest.playerName ?? event.playerName,
+        relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
+        assistKind: latest.assistKind ?? event.assistKind, matchMs: toMs(event) };
+    }
+    // Enrichments are partial patches; omitted fields retain earlier values.
+    const enriched = ordered.reduce<EventWithNames>((goal, enrichment) => ({
+      ...goal,
+      playerId: enrichment.playerId ?? goal.playerId,
+      relatedPlayerId: enrichment.relatedPlayerId ?? goal.relatedPlayerId,
+      reportedNumber: enrichment.reportedNumber ?? goal.reportedNumber,
+      playerName: enrichment.reportedNumber !== undefined ? `Nr. ${enrichment.reportedNumber}` : enrichment.playerName ?? goal.playerName,
+      relatedPlayerName: enrichment.relatedPlayerName ?? goal.relatedPlayerName,
+      assistKind: enrichment.assistKind ?? goal.assistKind,
+    }), event);
 
     return {
-      ...event,
-      playerId: latest.playerId ?? event.playerId,
-      relatedPlayerId: latest.relatedPlayerId ?? event.relatedPlayerId,
-      playerName: latest.playerName ?? event.playerName,
-      relatedPlayerName: latest.relatedPlayerName ?? event.relatedPlayerName,
-      assistKind: latest.assistKind ?? event.assistKind,
+      ...enriched,
       matchMs: toMs(event),
     };
   });
@@ -108,6 +120,19 @@ export function isCoachOnlyEvent(event: Doc<"matchEvents">): boolean {
     event.type === "substitution_staged" ||
     event.type === "substitution_executed" ||
     event.type === "substitution_cancelled" ||
-    event.type === "goal_enrichment"
+    event.type === "goal_enrichment" ||
+    event.type === "clock_guard" || event.type === "official_audit" ||
+    event.type === "official_annotation" || event.type === "incident"
   );
+}
+
+/** Pilot-only public projection. Do not expose authentication actor metadata. */
+export function projectPublicMatchEvents(events: EventWithNames[]) {
+  const corrected = new Set(events.filter(e => e.type === "goal_correction").map(e => e.targetEventId));
+  return applyGoalEnrichments(events, true).filter(e => !isCoachOnlyEvent(e)).map(event => {
+    const result = { ...event, corrected: event.type === "goal" && corrected.has(event._id) };
+    delete result.actorSubject;
+    delete result.actorKind;
+    return result;
+  });
 }

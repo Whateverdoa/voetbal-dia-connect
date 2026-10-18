@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 /**
  * Score adjustment mutations for referee (and coach) score editing.
  *
@@ -37,6 +38,7 @@ export const adjustScore = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
     }

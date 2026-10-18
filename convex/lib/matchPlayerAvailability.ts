@@ -7,11 +7,12 @@ export type PlayerAvailabilityStatus = "available" | "absent" | "injured";
 export type AvailabilityFlags = {
   absent?: boolean;
   injured?: boolean;
+  dismissed?: boolean;
 };
 
 /** True when the player cannot be put on the field or subbed in. */
 export function isUnavailable(mp: AvailabilityFlags): boolean {
-  return mp.absent === true || mp.injured === true;
+  return mp.absent === true || mp.injured === true || mp.dismissed === true;
 }
 
 export function availabilityStatus(
@@ -48,6 +49,7 @@ export function throwIfUnavailable(
   action: UnavailableAction
 ): void {
   if (!isUnavailable(mp)) return;
+  if (mp.dismissed) throw new Error("Speler met een rode kaart kan niet terug op het veld");
   const injured = mp.injured === true;
   switch (action) {
     case "field":

@@ -1,0 +1,30 @@
+// Never deployed remotely: synthetic localhost-only fixtures for the release harness.
+import { internalMutation, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
+export const seed = internalMutation({ args: {}, handler: async ctx => {
+  const now = Date.now();
+  const clubId = await ctx.db.insert("clubs", { name: "Synthetic", slug: "local-only", createdAt: now });
+  const teamId = await ctx.db.insert("teams", { clubId, name: "Synthetic", slug: "local-only", createdAt: now });
+  const refereeId = await ctx.db.insert("referees", { name: "Synthetic referee", email: "owner@trial.invalid", active: true, createdAt: now });
+  const coachId = await ctx.db.insert("coaches", { name: "Synthetic coach", email: "owner@trial.invalid", teamIds: [teamId], createdAt: now });
+  const accessId = await ctx.db.insert("userAccess", { email: "owner@trial.invalid", roles: ["coach", "referee"], coachId, refereeId, active: true, source: "admin_manual", lastSyncedAt: now, createdAt: now, updatedAt: now });
+  await ctx.db.insert("userAccess", { email: "admin@trial.invalid", roles: ["admin"], active: true, source: "admin_manual", lastSyncedAt: now, createdAt: now, updatedAt: now });
+  const template = { teamId, refereeId, leadCoachId: coachId, opponent: "Synthetic", isHome: true, status: "scheduled" as const, currentQuarter: 1, quarterCount: 2, regulationDurationMinutes: 60, homeScore: 0, awayScore: 0, showLineup: false, createdAt: now };
+  const matchId = await ctx.db.insert("matches", { ...template, publicCode: "2P23BS" });
+  const otherId = await ctx.db.insert("matches", { ...template, publicCode: "LOCAL-OTHER" });
+  const players = [];
+  for (const [name, absent] of [["Synthetic scorer", false], ["Synthetic assist", false], ["Synthetic absent", true]] as const) {
+    const playerId = await ctx.db.insert("players", { teamId, name, number: players.length + 7, active: true, createdAt: now });
+    players.push(playerId);
+    await ctx.db.insert("matchPlayers", { matchId, playerId, isKeeper: false, onField: !absent, absent, createdAt: now });
+  }
+  return { matchId, otherId, teamId, refereeId, coachId, accessId, players };
+} });
+export const inspect = internalQuery({ args: {}, handler: async ctx => ({
+  matches: await ctx.db.query("matches").take(10), events: await ctx.db.query("matchEvents").take(1000),
+  scopes: await ctx.db.query("mobilePilotScopes").take(10), users: await ctx.db.query("userAccess").take(10),
+  players: await ctx.db.query("matchPlayers").take(10), referees: await ctx.db.query("referees").take(10), coaches: await ctx.db.query("coaches").take(10),
+}) });
+export const patch = internalMutation({ args: { id: v.string(), patch: v.any() }, handler: async (ctx, args) => {
+  await ctx.db.patch(args.id, Object.fromEntries(Object.entries(args.patch).map(([key, value]) => [key, value === null ? undefined : value])));
+} });

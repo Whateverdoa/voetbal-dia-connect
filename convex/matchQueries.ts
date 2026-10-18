@@ -1,3 +1,4 @@
+import { playerMinutesAt } from "./playingTimeHelpers";
 /**
  * Match queries - playing time and substitution suggestions
  * Split from matches.ts to keep files under 300 LOC
@@ -26,15 +27,7 @@ export const getPlayingTime = query({
         const player = await ctx.db.get(mp.playerId);
         if (!player) return null;
 
-        let totalMinutes = mp.minutesPlayed ?? 0;
-        if (
-          mp.onField &&
-          mp.lastSubbedInAt &&
-          match.status === "live" &&
-          match.activeStoppageStartedAt == null
-        ) {
-          totalMinutes += (now - mp.lastSubbedInAt) / 60000;
-        }
+        const totalMinutes = playerMinutesAt(match, mp, now);
 
         return {
           playerId: mp.playerId,
@@ -78,18 +71,11 @@ export const getSuggestedSubstitutions = query({
 
     const playersWithTime = await Promise.all(
       matchPlayers.map(async (mp) => {
+        if (mp.dismissed) return null;
         const player = await ctx.db.get(mp.playerId);
         if (!player) return null;
 
-        let totalMinutes = mp.minutesPlayed ?? 0;
-        if (
-          mp.onField &&
-          mp.lastSubbedInAt &&
-          match.status === "live" &&
-          match.activeStoppageStartedAt == null
-        ) {
-          totalMinutes += (now - mp.lastSubbedInAt) / 60000;
-        }
+        const totalMinutes = playerMinutesAt(match, mp, now);
 
         return {
           playerId: mp.playerId,

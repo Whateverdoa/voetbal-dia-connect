@@ -1,3 +1,4 @@
+import { assertLegacyOfficialWrite } from "./lib/refereeMatchPolicy";
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { buildEventGameTimeStamp, getEffectiveEventTime } from "./lib/matchEventGameTime";
@@ -20,6 +21,7 @@ export const enrichGoal = mutation({
   },
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
+    if (match) assertLegacyOfficialWrite(match);
     if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
     }

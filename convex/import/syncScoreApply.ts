@@ -6,7 +6,8 @@ import type { Doc } from "../_generated/dataModel";
 export type ScoreApplyResult =
   | { kind: "unchanged" }
   | { kind: "applied"; discrepancy: boolean }
-  | { kind: "skipped_live" };
+  | { kind: "skipped_live" }
+  | { kind: "skipped_referee_policy" };
 
 export function isLiveOrHalftime(
   status: Doc<"matches">["status"],
@@ -21,7 +22,7 @@ export function isLiveOrHalftime(
 export function buildFinishedScorePatch(
   match: Pick<
     Doc<"matches">,
-    "homeScore" | "awayScore" | "status" | "scoreDiscrepancyAt"
+    "homeScore" | "awayScore" | "status" | "scoreDiscrepancyAt" | "refereePolicy"
   >,
   homeGoals: number,
   awayGoals: number,
@@ -30,6 +31,9 @@ export function buildFinishedScorePatch(
   result: ScoreApplyResult;
   patch: Record<string, number | undefined>;
 } {
+  if (match.refereePolicy) {
+    return { result: { kind: "skipped_referee_policy" }, patch: {} };
+  }
   if (isLiveOrHalftime(match.status)) {
     return { result: { kind: "skipped_live" }, patch: {} };
   }

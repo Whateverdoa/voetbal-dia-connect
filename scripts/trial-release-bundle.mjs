@@ -57,3 +57,31 @@ export function assertAdditiveTrialSchema(before,after){
     for(const key of fieldAdditions[old.tableName]??[])assert.equal(newFields[key].optional,true,'New field not optional');
   }
 }
+
+// The backend adds implicit creation-time index keys and sorts table definitions.
+// Ignore only those representational differences, never a real field/index change.
+export function normalizedTrialSchema(value, key = '') {
+  if (Array.isArray(value)) {
+    const items = value.map(v => normalizedTrialSchema(v));
+    if (key === 'tables') items.sort((a,b) => a.tableName.localeCompare(b.tableName));
+    if (key === 'indexes') items.sort((a,b) => a.indexDescriptor.localeCompare(b.indexDescriptor));
+    return items;
+  }
+  if (value && typeof value === 'object') {
+    const result = {};
+    for (const key of Object.keys(value).sort()) {
+      const field = value[key];
+      if (key === 'stagedDocumentType' && field == null) continue;
+      if (key.startsWith('staged') && Array.isArray(field) && field.length === 0) continue;
+      result[key] = key === 'fields' && Array.isArray(field)
+        ? field.filter((f,i) => f !== '_creationTime' || i !== field.length - 1)
+        : normalizedTrialSchema(field, key);
+    }
+    return result;
+  }
+  return value;
+}
+export function assertExactTrialPreparation(pending, expected) {
+  assert.deepEqual(normalizedTrialSchema(pending), normalizedTrialSchema(expected),
+    'Pending schema is not the exact approved trial; refuse to replace or adopt it');
+}

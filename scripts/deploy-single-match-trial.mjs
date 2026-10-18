@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {ConvexClient,ConvexHttpClient} from 'convex/browser';
 import {makeFunctionReference as ref} from 'convex/server';
-import {buildTrialOverlay,changedTrialFiles,schemaJSON,assertAdditiveTrialSchema} from './trial-release-bundle.mjs';
+import {buildTrialOverlay,changedTrialFiles,schemaJSON,assertAdditiveTrialSchema,assertExactTrialPreparation} from './trial-release-bundle.mjs';
 const root=process.cwd(),TARGET='https://nautical-condor-5.convex.cloud',MATCH='jn7cw69dexmjjmg88jbwsxj4kx8gecgr';
 const apply=process.argv.includes('--apply-owner-approved-2p23bs-trial');
 assert(apply||process.argv.includes('--check-only'),'An explicit release mode is required');
@@ -29,7 +29,7 @@ try{
   const hashState=await post('/api/get_config_hashes');assert.equal(hashState.nodeVersion??null,null,'Preserve the existing runtime version');
   const expected=JSON.parse(fs.readFileSync('../iphone-trial-preflight/source.json'));
   assert.deepEqual(original,expected,'Unexpected concurrent production source change');
-  const schema=await read('_system/frontend/getSchemas');assert(schema.active&&!schema.inProgress,'Concurrent schema preparation detected');
+  const schema=await read('_system/frontend/getSchemas');assert(schema.active,'Active schema required');
   const beforeFunctions=await read('_system/cli/modules:apiSpec');
   const indexTables=JSON.parse(schema.active).tables.map(t=>t.tableName);
   const beforeIndexes={};for(const tableName of indexTables)beforeIndexes[tableName]=await read('_system/frontend/indexes',{tableName,tableNamespace:null});
@@ -41,6 +41,12 @@ try{
   const gate=await read('_system/cli/queryEnvironmentVariables:get',{name:'MOBILE_REFEREE_WRITES_ENABLED'});assert(!gate||gate.value==='false','Global mobile gate is unexpectedly already enabled');
   const overlay=await buildTrialOverlay(root,original,changedTrialFiles(root));const nextSchema=await schemaJSON(overlay.find(m=>m.path==='schema.js'));
   assertAdditiveTrialSchema(JSON.parse(schema.active),nextSchema);
+  if(schema.inProgress){
+    assert(process.argv.includes('--reuse-exact-own-preview-preparation'),'Concurrent schema preparation detected');
+    const provenance=JSON.parse(fs.readFileSync('.artifacts/preview-schema-provenance.json'));
+    assert(provenance.target==='preview'&&provenance.automaticCodegenObserved&&provenance.exactSchemaMatch&&provenance.branch==='codex/2p23bs-iphone-trial','Known own-preview provenance required');
+    assertExactTrialPreparation(JSON.parse(schema.inProgress),nextSchema);
+  }
   save('previous-code-config.json',original);save('overlay-modules.json',overlay);save('schema-before.json',schema);
   save('preflight.json',{matchId:MATCH,status:match.status,score:[match.homeScore,match.awayScore],accountAndActiveAssignmentConfirmed:true,existingScopes:0,otherMatchesFingerprint:digest(before.matches.filter(m=>m._id!==MATCH)),rolesFingerprint:digest(before.userAccess),refereesFingerprint:digest(before.referees),coachesFingerprint:digest(before.coaches),modifiedModulePaths:overlay.map(m=>m.path),retainedModuleCount:original.modules.filter(m=>!overlay.some(o=>o.path===m.path)).length});
   console.log('PRECHECK PASSED: existing source, exact fixture/assignment, empty scopes, closed gate and additive schema verified.');

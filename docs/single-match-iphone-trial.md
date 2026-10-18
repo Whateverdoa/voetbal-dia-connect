@@ -87,3 +87,21 @@ not certified by the limited trial; unsupported native actions fail closed.
 - Whole-repository ESLint still reports the pre-existing conditional hook in
   unchanged `src/components/match/BreakClock.tsx`, plus 168 existing warnings.
   This is not represented as a green global lint or a certified frontend rollout.
+
+## Preview-install schema preparation discovered and contained
+
+The first activation attempt stopped before code/data/flag changes because an
+in-progress schema appeared. Read-only Vercel evidence attributes this to our own
+PR73 preview (`981a89e`, deployment `dpl_9Bc45SKFcaixLnRA7m8ntGuU1ZGL`): the old
+npm postinstall executed `convex codegen`, whose installed CLI implementation
+starts schema preparation even though it does not finish a code deployment.
+The prepared schema is exactly the reviewed trial schema, not another change.
+
+Removed automatic postinstall codegen and the root lockfile install-script flag.
+Six release-safety tests prevent lifecycle backend calls and reject adopting any
+non-identical pending schema. The real local selective-release harness also
+verifies that repeating the identical preparation reuses its schema ID. Reuse of
+this known own-preview preparation requires an explicit narrow operator flag and
+provenance; unknown preparations still stop the release. No unrelated prepared
+schema/index is cancelled or overwritten. Future explicit development `convex dev`
+or an intentionally approved deployment can generate code normally.

@@ -45,6 +45,7 @@ try {
   try {
     const schema=await readSystem('_system/frontend/getSchemas');assertAdditiveTrialSchema(JSON.parse(schema.active),await schemaJSON(overlay.find(m=>m.path==='schema.js')));
     const prepared=await post('/api/prepare_schema',{bundle:overlay.find(m=>m.path==='schema.js'),dryRun:false});assert(prepared.schemaId);await sleep(1500);
+    const repeated=await post('/api/prepare_schema',{bundle:overlay.find(m=>m.path==='schema.js'),dryRun:false});assert.equal(repeated.schemaId,prepared.schemaId,'Exact preparation must be reused, not replaced');
     const modules=[...prior.modules.filter(m=>!overlay.some(o=>o.path===m.path)),...overlay];
     await post('/api/push_config',{config:prior.config,modules,udfServerVersion:prior.udfServerVersion,schemaId:prepared.schemaId,nodeDependencies:[],nodeVersion:null});
     const after=await post('/api/get_config');assert.deepEqual(after.config,prior.config);for(const m of prior.modules.filter(m=>!overlay.some(o=>o.path===m.path)))assert.deepEqual(after.modules.find(a=>a.path===m.path),m);

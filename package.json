@@ -17,8 +17,7 @@
     "check:clerk-jwt": "node scripts/check-clerk-convex-jwt.mjs",
     "fix:clerk-jwt": "node scripts/ensure-clerk-convex-jwt.mjs",
     "results:update": "npx convex run import/weeklyUpdate:runNow",
-    "predev": "convex dev --until-success",
-    "postinstall": "npx convex codegen || true"
+    "predev": "convex dev --until-success"
   },
   "dependencies": {
     "@clerk/nextjs": "7.2.4",

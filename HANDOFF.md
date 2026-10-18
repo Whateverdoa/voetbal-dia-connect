@@ -390,3 +390,30 @@ Plan (referentie): **`docs/plans/coach_scheids_admin_logos.plan.md`**.
 
 **Optioneel later:** upload naar Convex storage als statische `/logos/` niet genoeg is.
 
+
+## Controlled iPhone trial for 2P23BS - 18 October 2026
+
+Owner explicitly approved the selected-match trial. Draft PR73 preserves the
+narrow production patch; PR71 remains separate/unmerged. Production mobile API
+hard-pins verified owner email and exact match, then requires a real subject-bound
+scope, active team/access/current official duty, version, idempotency and payload
+checks. Automatic install codegen was removed after our own preview unexpectedly
+prepared the identical schema. No unrelated schema/index was replaced.
+
+Code deployed selectively with old runtime/auth/crons retained. Initial postcheck
+stopped on a newly prepared index becoming active, not on removal of an old index.
+Read-only verification subsequently proved all 53 old active indexes plus the
+three required new indexes intact. Activation-only finalizer changed no code,
+schema or indexes; only 2P23BS policy/ticket/audit and the fenced mobile switch.
+Other match/role/coach/referee records remained identical. Ticket expires 19 Oct
+2026 11:19 Amsterdam; policy/clock guards remain after scope expiry.
+
+Owner confirms physical build6 Start wedstrijd active. Fresh inspection confirms
+one actual subject-bound scope for 2P23BS; no token or real subject was exported.
+No agent start/goal/card/correction was written in live. Manual match-action
+acceptance remains pending. iPhone install/launch succeeded; details in iOS handoff
+and docs/single-match-iphone-trial.md. Backend 885 tests/114 files, TypeScript,
+changed lint, 15 real local checks pass. Native 175 passes/1 optional skip, seven
+adapter UI plus one login gate UI and twenty build guards pass. Webpack build
+passes; global lint retains the unchanged BreakClock conditional-hook error and
+existing warnings. No frontend, Android or Watch release was performed.

@@ -105,3 +105,32 @@ this known own-preview preparation requires an explicit narrow operator flag and
 provenance; unknown preparations still stop the release. No unrelated prepared
 schema/index is cancelled or overwritten. Future explicit development `convex dev`
 or an intentionally approved deployment can generate code normally.
+
+## Actual narrow activation and physical acceptance
+
+18 October: the code/schema release completed while writes remained closed. Its
+postcheck stopped on the new goal-correction index's expected backfilled -> done
+transition, incorrectly classifying it as an old active index. The old active
+schema proves it did not previously contain that index; the approved prepared
+schema did. No blanket index exception was accepted or applied.
+
+A separate `finish-single-match-trial.mjs` performs read-only source/schema and
+index verification, then only the tested pinned activation and mobile kill-switch
+change. It has no code/schema/index mutation capability. All 53 truly pre-existing
+active indexes and all three newly approved indexes were verified intact, exact
+deployed sources matched the tested overlay, other matches and all existing
+roles/referees/coaches matched preflight fingerprints. Only 2P23BS received policy,
+a pending subject ticket and system audit. Scheduled 0-0 state and metadata stayed
+unchanged. The ticket expires **19 October 2026 11:19 Europe/Amsterdam**.
+
+Build 6 installed and launched successfully on the connected iPhone. Owner then
+confirmed: "Ja, Start wedstrijd is actief". Fresh server inspection confirms
+exactly one enabled writer scope, bound by the real verified login rather than a
+pending subject, for 2P23BS only. No JWT/subject value was exported. This establishes
+real-device login, enrollment, exact API/clock-policy compatibility and access to
+the native controls; it does NOT certify physical goal/clock action scenarios yet.
+The agent has not started the live match or entered any goal/card/correction.
+
+Evidence is ignored/protected: production-trial-0n6OiO (partial release),
+index-transition-readonly-proof.json, verified-trial-activation-lXGvYk (activation),
+physical-trial-ready.json. No production records or credentials are committed.

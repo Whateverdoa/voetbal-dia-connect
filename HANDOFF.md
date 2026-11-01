@@ -1,5 +1,15 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Productiestandenfix (1 november 2026)
+
+De standenpolling en openbare leesquery zijn na test en Mike's expliciete akkoord
+selectief op `nautical-condor-5` geplaatst. Zie
+`docs/standings-polling-production-2026-11-01.md` voor bewijs en monitoring.
+Productie bevat bovendien al de beperkte iPhone-patch uit PR #73 die niet op
+`main` staat. Geen volledige backenddeploy vanaf main voordat die bestaande
+productiecode is verzoend; zo'n deploy zou de pilot terugdraaien. De standenrelease
+bewaarde alle 278 overige gedeployde modules en alle bestaande indexes.
+
 ## Webtestbaseline voor native integratie (15 oktober 2026)
 
 Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande

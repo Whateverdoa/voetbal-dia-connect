@@ -34,8 +34,8 @@ crons.cron(
 );
 
 /**
- * Bond poulestanden in het weekend: elke 15 min (UTC 10-20, za+zo) ná afgelopen
- * wedstrijden, tot Sportlink een nieuwe stand publiceert. Daarna stop voor die dag.
+ * Bond poulestanden: elk kwartier van 10:00 t/m 20:45 UTC op za+zo.
+ * De gedeelde reservering begrenst dit tot 44 pogingen per Amsterdam-dag.
  */
 crons.cron(
   "sportlink-standings-weekend-poll",
@@ -43,11 +43,18 @@ crons.cron(
   internal.import.sportlinkStandingsFetch.syncStandingsWeekendPoll,
 );
 
+/** Vangnet voor uitslagen die pas na het weekendvenster zijn verwerkt. */
+crons.cron(
+  "sportlink-standings-monday",
+  "0 10 * * 1",
+  internal.import.sportlinkStandingsFetch.syncStandingsWeekendPoll,
+);
+
 /** Lichte midweek-vangnet (wo 20:00 UTC) — geen kwartier-poll doordeweeks. */
 crons.cron(
   "sportlink-standings-midweek",
   "0 20 * * 3",
-  internal.import.sportlinkStandingsFetch.syncStandings,
+  internal.import.sportlinkStandingsFetch.syncStandingsWeekendPoll,
 );
 
 /** Auto-close expired claim windows + optional closing reminders (daily 12:00 UTC). */

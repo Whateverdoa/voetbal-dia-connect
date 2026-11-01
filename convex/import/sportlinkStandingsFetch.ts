@@ -9,7 +9,7 @@
  */
 import { internalAction, type ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { parseAmsterdamTimestamp } from "../lib/timezone";
+import { v } from "convex/values";
 import {
   mapPouleAssignments,
   mapStandingRows,
@@ -20,6 +20,19 @@ import {
 } from "./sportlinkStandingsMapper";
 
 const DEFAULT_BASE = "https://data.sportlink.com";
+const REQUEST_TIMEOUT_MS = 8_000;
+const SYNC_BUDGET_MS = 8 * 60_000;
+
+const syncSummaryValidator = v.object({
+  source: v.literal("sportlink"),
+  ownTeamsInPoule: v.number(),
+  teamsWritten: v.number(),
+  poulesFetched: v.number(),
+  skippedUnknownTeams: v.array(v.string()),
+  prunedTeams: v.number(),
+  failedPoules: v.array(v.string()),
+  contentChanged: v.boolean(),
+});
 
 export type StandingsSyncSummary = {
   source: "sportlink";
@@ -44,20 +57,47 @@ function sportlinkConfig(): { clientId: string; baseUrl: string } {
 }
 
 async function fetchJsonArray(url: URL, label: string): Promise<unknown[]> {
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error(`Sportlink ${label} fout: ${res.status} ${res.statusText}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Sportlink ${label}: HTTP ${res.status}`);
+    }
+    const payload: unknown = await res.json();
+    if (!Array.isArray(payload)) {
+      throw new Error(`Sportlink ${label}: onverwacht antwoord`);
+    }
+    return payload;
+  } catch {
+    // Fetch/parse errors can contain the URL, including the client credential.
+    throw new Error(`Sportlink ${label}: ophalen mislukt`);
+  } finally {
+    clearTimeout(timeout);
   }
-  const payload: unknown = await res.json();
-  if (!Array.isArray(payload)) {
-    throw new Error(`Sportlink ${label}: onverwacht antwoord`);
-  }
-  return payload;
 }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIntegerValue(value: unknown): boolean {
+  return (
+    (typeof value === "number" && Number.isSafeInteger(value)) ||
+    (typeof value === "string" && /^-?\d+$/.test(value.trim()) &&
+      Number.isSafeInteger(Number(value)))
+  );
+}
+
+const standingNumericFields = [
+  "positie", "gespeeldewedstrijden", "gewonnen", "gelijk", "verloren",
+  "doelpuntenvoor", "doelpuntentegen", "doelsaldo", "punten",
+] as const;
 
 async function fetchOwnTeams(
   baseUrl: string,
@@ -65,7 +105,16 @@ async function fetchOwnTeams(
 ): Promise<RawSportlinkTeam[]> {
   const url = new URL(`${baseUrl}/teams`);
   url.searchParams.set("client_id", clientId);
-  return (await fetchJsonArray(url, "teams")) as RawSportlinkTeam[];
+  const payload = await fetchJsonArray(url, "teams");
+  if (payload.length === 0 || !payload.every((row) =>
+    isRecord(row) && typeof row.teamnaam === "string" &&
+    row.teamnaam.trim().length > 0 && typeof row.competitiesoort === "string" &&
+    (row.poulecode == null || typeof row.poulecode === "string" ||
+      (typeof row.poulecode === "number" && Number.isSafeInteger(row.poulecode)))
+  )) {
+    throw new Error("Sportlink teams: ongeldige teamlijst");
+  }
+  return payload as RawSportlinkTeam[];
 }
 
 async function fetchPoulestand(
@@ -76,16 +125,22 @@ async function fetchPoulestand(
   const url = new URL(`${baseUrl}/poulestand`);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("poulecode", poulecode);
-  const payload = (await fetchJsonArray(
-    url,
-    `poulestand ${poulecode}`
-  )) as RawPoulestandRow[];
-  return mapStandingRows(payload);
+  const payload = await fetchJsonArray(url, "poulestand");
+  if (payload.length === 0 || !payload.every((row) =>
+    isRecord(row) && typeof row.teamnaam === "string" &&
+    row.teamnaam.trim().length > 0 &&
+    standingNumericFields.every((field) => isIntegerValue(row[field])) &&
+    (row.clublogo == null || typeof row.clublogo === "string")
+  )) {
+    throw new Error("Sportlink poulestand: ongeldige of lege stand");
+  }
+  return mapStandingRows(payload as RawPoulestandRow[]);
 }
 
 async function runStandingsSync(
   ctx: ActionCtx
 ): Promise<StandingsSyncSummary> {
+  const deadline = Date.now() + SYNC_BUDGET_MS;
   const { clientId, baseUrl } = sportlinkConfig();
 
   const assignments = mapPouleAssignments(
@@ -109,14 +164,17 @@ async function runStandingsSync(
   const rowsByPoule = new Map<string, StandingRow[]>();
   const failedPoules: string[] = [];
   for (const poulecode of new Set(wanted.map((a) => a.poulecode))) {
+    if (Date.now() + REQUEST_TIMEOUT_MS > deadline) {
+      failedPoules.push(poulecode);
+      continue;
+    }
     try {
       rowsByPoule.set(
         poulecode,
         await fetchPoulestand(baseUrl, clientId, poulecode)
       );
-    } catch (error) {
-      // One broken poule must not throw away the rest of the sync.
-      console.error("poulestand fout", poulecode, error);
+    } catch {
+      // Keep the last valid cache and continue with the other poules.
       failedPoules.push(poulecode);
     }
   }
@@ -140,21 +198,14 @@ async function runStandingsSync(
     writtenSlugs.push(assignment.teamSlug);
   }
 
-  const prunedTeams = await ctx.runMutation(
-    internal.import.standingsWrite.pruneStandings,
-    { keepTeamSlugs: writtenSlugs }
-  );
-  if (prunedTeams > 0) {
-    contentChanged = true;
-  }
-
   return {
     source: "sportlink",
     ownTeamsInPoule: assignments.length,
     teamsWritten: writtenSlugs.length,
     poulesFetched: rowsByPoule.size,
     skippedUnknownTeams,
-    prunedTeams,
+    // Removal needs a separate, explicitly reviewed membership cleanup.
+    prunedTeams: 0,
     failedPoules,
     contentChanged,
   };
@@ -163,6 +214,7 @@ async function runStandingsSync(
 /** Manual: npx convex run import/sportlinkStandingsFetch:syncStandings */
 export const syncStandings = internalAction({
   args: {},
+  returns: syncSummaryValidator,
   handler: async (ctx) => runStandingsSync(ctx),
 });
 
@@ -175,100 +227,84 @@ function amsterdamDateKey(nowMs: number): string {
   }).format(new Date(nowMs));
 }
 
-type WeekendPollState = {
-  amsterdamDate: string;
-  baselineFingerprint: string;
-  sawUpdate: boolean;
-  updatedAt: number;
-} | null;
-
-type WeekendPollResult =
-  | { skipped: "already_fresh" | "no_matches_ended"; amsterdamDate: string }
+type ScheduledPollResult =
   | {
-      skipped: null;
-      amsterdamDate: string;
-      sawUpdate: boolean;
-      contentChanged: boolean;
-      sync: StandingsSyncSummary;
-    };
+    skipped: "outside_window" | "already_attempted" | "daily_limit" | "in_progress";
+    amsterdamDate: string;
+  }
+  | {
+    skipped: null;
+    amsterdamDate: string;
+    attempt: number;
+    outcome: "changed" | "unchanged" | "partial" | "error";
+    contentChanged: boolean;
+    sync: StandingsSyncSummary;
+  };
 
 /**
- * Weekend poll: after matches end, sync every ~15 min until Sportlink shows a
- * new table for that Amsterdam day; then stop. Weekdays stay on the midweek cron.
+ * Every scheduled round reserves a bounded calendar slot atomically. Earlier
+ * updates and DIA's own match schedule cannot prove that a whole poule is fresh.
  */
 export const syncStandingsWeekendPoll = internalAction({
   args: {},
-  handler: async (ctx): Promise<WeekendPollResult> => {
-    const now = Date.now();
-    const amsterdamDate = amsterdamDateKey(now);
-
-    const pollState: WeekendPollState = await ctx.runQuery(
-      internal.import.standingsWrite.getWeekendPollState,
+  returns: v.union(
+    v.object({
+      skipped: v.union(v.literal("outside_window"), v.literal("already_attempted"),
+        v.literal("daily_limit"), v.literal("in_progress")),
+      amsterdamDate: v.string(),
+    }),
+    v.object({
+      skipped: v.null(),
+      amsterdamDate: v.string(),
+      attempt: v.number(),
+      outcome: v.union(v.literal("changed"), v.literal("unchanged"),
+        v.literal("partial"), v.literal("error")),
+      contentChanged: v.boolean(),
+      sync: syncSummaryValidator,
+    }),
+  ),
+  handler: async (ctx): Promise<ScheduledPollResult> => {
+    const reservation = await ctx.runMutation(
+      internal.import.standingsWrite.reserveStandingsPoll,
       {}
     );
-    if (
-      pollState &&
-      pollState.amsterdamDate === amsterdamDate &&
-      pollState.sawUpdate
-    ) {
-      console.log(
-        `[standingsWeekendPoll] skipped: already fresh for ${amsterdamDate}`
-      );
-      return { skipped: "already_fresh", amsterdamDate };
+    if (!reservation.allowed) {
+      return { skipped: reservation.reason, amsterdamDate: amsterdamDateKey(Date.now()) };
     }
 
-    const todayStart = parseAmsterdamTimestamp(`${amsterdamDate}T00:00:00`);
-    let dayEnd = parseAmsterdamTimestamp(`${amsterdamDate}T23:59:59.999`);
-    if (!Number.isFinite(dayEnd) || Number.isNaN(dayEnd)) {
-      dayEnd = todayStart + 24 * 60 * 60 * 1000 - 1;
+    let sync: StandingsSyncSummary;
+    try {
+      sync = await runStandingsSync(ctx);
+    } catch {
+      await ctx.runMutation(internal.import.standingsWrite.completeStandingsPoll, {
+        slot: reservation.slot,
+        outcome: "error",
+        contentChanged: false,
+        failedPouleCount: 0,
+      });
+      throw new Error("Sportlink-standen ophalen mislukt; bestaande standen blijven bewaard.");
     }
-
-    const matchesEnded: boolean = await ctx.runQuery(
-      internal.import.weeklyUpdate.anyMatchEndedOnAmsterdamDay,
-      {
-        // Include yesterday: Saturday scores often land late evening / Sunday morning.
-        dayStart: todayStart - 36 * 60 * 60 * 1000,
-        dayEnd,
-        now,
-      }
-    );
-    if (!matchesEnded) {
-      console.log("[standingsWeekendPoll] skipped: no matches ended yet");
-      return { skipped: "no_matches_ended", amsterdamDate };
-    }
-
-    const fingerprintBefore: string = await ctx.runQuery(
-      internal.import.standingsWrite.getStandingsFingerprint,
-      {}
-    );
-    const sync = await runStandingsSync(ctx);
-    const fingerprintAfter: string = await ctx.runQuery(
-      internal.import.standingsWrite.getStandingsFingerprint,
-      {}
-    );
-
-    const sameDay =
-      pollState !== null && pollState.amsterdamDate === amsterdamDate;
-    const baselineFingerprint: string = sameDay
-      ? pollState.baselineFingerprint
-      : fingerprintBefore;
-    const sawUpdate: boolean =
-      fingerprintAfter !== baselineFingerprint ||
-      (sameDay && pollState.sawUpdate);
-
-    await ctx.runMutation(internal.import.standingsWrite.saveWeekendPollState, {
-      amsterdamDate,
-      baselineFingerprint,
-      sawUpdate,
+    const outcome = sync.failedPoules.length > 0
+      ? (sync.teamsWritten === 0 ? "error" as const : "partial" as const)
+      : (sync.contentChanged ? "changed" as const : "unchanged" as const);
+    const completed: boolean = await ctx.runMutation(internal.import.standingsWrite.completeStandingsPoll, {
+      slot: reservation.slot,
+      outcome,
+      contentChanged: sync.contentChanged,
+      failedPouleCount: sync.failedPoules.length,
     });
+    if (!completed) {
+      throw new Error("Standencontrole kon niet worden afgerond: reservering verlopen.");
+    }
 
     console.log(
-      `[standingsWeekendPoll] synced contentChanged=${sync.contentChanged} sawUpdate=${sawUpdate} teamsWritten=${sync.teamsWritten}`
+      `[standingsPoll] outcome=${outcome} teamsWritten=${sync.teamsWritten} failedPoules=${sync.failedPoules.length}`
     );
     return {
       skipped: null,
-      amsterdamDate,
-      sawUpdate,
+      amsterdamDate: reservation.amsterdamDate,
+      attempt: reservation.attempt,
+      outcome,
       contentChanged: sync.contentChanged,
       sync,
     };

@@ -119,11 +119,21 @@ export const standingsTable = defineTable({
   sportlinkTeamName: v.string(),
   rows: v.array(standingRowValidator),
   fetchedAt: v.number(),
+  /** When a real table change was observed; absent for unchanged legacy data. */
+  lastContentChangedAt: v.optional(v.number()),
 }).index("by_team_slug", ["teamSlug"]);
 
+export const standingsPollOutcomeValidator = v.union(
+  v.literal("running"),
+  v.literal("changed"),
+  v.literal("unchanged"),
+  v.literal("partial"),
+  v.literal("error")
+);
+
 /**
- * Weekend standings poll cursor: keep fetching after matches until Sportlink
- * publishes a new table, then stop for that Amsterdam play day.
+ * Bounded scheduled polling. Legacy baseline/sawUpdate fields remain readable;
+ * a content change is an observation, never a reason to stop future checks.
  */
 export const standingsPollStateTable = defineTable({
   key: v.literal("weekend"),
@@ -131,4 +141,12 @@ export const standingsPollStateTable = defineTable({
   baselineFingerprint: v.string(),
   sawUpdate: v.boolean(),
   updatedAt: v.number(),
+  attempts: v.optional(v.number()),
+  lastSlot: v.optional(v.number()),
+  lastAttemptAt: v.optional(v.number()),
+  leaseUntil: v.optional(v.number()),
+  lastOutcome: v.optional(standingsPollOutcomeValidator),
+  lastCompletedAt: v.optional(v.number()),
+  lastSuccessfulPollAt: v.optional(v.number()),
+  failedPouleCount: v.optional(v.number()),
 }).index("by_key", ["key"]);

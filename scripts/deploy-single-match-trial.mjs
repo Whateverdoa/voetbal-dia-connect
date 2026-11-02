@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {ConvexClient,ConvexHttpClient} from 'convex/browser';
 import {makeFunctionReference as ref} from 'convex/server';
 import {buildTrialOverlay,changedTrialFiles,schemaJSON,assertAdditiveTrialSchema,assertExactTrialPreparation} from './trial-release-bundle.mjs';
+assert(fs.readFileSync(new URL('../convex/lib/singleMatchTrial.ts',import.meta.url),'utf8').includes('jn7cw69dexmjjmg88jbwsxj4kx8gecgr'), 'Historical 2P23BS release tool disabled for the current trial; reconcile production and approve a new release separately.');
 const root=process.cwd(),TARGET='https://nautical-condor-5.convex.cloud',MATCH='jn7cw69dexmjjmg88jbwsxj4kx8gecgr';
 const apply=process.argv.includes('--apply-owner-approved-2p23bs-trial');
 assert(apply||process.argv.includes('--check-only'),'An explicit release mode is required');

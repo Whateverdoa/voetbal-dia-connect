@@ -4,7 +4,7 @@ import { getCurrentUserAccess } from "./lib/userAccess";
 
 // The original strictly pinned read-only diagnostic remains available.
 const DIAGNOSIS_OWNER_EMAIL = "mjtenhoonte@gmail.com";
-const TEST_MATCH_ID = "jn7cw69dexmjjmg88jbwsxj4kx8gecgr";
+const TEST_MATCH_ID = "jn75fpd7q5gm8e5byn6ced8vg18hcegm";
 export const diagnose = query({
   args: { matchId: v.id("matches") },
   returns: v.object({

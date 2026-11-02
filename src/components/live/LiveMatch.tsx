@@ -104,6 +104,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   LIVE
                   <MatchClock
+                    refereeClock={match.refereeClock}
                     currentQuarter={match.currentQuarter}
                     quarterCount={match.quarterCount}
                     regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
@@ -119,6 +120,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   RUST
                   <MatchClock
+                    refereeClock={match.refereeClock}
                     currentQuarter={match.currentQuarter}
                     quarterCount={match.quarterCount}
                     regulationDurationMinutes={match.regulationDurationMinutes ?? 60}
@@ -132,6 +134,7 @@ export function LiveMatch({ match, code, isConnected }: LiveMatchProps) {
                 <span className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
                   AFGELOPEN
                   <MatchClock
+                    refereeClock={match.refereeClock}
                     currentQuarter={match.currentQuarter}
                     quarterCount={match.quarterCount}
                     regulationDurationMinutes={match.regulationDurationMinutes ?? 60}

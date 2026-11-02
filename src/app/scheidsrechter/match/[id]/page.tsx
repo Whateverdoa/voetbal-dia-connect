@@ -80,6 +80,7 @@ export default function RefereeMatchPage() {
       <RefereeMatchConsole
         matchId={match.id as Id<"matches">}
         status={match.status as MatchStatus}
+        refereeClock={match.refereeClock}
         currentQuarter={match.currentQuarter}
         quarterCount={match.quarterCount}
         regulationDurationMinutes={match.regulationDurationMinutes ?? 60}

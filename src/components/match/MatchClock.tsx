@@ -1,12 +1,13 @@
 "use client";
 
 import { formatElapsed, useMatchClock } from "@/lib/matchClock";
+import type { RefereeDisplayClock } from "@/lib/matchClock";
 import type { MatchStatus } from "./types";
 
 interface MatchClockProps {
+  refereeClock?: RefereeDisplayClock;
   currentQuarter: number;
   quarterCount: number;
-  /** Total regulation minutes (excl. halftime). Default 60. */
   regulationDurationMinutes?: number;
   quarterStartedAt?: number;
   pausedAt?: number;
@@ -18,46 +19,37 @@ interface MatchClockProps {
 
 export { formatElapsed };
 
-/**
- * Real-time match clock showing elapsed time in global match time.
- * Quarter anchors:
- * - Q1 starts at 00:00
- * - Q2 starts at 15:00 (for 4 quarters)
- * - Q3 starts at 30:00
- * - Q4 starts at 45:00 (for 60-minute regulation / 4 periods)
- * For 2 halves of 30', anchors are 00:00 and 30:00; for 2×45', anchors are 00:00 and 45:00.
- *
- * Interruption tracking no longer pauses the main clock. Players' minutes can
- * freeze during an interruption, but the visible match clock keeps running.
- */
+/** Nominal period clock; actual playing time remains a separate ledger. */
 export function MatchClock({
-  currentQuarter,
-  quarterCount,
-  regulationDurationMinutes = 60,
-  quarterStartedAt,
-  frozenClockMs,
-  status,
-  className = "",
+  refereeClock, currentQuarter, quarterCount, regulationDurationMinutes = 60,
+  quarterStartedAt, frozenClockMs, status, className = "",
 }: MatchClockProps) {
-  const { display, isRunning, hasClock } = useMatchClock({
-    currentQuarter,
-    quarterCount,
-    regulationDurationMinutes,
-    quarterStartedAt,
-    frozenClockMs,
-    status,
+  const { display, isRunning, hasClock, actualElapsedMs, elapsedMs } = useMatchClock({
+    refereeClock, currentQuarter, quarterCount, regulationDurationMinutes,
+    quarterStartedAt, frozenClockMs, status,
   });
-
   return (
-    <span
-      className={`tabular-nums ${isRunning ? "text-white/80" : "text-white/75"} ${className}`}
-      aria-label={
-        hasClock
-            ? `Speeltijd: ${display}`
-            : "Klok gestopt"
-      }
-    >
-      {display}
+    <span className="inline-flex flex-col items-center gap-1">
+      <span
+        className={`tabular-nums ${isRunning ? "text-white/80" : "text-white/75"} ${className}`}
+        aria-label={hasClock ? `Speeltijd: ${display}` : refereeClock ? "Klok controleren" : "Klok gestopt"}
+      >
+        {refereeClock && !hasClock ? "Klok controleren" : display}
+      </span>
+      {refereeClock?.interruptionTiming?.map(timing => {
+        const openMs = timing.activeStartedElapsedMs === undefined || actualElapsedMs === null ? 0 : Math.min(900000, Math.max(0, actualElapsedMs - timing.activeStartedElapsedMs));
+        const extraPlayed = elapsedMs === null ? 0 : Math.max(0, elapsedMs - timing.period * regulationDurationMinutes / quarterCount * 60000);
+        return <span key={timing.period} className="block text-sm font-normal tabular-nums" data-testid="shared-interruption-timing">
+          Periode {timing.period}: gemeten {formatElapsed(timing.measuredMs + openMs)}{timing.active ? " · meting open" : ""}
+          {timing.chosenSeconds !== undefined && <> · Extra tijd {formatElapsed(timing.chosenSeconds * 1000)}{timing.period === currentQuarter && status === "live" ? ` · nog ${formatElapsed(Math.max(0, timing.chosenSeconds * 1000 - extraPlayed))}` : ""}</>}
+          {(timing.needsReview || openMs >= 900000) && " · controle nodig"}
+        </span>;
+      })}
+      {refereeClock && status === "finished" && actualElapsedMs !== null && (
+        <span className="block text-xs font-normal tabular-nums">
+          Werkelijke speeltijd: {formatElapsed(actualElapsedMs)}
+        </span>
+      )}
     </span>
   );
 }

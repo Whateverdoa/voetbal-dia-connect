@@ -3,6 +3,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 type EventWithNames = Doc<"matchEvents"> & {
   playerName?: string;
   relatedPlayerName?: string;
+  incidentCategory?: string;
 };
 
 /** Keep manually recorded identities readable after restoring the older UI. */
@@ -126,10 +127,28 @@ export function isCoachOnlyEvent(event: Doc<"matchEvents">): boolean {
   );
 }
 
+/** Latest supplied incident note wins; original events remain immutable. */
+export function applyIncidentAnnotations<T extends EventWithNames>(events: T[]): T[] {
+  const notes = new Map<string, T>();
+  for (const patch of events) {
+    if (patch.type !== "official_annotation" || !patch.targetEventId || patch.note === undefined) continue;
+    const previous = notes.get(patch.targetEventId);
+    if (!previous || patch.createdAt > previous.createdAt || patch.createdAt === previous.createdAt && String(patch._id) > String(previous._id)) notes.set(patch.targetEventId, patch);
+  }
+  return events.map(event => event.type === "incident" && notes.has(event._id) ? { ...event, note: notes.get(event._id)!.note } : event);
+}
+
 /** Pilot-only public projection. Do not expose authentication actor metadata. */
 export function projectPublicMatchEvents(events: EventWithNames[]) {
   const corrected = new Set(events.filter(e => e.type === "goal_correction").map(e => e.targetEventId));
-  return applyGoalEnrichments(events, true).filter(e => !isCoachOnlyEvent(e)).map(event => {
+  return applyGoalEnrichments(applyIncidentAnnotations(events), true).filter(e => e.type === "incident" || !isCoachOnlyEvent(e)).map(event => {
+    if (event.type === "incident") {
+      const note = event.note;
+      const safe: EventWithNames & { corrected: boolean } = { _id: event._id, _creationTime: event._creationTime, matchId: event.matchId,
+        type: "incident", quarter: event.quarter, matchMs: event.matchMs, timestamp: event.timestamp, createdAt: event.createdAt, corrected: false,
+        incidentCategory: ["Blessure", "Strafschop", "Wangedrag", "Publiek", "Overig"].find(c => note?.startsWith(c + ":")) ?? "Overig" };
+      return safe;
+    }
     const result = { ...event, corrected: event.type === "goal" && corrected.has(event._id) };
     delete result.actorSubject;
     delete result.actorKind;

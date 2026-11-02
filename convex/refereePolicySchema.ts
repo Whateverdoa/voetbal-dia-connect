@@ -1,6 +1,9 @@
 import { v } from "convex/values";
 
+import { interruptionTimingValidator } from "./lib/interruptionTiming";
+
 export const refereePolicyValidator = v.object({
+  interruptionTiming: v.optional(interruptionTimingValidator),
   version: v.literal(1),
   generation: v.number(),
   commandVersion: v.number(),

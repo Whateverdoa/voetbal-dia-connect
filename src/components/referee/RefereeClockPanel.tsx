@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import type { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "@/components/match/types";
 import { BreakClock } from "@/components/match/BreakClock";
@@ -7,6 +9,7 @@ import { QuarterEndReminderBanner } from "@/components/match/QuarterEndReminderB
 import { StoppageControls } from "@/components/match/StoppageControls";
 
 type RefereeClockPanelProps = {
+  matchSummary?: string;
   matchId: Id<"matches">;
   status: MatchStatus;
   currentQuarter: number;
@@ -34,6 +37,7 @@ type RefereeClockPanelProps = {
 };
 
 export function RefereeClockPanel({
+  matchSummary,
   matchId,
   status,
   currentQuarter,
@@ -56,6 +60,7 @@ export function RefereeClockPanel({
   onClockAction,
   onClockError,
 }: RefereeClockPanelProps) {
+  const endButton = useRef<HTMLButtonElement>(null);
   const isFinalSegment = currentQuarter >= quarterCount;
   const isLive = status === "live";
   const isHalftime = status === "halftime";
@@ -95,8 +100,9 @@ export function RefereeClockPanel({
       {isLive &&
         (endMatchConfirm ? (
           <ConfirmEndMatch
+            matchSummary={matchSummary}
             isLoading={isLoading}
-            onCancel={() => onSetEndMatchConfirm(false)}
+            onCancel={() => { onSetEndMatchConfirm(false); requestAnimationFrame(() => endButton.current?.focus({ preventScroll: true })); }}
             onConfirm={() => {
               onSetEndMatchConfirm(false);
               onClockAction(onNextQuarter, onClockError);
@@ -114,11 +120,14 @@ export function RefereeClockPanel({
             {isFinalSegment ? (
               <button
                 type="button"
+                ref={endButton}
+                aria-expanded={endMatchConfirm}
+                aria-controls="end-match-confirmation"
                 onClick={() => onSetEndMatchConfirm(true)}
                 disabled={isLoading}
                 className="min-h-[52px] w-full rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
               >
-                Einde match
+                Einde wedstrijd
               </button>
             ) : (
               <button
@@ -161,19 +170,29 @@ export function RefereeClockPanel({
 }
 
 function ConfirmEndMatch({
+  matchSummary,
   isLoading,
   onCancel,
   onConfirm,
 }: {
+  matchSummary?: string;
   isLoading: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, []);
   return (
-    <div className="space-y-2">
-      <p className="px-1 text-center text-sm font-medium text-gray-800">
-        Is de wedstrijd echt afgelopen?
+    <div id="end-match-confirmation" role="group" aria-labelledby="end-match-title" aria-describedby="end-match-description"
+      className="space-y-3 rounded-xl border-2 border-red-500 bg-red-50 p-3">
+      <h3 ref={heading} tabIndex={-1} id="end-match-title" className="text-center text-base font-bold text-red-800">
+        Einde wedstrijd bevestigen
+      </h3>
+      {matchSummary && <p className="text-center text-sm font-semibold text-gray-900">{matchSummary}</p>}
+      <p id="end-match-description" className="text-center text-sm text-gray-800">
+        Wedstrijd beëindigen? De klok stopt en de wedstrijd wordt afgesloten.
       </p>
+
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -181,7 +200,7 @@ function ConfirmEndMatch({
           disabled={isLoading}
           className="min-h-[48px] rounded-xl border-2 border-gray-300 py-2.5 font-semibold text-gray-700 transition-transform hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
         >
-          Annuleren
+          Terug naar wedstrijd
         </button>
         <button
           type="button"
@@ -189,7 +208,7 @@ function ConfirmEndMatch({
           disabled={isLoading}
           className="min-h-[48px] rounded-xl bg-red-600 py-2.5 font-semibold text-white transition-transform hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
         >
-          {isLoading ? "Bezig..." : "Ja, beëindigen"}
+          {isLoading ? "Bezig..." : "Ja, wedstrijd beëindigen"}
         </button>
       </div>
     </div>

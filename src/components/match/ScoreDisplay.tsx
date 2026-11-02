@@ -1,5 +1,7 @@
 "use client";
 
+import type { RefereeDisplayClock } from "@/lib/matchClock";
+
 import { StatusBadge } from "@/components/StatusBadge";
 import { TeamLogo } from "@/components/TeamLogo";
 import { formatMatchDateNl, formatMatchTimeNl } from "@/lib/dateUtils";
@@ -13,6 +15,7 @@ interface ScoreDisplayProps {
   opponent: string;
   isHome: boolean;
   status: MatchStatus;
+  refereeClock?: RefereeDisplayClock;
   currentQuarter: number;
   quarterCount: number;
   regulationDurationMinutes?: number;
@@ -35,6 +38,7 @@ export function ScoreDisplay({
   opponent,
   isHome,
   status,
+  refereeClock,
   currentQuarter,
   quarterCount,
   regulationDurationMinutes = 60,
@@ -103,6 +107,7 @@ export function ScoreDisplay({
               <span>{quarterLabel}</span>
               {(isLive || isHalftime || isFinished) && (
                 <MatchClock
+                  refereeClock={refereeClock}
                   currentQuarter={currentQuarter}
                   quarterCount={quarterCount}
                   regulationDurationMinutes={regulationDurationMinutes}

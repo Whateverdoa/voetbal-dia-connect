@@ -1,3 +1,4 @@
+import { markCorrectedGoals } from "@/lib/goalCorrections";
 import { formatAssistLine } from "@/lib/assistKind";
 import type { MatchEvent } from "./types";
 
@@ -7,7 +8,7 @@ interface GoalsSectionProps {
 }
 
 export function GoalsSection({ events, teamName }: GoalsSectionProps) {
-  const goals = events.filter((e) => e.type === "goal" && !e.isOpponentGoal);
+  const goals = markCorrectedGoals(events).filter((e) => e.type === "goal" && !e.isOpponentGoal && !e.corrected);
   if (goals.length === 0) return null;
 
   return (
@@ -23,7 +24,7 @@ export function GoalsSection({ events, teamName }: GoalsSectionProps) {
           );
           return (
             <div
-              key={i}
+              key={event._id ?? `${event.timestamp}-${i}`}
               className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
             >
               <div className="flex items-center gap-2">

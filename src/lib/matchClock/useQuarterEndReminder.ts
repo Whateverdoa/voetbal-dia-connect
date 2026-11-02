@@ -16,13 +16,13 @@ export function useQuarterEndReminder(snapshot: MatchClockSnapshot) {
   const firedRef = useRef(new Set<string>());
 
   const shouldTick =
-    snapshot.status === "live" && snapshot.quarterStartedAt != null;
+    snapshot.status === "live" && (snapshot.refereeClock ? snapshot.refereeClock.runningSince !== null : snapshot.quarterStartedAt != null);
 
   useEffect(() => {
     if (!shouldTick) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [shouldTick, snapshot.quarterStartedAt]);
+  }, [shouldTick, snapshot.quarterStartedAt, snapshot.refereeClock?.runningSince]);
 
   useEffect(() => {
     firedRef.current = new Set();

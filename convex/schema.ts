@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { portalTables } from "./teamPortalSchema";
+import { interruptionTimingValidator } from "./lib/interruptionTiming";
 import { refereePolicyValidator } from "./refereePolicySchema";
 import { mobilePilotScopes } from "./mobilePilotSchema";
 import {
@@ -295,6 +296,7 @@ export default defineSchema({
 
   // Events during match (goals, assists, subs)
   matchEvents: defineTable({
+    timingChanges: v.optional(interruptionTimingValidator),
     matchId: v.id("matches"),
     type: v.union(
       v.literal("goal"),

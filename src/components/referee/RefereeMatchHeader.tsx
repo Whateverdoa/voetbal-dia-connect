@@ -1,5 +1,7 @@
 "use client";
 
+import type { RefereeDisplayClock } from "@/lib/matchClock";
+
 import { TeamLogo } from "@/components/TeamLogo";
 import { MatchClock } from "@/components/match/MatchClock";
 import type { MatchStatus } from "@/components/match/types";
@@ -12,6 +14,7 @@ type RefereeMatchHeaderProps = {
   isLive: boolean;
   isScheduled: boolean;
   scheduledAt?: number;
+  refereeClock?: RefereeDisplayClock;
   currentQuarter: number;
   quarterCount: number;
   regulationDurationMinutes: number;
@@ -34,6 +37,7 @@ export function RefereeMatchHeader({
   isLive,
   isScheduled,
   scheduledAt,
+  refereeClock,
   currentQuarter,
   quarterCount,
   regulationDurationMinutes,
@@ -74,6 +78,7 @@ export function RefereeMatchHeader({
           </p>
           <div className="mt-1.5 flex flex-col items-center sm:mt-2">
             <MatchClock
+              refereeClock={refereeClock}
               currentQuarter={currentQuarter}
               quarterCount={quarterCount}
               regulationDurationMinutes={regulationDurationMinutes}

@@ -1,8 +1,11 @@
 import { v, type Infer } from "convex/values";
 
+import { interruptionTimingValidator } from "./interruptionTiming";
+
 const team = v.union(v.literal("home"), v.literal("away"));
 const disposition = v.optional(v.union(v.literal("include"), v.literal("discard")));
 export const refereeActionValidator = v.union(
+  v.object({ kind: v.literal("sync_interruption_timing"), timing: interruptionTimingValidator }),
   v.object({ kind: v.literal("start") }),
   v.object({ kind: v.literal("pause") }),
   v.object({ kind: v.literal("start_period") }),

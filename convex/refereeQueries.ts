@@ -1,3 +1,4 @@
+import { refereeDisplayClock } from "./lib/refereeMatchPolicy";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
@@ -101,6 +102,7 @@ export const getForReferee = query({
         events,
         viewingAsAdmin,
         officialPolicyVersion: match.refereePolicy?.version ?? null,
+        ...(match.refereePolicy ? { refereeClock: refereeDisplayClock(match, Date.now()) } : {}),
       };
     } catch {
       return null;

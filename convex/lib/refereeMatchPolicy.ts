@@ -5,6 +5,8 @@ import type { MutationCtx } from "../_generated/server";
 import { guardOfficialClock, nextOfficialClockGuardAt, playingElapsedMs } from "./officialMatchClock";
 import { syncRefereePlayingTime } from "./refereePlayingTime";
 
+import { publicInterruptionTiming } from "./interruptionTiming";
+
 const guardReference = makeFunctionReference<"mutation", { matchId: Id<"matches">; generation: number }, null>("refereePolicy:guardClock");
 
 /** Legacy commands lack the reviewed version, payload and clock contract. */
@@ -31,6 +33,18 @@ export async function saveRefereeClock(ctx: MutationCtx, match: Doc<"matches">, 
     stoppageStartedAt: state.stoppageStartedAt, safetyMarginMinutes: state.safetyMarginMinutes,
     clockReviewReason: state.clockReviewReason, clockLimitAt: state.clockLimitAt,
     clockLimitElapsedMs: state.clockLimitElapsedMs };
+  const timing = policy.interruptionTiming;
+  const active = timing?.measurements.find(m => m.endedElapsedMs === undefined && m.period === match.currentQuarter);
+  if (active && state.elapsedMs >= active.startedElapsedMs &&
+      (["halftime", "finished"].includes(match.status) || state.clockReviewReason === "period_limit")) {
+    const closed = { ...active, endedElapsedMs: state.elapsedMs,
+      included: state.elapsedMs - active.startedElapsedMs < 900_000 ? true : undefined };
+    policy.interruptionTiming = { ...timing!, measurements: timing!.measurements.map(m => m.id === active.id ? closed : m) };
+    await ctx.db.insert("matchEvents", { matchId: match._id, type: "official_audit", quarter: active.period,
+      matchMs: state.elapsedMs, timestamp: now, createdAt: now, effectiveAt: projection.effectiveAt ?? now,
+      commandType: "SYSTEM_INTERRUPTION_BOUNDARY", actorKind: "system",
+      timingChanges: { measurements: [closed], chosenSeconds: {} } });
+  }
   policy.generation = match.refereePolicy.generation + 1;
   if (projection.changed) policy.commandVersion += 1;
   await ctx.db.patch(match._id, { refereePolicy: policy,
@@ -54,4 +68,14 @@ export async function enforceRefereeClock(ctx: MutationCtx, match: Doc<"matches"
     observedElapsedMs: projection.observedElapsedMs, observedStoppageMs: projection.observedStoppageMs,
   });
   return projection;
+}
+
+/** Read-only clock allowlist; never expose policy versions, generations or actors. */
+export function refereeDisplayClock(match: Doc<"matches">, now: number) {
+  const clock = projectRefereeClock(match, now)?.state;
+  if (!clock) return undefined;
+  return { interruptionTiming: publicInterruptionTiming(match.refereePolicy?.interruptionTiming, playingElapsedMs(clock, now)), elapsedMs: clock.elapsedMs, runningSince: clock.runningSince,
+    periodStartedElapsedMs: clock.periodStartedElapsedMs,
+    safetyMarginMinutes: clock.safetyMarginMinutes, clockReviewReason: clock.clockReviewReason,
+    limitElapsedMs: clock.clockLimitElapsedMs };
 }

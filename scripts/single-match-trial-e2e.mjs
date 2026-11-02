@@ -36,7 +36,7 @@ try {
   fs.writeFileSync(path.join(project,'convex/schema.ts'),execFileSync('git',['show','8558608:convex/schema.ts'],{cwd:root,encoding:'utf8'}));
   await push('initial-push.log');const admin=new ConvexHttpClient(url);admin.setAdminAuth(key);
   const ids=await admin.mutation(ref('__trialFixture:seed'),{});
-  for(const file of ['lib/singleMatchTrial.ts','refereeRegistration.ts']){const p=path.join(project,'convex',file);fs.writeFileSync(p,fs.readFileSync(p,'utf8').replaceAll('jn7cw69dexmjjmg88jbwsxj4kx8gecgr',ids.matchId).replaceAll('mjtenhoonte@gmail.com','owner@trial.invalid'));}
+  for(const file of ['lib/singleMatchTrial.ts','refereeRegistration.ts']){const p=path.join(project,'convex',file);fs.writeFileSync(p,fs.readFileSync(p,'utf8').replaceAll('jn75fpd7q5gm8e5byn6ced8vg18hcegm',ids.matchId).replaceAll('mjtenhoonte@gmail.com','owner@trial.invalid'));}
   fs.writeFileSync(path.join(project,'convex/schema.ts'),newSchema);
   async function post(api,body={}) { const response=await fetch(url+api,{method:'POST',headers:{Authorization:'Convex '+key,'Content-Type':'application/json'},body:JSON.stringify({...body,adminKey:key})});if(!response.ok)throw Error(api+' '+response.status+' '+await response.text());return response.json(); }
   const prior=await post('/api/get_config');const overlay=await buildTrialOverlay(project,prior,changedTrialFiles(root));
@@ -101,7 +101,7 @@ try {
     const away=await act({kind:'goal',team:'away'});await act({kind:'enrich_goal',eventId:away.commandEventId,scorerNumber:12});await act({kind:'correct_goal',eventId:away.commandEventId});
     const page=await owner.query(ref('mobileReferee:timeline'),{matchId:ids.matchId,paginationOpts:{numItems:100,cursor:null}});
     assert.equal(page.page.find(e=>e.id===goal.commandEventId).playerName,'Synthetic scorer');assert.equal(page.page.find(e=>e.id===goal.commandEventId).assistName,'Synthetic assist');assert.equal(page.page.find(e=>e.id===away.commandEventId).playerName,'Nr. 12');assert.equal(page.page.find(e=>e.id===away.commandEventId).corrected,true);
-    const publicView=await new ConvexHttpClient(url).query(ref('matches:getByPublicCode'),{code:'2P23BS'});assert.equal(publicView.homeScore,(await read()).homeScore);assert.equal(publicView.awayScore,(await read()).awayScore);assert(!JSON.stringify(publicView).includes('synthetic-owner'));
+    const publicView=await new ConvexHttpClient(url).query(ref('matches:getByPublicCode'),{code:'UT5KGP'});assert.equal(publicView.homeScore,(await read()).homeScore);assert.equal(publicView.awayScore,(await read()).awayScore);assert(!JSON.stringify(publicView).includes('synthetic-owner'));
   });
   await check('simultaneous commands have one winner; no lost score',async()=>{
     const before=await read(),a=await args({kind:'goal',team:'home'}),b={...a,correlationId:'race-other'};const results=await Promise.allSettled([owner.mutation(ref('mobileReferee:command'),a),owner.mutation(ref('mobileReferee:command'),b)]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal((await read()).homeScore,before.homeScore+1);

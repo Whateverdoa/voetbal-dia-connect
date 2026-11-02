@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {ConvexClient,ConvexHttpClient} from 'convex/browser';
 import {makeFunctionReference as ref} from 'convex/server';
 assert(process.argv.includes('--activate-verified-2p23bs-only'),'Explicit owner-approved activation required');
+assert(fs.readFileSync(new URL('../convex/lib/singleMatchTrial.ts',import.meta.url),'utf8').includes('jn7cw69dexmjjmg88jbwsxj4kx8gecgr'), 'Historical 2P23BS activation disabled for the current trial; separate reviewed release required.');
 const TARGET='https://nautical-condor-5.convex.cloud',MATCH='jn7cw69dexmjjmg88jbwsxj4kx8gecgr',release='.artifacts/production-trial-0n6OiO';
 const readJSON=p=>JSON.parse(fs.readFileSync(p));
 const original=readJSON(release+'/previous-code-config.json'),overlay=readJSON(release+'/overlay-modules.json');

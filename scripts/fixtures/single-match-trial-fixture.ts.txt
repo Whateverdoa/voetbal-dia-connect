@@ -10,7 +10,7 @@ export const seed = internalMutation({ args: {}, handler: async ctx => {
   const accessId = await ctx.db.insert("userAccess", { email: "owner@trial.invalid", roles: ["coach", "referee"], coachId, refereeId, active: true, source: "admin_manual", lastSyncedAt: now, createdAt: now, updatedAt: now });
   await ctx.db.insert("userAccess", { email: "admin@trial.invalid", roles: ["admin"], active: true, source: "admin_manual", lastSyncedAt: now, createdAt: now, updatedAt: now });
   const template = { teamId, refereeId, leadCoachId: coachId, opponent: "Synthetic", isHome: true, status: "scheduled" as const, currentQuarter: 1, quarterCount: 2, regulationDurationMinutes: 60, homeScore: 0, awayScore: 0, showLineup: false, createdAt: now };
-  const matchId = await ctx.db.insert("matches", { ...template, publicCode: "2P23BS" });
+  const matchId = await ctx.db.insert("matches", { ...template, publicCode: "UT5KGP" });
   const otherId = await ctx.db.insert("matches", { ...template, publicCode: "LOCAL-OTHER" });
   const players = [];
   for (const [name, absent] of [["Synthetic scorer", false], ["Synthetic assist", false], ["Synthetic absent", true]] as const) {

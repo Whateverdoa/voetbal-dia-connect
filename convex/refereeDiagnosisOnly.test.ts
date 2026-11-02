@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { diagnose } from "./refereeRegistration";
 import { getCurrentUserAccess } from "./lib/userAccess";
 vi.mock("./lib/userAccess", () => ({ getCurrentUserAccess: vi.fn() }));
-const id = "jn7cw69dexmjjmg88jbwsxj4kx8gecgr";
+const id = "jn75fpd7q5gm8e5byn6ced8vg18hcegm";
 const email = "mjtenhoonte@gmail.com";
 const current = { email, active: true, roles: ["coach", "referee"], refereeId: "ref", coachId: "coach" };
 const handler = (diagnose as unknown as { _handler(ctx: unknown, args: { matchId: string }): Promise<{ readOnly: boolean; isOfficialRegistrar: boolean; eligibleToControl: boolean; controller: string; policyActive: boolean; mobileScopeStatus: string }> })._handler;

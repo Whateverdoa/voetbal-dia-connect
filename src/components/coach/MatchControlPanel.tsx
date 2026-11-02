@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PolicyRefereeConsole } from "@/components/referee/PolicyRefereeConsole";
 import { useState, useEffect, useRef } from "react";
 import {
   ScoreDisplay,
@@ -182,7 +183,10 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
         {match.refereeId ? (
           <OfficialDutyNotice refereeName={match.refereeName} />
         ) : null}
-        <MatchControls
+        {match.refereeClock ? <>
+          <PolicyRefereeConsole matchId={match._id} />
+          {isLive && canDoSubstitutions && <button type="button" className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 p-3 font-semibold" onClick={() => setShowSubModal(true)}>Coachwissel uitvoeren</button>}
+        </> : <MatchControls
           matchId={match._id}
           status={match.status}
           currentQuarter={match.currentQuarter}
@@ -203,7 +207,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
           onCardClick={
             isLive && canControlClock ? () => setShowCardModal(true) : undefined
           }
-        />
+        />}
 
         {isLive ? (
           <StagedSubstitutionsPanel

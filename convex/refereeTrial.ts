@@ -17,7 +17,7 @@ export const activate = internalMutation({
     if (args.matchId !== TRIAL_MATCH_ID || !Number.isSafeInteger(args.expiresAt) ||
         args.expiresAt <= now || args.expiresAt > now + 24 * 60 * 60_000) throw new ConvexError("PILOT_ACCESS_DENIED");
     const match = await ctx.db.get(TRIAL_MATCH_ID);
-    if (!match || match.publicCode !== "2P23BS" || match.refereePolicy || match.startedAt !== undefined ||
+    if (!match || match.publicCode !== "UT5KGP" || match.refereePolicy || match.startedAt !== undefined ||
         match.cancelledAt !== undefined || !["scheduled", "lineup"].includes(match.status) ||
         match.currentQuarter !== 1 || match.homeScore !== 0 || match.awayScore !== 0 ||
         ![2, 4].includes(match.quarterCount) || !match.refereeId) throw new ConvexError("TRIAL_REQUIRES_UNSTARTED_MATCH");
@@ -36,7 +36,7 @@ export const activate = internalMutation({
     await ctx.scheduler.runAt(args.expiresAt, expire, { scopeId, expiresAt: args.expiresAt });
     await ctx.db.insert("matchEvents", { matchId: match._id, type: "official_audit", quarter: 1,
       matchMs: 0, timestamp: now, createdAt: now, actorKind: "system", commandType: "PILOT_ACTIVATED",
-      note: "Owner-approved 2P23BS iPhone trial; no match action performed." });
+      note: "Owner-approved UT5KGP iPhone trial; no match action performed." });
     return { matchId: match._id, expiresAt: args.expiresAt };
   },
 });

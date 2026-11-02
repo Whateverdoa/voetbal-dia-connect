@@ -9,6 +9,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import type { MatchStatus } from "@/components/match/types";
 import { createCorrelationId } from "@/lib/correlationId";
+import { PolicyRefereeConsole } from "./PolicyRefereeConsole";
 import { RefereeCardControls } from "./RefereeCardControls";
 import { RefereeClockPanel } from "./RefereeClockPanel";
 import { RefereeMatchHeader } from "./RefereeMatchHeader";
@@ -20,7 +21,7 @@ import {
   refereeSurfaceClasses,
 } from "./refereeMatchSurface";
 
-interface RefereeMatchConsoleProps {
+export interface RefereeMatchConsoleProps {
   matchId: Id<"matches">;
   status: MatchStatus;
   refereeClock?: RefereeDisplayClock;
@@ -53,7 +54,11 @@ interface RefereeMatchConsoleProps {
   events?: MatchEvent[];
 }
 
-export function RefereeMatchConsole({
+export function RefereeMatchConsole(props: RefereeMatchConsoleProps) {
+  return props.refereeClock ? <PolicyRefereeConsole matchId={props.matchId} /> : <LegacyRefereeMatchConsole {...props} />;
+}
+
+function LegacyRefereeMatchConsole({
   matchId,
   status,
   refereeClock,

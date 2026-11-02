@@ -3,6 +3,9 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {build} from 'esbuild';
+import {v} from 'convex/values';
+// This release contract is deliberately independent of the application validator.
+const reviewedTimingAudit = v.object({measurements:v.array(v.object({id:v.string(),period:v.number(),kind:v.union(v.literal('incident'),v.literal('card'),v.literal('interruption')),startedElapsedMs:v.number(),endedElapsedMs:v.optional(v.number()),included:v.optional(v.boolean())})),chosenSeconds:v.record(v.string(),v.number())});
 
 export async function buildTrialOverlay(sourceRoot, original, changedFiles) {
   const changed=new Set(changedFiles.filter(p=>p.startsWith('convex/')&&!p.endsWith('.test.ts')).map(p=>path.resolve(sourceRoot,p)));
@@ -37,7 +40,7 @@ export async function schemaJSON(module){
 }
 export function assertAdditiveTrialSchema(before,after){
   assert.equal(after.schemaValidation,before.schemaValidation);
-  const fieldAdditions={matches:['refereePolicy'],matchPlayers:['officialEnteredElapsedMs','dismissed'],matchCommandDedupes:['actorSubject','fingerprint','commandEventId','commandVersion'],matchEvents:['actorKind','actorSubject','observedElapsedMs','observedStoppageMs','effectiveAt','stoppageStartedAt','stoppageDisposition']};
+  const fieldAdditions={matches:['refereePolicy'],matchPlayers:['officialEnteredElapsedMs','dismissed'],matchCommandDedupes:['actorSubject','fingerprint','commandEventId','commandVersion'],matchEvents:['actorKind','actorSubject','observedElapsedMs','observedStoppageMs','effectiveAt','stoppageStartedAt','stoppageDisposition','timingChanges']};
   assert.deepEqual(after.tables.filter(t=>!before.tables.some(b=>b.tableName===t.tableName)).map(t=>t.tableName),['mobilePilotScopes']);
   for(const old of before.tables){
     const next=after.tables.find(t=>t.tableName===old.tableName);assert(next,'Removed table '+old.tableName);
@@ -55,6 +58,7 @@ export function assertAdditiveTrialSchema(before,after){
       }else assert.deepEqual(newFields[key],value,'Changed old field '+old.tableName+'.'+key);
     }
     for(const key of fieldAdditions[old.tableName]??[])assert.equal(newFields[key].optional,true,'New field not optional');
+    if(old.tableName==='matchEvents')assert.deepEqual(newFields.timingChanges,{fieldType:reviewedTimingAudit.json,optional:true},'Timing audit differs from the reviewed optional contract');
   }
 }
 

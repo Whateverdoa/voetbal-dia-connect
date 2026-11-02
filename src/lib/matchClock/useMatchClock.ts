@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { computeElapsedMs, formatElapsed } from "./engine";
+import { computeActualElapsedMs, computeElapsedMs, formatElapsed } from "./engine";
 import type { MatchClockSnapshot } from "./types";
 
 export function useMatchClock(snapshot: MatchClockSnapshot) {
-  const shouldTick = snapshot.status === "live" && snapshot.quarterStartedAt != null;
+  const shouldTick = snapshot.status === "live" && (snapshot.refereeClock ? snapshot.refereeClock.runningSince !== null : snapshot.quarterStartedAt != null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export function useMatchClock(snapshot: MatchClockSnapshot) {
       clearTimeout(initialTimer);
       clearInterval(interval);
     };
-  }, [shouldTick, snapshot.quarterStartedAt]);
+  }, [shouldTick, snapshot.quarterStartedAt, snapshot.refereeClock?.runningSince]);
 
   const elapsedMs = useMemo(
     () => computeElapsedMs(snapshot, now),
@@ -25,6 +25,7 @@ export function useMatchClock(snapshot: MatchClockSnapshot) {
   );
 
   return {
+    actualElapsedMs: computeActualElapsedMs(snapshot, now),
     elapsedMs,
     display: elapsedMs == null ? "--:--" : formatElapsed(elapsedMs),
     isRunning: shouldTick,

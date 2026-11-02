@@ -1,3 +1,4 @@
+import type { RefereeDisplayClock } from "@/lib/matchClock";
 // Shared types for live match components
 import type { AssistKind } from "@/lib/assistKind";
 
@@ -6,6 +7,7 @@ export interface MatchData {
   opponent: string;
   isHome: boolean;
   status: "scheduled" | "lineup" | "live" | "halftime" | "finished";
+  refereeClock?: RefereeDisplayClock;
   currentQuarter: number;
   quarterCount: number;
   regulationDurationMinutes?: number;
@@ -43,6 +45,8 @@ export interface MatchData {
 
 export interface MatchEvent {
   _id?: string;
+  corrected?: boolean;
+  incidentCategory?: string;
   type: string;
   playerName?: string;
   relatedPlayerName?: string;

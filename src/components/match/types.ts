@@ -1,3 +1,4 @@
+import type { RefereeDisplayClock } from "@/lib/matchClock";
 import { Id } from "@/convex/_generated/dataModel";
 import type { AssistKind } from "@/lib/assistKind";
 
@@ -23,6 +24,8 @@ export interface MatchEvent {
   _id: Id<"matchEvents">;
   type:
     | "goal"
+    | "goal_correction"
+    | "incident"
     | "assist"
     | "sub_in"
     | "sub_out"
@@ -34,6 +37,8 @@ export interface MatchEvent {
     | "quarter_end"
     | "yellow_card"
     | "red_card";
+  corrected?: boolean;
+  incidentCategory?: string;
   playerId?: Id<"players">;
   relatedPlayerId?: Id<"players">;
   stagedEventId?: Id<"matchEvents">;
@@ -88,6 +93,7 @@ export interface StagedSubstitution {
 }
 
 export interface Match {
+  refereeClock?: RefereeDisplayClock;
   _id: Id<"matches">;
   teamId: Id<"teams">;
   publicCode: string;

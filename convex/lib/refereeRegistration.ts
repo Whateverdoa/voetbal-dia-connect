@@ -9,6 +9,8 @@ import { isUnavailable } from "./matchPlayerAvailability";
 import type { RefereeAction } from "./refereeRegistrationContract";
 import { officialPlayerMinutes } from "./refereePlayingTime";
 
+import { validateTimingUpdate } from "./interruptionTiming";
+
 // Canonical JSON makes object key order irrelevant, but not changed content.
 function fingerprint(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(fingerprint).join(",")}]`;
@@ -88,6 +90,11 @@ export async function executeRefereeRegistration(ctx: MutationCtx, args: {
   let event: Omit<Doc<"matchEvents">, "_id" | "_creationTime"> = { ...base, type: "official_audit" };
   let nextPolicy = { ...match.refereePolicy! };
   switch (action.kind) {
+    case "sync_interruption_timing":
+      nextPolicy.interruptionTiming = validateTimingUpdate(match, action.timing, base.matchMs);
+      event = { ...base, type: "official_audit", timingChanges: { measurements: nextPolicy.interruptionTiming.measurements.filter((item, i) => fingerprint(item) !== fingerprint(match!.refereePolicy!.interruptionTiming?.measurements[i] ?? null)),
+        chosenSeconds: Object.fromEntries(Object.entries(action.timing.chosenSeconds).filter(([key, value]) => match!.refereePolicy!.interruptionTiming?.chosenSeconds[key] !== value)) } };
+      break;
     case "goal": {
       const opponent = !ownSide(match, action.team);
       await goalPlayers(ctx, match, opponent, action.isOwnGoal === true, action.scorerId, action.assistId);

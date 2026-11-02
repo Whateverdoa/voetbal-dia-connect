@@ -1,5 +1,7 @@
 "use client";
 
+import type { RefereeDisplayClock } from "@/lib/matchClock";
+
 import { useEffect, useMemo, useState } from "react";
 import { useQuarterEndReminder } from "@/lib/matchClock/useQuarterEndReminder";
 import { useMutation } from "convex/react";
@@ -21,6 +23,7 @@ import {
 interface RefereeMatchConsoleProps {
   matchId: Id<"matches">;
   status: MatchStatus;
+  refereeClock?: RefereeDisplayClock;
   currentQuarter: number;
   quarterCount: number;
   regulationDurationMinutes?: number;
@@ -53,6 +56,7 @@ interface RefereeMatchConsoleProps {
 export function RefereeMatchConsole({
   matchId,
   status,
+  refereeClock,
   currentQuarter,
   quarterCount,
   regulationDurationMinutes = 60,
@@ -88,6 +92,7 @@ export function RefereeMatchConsole({
   const isLive = status === "live";
   const clockSnapshot = useMemo(
     () => ({
+      refereeClock,
       currentQuarter,
       quarterCount,
       regulationDurationMinutes,
@@ -96,6 +101,7 @@ export function RefereeMatchConsole({
       status,
     }),
     [
+      refereeClock,
       currentQuarter,
       quarterCount,
       regulationDurationMinutes,
@@ -128,11 +134,6 @@ export function RefereeMatchConsole({
     setEndMatchConfirm(false);
   }, [currentQuarter, status]);
 
-  useEffect(() => {
-    if (!endMatchConfirm) return;
-    const timer = setTimeout(() => setEndMatchConfirm(false), 5000);
-    return () => clearTimeout(timer);
-  }, [endMatchConfirm]);
 
   const withLoading = async (
     action: () => Promise<unknown>,
@@ -171,6 +172,7 @@ export function RefereeMatchConsole({
             isLive={isLive}
             isScheduled={isScheduled}
             scheduledAt={scheduledAt}
+            refereeClock={refereeClock}
             currentQuarter={currentQuarter}
             quarterCount={quarterCount}
             regulationDurationMinutes={regulationDurationMinutes}
@@ -189,6 +191,7 @@ export function RefereeMatchConsole({
           <div className="flex min-h-0 flex-1 flex-col justify-between p-3 sm:p-4">
             <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
               <RefereeClockPanel
+                matchSummary={`${homeName} ${homeScore} - ${awayScore} ${awayName}`}
                 matchId={matchId}
                 status={status}
                 currentQuarter={currentQuarter}
@@ -249,7 +252,7 @@ export function RefereeMatchConsole({
                 opponentName={diaTeamSide === "home" ? awayName : homeName}
                 title="Registratie"
                 emptyText="Nog geen doelpunten of kaarten."
-                types={["goal", "yellow_card", "red_card"]}
+                types={["goal", "goal_correction", "yellow_card", "red_card"]}
               />
             </div>
           </div>

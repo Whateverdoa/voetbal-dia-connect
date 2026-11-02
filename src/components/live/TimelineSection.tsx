@@ -1,3 +1,4 @@
+import { markCorrectedGoals } from "@/lib/goalCorrections";
 import { formatAssistLine } from "@/lib/assistKind";
 import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
@@ -26,7 +27,7 @@ export function TimelineSection({
         </p>
       ) : (
         <div className="space-y-1">
-          {[...events].reverse().map((event, i) => (
+          {markCorrectedGoals(events).reverse().map((event, i) => (
             <TimelineEvent
               key={event._id ?? `${event.timestamp}-${i}`}
               event={event}
@@ -66,7 +67,17 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
     case "goal":
       icon = "⚽";
       text = describeGoalEvent(event, teamName, opponentName);
-      highlight = !event.isOpponentGoal && !event.isOwnGoal;
+      highlight = !event.corrected && !event.isOpponentGoal && !event.isOwnGoal;
+      break;
+    case "goal_correction":
+      text = "Doelpunt teruggedraaid";
+      break;
+    case "yellow_card":
+    case "red_card":
+      text = `${event.type === "yellow_card" ? "Gele kaart" : "Rode kaart"}${event.playerName ? ` ${event.playerName}` : ""}`;
+      break;
+    case "incident":
+      text = `Incident${event.incidentCategory ? `: ${event.incidentCategory}` : ""}`;
       break;
     case "assist":
       icon = "👟";
@@ -112,7 +123,7 @@ function TimelineEvent({ event, teamName, opponentName }: TimelineEventProps) {
           <span className="text-sm text-gray-400 w-12">{wallClockTime}</span>
         )}
         <span className="text-lg">{icon}</span>
-        <span className={highlight ? "font-medium" : ""}>{text}</span>
+        <span className={highlight ? "font-medium" : ""}>{text}{event.type === "goal" && event.corrected && <span className="ml-2 text-sm text-gray-500">Gecorrigeerd</span>}</span>
       </div>
     </div>
   );

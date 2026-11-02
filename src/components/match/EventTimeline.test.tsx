@@ -112,3 +112,20 @@ describe("EventTimeline", () => {
     expect(screen.getByText(/\d{2}:\d{2}/)).toBeInTheDocument();
   });
 });
+
+it('marks the exact corrected goal even when correction audit rows are filtered out', () => {
+  const goal = { _id: 'goal-corrected', type: 'goal', quarter: 1, timestamp: 1, playerName: 'Corrected scorer' } as MatchEvent;
+  const other = { ...goal, _id: 'goal-valid', playerName: 'Valid scorer' } as MatchEvent;
+  const correction = { _id: 'correction', type: 'goal_correction', quarter: 2, timestamp: 2, targetEventId: goal._id } as MatchEvent;
+  render(<EventTimeline events={[correction, goal, other]} types={['goal']} />);
+  expect(screen.getAllByText('Gecorrigeerd')).toHaveLength(1);
+  expect(screen.getByText('Events (2)')).toBeInTheDocument();
+  expect(screen.getByText(/Valid scorer/)).toBeInTheDocument();
+  expect(screen.queryByText('Doelpunt teruggedraaid')).not.toBeInTheDocument();
+});
+
+it("renders incident categories in the coach/referee timeline without exposing private notes", () => {
+  render(<EventTimeline events={[{ _id: "incident" as MatchEvent["_id"], type: "incident", quarter: 1, timestamp: 1, note: "Blessure: PRIVATE" }]} />);
+  expect(screen.getByText("Incident: Blessure")).toBeInTheDocument();
+  expect(screen.queryByText(/PRIVATE/)).not.toBeInTheDocument();
+});

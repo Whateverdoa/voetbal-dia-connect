@@ -1,3 +1,4 @@
+import { refereeDisplayClock } from "./lib/refereeMatchPolicy";
 import { playerMinutesAt } from "./playingTimeHelpers";
 /**
  * Match queries - public and coach views
@@ -9,12 +10,12 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import {
   applyGoalEnrichments,
+  applyIncidentAnnotations,
   deriveOpenStagedSubstitutions,
   isCoachOnlyEvent,
   recordedPlayerName,
   projectPublicMatchEvents,
 } from "./lib/matchEventProjection";
-import { projectRefereeClock } from "./lib/refereeMatchPolicy";
 import { logoFieldsForMatchWithTeamClub } from "./lib/matchLogoFields";
 import { getPublicRefereeFields } from "./lib/publicRefereeDisplay";
 import { getStoppageAdvisoryMs } from "./lib/stoppageAdvisory";
@@ -130,7 +131,7 @@ export const getByPublicCode = query({
 
     const refFields = await getPublicRefereeFields(ctx, match.refereeId);
     const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, Date.now());
-    const clock = projectRefereeClock(match, Date.now())?.state;
+    const clock = refereeDisplayClock(match, Date.now());
 
     return {
       id: match._id,
@@ -152,8 +153,7 @@ export const getByPublicCode = query({
       accumulatedPauseTime: match.accumulatedPauseTime,
       frozenClockMs: match.frozenClockMs,
       // Explicit public allowlist: no policy object, versions, generations or actors.
-      ...(clock ? { refereeClock: { elapsedMs: clock.elapsedMs, runningSince: clock.runningSince,
-        limitElapsedMs: clock.clockLimitElapsedMs } } : {}),
+      ...(clock ? { refereeClock: clock } : {}),
       activeStoppageStartedAt: match.activeStoppageStartedAt,
       stoppageAdvisoryMs,
       useBreakClock: match.useBreakClock,
@@ -254,7 +254,7 @@ export const getForCoach = query({
       relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
       matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
     }));
-    const projectedEvents = applyGoalEnrichments(enrichedEvents, !!match.refereePolicy);
+    const projectedEvents = applyGoalEnrichments(applyIncidentAnnotations(enrichedEvents), !!match.refereePolicy);
     const stagedSubstitutions = deriveOpenStagedSubstitutions(projectedEvents);
     const stoppageAdvisoryMs = await getStoppageAdvisoryMs(ctx, match._id, now);
 
@@ -381,8 +381,7 @@ export const getForCoach = query({
 canControlClock,
 officialPolicyVersion: match.refereePolicy?.version ?? null,
 ...(match.refereePolicy ? (() => {
-  const clock = projectRefereeClock(match, Date.now())!.state;
-  return { refereeClock: { elapsedMs: clock.elapsedMs, runningSince: clock.runningSince, limitElapsedMs: clock.clockLimitElapsedMs } };
+  return { refereeClock: refereeDisplayClock(match, Date.now()) };
 })() : {}),
       viewingAsAdmin,
     };

@@ -202,3 +202,43 @@ describe('MatchClock', () => {
     expect(el).toBeInTheDocument();
   });
 });
+
+describe('official policy clock presentation', () => {
+  it('shows nominal final time and separate actual playing time for 2P23BS', () => {
+    render(<MatchClock currentQuarter={2} quarterCount={2} status="finished"
+      refereeClock={{ elapsedMs: 4296254, periodStartedElapsedMs: 1896254, runningSince: null }} />);
+    expect(screen.getByLabelText('Speeltijd: 70:00')).toBeInTheDocument();
+    expect(screen.getByText('Werkelijke speeltijd: 71:36')).toBeInTheDocument();
+  });
+  it('warns instead of falling back to legacy wall time if the official anchor is missing', () => {
+    render(<MatchClock currentQuarter={2} quarterCount={2} status="live" quarterStartedAt={Date.now()}
+      refereeClock={{ elapsedMs: 4296254, runningSince: null }} />);
+    expect(screen.getByText('Klok controleren')).toBeInTheDocument();
+  });
+});
+
+describe("shared interruption timing display", () => {
+  it("ticks an open measurement alongside the match clock and shows an absolute extra-time choice", () => {
+    vi.useFakeTimers(); vi.setSystemTime(1_000_000);
+    try {
+      render(<MatchClock currentQuarter={1} quarterCount={2} regulationDurationMinutes={60} status="live" refereeClock={{ elapsedMs: 20000, runningSince: 1_000_000, periodStartedElapsedMs: 0, safetyMarginMinutes: 10, interruptionTiming: [{ period: 1, measuredMs: 10000, activeStartedElapsedMs: 15000, active: true, needsReview: false, chosenSeconds: 30 }] }} />);
+      expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("gemeten 00:15");
+      expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("Extra tijd 00:30");
+      act(() => vi.advanceTimersByTime(5000));
+      expect(screen.getByLabelText("Speeltijd: 00:25")).toBeInTheDocument();
+      expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("gemeten 00:20");
+    } finally { vi.useRealTimers(); }
+  });
+  it("caps an old open measurement after 600 minutes and preserves a zero choice", () => {
+    render(<MatchClock currentQuarter={1} quarterCount={2} status="finished" refereeClock={{ elapsedMs: 2400000, runningSince: null, periodStartedElapsedMs: 0, interruptionTiming: [{ period: 1, measuredMs: 0, activeStartedElapsedMs: 0, active: true, needsReview: true, chosenSeconds: 0 }] }} />);
+    expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("gemeten 15:00");
+    expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("Extra tijd 00:00");
+    expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("controle nodig");
+  });
+});
+
+it("never shows remaining added time once the period is in halftime", () => {
+ render(<MatchClock currentQuarter={1} quarterCount={2} regulationDurationMinutes={60} status="halftime" refereeClock={{elapsedMs:2400000,runningSince:null,periodStartedElapsedMs:0,interruptionTiming:[{period:1,measuredMs:20000,active:false,needsReview:false,chosenSeconds:600}]}} />);
+ expect(screen.getByTestId("shared-interruption-timing")).toHaveTextContent("Extra tijd 10:00");
+ expect(screen.getByTestId("shared-interruption-timing")).not.toHaveTextContent("nog");
+});

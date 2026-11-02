@@ -153,6 +153,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
       </nav>
 
       <ScoreDisplay
+        refereeClock={match.refereeClock}
         homeScore={match.homeScore}
         awayScore={match.awayScore}
         teamName={match.teamName}

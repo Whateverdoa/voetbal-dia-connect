@@ -110,7 +110,7 @@ describe("pilot public projection", () => {
  it("keeps cumulative goals and exact corrections without leaking actors/private notes", () => {
   const first = { ...event({ _id: "q1", quarter: 1 }), actorSubject: "private-clerk", actorKind: "user" };
   const second = event({ _id: "q2", quarter: 2 });
-  const privateEvents = ["clock_guard", "official_audit", "official_annotation", "incident", "substitution_staged", "substitution_cancelled"].map((type, i) => event({ _id: `private-${i}`, type }));
+  const privateEvents = ["clock_guard", "official_audit", "official_annotation", "substitution_staged", "substitution_cancelled"].map((type, i) => event({ _id: `private-${i}`, type }));
   const correction = { ...event({ _id: "undo", type: "goal_correction", targetEventId: "q1" }), actorSubject: "private-clerk", actorKind: "user" };
   const result = projectPublicMatchEvents([first, second, correction, ...privateEvents] as never);
   expect(result.map(e => e._id)).toEqual(["q1", "q2", "undo"]);

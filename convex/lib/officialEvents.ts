@@ -1,10 +1,12 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { cardPersonDisplay } from "./cardEntry";
-import { applyGoalEnrichments } from "./matchEventProjection";
+import { applyGoalEnrichments, applyIncidentAnnotations } from "./matchEventProjection";
 
 export const OFFICIAL_LOG_TYPES = [
   "goal",
+  "goal_correction",
+  "incident",
   "yellow_card",
   "red_card",
 ] as const;
@@ -26,8 +28,10 @@ export function mapOfficialLogEvent(
     _id: event._id,
     type: event.type,
     quarter: event.quarter,
+    matchMs: event.matchMs,
+    targetEventId: event.targetEventId,
     timestamp: event.timestamp,
-    playerName: cardPersonDisplay({
+    playerName: event.type === "incident" ? undefined : cardPersonDisplay({
       playerName: rosterName,
       reportedName: event.reportedName,
       reportedNumber: event.reportedNumber,
@@ -35,7 +39,8 @@ export function mapOfficialLogEvent(
     isOwnGoal: event.isOwnGoal,
     isOpponentGoal: event.isOpponentGoal,
     isOpponentCard: event.isOpponentCard,
-    note: event.note,
+    incidentCategory: event.type === "incident" ? ["Blessure", "Strafschop", "Wangedrag", "Publiek", "Overig"].find(c => event.note?.startsWith(c + ":")) ?? "Overig" : undefined,
+    note: event.type === "incident" ? undefined : event.note,
     assistKind: event.assistKind,
     displayMinute: event.displayMinute,
     displayExtraMinute: event.displayExtraMinute,
@@ -53,7 +58,8 @@ export async function listOfficialMatchEvents(
     .take(1000);
   events.reverse();
   // A coach enriches the same goal after the referee records the score.
-  const official = applyGoalEnrichments(events).filter((event) => isOfficialLogType(event.type));
+  const annotated = applyIncidentAnnotations(events);
+  const official = applyGoalEnrichments(annotated).filter((event) => isOfficialLogType(event.type));
   const playerIds = official
     .map((event) => event.playerId)
     .filter((id): id is NonNullable<typeof id> => id != null);
@@ -63,5 +69,8 @@ export async function listOfficialMatchEvents(
   for (const player of players) {
     if (player) playerNameById[String(player._id)] = player.name;
   }
-  return official.map((event) => mapOfficialLogEvent(event, playerNameById));
+  const corrected = new Set(events.filter(event => event.type === "goal_correction").map(event => event.targetEventId));
+  return official.map((event) => ({ ...mapOfficialLogEvent(event, playerNameById),
+    corrected: event.type === "goal" && corrected.has(event._id) }));
+
 }

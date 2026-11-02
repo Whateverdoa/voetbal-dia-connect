@@ -1,5 +1,7 @@
 "use client";
 
+import { markCorrectedGoals } from "@/lib/goalCorrections";
+
 import { describeGoalEnrichment, formatAssistLine } from "@/lib/assistKind";
 import { describeGoalEvent } from "@/lib/goalEventText";
 import type { MatchEvent } from "./types";
@@ -71,6 +73,12 @@ function getEventText(
         teamName || "Ons team",
         opponentName || "Tegenstander",
       );
+    case "goal_correction":
+      return "Doelpunt teruggedraaid";
+    case "incident": {
+      const category = event.incidentCategory ?? ["Blessure", "Strafschop", "Wangedrag", "Publiek", "Overig"].find(c => event.note?.startsWith(c + ":"));
+      return category ? "Incident: " + category : "Incident";
+    }
     case "assist":
       return (
         formatAssistLine(event.playerName, event.assistKind) ??
@@ -113,9 +121,10 @@ export function EventTimeline({
   emptyText = "Nog geen events",
   types,
 }: EventTimelineProps) {
+  const correctedEvents = markCorrectedGoals(events);
   const visible = types
-    ? events.filter((event) => types.includes(event.type))
-    : events;
+    ? correctedEvents.filter((event) => types.includes(event.type))
+    : correctedEvents;
   const sortedEvents = [...visible].reverse();
 
   if (sortedEvents.length === 0) {
@@ -167,6 +176,7 @@ export function EventTimeline({
             {/* Description */}
             <span className="flex-1 text-sm text-gray-700 truncate">
               {getEventText(event, teamName, opponentName)}
+              {event.type === "goal" && event.corrected && <span className="ml-2 text-gray-500">Gecorrigeerd</span>}
             </span>
 
             {/* Quarter badge */}

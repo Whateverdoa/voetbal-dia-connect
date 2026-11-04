@@ -3,6 +3,7 @@
  * 
  * Playing time queries are in matchQueries.ts
  */
+import { readPublicPlayer } from "./lib/publicPlayer";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
@@ -21,7 +22,6 @@ import {
 } from "./lib/userAccess";
 import { hasAdminRole } from "./lib/adminOverride";
 import { coachScreenMayControlClock } from "./lib/officialDuty";
-import { redactPlayerForPublic, type ConsentRow } from "./lib/privacyFilter";
 
 // Re-export from split modules for backwards compatibility
 export { getPlayingTime, getSuggestedSubstitutions } from "./matchQueries";
@@ -52,77 +52,39 @@ export const getByPublicCode = query({
     const events = await ctx.db
       .query("matchEvents")
       .withIndex("by_match", (q) => q.eq("matchId", match._id))
-      .collect();
+      .take(2001);
+    if (events.length > 2000) throw new Error("Te veel wedstrijdgebeurtenissen");
     events.sort((a, b) => a.createdAt - b.createdAt || String(a._id).localeCompare(String(b._id)));
 
-    const playerIds = new Set<string>();
-    events.forEach((e) => {
-      if (e.playerId) playerIds.add(e.playerId);
-      if (e.relatedPlayerId) playerIds.add(e.relatedPlayerId);
-    });
-
-    const players = await Promise.all(
-      Array.from(playerIds).map((id) => ctx.db.get(id as Id<"players">))
-    );
-    const playerMap = Object.fromEntries(
-      players.filter((p): p is Doc<"players"> => p !== null).map((p) => [p._id, p.name])
-    );
-
-    const enrichedEvents = events.map((e) => ({
-      ...e,
-      playerName: recordedPlayerName(e, e.playerId ? playerMap[e.playerId] : undefined),
-      relatedPlayerName: e.relatedPlayerId ? playerMap[e.relatedPlayerId] : undefined,
-      matchMs: e.matchMs ?? (e.gameSecond != null ? e.gameSecond * 1000 : undefined),
+    const publicPlayers = new Map<string, Awaited<ReturnType<typeof readPublicPlayer>>>();
+    const getPlayer = async (id: Id<"players"> | undefined) => {
+      if (!id) return null;
+      if (!publicPlayers.has(id)) publicPlayers.set(id, await readPublicPlayer(ctx, await ctx.db.get(id), match.teamId));
+      return publicPlayers.get(id) ?? null;
+    };
+    const projectedEvents = await Promise.all(applyGoalEnrichments(events).filter(event => !isCoachOnlyEvent(event)).map(async event => {
+      const player = await getPlayer(event.playerId);
+      const related = await getPlayer(event.relatedPlayerId);
+      return {
+        _id: event._id, type: event.type, quarter: event.quarter,
+        timestamp: event.timestamp, createdAt: event.createdAt,
+        matchMs: event.matchMs, gameSecond: event.gameSecond,
+        displayMinute: event.displayMinute, displayExtraMinute: event.displayExtraMinute,
+        isOwnGoal: event.isOwnGoal, isOpponentGoal: event.isOpponentGoal, isOpponentCard: event.isOpponentCard,
+        ...(player ? { playerId: event.playerId, playerName: player.displayName } : {}),
+        ...(related ? { relatedPlayerId: event.relatedPlayerId, relatedPlayerName: related.displayName, assistKind: event.assistKind } : {}),
+      };
     }));
-    const projectedEvents = applyGoalEnrichments(enrichedEvents).filter(
-      (event) => !isCoachOnlyEvent(event)
-    );
-
     let lineup = null;
     if (match.showLineup) {
-      const matchPlayers = await ctx.db
-        .query("matchPlayers")
-        .withIndex("by_match", (q) => q.eq("matchId", match._id))
-        .collect();
-
-      const lineupPlayers = await Promise.all(
-        matchPlayers.map(async (mp) => {
-          const player = await ctx.db.get(mp.playerId);
-          if (!player) return null;
-
-          const consents = await ctx.db
-            .query("playerConsents")
-            .withIndex("by_player", (q) => q.eq("playerId", player._id))
-            .collect();
-          const redacted = redactPlayerForPublic(
-            {
-              _id: String(player._id),
-              name: player.name,
-              number: player.number,
-              photoUrl: player.photoUrl,
-            },
-            consents as ConsentRow[]
-          );
-
-          const selection = team?.isSelectionTeam === true;
-          const displayName = selection
-            ? redacted.displayName
-            : player.name.split(/\s+/).filter(Boolean)[0] ?? player.name;
-
-          return {
-            id: mp.playerId,
-            name: displayName,
-            number: player.number,
-            onField: mp.onField,
-            isKeeper: mp.isKeeper,
-            fieldSlotIndex: mp.fieldSlotIndex,
-            photoUrl: selection
-              ? (redacted.photoUrl ?? undefined)
-              : player.photoUrl,
-          };
-        })
-      );
-      lineup = lineupPlayers.filter(Boolean);
+      const matchPlayers = await ctx.db.query("matchPlayers").withIndex("by_match", q => q.eq("matchId", match._id)).take(501);
+      if (matchPlayers.length > 500) throw new Error("Te grote wedstrijdselectie");
+      const rows = await Promise.all(matchPlayers.map(async mp => {
+        const player = await getPlayer(mp.playerId);
+        return player ? { id: mp.playerId, name: player.displayName, number: player.number ?? undefined,
+          onField: mp.onField, isKeeper: mp.isKeeper, fieldSlotIndex: mp.fieldSlotIndex, photoUrl: player.photoUrl ?? undefined } : null;
+      }));
+      lineup = rows.filter((row): row is NonNullable<typeof row> => row !== null);
     }
 
     const refFields = await getPublicRefereeFields(ctx, match.refereeId);

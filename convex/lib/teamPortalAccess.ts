@@ -1,3 +1,4 @@
+import { readPublicPlayer } from "./publicPlayer";
 import { ConvexError } from "convex/values";
 import type { Id, Doc } from "../_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "../_generated/server";
@@ -9,7 +10,10 @@ const jo13GuestIds = new Set<string>([
   "js7frzp82xprg54q860z5sm7j18ddd7x",
   "js7e814yag7herbs5fjgptm0c18dcjaz",
 ]);
-export function inPortalRoster(slug: string, player: Pick<Doc<"players">, "_id" | "active">) {
+export function inPortalRoster(
+  slug: string,
+  player: Pick<Doc<"players">, "_id" | "active">,
+) {
   return player.active && (slug !== "jo13-2" || !jo13GuestIds.has(player._id));
 }
 export function demand(
@@ -87,7 +91,9 @@ export async function teamPlayer(
 ) {
   const player = await ctx.db.get(playerId);
   demand(
-    player && player.teamId === access.team._id && inPortalRoster(access.team.slug, player),
+    player &&
+      player.teamId === access.team._id &&
+      inPortalRoster(access.team.slug, player),
     "Deze speler is niet beschikbaar.",
   );
   return player;
@@ -104,20 +110,26 @@ export async function projectPlayer(
     .query("portalConsents")
     .withIndex("by_player", (q) => q.eq("playerId", player._id))
     .unique();
-  const consent = savedConsent?.teamId === access.team._id ? savedConsent : null;
+  const consent =
+    savedConsent?.teamId === access.team._id ? savedConsent : null;
   const own = access.ownPlayerIds.includes(player._id);
-  const known =
+  const publicView = consent?.publicProfile
+    ? await readPublicPlayer(ctx, player, access.team._id)
+    : null;
+  const privatelyKnown =
     access.isStaff ||
     access.isAdmin ||
     own ||
-    (access.isMember && consent?.teamProfile) ||
-    consent?.publicProfile;
+    (access.isMember && consent?.teamProfile);
+  const known = privatelyKnown || Boolean(publicView);
   const canOpen =
     access.isMember &&
-    (own || access.isStaff || consent?.teamProfile || consent?.publicProfile);
+    (own || access.isStaff || consent?.teamProfile || Boolean(publicView));
   return {
     id: known ? player._id : null,
-    name: known ? player.name.trim().split(/\s+/)[0] : "Teamgenoot",
+    name: privatelyKnown
+      ? player.name.trim().split(/\s+/)[0]
+      : (publicView?.displayName ?? "Teamgenoot"),
     position:
       known && access.isMember ? (player.positionPrimary ?? null) : null,
     number: known && access.isMember ? (player.number ?? null) : null,

@@ -1,5 +1,6 @@
+import { readPublicPlayer } from "./lib/publicPlayer";
 import { query } from "./_generated/server";
-import { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { compareSeasonHistory } from "./lib/matchHistoryOrder";
 import { isSandboxTeamSlug } from "./lib/sandboxTeam";
@@ -122,10 +123,10 @@ export const getMatchHistory = query({
         ];
 
         const players = await Promise.all(
-          playerIds.map((id) => ctx.db.get(id as Id<"players">))
+          playerIds.map(async id => readPublicPlayer(ctx, await ctx.db.get(id as Id<"players">), args.teamId))
         );
         const playerMap = Object.fromEntries(
-          players.filter(Boolean).map((p) => [p!._id, p!.name])
+          players.filter(Boolean).map((p) => [p!.playerId, p!.displayName])
         );
 
         // Count goals per player
@@ -148,15 +149,16 @@ export const getMatchHistory = query({
           ...new Set(matchPlayers.map((matchPlayer) => matchPlayer.playerId)),
         ];
         const matchPlayerDocs = await Promise.all(
-          matchPlayerIds.map((playerId) => ctx.db.get(playerId))
+          matchPlayerIds.map(async playerId => readPublicPlayer(ctx, await ctx.db.get(playerId), args.teamId))
         );
         const matchPlayerMap = Object.fromEntries(
           matchPlayerDocs
-            .filter((player): player is Doc<"players"> => player !== null)
-            .map((player) => [player._id, player.name])
+            .filter((player): player is NonNullable<typeof player> => player !== null)
+            .map((player) => [player.playerId, player.displayName])
         );
 
         const playingTime = matchPlayers
+          .filter(mp => Boolean(matchPlayerMap[mp.playerId]))
           .map((matchPlayer) => ({
             matchPlayerId: matchPlayer._id,
             playerId: matchPlayer.playerId,
@@ -168,8 +170,8 @@ export const getMatchHistory = query({
         const goalEvents = events
           .map((event) => ({
             eventId: event._id,
-            playerId: event.playerId ?? null,
-            relatedPlayerId: event.relatedPlayerId ?? null,
+            playerId: event.playerId && playerMap[event.playerId] ? event.playerId : null,
+            relatedPlayerId: event.relatedPlayerId && playerMap[event.relatedPlayerId] ? event.relatedPlayerId : null,
             playerName: event.playerId ? playerMap[event.playerId] ?? null : null,
             relatedPlayerName: event.relatedPlayerId
               ? playerMap[event.relatedPlayerId] ?? null
@@ -273,7 +275,7 @@ export const getSeasonStats = query({
       .map(([id]) => id);
 
     const topScorerPlayers = await Promise.all(
-      topScorerIds.map((id) => ctx.db.get(id as Id<"players">))
+      topScorerIds.map(async id => readPublicPlayer(ctx, await ctx.db.get(id as Id<"players">), args.teamId))
     );
 
     const topScorers = topScorerIds
@@ -282,7 +284,7 @@ export const getSeasonStats = query({
         if (!player) return null;
         return {
           playerId: id,
-          name: player.name,
+          name: player.displayName,
           goals: goalCounts[id],
         };
       })

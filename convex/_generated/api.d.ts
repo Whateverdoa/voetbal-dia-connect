@@ -61,6 +61,7 @@ import type * as lib_adminOverride from "../lib/adminOverride.js";
 import type * as lib_assistKind from "../lib/assistKind.js";
 import type * as lib_benchSubstitutionCore from "../lib/benchSubstitutionCore.js";
 import type * as lib_cardEntry from "../lib/cardEntry.js";
+import type * as lib_coachAssistantLive from "../lib/coachAssistantLive.js";
 import type * as lib_coachAssistantValidators from "../lib/coachAssistantValidators.js";
 import type * as lib_coachAssistantWorkspace from "../lib/coachAssistantWorkspace.js";
 import type * as lib_coachNameMatch from "../lib/coachNameMatch.js";
@@ -233,6 +234,7 @@ declare const fullApi: ApiFromModules<{
   "lib/assistKind": typeof lib_assistKind;
   "lib/benchSubstitutionCore": typeof lib_benchSubstitutionCore;
   "lib/cardEntry": typeof lib_cardEntry;
+  "lib/coachAssistantLive": typeof lib_coachAssistantLive;
   "lib/coachAssistantValidators": typeof lib_coachAssistantValidators;
   "lib/coachAssistantWorkspace": typeof lib_coachAssistantWorkspace;
   "lib/coachNameMatch": typeof lib_coachNameMatch;

@@ -29,7 +29,9 @@ describe("substitution print output", () => {
     ]);
     expect(frames[0].querySelector(".substitution-print-bench")).toHaveTextContent("Macéo 16 · Krijn 10 · Lukas 14");
     for (const player of ["Revi 5", "Sem 15", "Lukas 14"]) expect(frames[1].querySelector(".substitution-print-bench")).toHaveTextContent(player);
-    expect(frames[5]).toHaveTextContent("Positie: Sem 15 ↔ Olivier 9");
+    expect(frames[5]).toHaveTextContent("Positie: Sem 15 van LM naar CM");
+    expect(frames[5]).toHaveTextContent("Olivier 9 erin op LM");
+    expect(frames[5]).not.toHaveTextContent("↔");
     expect(match.phase).toBe("ready");
     expect(match.events).toHaveLength(0);
   });

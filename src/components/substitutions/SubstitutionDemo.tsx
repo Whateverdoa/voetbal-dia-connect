@@ -1,5 +1,6 @@
 "use client";
 
+import { momentInstructions } from "@/lib/substitutions/momentInstructions";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import Image from "next/image";
 import { ArrowDownUp, Check, CheckCircle2, ChevronRight, Clock3, Flag, ImagePlus, Pause, Play, RotateCcw, ShieldCheck, SkipForward } from "lucide-react";
@@ -14,7 +15,6 @@ import { SubstitutionPrint, SubstitutionPrintButton, type SubstitutionPrintMode 
 import { DEMO_PLAN, type DemoPlan } from "@/lib/substitutions/demoPlan";
 import { DEFAULT_DEMO_FORMATION_ID, DEMO_FORMATIONS, getDemoFormation, getDemoPitchSlots, type DemoFormation } from "@/lib/substitutions/demoFormations";
 import { assignDemoStartingPlayer, createManualDemoPlan, swapDemoStartingPositions } from "@/lib/substitutions/demoLineup";
-import { getPositionNameDutch } from "@/lib/positions";
 import {
   advanceDemoClock, advanceDemoClockFollowingPlan, createDemoMatch, executeDemoStep, executeDemoAction, getDemoComparison,
   pauseDemoClock, skipDemoStep, startDemoClock, substituteDemoPlayer, swapDemoPlayerPositions, changeDemoFormation,
@@ -35,6 +35,7 @@ export interface DemoSource {
   targetDate?: string;
   initialPlayers?: AssistantPlayer[];
   preparationSettings?: AssistantPreparationSettings;
+  preferenceScope?: string;
   teamKey?: string;
   assistantHistory?: AssistantHistoryMatch[];
   historyLoading?: boolean;
@@ -408,18 +409,6 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
     clearSelection();
   }
 
-  function positionSwapNote(stepId: string) {
-    const step = draft.steps.find((item) => item.id === stepId);
-    const snapshot = report.snapshots.find((item) => item.stepId === stepId);
-    return step?.actions.filter((action) => action.kind === "positionSwap").map((action) =>
-      [action.playerOutKey, action.playerInKey].map((key) => {
-        const slotId = snapshot?.field.find((entry) => entry.playerKey === key)?.slotId;
-        const position = draft.formation.slots.find((slot) => slot.id === slotId)?.position;
-        return `${draftLabel(key)} → ${position ? getPositionNameDutch(position).toLowerCase() : "positie controleren"}`;
-      }).join("; ")
-    ).join(". ");
-  }
-
   const formationSelector = <div className="mb-4">
     <div className="flex flex-wrap items-center gap-3">
       <label htmlFor="demo-formation" className="text-sm font-semibold">{beforeKickoff ? "Beginopstelling" : "Formatie"}</label>
@@ -486,7 +475,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
         {connection && beforeKickoff && formationSelector}
         {connection && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">Selectie en voorkeuren blijven hier bewaard. Na het berekenen ga je met hetzelfde voorstel door naar Wisselplan en Oefenen.</p>}
         {connection && !beforeKickoff && <button type="button" className={`${secondary} mb-4`} onClick={resetPractice}>Oefening stoppen en voorbereiding aanpassen</button>}
-        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={source.initialPlayers} initialSettings={source.preparationSettings} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
+        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={source.initialPlayers} initialSettings={source.preparationSettings} preferenceScope={source.preferenceScope} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
       </div>}
 
       {tab === "field" && <>
@@ -581,8 +570,8 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
               <p className="mt-2 text-xs leading-6 text-slate-600">{draft.startingLineup.field.map((entry) => `${draftLabel(entry.playerKey)} (${draft.formation.slots.find((slot) => slot.id === entry.slotId)?.position})`).join(" · ")}</p>
               <p className="mt-2 text-xs text-slate-600"><strong>Bank:</strong> {draft.startingLineup.bench.map(draftLabel).join(" · ")}</p>
               <h3 className="mt-5 text-sm font-bold">Geplande wissels</h3>{draft.steps.length === 0 && <p className="mt-2 text-xs text-slate-500">Geen wissels vooraf gepland. Het plan houdt de beginopstelling aan totdat je werkelijk wisselt.</p>}
-              <ol className="mt-2 divide-y divide-slate-200">{draft.steps.map((step) => <li key={step.id} className="flex gap-3 py-3 text-xs leading-6"><strong className="w-7 shrink-0 text-dia-green">{step.matchMinute}′</strong><div>{step.actions.map((action) => <p key={action.id}>{draftLabel(action.playerOutKey)} {action.kind === "positionSwap" ? "↔" : "uit →"} {draftLabel(action.playerInKey)}{action.kind === "substitution" ? " in" : " (positieruil)"}</p>)}</div></li>)}</ol>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">Een invaller neemt de positie over. {draft.steps.filter((step) => step.actions.some((action) => action.kind === "positionSwap")).map((step) => `Bij ${step.matchMinute}′: ${positionSwapNote(step.id)}.`).join(" ")}</p>
+              <ol className="mt-2 divide-y divide-slate-200">{draft.steps.map((step) => <li key={step.id} className="flex gap-3 py-3 text-xs leading-6"><strong className="w-7 shrink-0 text-dia-green">{step.matchMinute}′</strong><div>{momentInstructions(draft, report.snapshots, step.id).map((instruction) => <p key={instruction}>{instruction}</p>)}</div></li>)}</ol>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">De posities zijn de eindplekken na alle wissels van dat moment. Iedere speler hoeft maar één keer naar zijn nieuwe plek.</p>
             </div>
           </div>
           <div>

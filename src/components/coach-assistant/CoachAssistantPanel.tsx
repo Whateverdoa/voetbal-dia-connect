@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRememberedPlayers } from "@/hooks/useRememberedPlayers";
 import { POSITIONS } from "@/lib/positions";
 import { proposeCoachPlan } from "@/lib/coachAssistant/proposePlan";
 import type { AssistantHistoryMatch, AssistantInput, AssistantPlayer, AssistantResult } from "@/lib/coachAssistant/types";
@@ -23,15 +24,16 @@ export interface AssistantPreparationSettings {
   history: AssistantHistoryMatch[];
 }
 
-export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApply, initialPlayers, initialSettings, connected = false, testOnly = false, preparationFlow = false, automaticHistory = noHistory, historyLoading = false, historyWarnings = noWarnings }: {
+export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApply, initialPlayers, initialSettings, preferenceScope, connected = false, testOnly = false, preparationFlow = false, automaticHistory = noHistory, historyLoading = false, historyWarnings = noWarnings }: {
   plan: DemoPlan; teamKey: string; targetDate: string; disabled: boolean; onApply: (plan: DemoPlan, players?: AssistantPlayer[], settings?: AssistantPreparationSettings) => void;
-  initialSettings?: AssistantPreparationSettings; initialPlayers?: AssistantPlayer[]; connected?: boolean; testOnly?: boolean; preparationFlow?: boolean;
+  preferenceScope?: string; initialSettings?: AssistantPreparationSettings; initialPlayers?: AssistantPlayer[]; connected?: boolean; testOnly?: boolean; preparationFlow?: boolean;
   automaticHistory?: AssistantHistoryMatch[]; historyLoading?: boolean; historyWarnings?: string[];
 }) {
-  const [players, setPlayers] = useState<AssistantPlayer[]>(() => initialPlayers ?? plan.players.map((player) => ({
+  const [basePlayers, setPlayers] = useState<AssistantPlayer[]>(() => initialPlayers ?? plan.players.map((player) => ({
     key: player.key, availability: player.unavailableReason === "injured" ? "injured" : player.absent ? "absent" : "present",
     primaryPosition: null, secondaryPosition: null,
   })));
+  const { players, remember, storageError } = useRememberedPlayers(preferenceScope, basePlayers);
   const [keeper, setKeeper] = useState(initialSettings?.keeper ?? plan.startingLineup.keeperKey);
   const [keepKeeper, setKeepKeeper] = useState(initialSettings?.keepKeeper ?? true);
   const [secondKeeper, setSecondKeeper] = useState(initialSettings?.secondKeeper ?? "");
@@ -57,6 +59,7 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
   }
 
   function editPlayer(key: string, patch: Partial<AssistantPlayer>) {
+    remember(key, patch);
     setPlayers((current) => current.map((player) => player.key === key ? { ...player, ...patch } : player));
     changed();
   }
@@ -69,6 +72,8 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
 
   return <section aria-label="Coachassistent" className="space-y-5">
     <header className="rounded-2xl border border-green-200 bg-green-50 p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-wider text-dia-green">{connected ? "Coachassistent · gekozen wedstrijd" : "Coachassistent · lokale proef"}</p><h2 className="mt-2 text-2xl font-bold tracking-tight">Een voorstel dat je kunt uitleggen</h2><p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">Kies de beschikbare spelers, hun voorkeursplekken en de keeper. De assistent berekent een beginopstelling en eventueel een wisselplan. Je kunt het voorstel daarna op het veld afspelen.</p><p className="mt-2 text-xs leading-relaxed text-slate-500">{connected ? "Beschikbaarheid en positievoorkeuren zijn geladen uit de wedstrijdselectie. Eerdere beginopstellingen worden alleen gebruikt wanneer ze zijn bevestigd. Wijzigingen in voorkeuren gelden voor dit voorstel." : "Deze bron bevat geen geverifieerde eerdere beginopstellingen of spelervoorkeuren. Plekken uit het voorbeeld zijn alleen een startpunt bij gelijke keuzes. Historie wordt uitsluitend gebruikt na jouw controle."}</p></header>
+    {preferenceScope && <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Posities, afwezigheid en blessures worden voor dit team onthouden in deze browser. Zet een speler zelf weer op Beschikbaar wanneer die terug is. Controleer deze bewaarde keuzes vóór iedere wedstrijd.</p>}
+    {storageError && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm">Je browser kon deze keuze niet bewaren. Houd dit scherm open; na sluiten moet je de keuze opnieuw invoeren.</p>}
     {disabled && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De oefenwedstrijd is al begonnen. Kies Opnieuw voordat je een nieuw plan voorbereidt.</p>}
     <fieldset disabled={disabled} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
       <legend className="px-2 font-semibold">Selectie en afspraken</legend>

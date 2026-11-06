@@ -3,6 +3,7 @@ import { REESHOF_PLAN } from "../substitutions/reeshofPlan";
 import { validatePortableSubstitutionPlan } from "../substitutions/validatePortableSubstitutionPlan";
 import type { DemoPlan } from "../substitutions/demoPlan";
 import { proposeCoachPlan } from "./proposePlan";
+import { assignField } from "./assignment";
 import { collectEvidence } from "./history";
 import type { AssistantHistoryMatch, AssistantInput, AssistantProposal } from "./types";
 
@@ -57,6 +58,17 @@ describe("deterministic coach assistant", () => {
     expect(input).toEqual(before);
     expect(proposal(input)).toEqual(result);
     expect(result.plan.players.find((player) => player.key === "reeshof-p07")?.unavailableReason).toBe("injured");
+  });
+
+  it("keeps retained players in a suitable place instead of chasing first preferences at every moment", () => {
+    const input = inputFor(smallPlan);
+    input.players[2].primaryPosition = "CB"; input.players[2].secondaryPosition = "ST";
+    input.players[3].primaryPosition = "ST"; input.players[3].secondaryPosition = "CB";
+    const evidence = new Map(collectEvidence(input).evidence.map((row) => [row.playerKey, row]));
+    const result = assignField({ players: input.players.slice(1), slots: smallPlan.formation.slots.slice(1), evidence,
+      plannedMinutes: new Map([["a", 60], ["b", 0], ["c", 0]]), duration: 60, useMinutes: false, useStarts: false,
+      reference: [{ playerKey: "a", slotId: 1 }, { playerKey: "b", slotId: 2 }], kickoff: false });
+    expect(result).toEqual([{ playerKey: "c", slotId: 1 }, { playerKey: "b", slotId: 2 }]);
   });
 
   it("assigns specialists and versatile players globally instead of consuming the only striker for defense", () => {

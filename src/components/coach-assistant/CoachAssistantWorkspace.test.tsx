@@ -5,6 +5,8 @@ import { assistantSourceFixture } from "@/test/fixtures/coachAssistant";
 import { workspacePlan, workspaceRevision } from "../../../convex/lib/coachAssistantWorkspace";
 import { CoachAssistantWorkspace, ConnectedEditor } from "./CoachAssistantWorkspace";
 
+vi.mock("@clerk/nextjs", () => ({ useUser: () => ({ user: { id: "test-coach" } }) }));
+
 const mocks = vi.hoisted(() => ({ query: vi.fn(), save: vi.fn(), authenticated: true, client: { query: vi.fn() } }));
 vi.mock("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: mocks.authenticated, isLoading: false }),

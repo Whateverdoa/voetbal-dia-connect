@@ -9,8 +9,17 @@ export function buildTransition(previous: Field, target: Field, minute: number):
   const incoming = target.filter((entry) => !previous.some((old) => old.playerKey === entry.playerKey));
   const outgoing = field.filter((entry) => !target.some((next) => next.playerKey === entry.playerKey));
   const actionId = () => `assistant-${minute}-${actions.length}`;
-  outgoing.forEach((entry, index) => {
-    const next = incoming[index];
+  // Follow each vacant slot through retained players to its incoming player.
+  // Pairing by array order would join independent chains and create needless swaps.
+  outgoing.forEach((entry) => {
+    let slotId = entry.slotId;
+    let next = target.find((candidate) => candidate.slotId === slotId)!;
+    while (!incoming.some((candidate) => candidate.playerKey === next.playerKey)) {
+      const previousSlot = previous.find((candidate) => candidate.playerKey === next.playerKey);
+      if (!previousSlot) throw new Error("De doelopstelling bevat een onbekende speler.");
+      slotId = previousSlot.slotId;
+      next = target.find((candidate) => candidate.slotId === slotId)!;
+    }
     actions.push({ id: actionId(), kind: "substitution", playerOutKey: entry.playerKey, playerInKey: next.playerKey });
     entry.playerKey = next.playerKey;
   });

@@ -1,5 +1,6 @@
 "use client";
 
+import { momentInstructions } from "@/lib/substitutions/momentInstructions";
 import { Printer } from "lucide-react";
 import { DEMO_PLAN, type DemoPlan } from "@/lib/substitutions/demoPlan";
 import type { DemoAction, DemoEventSnapshot, DemoFormationState, DemoMatchState } from "@/lib/substitutions/demoMatch";
@@ -9,7 +10,7 @@ import { getRoleColor } from "@/lib/roleColors";
 
 export type SubstitutionPrintMode = "plan" | "actual";
 type PrintProps = { match: DemoMatchState; plan: DemoPlan; approved: boolean; printMode: SubstitutionPrintMode; screenPreview?: boolean; matchLabel?: string; sourceLabel?: string };
-type PrintFrame = { id: string; snapshot: DemoEventSnapshot; elapsedSeconds: number; title: string; actions: readonly DemoAction[]; plannedMinute?: number };
+type PrintFrame = { id: string; snapshot: DemoEventSnapshot; elapsedSeconds: number; title: string; actions: readonly DemoAction[]; plannedMinute?: number; instructions?: string[] };
 type PrintPlayers = DemoMatchState["plan"]["players"];
 
 const PRINT_CSS = `
@@ -97,6 +98,7 @@ function printData({ match, plan, printMode }: PrintProps): { frames: PrintFrame
         elapsedSeconds: snapshot.matchMinute * 60,
         title: step ? "Geplande wissel" : "Beginopstelling",
         actions: step?.actions ?? [],
+        instructions: step ? momentInstructions(plan, report.snapshots, step.id) : undefined,
         snapshot: { ...snapshot, formation: plan.formation },
       };
     }),
@@ -172,14 +174,14 @@ export function SubstitutionPrint(props: PrintProps) {
             <div className="max-w-56 text-right"><p>{printMode === "actual" ? `${match.phase === "finished" ? "Eindstand" : "Tussenstand"} bij ` : ""}{timeLabel}</p>{unavailable.length > 0 && <p>Niet beschikbaar: {unavailable.map((player) => `${playerLabel(players, player.key)}${player.unavailableReason === "injured" ? " (geblesseerd)" : ""}`).join(" · ")}</p>}</div>
           </header>
           <div className="substitution-print-grid">
-            {frames.slice(pageIndex * 6, (pageIndex + 1) * 6).map(({ id, snapshot, actions, elapsedSeconds, title, plannedMinute }) => {
+            {frames.slice(pageIndex * 6, (pageIndex + 1) * 6).map(({ id, snapshot, actions, instructions, elapsedSeconds, title, plannedMinute }) => {
               const lateOrEarly = plannedMinute !== undefined && plannedMinute * 60 !== elapsedSeconds;
               return (
                 <figure key={id} className="substitution-print-frame">
                   <figcaption className="substitution-print-title"><span>{clock(elapsedSeconds)} · {title}</span><span>{lateOrEarly ? `Plan: ${clock(plannedMinute! * 60)}` : ""}</span></figcaption>
                   <div className="substitution-print-actions">
                     {!actions.length ? <p>{formationName(snapshot.formation)}</p> : null}
-                    {actions.map((action) => <p key={action.id}>{action.kind === "positionSwap" ? "Positie: " : "Uit → in: "}{playerLabel(players, action.playerOutKey)} {action.kind === "positionSwap" ? "↔" : "→"} {playerLabel(players, action.playerInKey)}</p>)}
+                    {instructions ? instructions.map((instruction) => <p key={instruction}>{instruction}</p>) : actions.map((action) => <p key={action.id}>{action.kind === "positionSwap" ? "Positie: " : "Uit → in: "}{playerLabel(players, action.playerOutKey)} {action.kind === "positionSwap" ? "↔" : "→"} {playerLabel(players, action.playerInKey)}</p>)}
                   </div>
                   <HalfPitch players={players} snapshot={snapshot} />
                   <div className="substitution-print-bench"><strong>Bank:</strong> {snapshot.bench.map((key) => playerLabel(players, key)).join(" · ")}</div>

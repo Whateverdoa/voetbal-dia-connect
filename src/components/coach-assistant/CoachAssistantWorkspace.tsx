@@ -2,6 +2,7 @@
 
 import { Component, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
@@ -37,6 +38,8 @@ class WorkspaceErrorBoundary extends Component<{ children: ReactNode }, { error:
 }
 
 export function CoachAssistantWorkspace({ initialCode, testMode = false }: { initialCode: string; testMode?: boolean }) {
+  const { user } = useUser();
+  const accountId = user?.id;
   const normalizedCode = initialCode.trim().toUpperCase();
   const [code, setCode] = useState(/^[A-Z0-9]{6}$/.test(normalizedCode) ? normalizedCode : "");
   const [codeInput, setCodeInput] = useState(normalizedCode);
@@ -51,7 +54,7 @@ export function CoachAssistantWorkspace({ initialCode, testMode = false }: { ini
   return <main className="min-h-screen bg-slate-50 pb-8">
     <header className="border-b border-slate-200 bg-white px-4 py-5"><div className="mx-auto max-w-7xl"><Link href="/coach" className="text-sm font-semibold text-dia-green underline underline-offset-4">Naar coachdashboard</Link><h1 className="mt-3 text-2xl font-bold">Wedstrijd voorbereiden & oefenen</h1><p className="mt-2 text-sm text-slate-600">Kies je wedstrijd, bereid de opstelling en het wisselplan voor en oefen daarna op dezelfde pagina. Je gebruikt in elke stap hetzelfde wedstrijdconcept.</p></div></header>
     <div className="mx-auto max-w-7xl space-y-4 p-4">
-      {testMode && <section aria-label="Lokale testvoorbereiding" className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"><h2 className="font-bold">Testvoorbereiding · alleen lokaal</h2><p className="mt-1">Je leest de echte wedstrijdselectie. Voorstellen, wijzigingen en de oefenklok blijven op dit scherm. Opslaan in de wedstrijd is uitgeschakeld. Herladen wist je oefenconcept; je kunt het wisselplan afdrukken om het te bewaren.</p></section>}
+      {testMode && <section aria-label="Lokale testvoorbereiding" className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"><h2 className="font-bold">Testvoorbereiding · alleen lokaal</h2><p className="mt-1">Je leest de echte wedstrijdselectie. Voorstellen, wijzigingen en de oefenklok blijven op dit scherm. Opslaan in de wedstrijd is uitgeschakeld. Posities en beschikbaarheid blijven in deze browser bewaard. Herladen wist je oefenconcept; je kunt het wisselplan afdrukken om het te bewaren.</p></section>}
       {isLoading && <p role="status">Coachverbinding laden…</p>}
       {!isLoading && !isAuthenticated && <p>Log in als coach om wedstrijden te laden. <Link href="/sign-in" className="font-semibold text-dia-green underline">Inloggen</Link></p>}
       {isAuthenticated && <><section aria-label="Wedstrijd kiezen" className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -68,33 +71,34 @@ export function CoachAssistantWorkspace({ initialCode, testMode = false }: { ini
         <p className="mt-3 text-xs text-slate-500">{testMode ? "Een andere wedstrijd kiezen begint een nieuwe lokale test. Druk het concept af als je het wilt bewaren." : "Een andere wedstrijd kiezen begint een nieuw concept. Sla een beoordeeld concept eerst op als je het wilt bewaren."}</p>
       </section>
       {code ? <WorkspaceErrorBoundary key={code}>{testMode
-        ? <SelectedTestMatch key={code} code={code} matchId={dashboard?.matches.find((match) => match.publicCode === code)?._id} loading={dashboard === undefined} />
-        : <SelectedMatch key={code} code={code} testMode={false} />}</WorkspaceErrorBoundary> : <p className="p-4 text-sm text-slate-600">Kies hierboven een wedstrijd om een opstelling en wisselplan te laten voorstellen.</p>}
+        ? <SelectedTestMatch accountId={accountId} key={code} code={code} matchId={dashboard?.matches.find((match) => match.publicCode === code)?._id} loading={dashboard === undefined} />
+        : <SelectedMatch accountId={accountId} key={code} code={code} testMode={false} />}</WorkspaceErrorBoundary> : <p className="p-4 text-sm text-slate-600">Kies hierboven een wedstrijd om een opstelling en wisselplan te laten voorstellen.</p>}
       </>}
     </div>
   </main>;
 }
 
-function SelectedTestMatch({ code, matchId, loading }: { code: string; matchId?: Id<"matches">; loading: boolean }) {
+function SelectedTestMatch({ code, matchId, loading, accountId }: { accountId?: string; code: string; matchId?: Id<"matches">; loading: boolean }) {
   const match = useQuery(api.matches.getForCoach, matchId ? { matchId } : "skip");
   const [loadKey, setLoadKey] = useState(0);
   if (loading) return <p role="status">Coachtoegang controleren…</p>;
   if (!matchId) return <p role="alert">Deze wedstrijd hoort niet bij je coachteams. Kies een wedstrijd waarvoor je coachtoegang hebt.</p>;
   if (match === undefined) return <p role="status">Selectie van {code} laden voor de lokale test…</p>;
   if (!match || match.publicCode !== code) return <p role="alert">De wedstrijd kan niet met jouw coachtoegang worden geladen.</p>;
-  return <ConnectedEditor key={loadKey} current={testWorkspace(match)} testMode onReload={() => setLoadKey((value) => value + 1)} />;
+  return <ConnectedEditor key={loadKey} current={testWorkspace(match)} accountId={accountId} testMode onReload={() => setLoadKey((value) => value + 1)} />;
 }
 
-function SelectedMatch({ code, testMode }: { code: string; testMode: boolean }) {
+function SelectedMatch({ code, testMode, accountId }: { accountId?: string; code: string; testMode: boolean }) {
   const workspace = useQuery(api.coachAssistant.workspace, { code });
   const [loadKey, setLoadKey] = useState(0);
   if (workspace === undefined) return <p role="status">Selectie en plan van {code} laden…</p>;
   if (workspace === null) return <p role="alert">Er is geen wedstrijd met code {code} gevonden.</p>;
-  return <ConnectedEditor key={loadKey} current={workspace} testMode={testMode} onReload={() => setLoadKey((value) => value + 1)} />;
+  return <ConnectedEditor key={loadKey} current={workspace} accountId={accountId} testMode={testMode} onReload={() => setLoadKey((value) => value + 1)} />;
 }
 
-export function ConnectedEditor({ current, onReload, testMode = false }: { current: Workspace; onReload: () => void; testMode?: boolean }) {
+export function ConnectedEditor({ current, onReload, testMode = false, accountId }: { accountId?: string; current: Workspace; onReload: () => void; testMode?: boolean }) {
   const [snapshot] = useState(current);
+  const preferenceScope = accountId ? `${accountId}:${snapshot.teamId}` : undefined;
   const [formationId, setFormationId] = useState(snapshot.plan.formation.id ?? "11v11_1-4-3-3");
   const [prepared, setPrepared] = useState<DemoPlan | null>(null);
   const [preparedSettings, setPreparedSettings] = useState<AssistantPreparationSettings>();
@@ -116,7 +120,7 @@ export function ConnectedEditor({ current, onReload, testMode = false }: { curre
   });
   const label = `${snapshot.teamName} – ${snapshot.opponent} (${snapshot.code})`;
   const source: DemoSource = { id: snapshot.code, kind: "app", initialPlan: plan, initialPlanIsProposal: prepared !== null, teamName: snapshot.teamName, teamKey: String(snapshot.teamId), matchLabel: label,
-    sourceUrl: `/coach/match/${snapshot.matchId}`, notes: snapshot.warnings, targetDate: dateInAmsterdam(snapshot.scheduledAt), initialPlayers: preparedPlayers ?? preferences, preparationSettings: preparedSettings,
+    sourceUrl: `/coach/match/${snapshot.matchId}`, notes: snapshot.warnings, targetDate: dateInAmsterdam(snapshot.scheduledAt), initialPlayers: preparedPlayers ?? preferences, preparationSettings: preparedSettings, preferenceScope,
     assistantHistory: automaticHistory.matches, historyLoading: automaticHistory.loading, historyWarnings: automaticHistory.warnings };
   const connection = { label, disabled, onSave: async (approved: DemoPlan, requestId: string) => {
     if (testMode) throw new Error("Deze testvoorbereiding kan niet naar de wedstrijd schrijven.");
@@ -135,7 +139,7 @@ export function ConnectedEditor({ current, onReload, testMode = false }: { curre
         <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} disabled={disabled} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
         {snapshot.warnings.length > 0 && <ul className="mt-3 list-disc pl-5 text-sm text-amber-800">{snapshot.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
       </div>
-      <CoachAssistantPanel key={formationId} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={disabled} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
+      <CoachAssistantPanel key={formationId} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={disabled} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
     </> : <SubstitutionDemo key={`${formationId}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared ? "review" : "assistant"} />}
   </section>;
 }

@@ -37,7 +37,7 @@ export function assignField({ players, slots, evidence, plannedMinutes, duration
   const orderedSlots = [...slots].sort((a, b) => a.id - b.id);
   const locks = new Map(players.filter((player) => player.lockedSlotId !== undefined)
     .map((player) => [player.lockedSlotId, player.key]));
-  let states = new Map<number, Candidate>([[0, { score: Array<number>(9).fill(0), field: [] }]]);
+  let states = new Map<number, Candidate>([[0, { score: Array<number>(10).fill(0), field: [] }]]);
   for (const player of [...players].sort((a, b) => a.key.localeCompare(b.key))) {
     const next = new Map(states);
     const facts = evidence.get(player.key);
@@ -64,6 +64,9 @@ export function assignField({ players, slots, evidence, plannedMinutes, duration
           fairness,
           fit === "other" ? 1 : 0,
           fit === "unknown" ? 1 : 0,
+          // After fairness and avoiding unsuitable positions, retain players in place.
+          // An incoming player has no previous field position to preserve.
+          !kickoff && reference.some((entry) => entry.playerKey === player.key && entry.slotId !== slot.id) ? 1 : 0,
           fit === "zone" ? 1 : 0,
           fit === "secondary" ? 1 : 0,
           kickoff && useStarts ? facts.starts ?? 0 : 0,

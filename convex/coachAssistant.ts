@@ -5,6 +5,8 @@ import type { Doc } from "./_generated/dataModel";
 import { requireCoachAccess } from "./lib/userAccess";
 import { assistantPlanValidator } from "./lib/coachAssistantValidators";
 import { workspacePlan, workspaceRevision, validateWorkspaceSave, type WorkspaceSource } from "./lib/coachAssistantWorkspace";
+import { liveProposal, validateLivePreview } from "./lib/coachAssistantLive";
+import { verifyIsMatchLead } from "./pinHelpers";
 
 async function readSource(ctx: QueryCtx | MutationCtx, match: Doc<"matches">): Promise<WorkspaceSource> {
   const { coach } = await requireCoachAccess(ctx);
@@ -46,6 +48,59 @@ export const workspace = query({
         availability: entry.injured ? "injured" as const : entry.absent ? "absent" as const : "present" as const,
         primaryPosition: player.positionPrimary ?? null, secondaryPosition: player.positionSecondary ?? null })),
     };
+  },
+});
+
+export const previewRemaining = query({
+  args: { matchId: v.id("matches"), intervalMinutes: v.number() },
+  returns: v.object({ revision: v.string(), calculatedAt: v.number(), fromSecond: v.number(), plan: assistantPlanValidator,
+    totals: v.array(v.object({ key: v.string(), played: v.number(), expected: v.number() })) }),
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden.");
+    const source = await readSource(ctx, match);
+    const result = liveProposal(source, args.intervalMinutes, Date.now());
+    return { revision: result.revision, calculatedAt: result.calculatedAt, fromSecond: result.fromSecond, plan: result.plan, totals: result.totals };
+  },
+});
+
+/** Recompute the reviewed proposal server-side; only pending rows are replaced. */
+export const saveRemaining = mutation({
+  args: { matchId: v.id("matches"), expectedRevision: v.string(), calculatedAt: v.number(), intervalMinutes: v.number(), reviewed: v.boolean(), requestId: v.string() },
+  returns: v.object({ savedItems: v.number(), alreadySaved: v.boolean() }),
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Wedstrijd niet gevonden.");
+    const source = await readSource(ctx, match);
+    if (!(await verifyIsMatchLead(ctx, match))) throw new Error("Alleen de wedstrijdleider kan het vervolgplan overnemen.");
+    if (!args.reviewed) throw new Error("Controleer eerst het vervolgplan.");
+    if (args.requestId.length < 16 || args.requestId.length > 100) throw new Error("Ongeldige opslagaanvraag.");
+    const commandType = "SAVE_ASSISTANT_REMAINING";
+    const previous = await ctx.db.query("matchCommandDedupes").withIndex("by_match_command_correlation", (q) =>
+      q.eq("matchId", match._id).eq("commandType", commandType).eq("correlationId", args.requestId)).unique();
+    if (previous) return { savedItems: source.rows.filter((r) => r.status === "pending").length, alreadySaved: true };
+    const now = Date.now();
+    validateLivePreview(source, args.expectedRevision, args.calculatedAt, now);
+    const proposal = liveProposal(source, args.intervalMinutes, args.calculatedAt);
+    const current = liveProposal(source, args.intervalMinutes, now);
+    if (proposal.steps.some((step) => step.matchMinute * 60 <= current.fromSecond)) {
+      throw new Error("Een voorgestelde wisseltijd is al voorbij. Bereken opnieuw vanaf nu.");
+    }
+    const done = source.rows.filter((r) => r.status !== "pending");
+    const itemCount = proposal.steps.reduce((sum, step) => sum + step.actions.length, 0);
+    if (done.length + itemCount > 300) throw new Error("Te veel wisselregels. Kies een langer wisselinterval.");
+    for (const row of source.rows) if (row.status === "pending") await ctx.db.delete(row._id);
+    let sequence = Math.max(-1, ...done.map((r) => r.sequence)) + 1;
+    for (const step of proposal.steps) for (const action of step.actions) {
+      const outgoing = source.players.find(({ entry }) => String(entry.playerId) === action.playerOutKey)!;
+      const incoming = source.players.find(({ entry }) => String(entry.playerId) === action.playerInKey)!;
+      await ctx.db.insert("substitutionPlans", { matchId: match._id, sequence: sequence++, kind: action.kind,
+        playerOutId: outgoing.entry.playerId, playerInId: incoming.entry.playerId, targetMinute: step.matchMinute,
+        targetQuarter: Math.min(match.quarterCount, Math.floor(step.matchMinute / ((match.regulationDurationMinutes ?? 60) / match.quarterCount)) + 1),
+        status: "pending", createdAt: now, updatedAt: now });
+    }
+    await ctx.db.insert("matchCommandDedupes", { matchId: match._id, commandType, correlationId: args.requestId, createdAt: now });
+    return { savedItems: itemCount, alreadySaved: false };
   },
 });
 

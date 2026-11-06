@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { save, workspace } from "./coachAssistant";
+import { save, workspace, previewRemaining, saveRemaining } from "./coachAssistant";
 import type { Doc } from "./_generated/dataModel";
 import type { AccessRole, RuntimeUserAccess } from "./lib/userAccess";
 import { assistantSourceFixture, reviewedFixturePlan } from "../src/test/fixtures/coachAssistant";
@@ -92,5 +92,77 @@ describe("authenticated match bridge", () => {
     await invoke(save, ctx, args); const count = rows.length; ctx.db.patch.mockClear(); ctx.db.insert.mockClear();
     await expect(invoke(save, ctx, args)).resolves.toMatchObject({ alreadySaved: true });
     expect(rows).toHaveLength(count); expect(ctx.db.patch).not.toHaveBeenCalled(); expect(ctx.db.insert).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("live remaining plan bridge", () => {
+  function liveContext() {
+    const data = context();
+    data.source.rows = data.rows as unknown as Doc<"substitutionPlans">[];
+    Object.assign(data.source.match, { status: "live", leadCoachId: data.coach._id,
+      startedAt: Date.now() - 20 * 60_000, quarterStartedAt: Date.now() - 20 * 60_000 });
+    for (const { entry } of data.source.players) if (entry.onField) entry.lastSubbedInAt = data.source.match.startedAt;
+    return data;
+  }
+  async function preview(data: ReturnType<typeof liveContext>) {
+    return await invoke(previewRemaining, data.ctx, { matchId: data.source.match._id, intervalMinutes: 10 }) as {
+      revision: string; calculatedAt: number; fromSecond: number;
+    };
+  }
+  it("previews without writes and replaces only pending rows, preserving clock, lineup, minutes and executed rows", async () => {
+    const data = liveContext();
+    const { source, rows, ctx } = data;
+    const ids = source.players.map(({ entry }) => entry.playerId);
+    rows.push({ _id: "executed", matchId: source.match._id, sequence: 0, status: "executed", playerOutId: ids[0], playerInId: ids[1] },
+      { _id: "pending", matchId: source.match._id, sequence: 1, status: "pending", playerOutId: ids[0], playerInId: ids[1], targetMinute: 25 });
+    const result = await preview(data);
+    expect(result.fromSecond).toBe(1200);
+    expect(ctx.db.insert).not.toHaveBeenCalled();
+    const before = structuredClone({ match: source.match, players: source.players });
+    const args = { matchId: source.match._id, expectedRevision: result.revision, calculatedAt: result.calculatedAt, intervalMinutes: 10, reviewed: true, requestId: "live-request-unique-1234" };
+    await invoke(saveRemaining, ctx, args);
+    expect(ctx.db.patch).not.toHaveBeenCalled();
+    expect({ match: source.match, players: source.players }).toEqual(before);
+    expect(rows.find((r) => r._id === "executed")).toBeDefined();
+    expect(rows.find((r) => r._id === "pending")).toBeUndefined();
+    expect(rows.filter((r) => r.status === "pending").length).toBeGreaterThan(0);
+    expect(rows.filter((r) => r.status === "pending").every((r) => Number(r.targetMinute) >= 30)).toBe(true);
+    const count = rows.length;
+    await expect(invoke(saveRemaining, ctx, args)).resolves.toMatchObject({ alreadySaved: true });
+    expect(rows).toHaveLength(count);
+  });
+  it("rejects changed field, elapsed previews and non-lead coaches without writes", async () => {
+    const data = liveContext();
+    const result = await preview(data);
+    const args = { matchId: data.source.match._id, expectedRevision: result.revision, calculatedAt: result.calculatedAt, intervalMinutes: 10, reviewed: true, requestId: "live-request-unique-1234" };
+    await expect(invoke(saveRemaining, data.ctx, { ...args, calculatedAt: Date.now() - 130_000 })).rejects.toThrow("ouder dan twee minuten");
+    data.source.players[0].entry.minutesPlayed = 15;
+    await expect(invoke(saveRemaining, data.ctx, args)).rejects.toThrow("gewijzigd");
+    data.source.match.leadCoachId = "other-coach" as Doc<"coaches">["_id"];
+    await expect(invoke(saveRemaining, data.ctx, args)).rejects.toThrow("wedstrijdleider");
+    expect(data.ctx.db.delete).not.toHaveBeenCalled();
+    expect(data.ctx.db.insert).not.toHaveBeenCalled();
+  });
+  it("rejects unavailable field players and does not add break time to minutes", async () => {
+    const data = liveContext();
+    data.source.match.status = "halftime";
+    data.source.match.currentQuarter = 2;
+    for (const { entry } of data.source.players) if (entry.onField) entry.minutesPlayed = 30;
+    const result = await invoke(previewRemaining, data.ctx, { matchId: data.source.match._id, intervalMinutes: 10 }) as { fromSecond: number; totals: { played: number }[] };
+    expect(result.fromSecond).toBe(1800);
+    expect(Math.max(...result.totals.map((r) => r.played))).toBe(30);
+    data.source.players.find(({ entry }) => entry.onField)!.entry.injured = true;
+    await expect(preview(data)).rejects.toThrow("veldopstelling");
+  });
+  it("rejects anonymous, other-team and finished match previews", async () => {
+    const data = liveContext();
+    data.source.match.status = "finished";
+    await expect(preview(data)).rejects.toThrow("tijdens de wedstrijd");
+    data.ctx.auth.getUserIdentity.mockResolvedValue(null);
+    await expect(preview(data)).rejects.toThrow("Niet ingelogd");
+    data.ctx.auth.getUserIdentity.mockResolvedValue({ email: data.coach.email });
+    data.coach.teamIds = [];
+    await expect(preview(data)).rejects.toThrow("Geen coachtoegang");
   });
 });

@@ -1,5 +1,31 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Coachassistent in de live coachapp (6 november 2026)
+
+Voorbereiden/oefenen is nu standaard verbonden met de echte wedstrijd via
+`/coach/assistent?wedstrijd=CODE`. `test=1` blijft lokaal; de optionele
+`COACH_ASSISTANT_APP_SAVE_ENABLED=false` schakelt het opslaan weer uit.
+De productiebuild publiceert Convex en Next.js samen. Alleen een gecontroleerd
+beginplan kan vóór de aftrap worden opgeslagen; oefenen schrijft geen events.
+
+De tab Wisselplan en het brede planscherm bevatten `LiveReplanPanel`:
+vóór de aftrap een wedstrijdgebonden voorbereidingslink, daarna **Bereken vanaf nu**.
+De server gebruikt de actuele veldbezetting, opgeslagen minuten plus lopende
+speeltijd en de spelersposities. Minuten gaan voor, posities tellen licht mee;
+de huidige keeper blijft staan. Een onverwachte wissel eerst registreren.
+
+`coachAssistant.previewRemaining` leest alleen. `saveRemaining` controleert
+coachtoegang, wedstrijdleiderschap, bronrevisie en een geldigheid van twee minuten,
+berekent het gecontroleerde voorstel opnieuw op de server en vervangt uitsluitend
+pending planregels. Events, uitgevoerde/overgeslagen regels, veld, klok en minuten
+blijven intact. Het kwartnummer verwijst in de rust al naar de volgende periode;
+rusttijd wordt niet bij speeltijd opgeteld. Geen schemawijzigingen.
+
+Verificatie: 1082 tests in 134 bestanden, TypeScript, productiebuild en PIN-guard
+slagen. Gerichte regressies dekken preview/bevestiging, rollen, verlopen/gewijzigde
+voorstellen, idempotentie, behoud van bestaande wedstrijddata en rusttijd.
+Bestaande ESLint-waarschuwingen in SubstitutionPlanPanel blijven ongewijzigd.
+
 ## Webtestbaseline voor native integratie (15 oktober 2026)
 
 Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande

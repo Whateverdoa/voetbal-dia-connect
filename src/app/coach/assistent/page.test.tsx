@@ -14,19 +14,19 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); });
 
 describe("coach assistant entry route", () => {
-  it("opens ordinary dashboard links in the working read-only preparation", async () => {
+  it("opens ordinary dashboard links with the deployed app bridge", async () => {
     render(await CoachAssistantPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "test");
+    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "app");
   });
-  it("keeps a selected match in test preparation without requiring a test query parameter", async () => {
+  it("keeps the selected match in the connected preparation", async () => {
     render(await CoachAssistantPage({ searchParams: Promise.resolve({ wedstrijd: "9Q7WH6" }) }));
-    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "test");
+    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "app");
     expect(screen.getByTestId("workspace")).toHaveTextContent("9Q7WH6");
   });
-  it("requires explicit rollout to enable saving and always honors an explicit test link", async () => {
-    vi.stubEnv("COACH_ASSISTANT_APP_SAVE_ENABLED", "true");
+  it("honors the rollback switch and always honors an explicit test link", async () => {
+    vi.stubEnv("COACH_ASSISTANT_APP_SAVE_ENABLED", "false");
     const view = render(await CoachAssistantPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "app");
+    expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "test");
     view.unmount();
     render(await CoachAssistantPage({ searchParams: Promise.resolve({ test: "1" }) }));
     expect(screen.getByTestId("workspace")).toHaveAttribute("data-mode", "test");

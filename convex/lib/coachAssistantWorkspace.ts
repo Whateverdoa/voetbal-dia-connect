@@ -16,7 +16,7 @@ export function workspaceRevision(source: WorkspaceSource): string {
     match: [match._id, match.teamId, match.status, match.startedAt, match.cancelledAt, match.scheduledAt,
       match.quarterCount, match.regulationDurationMinutes, match.formationId, match.customFormationTemplateId],
     players: [...players].sort((a, b) => String(a.entry._id).localeCompare(String(b.entry._id))).map(({ entry: e, player: p }) =>
-      [e._id, e.playerId, e.onField, e.isKeeper, e.absent, e.injured, e.fieldSlotIndex, e.minutesPlayed, e.lastSubbedInAt,
+      [e._id, e.playerId, e.onField, e.isKeeper, e.absent, e.injured, e.fieldSlotIndex, e.minutesPlayed, e.lastSubbedInAt, "dismissed" in e && e.dismissed,
         p.name, p.number, p.positionPrimary, p.positionSecondary]),
     rows: [...rows].sort((a, b) => String(a._id).localeCompare(String(b._id))).map((r) =>
       [r._id, r.sequence, r.kind, r.targetMinute, r.targetQuarter, r.playerOutId, r.playerInId, r.status, r.note, r.updatedAt]),
@@ -36,7 +36,7 @@ export function workspacePlan(source: WorkspaceSource): { plan: DemoPlan; warnin
   const warnings: string[] = [];
   const formation = sourceFormation(source);
   const duration = source.match.regulationDurationMinutes ?? 60;
-  const available = source.players.filter(({ entry }) => !entry.absent && !entry.injured);
+  const available = source.players.filter(({ entry }) => !entry.absent && !entry.injured && !("dismissed" in entry && entry.dismissed));
   const field = available.filter(({ entry }) => entry.onField && entry.fieldSlotIndex !== undefined)
     .map(({ entry }) => ({ playerKey: String(entry.playerId), slotId: entry.fieldSlotIndex! }));
   const keepers = available.filter(({ entry }) => entry.isKeeper);
@@ -61,7 +61,7 @@ export function workspacePlan(source: WorkspaceSource): { plan: DemoPlan; warnin
     match: { regulationDurationMinutes: duration, fieldPlayerCountIncludingKeeper: formation.slots.length, halftimeAtMinute: duration / 2 },
     formation,
     players: source.players.map(({ entry, player }) => ({ key: String(entry.playerId), name: player.name,
-      number: player.number ?? null, absent: Boolean(entry.absent || entry.injured), ...(entry.injured ? { unavailableReason: "injured" as const } : {}) })),
+      number: player.number ?? null, absent: Boolean(entry.absent || entry.injured || ("dismissed" in entry && entry.dismissed)), ...(entry.injured ? { unavailableReason: "injured" as const } : {}) })),
     startingLineup: { keeperKey, field, bench: available.filter(({ entry }) => !entry.onField).map(({ entry }) => String(entry.playerId)) },
     steps: [...steps.values()].sort((a, b) => a.matchMinute - b.matchMinute),
     review: { sourceConfirmed: false, unresolved: [...new Set(unresolved)] },
@@ -70,6 +70,7 @@ export function workspacePlan(source: WorkspaceSource): { plan: DemoPlan; warnin
 
 /** Rebuild display metadata from the database; payload keys are never trusted as membership. */
 export function validateWorkspaceSave(source: WorkspaceSource, proposed: DemoPlan, expectedRevision: string, reviewed: boolean): DemoPlan {
+  if ("refereePolicy" in source.match && source.match.refereePolicy) throw new Error("Deze wedstrijd gebruikt de afzonderlijke scheidsrechterklok. Gebruik het bestaande planscherm.");
   if (!reviewed) throw new Error("Beoordeel en bevestig eerst het volledige plan.");
   if (!["scheduled", "lineup"].includes(source.match.status) || source.match.startedAt || source.match.cancelledAt || source.rows.some((r) => r.status !== "pending")) {
     throw new Error("Een volledig beginplan kan alleen vóór de aftrap van een niet-afgelaste wedstrijd worden opgeslagen.");

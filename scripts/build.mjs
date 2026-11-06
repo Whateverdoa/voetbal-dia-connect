@@ -29,7 +29,12 @@ try {
   process.exit(1);
 }
 
-if (deployKey && isProduction) {
+if (process.argv.includes("--assistant-only")) {
+  if (!deployKey || !isProduction) throw new Error("Assistant-only release requires the production deployment environment.");
+  execSync("npx next build", { stdio: "inherit" });
+  const { releaseCoachAssistant } = await import("./coach-assistant-release.mjs");
+  await releaseCoachAssistant({ adminKey: deployKey, deploymentUrl: process.env.NEXT_PUBLIC_CONVEX_URL });
+} else if (deployKey && isProduction) {
   console.log("🚀 Production build: deploying Convex functions + Next.js build");
   // CONVEX_VERBOSE=1 surfaces detailed logs if deploy hangs (e.g. "Analyzing source code...")
   const env = { ...process.env, CONVEX_VERBOSE: "1" };

@@ -166,3 +166,14 @@ describe("live remaining plan bridge", () => {
     await expect(preview(data)).rejects.toThrow("Geen coachtoegang");
   });
 });
+
+it("does not reintroduce a dismissed player or bypass an independently protected referee clock", async () => {
+  const { source, ctx } = context();
+  Object.assign(source.match, { status: "live", startedAt: Date.now() - 600000, quarterStartedAt: Date.now() - 600000 });
+  const bench = source.players.find(({ entry }) => !entry.onField && !entry.absent && !entry.injured)!;
+  Object.assign(bench.entry, { dismissed: true });
+  const result = await invoke(previewRemaining, ctx, { matchId: source.match._id, intervalMinutes: 10, requestId: "fresh" }) as { totals: { key: string }[] };
+  expect(result.totals.some(row => row.key === String(bench.entry.playerId))).toBe(false);
+  Object.assign(source.match, { refereePolicy: { version: 1 } });
+  await expect(invoke(previewRemaining, ctx, { matchId: source.match._id, intervalMinutes: 10, requestId: "fresh" })).rejects.toThrow("afzonderlijke scheidsrechterklok");
+});

@@ -13,6 +13,7 @@ vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 // Mock Convex hooks globally
 vi.mock('convex/react', () => ({
   useQuery: vi.fn(),
+  useConvex: vi.fn(() => ({ query: vi.fn() })),
   useMutation: vi.fn(() => vi.fn()),
   useAction: vi.fn(() => vi.fn()),
   useConvexConnectionState: vi.fn(() => 'connected'),

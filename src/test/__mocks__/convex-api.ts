@@ -2,6 +2,7 @@
 // This replaces @/convex/_generated/api in tests
 
 export const api = {
+  coachAssistant: { workspace: "coachAssistant:workspace", save: "coachAssistant:save" },
   matches: {
     verifyCoachAccess: "matches:verifyCoachAccess",
     getByPublicCode: "matches:getByPublicCode",

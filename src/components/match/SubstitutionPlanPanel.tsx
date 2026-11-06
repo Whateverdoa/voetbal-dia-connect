@@ -1,5 +1,7 @@
 "use client";
 
+import { LiveReplanPanel } from "@/components/coach-assistant/LiveReplanPanel";
+
 import { useEffect, useMemo, useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
@@ -95,6 +97,7 @@ export function SubstitutionPlanPanel({
   return (
     <section className="bg-white rounded-xl shadow-md p-4 space-y-4">
       <h2 className="font-bold text-lg">Wisselplan</h2>
+      <LiveReplanPanel matchId={matchId} status={status} canEdit={canEditPlan} />
       <p className="text-sm text-gray-600">
         Plan wissels van tevoren. Tijdens de wedstrijd bevestig je ze hier;
         blessurewissels blijven mogelijk via de normale wisselknop.

@@ -1,5 +1,7 @@
 "use client";
 
+import { LiveReplanPanel } from "@/components/coach-assistant/LiveReplanPanel";
+
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { useSubstitutionPlannerBoard } from "@/hooks/useSubstitutionPlannerBoard";
@@ -41,7 +43,7 @@ interface SubstitutionPlannerProps {
 export function SubstitutionPlanner({
   matchId,
   teamId,
-  publicCode: _publicCode,
+  publicCode,
   teamName,
   opponent,
   status,
@@ -93,6 +95,7 @@ export function SubstitutionPlanner({
           />
         </div>
       </header>
+      <LiveReplanPanel matchId={matchId} status={status} canEdit={canEditPlan} publicCode={publicCode} />
 
       {board.actions.error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

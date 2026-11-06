@@ -1,5 +1,7 @@
 "use client";
 
+import { LiveReplanPanel } from "@/components/coach-assistant/LiveReplanPanel";
+
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
@@ -155,6 +157,7 @@ export function SubstitutionPlannerStudio({
         </section>
 
         <aside className="flex max-h-[42vh] min-h-0 flex-col overflow-y-auto rounded-xl bg-white p-3 text-gray-900 lg:max-h-none lg:w-[22rem]">
+          <LiveReplanPanel matchId={matchId} status={status} canEdit={canEditPlan} publicCode={publicCode} />
           <PlanBenchSummary
             startingBench={board.projection.startingBench}
             projectedBench={board.projection.projectedBench}

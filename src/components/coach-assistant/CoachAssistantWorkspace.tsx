@@ -7,6 +7,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 import { FORMATIONS } from "@/lib/formations";
+import { SavedMatchPlan } from "./SavedMatchPlan";
 import { canonicalPosition } from "@/lib/coachAssistant/history";
 import { testWorkspace } from "@/lib/coachAssistant/testWorkspace";
 import { useAutomaticCoachHistory } from "@/hooks/useAutomaticCoachHistory";
@@ -100,6 +101,7 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   const [snapshot] = useState(current);
   const preferenceScope = accountId ? `${accountId}:${snapshot.teamId}` : undefined;
   const [formationId, setFormationId] = useState(snapshot.plan.formation.id ?? "11v11_1-4-3-3");
+  const [fallbackTab, setFallbackTab] = useState<"assistant" | "review">(current.plan.steps.length ? "review" : "assistant");
   const [prepared, setPrepared] = useState<DemoPlan | null>(null);
   const [preparedSettings, setPreparedSettings] = useState<AssistantPreparationSettings>();
   const [preparedPlayers, setPreparedPlayers] = useState<AssistantPlayer[] | null>(null);
@@ -135,13 +137,15 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
     {stale && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De gegevens in de app zijn gewijzigd, bijvoorbeeld door opslaan. Je kunt je concept en beginopstelling hier verder aanpassen. Laad de actuele selectie en het plan opnieuw voordat je nogmaals opslaat.</p>}
     {!current.canSave && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">Deze wedstrijd kan niet meer als beginplan worden opgeslagen. Kies een niet-afgelaste wedstrijd die nog niet is begonnen.</p>}
     {!report.structurallyValid || !report.simulationComplete ? <>
-      <MatchPreparationSteps active="assistant" planReady={false} />
+      <MatchPreparationSteps active={fallbackTab} planReady={plan.steps.length > 0} onSelect={(tab) => { if (tab === "assistant" || tab === "review") setFallbackTab(tab); }} />
+      {fallbackTab === "review" && plan.steps.length > 0 ? <SavedMatchPlan plan={plan} report={report} matchUrl={`/coach/match/${snapshot.matchId}/wisselplan`} /> : <>
       <p className="text-sm text-slate-600">Begin bij de selectie hieronder. Na het berekenen zet je het voorstel klaar bij Wisselplan; na je controle wordt Oefenen beschikbaar.</p>
       <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm">De huidige opstelling of wissellijst is nog niet volledig. Kies een formatie. Je kunt zelf de beginopstelling kiezen en de wissels laten berekenen, of een volledig voorstel laten maken.</p>
         <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
         {snapshot.warnings.length > 0 && <ul className="mt-3 list-disc pl-5 text-sm text-amber-800">{snapshot.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
       </div>
       <CoachAssistantPanel key={formationId} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={false} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
-    </> : <SubstitutionDemo key={`${formationId}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared ? "review" : "assistant"} />}
+      </>}
+    </> : <SubstitutionDemo key={`${formationId}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared || plan.steps.length > 0 ? "review" : "assistant"} />}
   </section>;
 }

@@ -1,5 +1,17 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Bestaand wisselplan bekijken en oefenen (6 november 2026)
+
+Een opgeslagen plan met wisselregels opent direct op Wisselplan, zonder de
+voorstelgenerator. Na controle/bevestiging kan dezelfde kopie worden geoefend.
+Bij een ongeldige opstelling of wisselvolgorde blijft de volledige ingeladen
+planning leesbaar via SavedMatchPlan, met de concrete validatiemeldingen.
+Alleen oefenen blijft geblokkeerd; de bestaande regels worden niet vervangen.
+Voorbereiden blijft als aparte stap bereikbaar. Geen wedstrijddata gewijzigd.
+
+Verificatie: 29 gerichte tests, TypeScript en gerichte ESLint. Gebruik ook voor
+deze frontendwijziging de hieronder beschreven assistant-only release.
+
 ## Beginopstelling en historie verduidelijkt (6 november 2026)
 
 Een gewijzigde bronwedstrijd blokkeert alleen opslaan, niet het lokaal kiezen van

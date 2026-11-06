@@ -29,7 +29,7 @@ export function LiveReplanPanel({ matchId, status, canEdit, publicCode }: {
   const calculate = async () => {
     setBusy(true); setError(null); setMessage(null); setPreview(null);
     try {
-      const data = await convex.query(api.coachAssistant.previewRemaining, { matchId, intervalMinutes: interval });
+      const data = await convex.query(api.coachAssistant.previewRemaining, { matchId, intervalMinutes: interval, requestId: crypto.randomUUID() });
       setPreview({ data, interval, requestId: crypto.randomUUID() });
     } catch (e) { setError(e instanceof Error ? e.message : "Berekenen is niet gelukt."); }
     finally { setBusy(false); }

@@ -52,7 +52,8 @@ export const workspace = query({
 });
 
 export const previewRemaining = query({
-  args: { matchId: v.id("matches"), intervalMinutes: v.number() },
+  // A fresh request key prevents a cached query from reusing an old clock reading.
+  args: { matchId: v.id("matches"), intervalMinutes: v.number(), requestId: v.string() },
   returns: v.object({ revision: v.string(), calculatedAt: v.number(), fromSecond: v.number(), plan: assistantPlanValidator,
     totals: v.array(v.object({ key: v.string(), played: v.number(), expected: v.number() })) }),
   handler: async (ctx, args) => {

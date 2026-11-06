@@ -42,3 +42,12 @@ it("does not let a non-lead coach calculate or accept", () => {
   render(<LiveReplanPanel matchId={source.match._id} status="live" canEdit={false} />);
   expect(screen.getByRole("button", { name: "Bereken vanaf nu" })).toBeDisabled();
 });
+
+it("requests a fresh server clock on each calculation", async () => {
+  const user = userEvent.setup();
+  render(<LiveReplanPanel matchId={source.match._id} status="live" canEdit />);
+  await user.click(screen.getByRole("button", { name: "Bereken vanaf nu" }));
+  const first = mocks.query.mock.calls[0][1].requestId;
+  await user.click(screen.getByRole("button", { name: "Bereken vanaf nu" }));
+  expect(mocks.query.mock.calls[1][1].requestId).not.toBe(first);
+});

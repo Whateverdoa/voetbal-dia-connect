@@ -28,7 +28,7 @@ export function replanFromCurrent(state: DemoMatchState, settings: Pick<Assistan
   if (!Number.isFinite(interval) || interval < 1 || interval > 60) throw new Error("Kies een wisselinterval tussen 1 en 60 minuten.");
   const formation = state.formation ?? state.plan.formation;
   const plan: DemoPlan = {
-    ...structuredClone(state.plan),
+    ...state.plan,
     match: { ...state.plan.match, regulationDurationMinutes: end - now, halftimeAtMinute: state.plan.match.halftimeAtMinute != null && state.plan.match.halftimeAtMinute > now ? state.plan.match.halftimeAtMinute - now : null },
     formation: { ...formation, slots: formation.slots.map((slot) => ({ ...slot, x: slot.x ?? 50, y: slot.y ?? 50 })) },
     players: state.plan.players.map((player) => ({ ...player, sourceBenchMinutes: undefined })),

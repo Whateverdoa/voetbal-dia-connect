@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { portalTables } from "./teamPortalSchema";
+import { matchPlanAuditTable } from "./lib/matchPlanAuditSchema";
 import {
   cardProfileValidator,
   playerConsentsTable,
@@ -11,6 +12,7 @@ import {
 } from "./schemaFragments";
 
 export default defineSchema({
+  matchPlanAudit: matchPlanAuditTable,
   ...portalTables,
   clubs: defineTable({
     name: v.string(),

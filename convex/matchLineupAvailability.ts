@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 /**
  * Match lineup availability mutations — absent / injured / public lineup.
  */
@@ -37,7 +38,7 @@ export const setPlayerAvailability = mutation({
     status: availabilityStatusValidator,
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Beschikbaarheid gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -95,7 +96,7 @@ export const setPlayerAvailability = mutation({
 
     await ctx.db.patch(mp._id, updates);
     return null;
-  },
+  }),
 });
 
 /**
@@ -108,7 +109,7 @@ export const togglePlayerAbsent = mutation({
     playerId: v.id("players"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Afwezigheid gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -147,7 +148,7 @@ export const togglePlayerAbsent = mutation({
 
     await ctx.db.patch(mp._id, updates);
     return null;
-  },
+  }),
 });
 
 export const toggleShowLineup = mutation({

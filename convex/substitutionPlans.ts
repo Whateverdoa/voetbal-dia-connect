@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -72,7 +73,7 @@ export const addPlanItem = mutation({
     note: v.optional(v.string()),
     insertAtQuarterBoundary: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselregel toegevoegd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (!(await verifyCoachTeamMembership(ctx, match))) {
@@ -166,7 +167,7 @@ export const addPlanItem = mutation({
     }
 
     return id;
-  },
+  }),
 });
 
 export const updatePlanItem = mutation({
@@ -178,7 +179,7 @@ export const updatePlanItem = mutation({
     playerInId: v.optional(v.id("players")),
     note: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselregel gewijzigd", async () => {
     const row = await ctx.db.get(args.planId);
     if (!row) throw new Error("Regel niet gevonden");
     const match = await ctx.db.get(row.matchId);
@@ -238,12 +239,12 @@ export const updatePlanItem = mutation({
       patch.note = nextNote;
     }
     await ctx.db.patch(args.planId, patch);
-  },
+  }),
 });
 
 export const removePlanItem = mutation({
   args: { planId: v.id("substitutionPlans") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselregel verwijderd", async () => {
     const row = await ctx.db.get(args.planId);
     if (!row) return;
     const match = await ctx.db.get(row.matchId);
@@ -264,14 +265,14 @@ export const removePlanItem = mutation({
     for (let i = 0; i < rest.length; i += 1) {
       await ctx.db.patch(rest[i]._id, { sequence: i, updatedAt: now });
     }
-  },
+  }),
 });
 
 /** Delete every pending plan row; executed/skipped history stays intact. */
 export const clearPendingPlan = mutation({
   args: { matchId: v.id("matches") },
   returns: v.object({ removed: v.number() }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselplan leeggemaakt", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (!(await verifyCoachTeamMembership(ctx, match))) {
@@ -294,7 +295,7 @@ export const clearPendingPlan = mutation({
     }
 
     return { removed: pending.length };
-  },
+  }),
 });
 
 export const reorderPlan = mutation({
@@ -302,7 +303,7 @@ export const reorderPlan = mutation({
     matchId: v.id("matches"),
     orderedPlanIds: v.array(v.id("substitutionPlans")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Volgorde gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden");
     if (!(await verifyCoachTeamMembership(ctx, match))) {
@@ -329,12 +330,12 @@ export const reorderPlan = mutation({
         updatedAt: now,
       });
     }
-  },
+  }),
 });
 
 export const skipPlanItem = mutation({
   args: { planId: v.id("substitutionPlans") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselregel overgeslagen", async () => {
     const row = await ctx.db.get(args.planId);
     if (!row) throw new Error("Regel niet gevonden");
     const match = await ctx.db.get(row.matchId);
@@ -349,7 +350,7 @@ export const skipPlanItem = mutation({
       status: "skipped",
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const executePlanItem = mutation({
@@ -357,7 +358,7 @@ export const executePlanItem = mutation({
     planId: v.id("substitutionPlans"),
     correlationId: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Geplande wissel uitgevoerd", async () => {
     const plan = await ctx.db.get(args.planId);
     if (!plan) throw new Error("Regel niet gevonden");
     if (plan.status !== "pending") {
@@ -401,5 +402,5 @@ export const executePlanItem = mutation({
       executedAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });

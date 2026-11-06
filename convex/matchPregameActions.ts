@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 /**
  * Match pregame mutations - metadata and player assignment
  */
@@ -19,7 +20,7 @@ export const createPlayerAndAddToMatch = mutation({
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Speler toegevoegd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -53,7 +54,7 @@ export const createPlayerAndAddToMatch = mutation({
     });
 
     return { playerId };
-  },
+  }),
 });
 
 /**
@@ -65,7 +66,7 @@ export const addExistingPlayerToMatch = mutation({
     matchId: v.id("matches"),
     playerId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Speler aan selectie toegevoegd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -100,7 +101,7 @@ export const addExistingPlayerToMatch = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /**
@@ -119,7 +120,7 @@ export const updateMatchMetadata = mutation({
     useBreakClock: v.optional(v.boolean()),
     breakClockAutoStart: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Wedstrijdinstellingen gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -168,7 +169,7 @@ export const updateMatchMetadata = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 // Update match status

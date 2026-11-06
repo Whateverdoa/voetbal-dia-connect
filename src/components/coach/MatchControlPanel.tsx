@@ -1,5 +1,7 @@
 "use client";
 
+import { MatchPlanAttribution } from "@/components/match/MatchPlanAttribution";
+
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -229,6 +231,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
 
         {isPregame && <MatchSettingsEdit match={match} />}
 
+        <MatchPlanAttribution matchId={match._id} />
         <MatchLeadBadge
           matchId={match._id}
           hasLead={match.hasLead ?? false}

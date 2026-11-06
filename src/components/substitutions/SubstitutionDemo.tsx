@@ -3,7 +3,7 @@
 import { momentInstructions } from "@/lib/substitutions/momentInstructions";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import Image from "next/image";
-import { ArrowDownUp, Check, CheckCircle2, ChevronRight, Clock3, Flag, ImagePlus, Pause, Play, RotateCcw, ShieldCheck, SkipForward } from "lucide-react";
+import { ArrowDownUp, Check, CheckCircle2, ChevronRight, Clock3, Flag, ImagePlus, Pause, Play, RotateCcw, ShieldCheck, SkipBack, SkipForward } from "lucide-react";
 import { PlayerShield } from "./PlayerShield";
 import { StartingLineupEditor } from "./StartingLineupEditor";
 import { RecentPlayingMinutes } from "./RecentPlayingMinutes";
@@ -50,8 +50,9 @@ const PHOTO_SOURCE: DemoSource = {
 };
 
 type Tab = "field" | "review" | "comparison" | "assistant";
-type Session = { match: DemoMatchState; approved: boolean; automatic: boolean; error: string | null };
+type Session = { match: DemoMatchState; approved: boolean; automatic: boolean; error: string | null; undoHistory?: readonly DemoMatchState[] };
 type Command =
+  | { type: "undo" }
   | { type: "pause" }
   | { type: "replan"; proposal: RemainingProposal }
   | { type: "approve"; plan: DemoPlan }
@@ -100,7 +101,7 @@ function advanceSession(session: Session, seconds: number, start = false, pauseA
   return { ...session, match: pauseAfter ? pauseDemoClock(result.match) : result.match, error: result.error };
 }
 
-function reducer(session: Session, command: Command): Session {
+function reduceSession(session: Session, command: Exclude<Command, { type: "undo" }>): Session {
   try {
     if (command.type === "reset") return { match: createDemoMatch(command.plan), approved: false, automatic: true, error: null };
     if (command.type === "automatic") return { ...session, automatic: command.enabled };
@@ -170,6 +171,27 @@ function reducer(session: Session, command: Command): Session {
   } catch (error: unknown) {
     return { ...session, error: error instanceof Error ? error.message : "Deze wijziging kon niet worden uitgevoerd." };
   }
+}
+
+/** Store complete match snapshots so events, partial groups and minutes rewind together. */
+function reducer(session: Session, command: Command): Session {
+  const history = session.undoHistory ?? [];
+  if (command.type === "undo") {
+    const previous = history.at(-1);
+    if (!previous || !session.approved) return session;
+    return { ...session, match: pauseDemoClock(previous), error: null, undoHistory: history.slice(0, -1) };
+  }
+  const next = reduceSession(session, command);
+  if (command.type === "reset" || command.type === "approve" && next.match !== session.match || command.type === "editSetup" && !next.approved) {
+    return { ...next, undoHistory: [] };
+  }
+  if (next.match === session.match) return next;
+  // Continuous playback is one step from Start/Hervatten, not hundreds of timer ticks.
+  if (command.type === "pause" || command.type === "tick" || command.type === "clock" && session.match.phase === "running") return next;
+  const last = history.at(-1);
+  const alreadyStored = last && last.elapsedSeconds === session.match.elapsedSeconds && last.events === session.match.events &&
+    last.field === session.match.field && last.futureSteps === session.match.futureSteps && last.halftimeTaken === session.match.halftimeTaken;
+  return { ...next, undoHistory: alreadyStored ? history : [...history, session.match] };
 }
 
 function PitchLines() {
@@ -298,6 +320,13 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
     setPrintMode("plan");
     setAssistantOpened(true);
     setTab("assistant");
+  }
+
+  function stepBack() {
+    dispatch({ type: "undo" });
+    clearSelection();
+    setPendingFormationId(null);
+    setTab("field");
   }
 
   function approve() {
@@ -527,12 +556,15 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
                 <p className="pb-1 text-xs leading-relaxed text-green-900">{automatic ? "Wissels en positieruilen gebeuren op het geplande moment. Bij een conflict pauzeert de demo." : "Handmatige stand: kies zelf wanneer je de geplande wissels uitvoert."}</p>
               </div>
               <div className="flex gap-2"><button className={`${primary} flex-1`} disabled={!session.approved || match.phase === "finished"} onClick={() => dispatch({ type: "clock" })}>{match.phase === "running" ? <Pause size={16} /> : <Play size={16} />}{match.phase === "running" ? "Pauzeren" : match.phase === "ready" ? "Start demo" : match.phase === "halftime" ? "Start tweede helft" : "Hervatten"}</button><button className={secondary} disabled={!session.approved || match.phase === "finished" || Boolean(previewFormation)} onClick={() => dispatch({ type: "jump" })} title="Klok naar het volgende geplande wisselmoment"><SkipForward size={16} /><span>Volgend moment</span></button></div>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button type="button" className={secondary} disabled={!session.approved || !session.undoHistory?.length} onClick={stepBack} title="Vorige oefenstap herstellen, inclusief klok, wissels en minuten"><SkipBack size={16} />Stap terug</button>
                 <button className={`${secondary} shrink-0`} disabled={!session.approved || match.phase === "halftime" || match.phase === "finished" || Boolean(previewFormation)} onClick={() => dispatch({ type: "minuteStep" })} title="Eén minuut vooruit en daarna pauzeren">+1 minuut</button>
                 <p className="text-xs leading-relaxed text-slate-500">Stap voor stap: elke klik telt één minuut en pauzeert. {automatic ? "Geplande wissels gaan automatisch mee." : "Wissels voer je zelf uit."}</p>
               </div>
               {match.phase === "halftime" ? <p className="mt-2 text-xs text-amber-800">Rust: de klok en speelminuten staan stil. Wisselen kan wel.</p> : <p className="mt-2 text-xs text-slate-500">{speed === 1 ? "De klok loopt op echte snelheid." : `Versneld: 1 seconde is ${speed} wedstrijdseconden.`} Rust telt niet mee.</p>}
             </section>
+
+            <p className="text-xs text-slate-500">Stap terug herstelt de vorige oefenactie met klok, opstelling en minuten. Doorlopend afspelen telt als één stap vanaf Start of Hervatten; na teruggaan staat de klok stil.</p>
 
             <section aria-label="Eerstvolgende wissel">
               <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-bold">Eerstvolgende wissel</h2>{pending && <span className={`text-xs font-semibold ${match.elapsedSeconds > pending.matchMinute * 60 ? "text-amber-700" : "text-slate-500"}`}>Gepland {pending.matchMinute}′</span>}</div>

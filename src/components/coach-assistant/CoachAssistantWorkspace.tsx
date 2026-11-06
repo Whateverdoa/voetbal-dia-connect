@@ -10,7 +10,6 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 import { FORMATIONS } from "@/lib/formations";
 import { SavedMatchPlan } from "./SavedMatchPlan";
-import { OpeningLineupImport } from "./OpeningLineupImport";
 import { canonicalPosition } from "@/lib/coachAssistant/history";
 import { testWorkspace } from "@/lib/coachAssistant/testWorkspace";
 import { useAutomaticCoachHistory } from "@/hooks/useAutomaticCoachHistory";
@@ -106,8 +105,6 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   const [formationId, setFormationId] = useState(snapshot.plan.formation.id ?? "11v11_1-4-3-3");
   const [fallbackTab, setFallbackTab] = useState<"assistant" | "review">(current.plan.steps.length ? "review" : "assistant");
   const [prepared, setPrepared] = useState<DemoPlan | null>(null);
-  const [openingSeed, setOpeningSeed] = useState<DemoPlan | null>(null);
-  const [openingRevision, setOpeningRevision] = useState(0);
   const [preparedSettings, setPreparedSettings] = useState<AssistantPreparationSettings>();
   const [preparedPlayers, setPreparedPlayers] = useState<AssistantPlayer[] | null>(null);
   const automaticHistory = useAutomaticCoachHistory(snapshot.teamId, dateInAmsterdam(snapshot.scheduledAt));
@@ -116,10 +113,9 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   const stale = current.revision !== savedRevision;
   const disabled = stale || !current.canSave;
   const selectedFormation = FORMATIONS[formationId];
-  const seed = openingSeed ?? snapshot.plan;
-  const sourcePlan: DemoPlan = selectedFormation ? { ...seed,
+  const sourcePlan: DemoPlan = selectedFormation ? { ...snapshot.plan,
     formation: { id: formationId, name: selectedFormation.name, slots: selectedFormation.slots },
-    match: { ...seed.match, fieldPlayerCountIncludingKeeper: selectedFormation.slots.length } } : seed;
+    match: { ...snapshot.plan.match, fieldPlayerCountIncludingKeeper: selectedFormation.slots.length } } : snapshot.plan;
   const plan = prepared ?? sourcePlan;
   const report = validatePortableSubstitutionPlan(plan);
   const preferences = snapshot.preferences.map((player) => {
@@ -128,7 +124,7 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
       primaryPosition: canonicalPosition(player.primaryPosition), secondaryPosition: canonicalPosition(player.secondaryPosition) };
   });
   const label = `${snapshot.teamName} – ${snapshot.opponent} (${snapshot.code})`;
-  const source: DemoSource = { id: snapshot.code, kind: "app", initialPlan: plan, initialPlanIsProposal: prepared !== null || openingSeed !== null, teamName: snapshot.teamName, teamKey: String(snapshot.teamId), matchLabel: label,
+  const source: DemoSource = { id: snapshot.code, kind: "app", initialPlan: plan, initialPlanIsProposal: prepared !== null, teamName: snapshot.teamName, teamKey: String(snapshot.teamId), matchLabel: label,
     sourceUrl: `/coach/match/${snapshot.matchId}`, notes: snapshot.warnings, targetDate: dateInAmsterdam(snapshot.scheduledAt), initialPlayers: preparedPlayers ?? preferences, preparationSettings: preparedSettings, preferenceScope,
     assistantHistory: automaticHistory.matches, historyLoading: automaticHistory.loading, historyWarnings: automaticHistory.warnings };
   const connection = { label, disabled, onSave: async (approved: DemoPlan, requestId: string) => {
@@ -140,23 +136,19 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   return <section aria-label="Gekozen wedstrijd" className="space-y-4">
     <div className="rounded-xl border border-green-200 bg-green-50 p-4"><h2 className="font-bold">{label}</h2><div className="mt-2 flex flex-wrap gap-4 text-sm"><Link className="font-semibold text-dia-green underline" href={`/coach/match/${snapshot.matchId}`}>Open wedstrijd in de app</Link><Link className="font-semibold text-dia-green underline" href={`/live/${snapshot.code}`}>Open publieke weergave</Link><button type="button" className="min-h-11 font-semibold text-dia-green underline" onClick={onReload}>Actuele selectie en plan opnieuw laden</button></div></div>
     <MatchPlanAttribution matchId={snapshot.matchId} />
-    {snapshot.canSave && <OpeningLineupImport plan={snapshot.plan} timing={snapshot.planTiming ?? []} quarterCount={snapshot.quarterCount ?? 2} disabled={stale} onApply={(next) => {
-      setOpeningSeed(next); setOpeningRevision((value) => value + 1); setPrepared(null); setPreparedPlayers(null); setFallbackTab("review"); setFormationId(next.formation.id ?? formationId);
-      setPreparedSettings({ manualStart: true, keeper: next.startingLineup.keeperKey, keepKeeper: true, secondKeeper: "", date: dateInAmsterdam(snapshot.scheduledAt), interval: 10, includeSubstitutions: true, history: [] });
-    }} />}
     {snapshot.scheduledAt === null && <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Deze wedstrijd heeft nog geen datum in de app. Vul bij de Coachassistent een datum voor het voorstel in; de geplande wedstrijddatum wijzig je via de wedstrijdinstellingen.</p>}
     {stale && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De gegevens in de app zijn gewijzigd, bijvoorbeeld door opslaan. Je kunt je concept en beginopstelling hier verder aanpassen. Laad de actuele selectie en het plan opnieuw voordat je nogmaals opslaat.</p>}
     {!current.canSave && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">Deze wedstrijd kan niet meer als beginplan worden opgeslagen. Kies een niet-afgelaste wedstrijd die nog niet is begonnen.</p>}
     {!report.structurallyValid || !report.simulationComplete ? <>
       <MatchPreparationSteps active={fallbackTab} planReady={plan.steps.length > 0} onSelect={(tab) => { if (tab === "assistant" || tab === "review") setFallbackTab(tab); }} />
-      {fallbackTab === "review" && plan.steps.length > 0 ? <SavedMatchPlan plan={plan} report={report} isDraft={openingSeed !== null || prepared !== null} matchUrl={`/coach/match/${snapshot.matchId}/wisselplan`} /> : <>
+      {fallbackTab === "review" && plan.steps.length > 0 ? <SavedMatchPlan plan={plan} report={report} matchUrl={`/coach/match/${snapshot.matchId}/wisselplan`} /> : <>
       <p className="text-sm text-slate-600">Begin bij de selectie hieronder. Na het berekenen zet je het voorstel klaar bij Wisselplan; na je controle wordt Oefenen beschikbaar.</p>
       <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm">De huidige opstelling of wissellijst is nog niet volledig. Kies een formatie. Je kunt zelf de beginopstelling kiezen en de wissels laten berekenen, of een volledig voorstel laten maken.</p>
         <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
         {snapshot.warnings.length > 0 && <ul className="mt-3 list-disc pl-5 text-sm text-amber-800">{snapshot.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
       </div>
-      <CoachAssistantPanel key={`${formationId}-${openingSeed ? "opening" : "saved"}`} initialSettings={preparedSettings} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={false} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
+      <CoachAssistantPanel key={formationId} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={false} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
       </>}
-    </> : <SubstitutionDemo key={`${formationId}-${openingRevision}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared || plan.steps.length > 0 ? "review" : "assistant"} />}
+    </> : <SubstitutionDemo key={`${formationId}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared || plan.steps.length > 0 ? "review" : "assistant"} />}
   </section>;
 }

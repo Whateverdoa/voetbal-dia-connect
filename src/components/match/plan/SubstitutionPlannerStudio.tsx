@@ -5,6 +5,11 @@ import { MatchPlanAttribution } from "@/components/match/MatchPlanAttribution";
 import { LiveReplanPanel } from "@/components/coach-assistant/LiveReplanPanel";
 
 import Link from "next/link";
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { PitchView } from "@/components/match/PitchView";
+import { ResetStartingLineup } from "@/components/match/ResetStartingLineup";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { Formation } from "@/lib/formations/types";
 import { useSubstitutionPlannerBoard } from "@/hooks/useSubstitutionPlannerBoard";
@@ -58,6 +63,11 @@ export function SubstitutionPlannerStudio({
   canEditPlan,
   canExecute,
 }: SubstitutionPlannerStudioProps) {
+  const [mode, setMode] = useState<"lineup" | "plan">("plan");
+  const [keeperError, setKeeperError] = useState<string | null>(null);
+  const setKeeper = useMutation(api.matchActions.toggleKeeper);
+  const isPregame = status === "scheduled" || status === "lineup";
+  const editingLineup = isPregame && mode === "lineup";
   const board = useSubstitutionPlannerBoard({
     matchId,
     teamId,
@@ -111,13 +121,26 @@ export function SubstitutionPlannerStudio({
     >
       <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+          {isPregame && <div role="group" aria-label="Bewerken in planscherm" className="flex flex-wrap gap-2">
+            <button className={`min-h-11 rounded-lg px-4 font-semibold ${editingLineup ? "bg-white text-dia-green" : "bg-white/15 text-white"}`} aria-pressed={editingLineup} onClick={() => setMode("lineup")}>Beginopstelling aanpassen</button>
+            <button className={`min-h-11 rounded-lg px-4 font-semibold ${!editingLineup ? "bg-white text-dia-green" : "bg-white/15 text-white"}`} aria-pressed={!editingLineup} onClick={() => setMode("plan")}>Wisselplan maken</button>
+          </div>}
+          {editingLineup && <div className="rounded-xl bg-white p-3 text-sm text-slate-900">
+            <p>Je past nu de echte beginopstelling aan. Tik op een bankspeler en daarna op een veldplek. Tik op twee veldspelers om hun posities te ruilen. Wijzigingen worden direct opgeslagen; hiervoor hoef je geen wissel op minuut 1 te plannen.</p>
+            <label className="mt-2 flex flex-wrap items-center gap-2 font-semibold">Keeper<select aria-label="Keeper beginopstelling" disabled={!canEditPlan} className="min-h-11 rounded-lg border bg-white px-3" value={players.find((player) => player.isKeeper)?.playerId ?? ""} onChange={async (event) => {
+              const playerId = event.target.value as Id<"players">; if (!playerId) return;
+              setKeeperError(null); try { await setKeeper({ matchId, playerId }); } catch (error) { setKeeperError(error instanceof Error ? error.message : "Keeper wijzigen mislukt."); }
+            }}><option value="">Kies de keeper op het veld</option>{players.filter((player) => player.onField && !player.absent && !player.injured).map((player) => <option key={player.playerId} value={player.playerId}>{player.name}</option>)}</select></label>
+            {keeperError && <p role="alert">{keeperError}</p>}
+            <ResetStartingLineup matchId={matchId} players={players} disabled={!canEditPlan} />
+          </div>}
           {board.actions.error ? (
             <div className="shrink-0 rounded-xl border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-100">
               {board.actions.error}
             </div>
           ) : null}
-          <div className="min-h-0 flex-1">
-            {!resolvedFormation || !board.projection.quarterPreview ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {editingLineup ? <PitchView matchId={matchId} players={players} formationId={formationId} resolvedFormation={resolvedFormation} customFormationKind={resolvedFormation && resolvedFormation.slots.length <= 8 ? "8v8" : "11v11"} status={status} canEdit={canEditPlan} seasonMinutesByPlayerId={board.cardMinutes} /> : !resolvedFormation || !board.projection.quarterPreview ? (
               <div className="rounded-xl border border-dashed border-white/20 p-4 text-sm text-white/70">
                 Kies hierboven een formatie om het veld te gebruiken.
               </div>

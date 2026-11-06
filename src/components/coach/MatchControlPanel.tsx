@@ -1,6 +1,7 @@
 "use client";
 
 import { MatchPlanAttribution } from "@/components/match/MatchPlanAttribution";
+import { ResetStartingLineup } from "@/components/match/ResetStartingLineup";
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
@@ -286,6 +287,7 @@ export function MatchControlPanel({ match }: MatchControlPanelProps) {
               enabled={showCardMinutes}
               onChange={setShowCardMinutes}
             />
+            {isPregame && <ResetStartingLineup matchId={match._id} players={match.players} disabled={!canEditLineup} />}
 
             {lineupView === "veld" ? (
               <PitchView

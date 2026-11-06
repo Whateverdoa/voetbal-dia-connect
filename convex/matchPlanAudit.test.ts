@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import { makeFunctionReference } from "convex/server";
 import schema from "./schema";
 import { api } from "./_generated/api";
+import { startingLineupRevision } from "../src/lib/startingLineupRevision";
 
 const modules = {
   "./matchLineupCore.ts": () => import("./matchLineupCore"),
   "./matchLineupAvailability.ts": () => import("./matchLineupAvailability"),
   "./substitutionPlans.ts": () => import("./substitutionPlans"),
   "./matchPlanAudit.ts": () => import("./matchPlanAudit"),
+  "./coachAssistant.ts": () => import("./coachAssistant"),
   "./_generated/server.ts": () => import("./_generated/server"),
 };
 const audit = makeFunctionReference<"query">("matchPlanAudit:get");
@@ -40,6 +42,39 @@ async function fixture(existing = false) {
 }
 
 describe("authenticated plan attribution", () => {
+  it("resets a confirmed pregame lineup atomically, retaining availability and the plan", async () => {
+    const f = await fixture(true);
+    const planId = await f.max.mutation(api.substitutionPlans.addPlanItem, { matchId: f.matchId, playerOutId: f.p1, playerInId: f.p2, targetMinute: 10 });
+    const before = await f.t.run(async (ctx) => {
+      const rows = await ctx.db.query("matchPlayers").withIndex("by_match", (q) => q.eq("matchId", f.matchId)).collect();
+      const first = rows.find((row) => row.playerId === f.p1)!;
+      const second = rows.find((row) => row.playerId === f.p2)!;
+      await ctx.db.patch(first._id, { isKeeper: true, fieldSlotIndex: 0 });
+      await ctx.db.patch(second._id, { injured: true });
+      return ctx.db.query("matchPlayers").withIndex("by_match", (q) => q.eq("matchId", f.matchId)).collect();
+    });
+    await f.mike.mutation(api.coachAssistant.resetStartingLineup, { matchId: f.matchId, expectedRevision: startingLineupRevision(before), confirmed: true });
+    await f.t.run(async (ctx) => {
+      for (const row of before) {
+        expect(await ctx.db.get(row._id)).toEqual({ ...row, onField: false, isKeeper: false, fieldSlotIndex: undefined });
+      }
+      expect(await ctx.db.get(planId)).not.toBeNull();
+    });
+    const data = await f.max.query(audit, { matchId: f.matchId });
+    expect(data.lineup.latest.name).toBe("Mike");
+    expect(data.lineup.latest.action).toBe("Beginopstelling leeggemaakt");
+  });
+  it("refuses unconfirmed, unauthorized, stale and started-match resets", async () => {
+    const f = await fixture(true);
+    const rows = await f.t.run((ctx) => ctx.db.query("matchPlayers").withIndex("by_match", (q) => q.eq("matchId", f.matchId)).collect());
+    const args = { matchId: f.matchId, expectedRevision: startingLineupRevision(rows), confirmed: true };
+    await expect(f.max.mutation(api.coachAssistant.resetStartingLineup, { ...args, confirmed: false })).rejects.toThrow("Bevestig");
+    await expect(f.other.mutation(api.coachAssistant.resetStartingLineup, args)).rejects.toThrow();
+    await expect(f.max.mutation(api.coachAssistant.resetStartingLineup, { ...args, expectedRevision: "old" })).rejects.toThrow("andere coach");
+    await f.t.run((ctx) => ctx.db.patch(f.matchId, { startedAt: 123 }));
+    await expect(f.max.mutation(api.coachAssistant.resetStartingLineup, args)).rejects.toThrow("aftrap");
+    expect((await f.max.query(audit, { matchId: f.matchId })).history).toHaveLength(0);
+  });
   it("finds the actual creator after availability was recorded on an empty lineup", async () => {
     const f = await fixture();
     await f.mike.mutation(api.matchLineupAvailability.togglePlayerAbsent, { matchId: f.matchId, playerId: f.p2 });

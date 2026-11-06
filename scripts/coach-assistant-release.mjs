@@ -49,7 +49,7 @@ export async function releaseCoachAssistant({ adminKey, deploymentUrl, checkOnly
     assert(schemas.active && !schemas.inProgress, "Active schema required; another schema preparation must finish first");
     const result = await build({ entryPoints: ["convex/coachAssistant.ts"], bundle: true, write: false, format: "esm", platform: "browser", target: "esnext", metafile: true });
     const exports = Object.values(result.metafile.outputs)[0].exports.sort();
-    assert.deepEqual(exports, ["previewRemaining", "save", "saveRemaining", "workspace"]);
+    assert.deepEqual(exports, ["previewRemaining", "resetStartingLineup", "save", "saveRemaining", "workspace"]);
     const assistant = { path: modulePath, source: result.outputFiles[0].text, environment: "isolate" };
     const modules = composeAssistantRelease(original, assistant);
     assertRetainedProduction(original, { ...original, modules });

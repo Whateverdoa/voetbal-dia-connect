@@ -1,4 +1,5 @@
 import { auditPlanChange } from "./lib/matchPlanAudit";
+import { startingLineupRevision } from "../src/lib/startingLineupRevision";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
@@ -8,6 +9,24 @@ import { assistantPlanValidator } from "./lib/coachAssistantValidators";
 import { workspacePlan, workspaceRevision, validateWorkspaceSave, type WorkspaceSource } from "./lib/coachAssistantWorkspace";
 import { liveProposal, validateLivePreview } from "./lib/coachAssistantLive";
 import { verifyIsMatchLead } from "./pinHelpers";
+
+export const resetStartingLineup = mutation({
+  args: { matchId: v.id("matches"), expectedRevision: v.string(), confirmed: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Beginopstelling leeggemaakt", async () => {
+    if (!args.confirmed) throw new Error("Bevestig eerst dat je de beginopstelling wilt leegmaken.");
+    const match = await ctx.db.get(args.matchId);
+    if (!match || !["scheduled", "lineup"].includes(match.status) || match.startedAt || match.cancelledAt) throw new Error("De beginopstelling kan alleen vóór de aftrap worden leeggemaakt.");
+    const players = await ctx.db.query("matchPlayers").withIndex("by_match", (q) => q.eq("matchId", args.matchId)).take(101);
+    if (players.length > 100) throw new Error("Deze selectie is te groot om veilig te resetten.");
+    if (players.some((player) => (player.minutesPlayed ?? 0) > 0 || player.lastSubbedInAt)) throw new Error("Deze wedstrijd bevat al speeltijd. De beginopstelling kan niet worden gereset.");
+    if (startingLineupRevision(players) !== args.expectedRevision) throw new Error("Een andere coach heeft de opstelling gewijzigd. Controleer de nieuwe opstelling en bevestig opnieuw.");
+    for (const player of players) {
+      if (player.onField || player.isKeeper || player.fieldSlotIndex !== undefined) await ctx.db.patch(player._id, { onField: false, isKeeper: false, fieldSlotIndex: undefined });
+    }
+    return null;
+  }),
+});
 
 async function readSource(ctx: QueryCtx | MutationCtx, match: Doc<"matches">): Promise<WorkspaceSource> {
   const { coach } = await requireCoachAccess(ctx);
@@ -31,7 +50,6 @@ export const workspace = query({
   returns: v.union(v.null(), v.object({
     matchId: v.id("matches"), teamId: v.id("teams"), code: v.string(), teamName: v.string(), opponent: v.string(),
     scheduledAt: v.union(v.number(), v.null()), canSave: v.boolean(), revision: v.string(), plan: assistantPlanValidator,
-    quarterCount: v.optional(v.number()), planTiming: v.optional(v.array(v.object({ id: v.string(), quarter: v.optional(v.number()), minute: v.optional(v.number()) }))),
     preferences: v.array(v.object({ key: v.string(), availability: v.union(v.literal("present"), v.literal("absent"), v.literal("injured")),
       primaryPosition: v.union(v.string(), v.null()), secondaryPosition: v.union(v.string(), v.null()) })), warnings: v.array(v.string()),
   })),
@@ -45,8 +63,7 @@ export const workspace = query({
     const { plan, warnings } = workspacePlan(source);
     return { matchId: match._id, teamId: match.teamId, code: match.publicCode, teamName: team?.name ?? "Team", opponent: match.opponent,
       scheduledAt: match.scheduledAt ?? null, canSave: ["scheduled", "lineup"].includes(match.status) && !match.startedAt && !match.cancelledAt && source.rows.every((r) => r.status === "pending"),
-      revision: workspaceRevision(source), plan, warnings, quarterCount: match.quarterCount,
-      planTiming: [...source.rows].filter((row) => row.status === "pending").sort((a, b) => a.sequence - b.sequence).map((row) => ({ id: String(row._id), quarter: row.targetQuarter, minute: row.targetMinute })),
+      revision: workspaceRevision(source), plan, warnings,
       preferences: source.players.map(({ entry, player }) => ({ key: String(entry.playerId),
         availability: entry.injured ? "injured" as const : entry.absent ? "absent" as const : "present" as const,
         primaryPosition: player.positionPrimary ?? null, secondaryPosition: player.positionSecondary ?? null })),

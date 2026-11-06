@@ -1,21 +1,26 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
-## Beginopstelling uit minuut 1 (6 november 2026)
+## Beginopstelling rechtstreeks aanpassen en resetten (6 november 2026)
 
-De voorbereiding kan op expliciet verzoek de H1-acties op minuut 0–1 opnemen in
-de beginopstelling en de overige planning behouden, zonder opnieuw te genereren.
-`workspace` levert naast het portable plan de oorspronkelijke periode/minuut per
-regel. Alleen deze opt-in import interpreteert een minuut onder het begin van de
-gekozen periode als periodeminuut (H2 minuut 1 wordt wedstrijdminuut 31).
-Positieruilen in H2 kunnen lokaal op een ander moment binnen H2 worden gezet;
-verplaatste acties volgen de al geplande wissels op dat tijdstip. De volledige
-planning wordt daarna opnieuw gevalideerd; tegenstrijdigheden blijven zichtbaar.
+Het planscherm heeft voor de aftrap twee standen: Beginopstelling aanpassen en
+Wisselplan maken. De eerste gebruikt het bestaande PitchView met echte
+opstellingsmutations en keeperkeuze; de tweede plant toekomstige wissels.
+ResetStartingLineup staat zowel hier als bij Opstelling in de coachwedstrijd.
+Reset vereist een extra bevestiging en leegt alleen veld/keeper/veldplekken.
+Formatie, beschikbaarheid, positievoorkeuren, minuten en wisselplan blijven staan.
+Het bestaande plan moet na opnieuw opstellen worden gecontroleerd.
+De server weigert resets na aftrap, bij opgeslagen speeltijd, zonder bevestiging
+of nadat een andere coach de getoonde opstelling heeft veranderd. Reset en audit
+committeren atomair. CoachStartingField heeft daarnaast dezelfde bevestigingsstap
+voor het lokale voorbereidingsconcept.
 
-Voor Dongen is afgesproken: H1 minuut 1 als beginopstelling, Jody/Krijn op 31,
-Max/Miloud op 40 nadat Max terugkomt. Niet automatisch naar de wedstrijd opslaan;
-de andere coach werkt aan het plan. Voorbereiding/oefenen verandert geen echte
-speelminuten. `CoachStartingField` heeft daarnaast een lokale reset met een
-aparte bevestiging en annuleren; voorkeuren en het opgeslagen plan blijven staan.
+Eenmalig herstel Dongen: de coach gebruikte H1 minuut 1 als noodoplossing om de
+beginopstelling in te voeren. Op expliciet gebruikersverzoek is op 6 november
+19:42 het gecontroleerde plan in de echte wedstrijd opgeslagen: drie H1-acties
+naar de beginopstelling, Jody/Krijn op 31, Max/Miloud op 40 na Max' invalbeurt.
+Het hele plan is lokaal uitgespeeld zonder afwijkingen; geen oefenminuten naar
+de echte wedstrijd geschreven. Audit toont Mike als bewerker. De tijdelijke
+minuut-1-importfunctie is op gebruikersverzoek uit de normale app verwijderd.
 
 Na de eerste audituitrol gebruikt deze vervolgwijziging `--assistant-only`:
 de audit-tabel/query en omwikkelde coachmutations staan al op productie. De eerste
@@ -23,7 +28,7 @@ auditbuilds hadden een onterechte eindcontrolefout na succesvolle backendpush
 (modulevolgorde en toegevoegde `sourceMap: null` in de API-response). De gerichte
 readback bevestigde de nieuwe tabel/query en behoud van bestaande modules;
 de eindcontrole vergelijkt nu per modulepad en de nieuwe module bevat sourceMap.
-Verificatie vervolg: 31 gerichte tests, TypeScript, ESLint en 13 releasetests.
+Verificatie vervolg: 41 gerichte tests, TypeScript, ESLint en 13 releasetests.
 
 ## Maker en wijzigingen van opstelling/wisselplan (6 november 2026)
 

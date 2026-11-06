@@ -119,7 +119,7 @@ describe("coach assistant review flow", () => {
   it("adds only explicitly reviewed earlier history and rejects invalid minute values", async () => {
     const user = userEvent.setup();
     render(<CoachAssistantPanel plan={REESHOF_PLAN} teamKey="team" targetDate="2026-10-10" disabled={false} onApply={vi.fn()} />);
-    await user.click(screen.getByText("Gecontroleerde wedstrijdhistorie toevoegen (0)"));
+    await user.click(screen.getByText("Handmatige aanvulling (optioneel) · 0"));
     fireEvent.change(screen.getByLabelText("Datum bronwedstrijd"), { target: { value: "2026-10-03" } });
     await user.type(screen.getByLabelText("Tegenstander bronwedstrijd"), "Vorige tegenstander");
     await user.selectOptions(screen.getByRole("combobox", { name: "Historische aanwezigheid Jody 2" }), "present");
@@ -133,7 +133,7 @@ describe("coach assistant review flow", () => {
     expect(confirm).not.toBeChecked();
     await user.click(confirm);
     await user.click(screen.getByRole("button", { name: "Historie toevoegen" }));
-    expect(screen.getByText("Gecontroleerde wedstrijdhistorie toevoegen (1)")).toBeVisible();
+    expect(screen.getByText("Handmatige aanvulling (optioneel) · 1")).toBeVisible();
     expect(screen.getByRole("button", { name: "Verwijder historie Vorige tegenstander" })).toBeVisible();
   });
 

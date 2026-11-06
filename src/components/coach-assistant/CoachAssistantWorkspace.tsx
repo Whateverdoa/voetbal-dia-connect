@@ -105,7 +105,8 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   const [preparedPlayers, setPreparedPlayers] = useState<AssistantPlayer[] | null>(null);
   const automaticHistory = useAutomaticCoachHistory(snapshot.teamId, dateInAmsterdam(snapshot.scheduledAt));
   const save = useMutation(api.coachAssistant.save);
-  const stale = current.revision !== snapshot.revision;
+  const [savedRevision, setSavedRevision] = useState(snapshot.revision);
+  const stale = current.revision !== savedRevision;
   const disabled = stale || !current.canSave;
   const selectedFormation = FORMATIONS[formationId];
   const sourcePlan: DemoPlan = selectedFormation ? { ...snapshot.plan,
@@ -125,21 +126,22 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   const connection = { label, disabled, onSave: async (approved: DemoPlan, requestId: string) => {
     if (testMode) throw new Error("Deze testvoorbereiding kan niet naar de wedstrijd schrijven.");
     if (disabled) throw new Error("Laad eerst de actuele wedstrijdgegevens. Opslaan is nu niet beschikbaar.");
-    await save({ matchId: snapshot.matchId, expectedRevision: snapshot.revision, reviewed: true, requestId, plan: approved });
+    const result = await save({ matchId: snapshot.matchId, expectedRevision: savedRevision, reviewed: true, requestId, plan: approved });
+    if (result?.revision) setSavedRevision(result.revision);
   } };
   return <section aria-label="Gekozen wedstrijd" className="space-y-4">
     <div className="rounded-xl border border-green-200 bg-green-50 p-4"><h2 className="font-bold">{label}</h2><div className="mt-2 flex flex-wrap gap-4 text-sm"><Link className="font-semibold text-dia-green underline" href={`/coach/match/${snapshot.matchId}`}>Open wedstrijd in de app</Link><Link className="font-semibold text-dia-green underline" href={`/live/${snapshot.code}`}>Open publieke weergave</Link><button type="button" className="min-h-11 font-semibold text-dia-green underline" onClick={onReload}>Actuele selectie en plan opnieuw laden</button></div></div>
     {snapshot.scheduledAt === null && <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Deze wedstrijd heeft nog geen datum in de app. Vul bij de Coachassistent een datum voor het voorstel in; de geplande wedstrijddatum wijzig je via de wedstrijdinstellingen.</p>}
-    {stale && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De gegevens in de app zijn gewijzigd, bijvoorbeeld door opslaan. Je concept blijft hier zichtbaar. Laad de actuele selectie en het plan opnieuw voordat je nogmaals opslaat.</p>}
+    {stale && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De gegevens in de app zijn gewijzigd, bijvoorbeeld door opslaan. Je kunt je concept en beginopstelling hier verder aanpassen. Laad de actuele selectie en het plan opnieuw voordat je nogmaals opslaat.</p>}
     {!current.canSave && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">Deze wedstrijd kan niet meer als beginplan worden opgeslagen. Kies een niet-afgelaste wedstrijd die nog niet is begonnen.</p>}
     {!report.structurallyValid || !report.simulationComplete ? <>
       <MatchPreparationSteps active="assistant" planReady={false} />
       <p className="text-sm text-slate-600">Begin bij de selectie hieronder. Na het berekenen zet je het voorstel klaar bij Wisselplan; na je controle wordt Oefenen beschikbaar.</p>
       <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm">De huidige opstelling of wissellijst is nog niet volledig. Kies een formatie. Je kunt zelf de beginopstelling kiezen en de wissels laten berekenen, of een volledig voorstel laten maken.</p>
-        <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} disabled={disabled} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
+        <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
         {snapshot.warnings.length > 0 && <ul className="mt-3 list-disc pl-5 text-sm text-amber-800">{snapshot.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
       </div>
-      <CoachAssistantPanel key={formationId} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={disabled} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
+      <CoachAssistantPanel key={formationId} preferenceScope={preferenceScope} connected preparationFlow testOnly={testMode} initialPlayers={preparedPlayers ?? preferences} automaticHistory={automaticHistory.matches} historyLoading={automaticHistory.loading} historyWarnings={automaticHistory.warnings} plan={sourcePlan} teamKey={String(snapshot.teamId)} targetDate={dateInAmsterdam(snapshot.scheduledAt)} disabled={false} onApply={(next, players, settings) => { setPrepared(next); setPreparedPlayers(players ?? null); setPreparedSettings(settings); }} />
     </> : <SubstitutionDemo key={`${formationId}-${prepared ? "proposal" : "saved"}`} source={source} connection={connection} testOnly={testMode} initialTab={prepared ? "review" : "assistant"} />}
   </section>;
 }

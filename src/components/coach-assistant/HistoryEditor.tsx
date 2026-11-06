@@ -57,8 +57,8 @@ export function HistoryEditor({ players, teamKey, targetDate, history, onChange,
   }
 
   return <details className="rounded-2xl border border-slate-200 bg-white p-4">
-    <summary className="min-h-11 cursor-pointer font-semibold text-slate-800">Gecontroleerde wedstrijdhistorie toevoegen ({history.length})</summary>
-    <p className="mt-2 text-sm leading-relaxed text-slate-600">{automaticCount === undefined ? "Dit losse voorbeeld haalt geen historie op. " : `${automaticCount} wedstrijden zijn automatisch opgehaald uit DIA Live. `}Voeg hier ontbrekende gegevens toe of corrigeer een bronwedstrijd met dezelfde datum en tegenstander. Laat onbekende gegevens leeg. Vul keeperminuten alleen met 0 in als je weet dat de speler niet op doel stond.</p>
+    <summary className="min-h-11 cursor-pointer font-semibold text-slate-800">Handmatige aanvulling (optioneel) · {history.length}</summary>
+    <p className="mt-2 text-sm leading-relaxed text-slate-600">{automaticCount === undefined ? "Dit losse voorbeeld haalt geen historie op. " : `${automaticCount} wedstrijden zijn automatisch opgehaald uit DIA Live. `}Dit is een leeg formulier voor een optionele aanvulling, geen overzicht van je opgeslagen wedstrijden. De geregistreerde speelminuten vind je hierboven bij Wedstrijdhistorie uit DIA Live. Vul hier alleen iets in als je bewust ontbrekende gegevens wilt toevoegen of corrigeren. Laat onbekende gegevens leeg. Vul keeperminuten alleen met 0 in als je weet dat de speler niet op doel stond.</p>
     {history.length > 0 && <ul className="my-4 space-y-2">{history.map((match) => <li key={match.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-green-50 p-3 text-sm">
       <span>{match.date} · {match.opponent} · {match.startingLineupConfirmed ? "basisplaatsen bevestigd" : "basisplaatsen onbekend"}</span>
       <button type="button" disabled={disabled} className="min-h-11 px-3 font-semibold text-red-700 disabled:opacity-40" onClick={() => onChange(history.filter((item) => item.id !== match.id))} aria-label={`Verwijder historie ${match.opponent}`}>Verwijderen</button>

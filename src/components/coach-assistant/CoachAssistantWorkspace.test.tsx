@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assistantSourceFixture } from "@/test/fixtures/coachAssistant";
@@ -56,6 +56,11 @@ describe("connected coach workspace", () => {
     ] : defaultQuery(reference, args));
     render(<ConnectedEditor current={data()} onReload={vi.fn()} testMode />);
     await waitFor(() => expect(screen.getByRole("region", { name: "Wedstrijdhistorie uit DIA Live" })).toHaveTextContent("1 eerdere gespeelde wedstrijden automatisch geladen"));
+    await userEvent.click(screen.getByText("Bekijk gespeelde minuten per wedstrijd"));
+    await userEvent.click(screen.getByText(/spelers met bruikbare minuten/));
+    expect(within(screen.getByRole("region", { name: "Wedstrijdhistorie uit DIA Live" })).getByRole("columnheader", { name: "Speelminuten" })).toBeVisible();
+    expect(screen.getAllByRole("cell", { name: "30" }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Handmatige aanvulling \(optioneel\)/)).toBeVisible();
     expect(mocks.client.query).toHaveBeenCalledExactlyOnceWith("matches:getForCoach", { matchId: "past-match" });
     expect(mocks.save).not.toHaveBeenCalled();
   });
@@ -168,11 +173,36 @@ describe("connected coach workspace", () => {
       plan: expect.objectContaining({ startingLineup: current.plan.startingLineup }), requestId: expect.any(String) }));
     expect(screen.getByRole("button", { name: "Opslaan in de wedstrijd" })).toBeDisabled();
   });
+  it("continues editing after its own save but still blocks a later external change", async () => {
+    const user = userEvent.setup();
+    const current = data();
+    mocks.save.mockResolvedValueOnce({ savedItems: 1, alreadySaved: false, revision: "own-save" });
+    const view = render(<ConnectedEditor current={current} onReload={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "2. Wisselplan" }));
+    await user.click(screen.getByRole("checkbox", { name: /Ik heb namen, nummers, beschikbaarheid, opstelling en wissels/ }));
+    await user.click(screen.getByRole("button", { name: "Bevestigen en naar oefenen" }));
+    await user.click(screen.getByRole("button", { name: "Opslaan in de wedstrijd" }));
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+    view.rerender(<ConnectedEditor current={{ ...current, revision: "own-save" }} onReload={vi.fn()} />);
+    expect(screen.queryByText(/De gegevens in de app zijn gewijzigd/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "1. Voorbereiden" }));
+    expect(screen.getByRole("combobox", { name: "Beginopstelling bepalen" })).toBeEnabled();
+    view.rerender(<ConnectedEditor current={{ ...current, revision: "external-save" }} onReload={vi.fn()} />);
+    expect(screen.getByText(/De gegevens in de app zijn gewijzigd/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Opslaan in de wedstrijd" })).toBeDisabled();
+  });
   it("preserves a concept but blocks stale saves until explicit reload", async () => {
     const user = userEvent.setup(); const current = data(); const reload = vi.fn();
     const view = render(<ConnectedEditor current={current} onReload={reload} />);
     view.rerender(<ConnectedEditor current={{ ...current, revision: "another-coach-change" }} onReload={reload} />);
     expect(screen.getByText(/De gegevens in de app zijn gewijzigd/)).toBeVisible();
+    expect(screen.queryByText(/De oefenwedstrijd is al begonnen/)).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Beginopstelling bepalen" }), "coach");
+    expect(screen.getByRole("region", { name: "Eigen beginopstelling" })).toBeVisible();
+    const fieldButtons = screen.getAllByRole("button", { name: /^Veldplek/ });
+    expect(fieldButtons[0]).toBeEnabled();
+    await user.click(fieldButtons[0]);
+    expect(fieldButtons[0]).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Opslaan in de wedstrijd" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Actuele selectie en plan opnieuw laden" })); expect(reload).toHaveBeenCalledOnce();
     expect(mocks.save).not.toHaveBeenCalled();

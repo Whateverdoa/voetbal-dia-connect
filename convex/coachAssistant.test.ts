@@ -77,6 +77,8 @@ describe("authenticated match bridge", () => {
     const plan = reviewedFixturePlan(source);
     const result = await invoke(save, ctx, { matchId: source.match._id, expectedRevision: workspaceRevision(source), reviewed: true, requestId: "request-unique-1234", plan });
     expect(result).toMatchObject({ savedItems: plan.steps.reduce((sum, step) => sum + step.actions.length, 0), alreadySaved: false });
+    const latest = await invoke(workspace, ctx, { code: "UYXS3M" }) as { revision: string };
+    expect(result).toMatchObject({ revision: latest.revision });
     expect(ctx.db.patch).toHaveBeenCalledTimes(source.players.length + 1);
     expect(rows.every((row) => row.matchId === source.match._id && row.status === "pending")).toBe(true);
     expect(rows.filter((row) => row.targetMinute === 30).every((row) => row.targetQuarter === 2)).toBe(true);
@@ -90,7 +92,9 @@ describe("authenticated match bridge", () => {
     await expect(invoke(save, ctx, { ...args, expectedRevision: "stale" })).rejects.toThrow("intussen gewijzigd");
     expect(ctx.db.patch).not.toHaveBeenCalled(); expect(ctx.db.delete).not.toHaveBeenCalled();
     await invoke(save, ctx, args); const count = rows.length; ctx.db.patch.mockClear(); ctx.db.insert.mockClear();
-    await expect(invoke(save, ctx, args)).resolves.toMatchObject({ alreadySaved: true });
+    const retry = await invoke(save, ctx, args);
+    expect(retry).toMatchObject({ alreadySaved: true });
+    expect(retry).not.toHaveProperty("revision");
     expect(rows).toHaveLength(count); expect(ctx.db.patch).not.toHaveBeenCalled(); expect(ctx.db.insert).not.toHaveBeenCalled();
   });
 });

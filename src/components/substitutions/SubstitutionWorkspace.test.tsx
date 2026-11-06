@@ -65,7 +65,7 @@ describe("substitution workspace sources", () => {
     const sources = screen.getByRole("combobox", { name: "Wedstrijd / voorbeeld" });
     expect(sources).toHaveValue("reeshof-2026-10-10");
     expect(within(sources).getAllByRole("option")).toHaveLength(3);
-    expect(screen.getByRole("combobox", { name: "Beginopstelling" })).toHaveValue("app-reeshof-4-3-3");
+    expect(screen.getByRole("combobox", { name: "Formatie" })).toHaveValue("app-reeshof-4-3-3");
     assertReeshofStartingPitch();
     expect(screen.getByRole("button", { name: "Start demo" })).toBeDisabled();
     expect(screen.getByTestId("demo-clock")).toHaveTextContent("00:00");
@@ -139,7 +139,7 @@ describe("substitution workspace sources", () => {
     render(<SubstitutionWorkspace />);
     await selectGilze(user);
     expect(screen.getByRole("combobox", { name: "Wedstrijd / voorbeeld" })).toHaveValue("gilze-2026-10-03");
-    expect(screen.getByRole("combobox", { name: "Beginopstelling" })).toHaveValue("app-gilze-3-5-2");
+    expect(screen.getByRole("combobox", { name: "Formatie" })).toHaveValue("app-gilze-3-5-2");
     assertGilzeStartingPitch();
     expect(screen.getByRole("button", { name: "Start demo" })).toBeDisabled();
     expect(screen.getByTestId("demo-clock")).toHaveTextContent("00:00");

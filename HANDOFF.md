@@ -38,6 +38,36 @@ De coachinterface gebruikt dezelfde opgeslagen `substitutionPlans` op beide sche
 
 Dit is een gerichte terugplaatsing uit `f89f606`, zonder backendwijzigingen of de losse native iPhone-app. Behoud deze interface bij toekomstige integraties van het scheidsrechtersgedeelte.
 
+## Zelfstandige wisselmodule-demo
+
+`/demo/wisselmodule` toont broncontrole, oefenwissels, positieruilen, formaties, automatische demonstratie en A4-print. De demo gebruikt lokale momentopnamen van Reeshof, Gilze en het fotovoorbeeld; zij schrijft niet naar Convex. Automatische fotoherkenning en appimport zijn nog niet gebouwd. Ontwerp en verificatie: [`docs/plans/wisselmodule.md`](docs/plans/wisselmodule.md).
+
+De route opent zonder auth/backend-providers. Navigatie en `SignedInRoleSync` staan daarom in de normale tak van `AppProviders`, niet rechtstreeks in de rootlayout. Houd die onderdelen binnen Clerk en Convex bij verdere integraties.
+
+## Voorbereiden en oefenen op één wedstrijdpagina (6 november 2026)
+
+De lokale `/coach/assistent?wedstrijd=9Q7WH6&test=1` gebruikt nu vier stappen: **Voorbereiden → Wisselplan → Oefenen → Vergelijken**. Dezelfde sessie bewaart het concept, voorkeuren, keeperafspraken, wisselinterval en oefenminuten bij stapwisseling. Zonder compleet plan blijven de vervolgstappen zichtbaar maar uitgeschakeld; na plancontrole wordt de oefenklok beschikbaar. Opnieuw oefenen behoudt het huidige concept in plaats van de oorspronkelijke appkopie terug te zetten. Ontbrekende rugnummers zijn in teststand lokaal aan te vullen. De losse `/demo/wisselmodule` blijft een zelfstandige voorbeeldomgeving. Geen backendwijziging of productie-deploy voor deze flow.
+
+Aanvulling 6 november: expliciete positievoorkeuren en beschikbaarheid (ook afwezig/geblesseerd) blijven via `useRememberedPlayers` in localStorage bewaard per Clerk-account, team en speler. De coach zet een terugkerende speler zelf weer beschikbaar. Dit synchroniseert niet tussen browsers/apparaten of localhost en productie; de losse demo bewaart geen teamvoorkeuren. Wedstrijdspecifieke minuten, privenotities en goedkeuring worden niet onthouden. Jip en Jonas zijn in de lokale testselectie afwezig gezet als eenmalige invallers, zonder namen in de code vast te leggen of spelers uit de database te verwijderen.
+
+De planner vergelijkt eerst huidige en daarna gecontroleerde historische minuten. Pas bij gelijke minutenscores volgt een zachte positiescore (eerste voorkeur 0, tweede voorkeur/bevestigde historie 1, dezelfde linie/onbekend 3, andere linie 6; een blijvende speler verplaatsen kost 2). Hierdoor krijgen exacte voorkeuren meer invloed dan alleen dezelfde linie, zonder voor een klein voordeel steeds te schuiven of extra speeltijd toe te kennen. Wissels worden gekoppeld via hun doelplekken, zodat losse verplaatsingen niet onnodig één lange keten worden. Voorstel, plancontrole en planprint tonen invallers met eindpositie en iedere blijvende speler maximaal één keer met zijn oude/nieuwe plek. De uitvoeringsacties blijven geordend en worden volledig gesimuleerd.
+
+## Coachassistent — eerste wedstrijdkoppeling
+
+De gewone route `/coach/assistent` opent standaard de lokale testvoorbereiding via bestaande coachqueries, ook vanuit dashboard en demo. Zo roepen normale links de nog niet beschikbare experimentele workspace-query niet aan. Pas na een afgestemde backenduitrol kan de servervariabele `COACH_ASSISTANT_APP_SAVE_ENABLED=true` de opslagmodus activeren; `test=1` blijft altijd alleen-lezen. De foutgrens reset bij een moduswisseling zodat een eerdere laadfout de testverbinding niet blijft blokkeren.
+
+Oefenen heeft nu **Stap terug** naast de klokbediening. Complete lokale toestanden bewaren opstelling, minuten, gebeurtenissen, afgehandelde acties en eventuele vervolgplannen; terugdraaien herstelt ze samen en stopt de klok. Een expliciete tijdstap/wissel/positieruil/formatiewijziging/herplanning is één stap. Doorlopend afspelen wordt gegroepeerd vanaf Start/Hervatten, niet per timer-tik. Goedkeuren, een nieuwe voorbereiding en Opnieuw wissen de terugstappen. Geen opslag of correcties in echte wedstrijdgebeurtenissen.
+
+Aanvulling lokale test 6 november: bij Voorbereiden kan de coach **Ik kies zelf de beginopstelling** kiezen. `CoachStartingField` hergebruikt de veldlijnen en spelerskaarten van de coach-app met lokale callbacks: bankspeler + veldplek plaatsen, twee veldspelers ruilen, keeper kiezen en terug naar de bank. Keuzelijsten blijven als alternatief beschikbaar. `startingField` in de planner geldt uitsluitend voor de aftrap; toekomstige wissels blijven vrij. Onvolledige/dubbele/onbeschikbare keuzes en botsende keeper- of minutenafspraken geven een fout. De modus blijft bij stapwisseling behouden; een nieuwe wedstrijd begint met de eigen wedstrijdopstelling.
+
+Tijdens Oefenen biedt **Bereken vanaf nu opnieuw** een te controleren vervolg vanaf de huidige veldbezetting, bank, formatie en echte gespeelde seconden. Het gekozen interval begint vanaf dat moment; openstaande keeperafspraken blijven behouden. De klok pauzeert voor controle. **Gebruik dit vervolgplan** vervangt alleen de actieve toekomstige regels via `futureSteps`; uitgevoerde gebeurtenissen, actuele opstelling en minutentellers blijven intact. Een verouderd voorstel wordt geweigerd. Het oorspronkelijke plan en de vergelijking/planprint blijven als referentie behouden; de werkelijke print bevat alle uitgevoerde acties. Alles blijft lokaal; geen live backendwijziging.
+
+**Actualisatie 31 oktober:** gebruik voor de lokale proef van 7 november `/coach/assistent?wedstrijd=9Q7WH6&test=1`. Deze teststand leest alleen de bestaande coachqueries en biedt geen opslagactie naar de app. De hieronder beschreven experimentele backendfuncties zijn inmiddels niet meer aanwezig op productie; activeer ze pas bij een aparte, afgestemde release. Voor deze proef is niets naar productie gedeployd. Zie de testvoorbereiding in het gekoppelde plan hieronder.
+
+`/coach/assistent` laadt na coachlogin een echte wedstrijd via de wedstrijdkeuze of code. De pagina gebruikt `coachAssistant.workspace` en `coachAssistant.save`: actuele selectie/voorkeuren/formatie/openstaande regels lezen, een beoordeeld concept atomair vóór de aftrap opslaan en wijzigingen vanuit de bestaande app opnieuw laden. Geen Reeshof-fallback op deze route. De losse `/demo/wisselmodule` blijft beschikbaar en linkt naar de echte wedstrijdkeuze.
+
+De nieuwe backendfuncties zijn geactiveerd op `nautical-condor-5`; de frontend is nog lokaal op de featurebranch. Wedstrijdkeuze, laden via code en opslaan zijn beperkt tot de eigen coachteams, ook bij accounts met daarnaast een beheerderrol. Bronconflicten blokkeren opslaan, herhaalde aanvragen worden gededupliceerd en de oefenklok schrijft geen echte wedstrijdgebeurtenissen. Automatische historie, bewaarde oorspronkelijke planversies en publicatie van verslagen volgen later. Zie [`docs/plans/coachassistent-appkoppeling.md`](docs/plans/coachassistent-appkoppeling.md).
+
 ## Tech Stack
 - Next.js 16 (App Router, Turbopack)
 - React 19 + TypeScript strict

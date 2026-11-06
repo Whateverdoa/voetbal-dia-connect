@@ -42,6 +42,7 @@
   "exclude": [
     "apps",
     "node_modules",
+    "devoorbereiding",
     "tmp",
     "scripts/archive"
   ]

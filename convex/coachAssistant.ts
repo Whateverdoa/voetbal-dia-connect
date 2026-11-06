@@ -108,7 +108,7 @@ export const saveRemaining = mutation({
 /** One transaction: either the complete reviewed plan is saved or nothing changes. */
 export const save = mutation({
   args: { matchId: v.id("matches"), expectedRevision: v.string(), reviewed: v.boolean(), requestId: v.string(), plan: assistantPlanValidator },
-  returns: v.object({ savedItems: v.number(), alreadySaved: v.boolean() }),
+  returns: v.object({ savedItems: v.number(), alreadySaved: v.boolean(), revision: v.optional(v.string()) }),
   handler: async (ctx, args) => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden.");
@@ -143,6 +143,9 @@ export const save = mutation({
       }
     }
     await ctx.db.insert("matchCommandDedupes", { matchId: match._id, commandType, correlationId: args.requestId, createdAt: now });
-    return { savedItems: sequence, alreadySaved: false };
+    const savedMatch = await ctx.db.get(match._id);
+    if (!savedMatch) throw new Error("Wedstrijd niet gevonden.");
+    const revision = workspaceRevision(await readSource(ctx, savedMatch));
+    return { savedItems: sequence, alreadySaved: false, revision };
   },
 });

@@ -450,7 +450,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
 
   const formationSelector = <div className="mb-4">
     <div className="flex flex-wrap items-center gap-3">
-      <label htmlFor="demo-formation" className="text-sm font-semibold">{beforeKickoff ? "Beginopstelling" : "Formatie"}</label>
+      <label htmlFor="demo-formation" className="text-sm font-semibold">Formatie</label>
       <select id="demo-formation" value={formationId} disabled={match.phase === "finished"} onChange={(event) => changeFormation(event.target.value)} className="min-h-11 min-w-44 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 focus:outline-green-600 disabled:bg-slate-100 disabled:text-slate-500">
         {formationChoices.map((formation) => <option key={formation.id} value={formation.id}>{planSource === "photo" ? formation.name : formation.name.replace(" (uit foto)", "")}</option>)}
       </select>
@@ -514,7 +514,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
         {connection && beforeKickoff && formationSelector}
         {connection && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">Selectie en voorkeuren blijven hier bewaard. Na het berekenen ga je met hetzelfde voorstel door naar Wisselplan en Oefenen.</p>}
         {connection && !beforeKickoff && <button type="button" className={`${secondary} mb-4`} onClick={resetPractice}>Oefening stoppen en voorbereiding aanpassen</button>}
-        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={assistantPlayers} initialSettings={assistantSettings} preferenceScope={source.preferenceScope} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
+        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={assistantPlayers} initialSettings={assistantSettings} preferenceScope={source.preferenceScope} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff} onApply={applyAssistantPlan} />
       </div>}
 
       {tab === "field" && <>

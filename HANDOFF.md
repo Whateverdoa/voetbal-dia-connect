@@ -1,5 +1,22 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Beginopstelling en historie verduidelijkt (6 november 2026)
+
+Een gewijzigde bronwedstrijd blokkeert alleen opslaan, niet het lokaal kiezen van
+beginposities. De melding over een gestarte oefening verschijnt alleen als die
+ook werkelijk is gestart. Beginopstelling bepalen staat boven de spelerslijst;
+de formatiekeuze heet Formatie. Speelminuten uit DIA Live staan los van de
+expliciet optionele handmatige historie.
+
+Een geslaagde eerste opslag retourneert de exacte bronrevisie uit dezelfde
+transactie. De editor gebruikt die voor vervolgbewerkingen. Een idempotente
+herhaling retourneert geen nieuwe revisie, zodat wijzigingen van andere coaches
+niet stilzwijgend worden overgenomen. Externe wijzigingen blijven opslaan blokkeren.
+
+Verificatie: 61 gerichte tests, TypeScript en gerichte ESLint slagen.
+Uitrollen met de hieronder beschreven assistant-only build; geen wedstrijddata
+wijzigen om deze UI-fix te controleren (andere coach werkt aan de opstelling).
+
 ## Coachassistent in de live coachapp (6 november 2026)
 
 Voorbereiden/oefenen is nu standaard verbonden met de echte wedstrijd via

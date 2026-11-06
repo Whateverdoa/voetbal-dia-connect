@@ -31,6 +31,7 @@ export const workspace = query({
   returns: v.union(v.null(), v.object({
     matchId: v.id("matches"), teamId: v.id("teams"), code: v.string(), teamName: v.string(), opponent: v.string(),
     scheduledAt: v.union(v.number(), v.null()), canSave: v.boolean(), revision: v.string(), plan: assistantPlanValidator,
+    quarterCount: v.optional(v.number()), planTiming: v.optional(v.array(v.object({ id: v.string(), quarter: v.optional(v.number()), minute: v.optional(v.number()) }))),
     preferences: v.array(v.object({ key: v.string(), availability: v.union(v.literal("present"), v.literal("absent"), v.literal("injured")),
       primaryPosition: v.union(v.string(), v.null()), secondaryPosition: v.union(v.string(), v.null()) })), warnings: v.array(v.string()),
   })),
@@ -44,7 +45,8 @@ export const workspace = query({
     const { plan, warnings } = workspacePlan(source);
     return { matchId: match._id, teamId: match.teamId, code: match.publicCode, teamName: team?.name ?? "Team", opponent: match.opponent,
       scheduledAt: match.scheduledAt ?? null, canSave: ["scheduled", "lineup"].includes(match.status) && !match.startedAt && !match.cancelledAt && source.rows.every((r) => r.status === "pending"),
-      revision: workspaceRevision(source), plan, warnings,
+      revision: workspaceRevision(source), plan, warnings, quarterCount: match.quarterCount,
+      planTiming: [...source.rows].filter((row) => row.status === "pending").sort((a, b) => a.sequence - b.sequence).map((row) => ({ id: String(row._id), quarter: row.targetQuarter, minute: row.targetMinute })),
       preferences: source.players.map(({ entry, player }) => ({ key: String(entry.playerId),
         availability: entry.injured ? "injured" as const : entry.absent ? "absent" as const : "present" as const,
         primaryPosition: player.positionPrimary ?? null, secondaryPosition: player.positionSecondary ?? null })),

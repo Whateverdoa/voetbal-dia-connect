@@ -45,7 +45,9 @@ export function testWorkspace(match: CoachMatch): Workspace {
     scheduledAt: match.scheduledAt ?? null,
     canSave: ["scheduled", "lineup"].includes(match.status) && !match.startedAt && !match.cancelledAt,
     revision: JSON.stringify([match._id, match.status, match.scheduledAt, plan, players.map((player) => [player.positionPrimary, player.positionSecondary])]),
-    plan, warnings: [...new Set([...unresolved, ...(keepers.length === 1 ? [] : ["Controleer wie deze wedstrijd keept."])])],
+    plan, quarterCount: match.quarterCount,
+    planTiming: match.substitutionPlans.filter((row) => row.status === "pending").map((row) => ({ id: String(row._id), quarter: row.targetQuarter, minute: row.targetMinute })),
+    warnings: [...new Set([...unresolved, ...(keepers.length === 1 ? [] : ["Controleer wie deze wedstrijd keept."])])],
     preferences: players.map((player) => ({ key: String(player.playerId), availability: player.injured ? "injured" : player.absent ? "absent" : "present",
       primaryPosition: player.positionPrimary ?? null, secondaryPosition: player.positionSecondary ?? null })),
   };

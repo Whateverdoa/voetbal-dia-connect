@@ -18,6 +18,7 @@ function data() {
   const source = assistantSourceFixture(); const { plan, warnings } = workspacePlan(source);
   return { matchId: source.match._id, teamId: source.match.teamId, code: "UYXS3M", teamName: "JO13-2", opponent: "Test2",
     scheduledAt: source.match.scheduledAt ?? null, canSave: true, revision: workspaceRevision(source), plan, warnings,
+    quarterCount: source.match.quarterCount, planTiming: source.rows.map((row) => ({ id: String(row._id), quarter: row.targetQuarter, minute: row.targetMinute })),
     preferences: plan.players.map((p) => ({ key: p.key, availability: p.absent ? "injured" as const : "present" as const, primaryPosition: null, secondaryPosition: null })),
   };
 }
@@ -46,6 +47,20 @@ beforeEach(() => {
 });
 
 describe("connected coach workspace", () => {
+  it("takes opening substitutions into a local starting lineup without saving or recalculating", async () => {
+    const user = userEvent.setup(); const current = data();
+    current.plan = reviewedFixturePlan(assistantSourceFixture());
+    current.plan.steps[0].matchMinute = 1;
+    current.planTiming = current.plan.steps.flatMap((step) => step.actions.map((action) => ({ id: action.id, quarter: step.matchMinute < 30 ? 1 : 2, minute: step.matchMinute })));
+    const original = structuredClone(current.plan);
+    render(<ConnectedEditor current={current} onReload={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Gebruik minuut 1 als beginopstelling" }));
+    expect(screen.getByText(/Concept aangepast: de opstelling van minuut 1/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "2. Wisselplan" })).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByRole("button", { name: "Voorstel berekenen" })).not.toBeInTheDocument();
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(current.plan).toEqual(original);
+  });
   it("opens and rehearses the existing saved plan without calculating or saving a replacement", async () => {
     const user = userEvent.setup();
     const current = data();

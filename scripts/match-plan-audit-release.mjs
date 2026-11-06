@@ -77,7 +77,7 @@ export async function composePlanAuditRelease(original){
  if(beforeSchema.tables.some(t=>t.tableName==='matchPlanAudit'))assert.deepEqual(nextSchema.tables.find(t=>t.tableName==='matchPlanAudit'),beforeSchema.tables.find(t=>t.tableName==='matchPlanAudit'),'Existing audit table differs');
  modules[modules.indexOf(originalSchema)]={...originalSchema,source:schemaResult.source};changed.push('schema.js');
  const audit=await build({entryPoints:['convex/matchPlanAudit.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'esnext'});
- const index=modules.findIndex(m=>m.path==='matchPlanAudit.js');const item={path:'matchPlanAudit.js',source:audit.outputFiles[0].text,environment:'isolate'};
+ const index=modules.findIndex(m=>m.path==='matchPlanAudit.js');const item={path:'matchPlanAudit.js',source:audit.outputFiles[0].text,sourceMap:null,environment:'isolate'};
  if(index>=0)modules[index]=item;else modules.push(item);changed.push('matchPlanAudit.js');
  for(const item of original.modules)if(!changed.includes(item.path))assert.deepEqual(modules.find(m=>m.path===item.path),item);
  return {modules,changed};

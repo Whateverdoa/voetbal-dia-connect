@@ -70,7 +70,7 @@ export function CoachAssistantWorkspace({ initialCode, testMode = false }: { ini
         {inputError && <p role="alert" className="mt-2 text-sm text-red-800">{inputError}</p>}
         <p className="mt-3 text-xs text-slate-500">{testMode ? "Een andere wedstrijd kiezen begint een nieuwe lokale test. Druk het concept af als je het wilt bewaren." : "Een andere wedstrijd kiezen begint een nieuw concept. Sla een beoordeeld concept eerst op als je het wilt bewaren."}</p>
       </section>
-      {code ? <WorkspaceErrorBoundary key={code}>{testMode
+      {code ? <WorkspaceErrorBoundary key={`${testMode ? "test" : "app"}:${code}`}>{testMode
         ? <SelectedTestMatch accountId={accountId} key={code} code={code} matchId={dashboard?.matches.find((match) => match.publicCode === code)?._id} loading={dashboard === undefined} />
         : <SelectedMatch accountId={accountId} key={code} code={code} testMode={false} />}</WorkspaceErrorBoundary> : <p className="p-4 text-sm text-slate-600">Kies hierboven een wedstrijd om een opstelling en wisselplan te laten voorstellen.</p>}
       </>}

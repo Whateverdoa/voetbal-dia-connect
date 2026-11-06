@@ -75,6 +75,24 @@ export function proposeCoachPlan(input: AssistantInput): AssistantResult {
   }
   if (changeKeeper) boundaries.add(duration / 2);
   const moments = [...boundaries].sort((a, b) => a - b);
+  if (input.startingField) {
+    const start = input.startingField;
+    if (start.length !== slots.length || new Set(start.map((entry) => entry.slotId)).size !== slots.length ||
+        new Set(start.map((entry) => entry.playerKey)).size !== slots.length ||
+        start.some((entry) => !slots.some((slot) => slot.id === entry.slotId) || !available.some((player) => player.key === entry.playerKey))) {
+      return { ok: false, errors: ["Vul iedere beginpositie met een andere beschikbare speler."] };
+    }
+    if (!start.some((entry) => entry.slotId === keeperSlots[0].id && entry.playerKey === keeper.key) ||
+        secondKeeper && start.some((entry) => entry.playerKey === secondKeeper.key)) {
+      return { ok: false, errors: ["De beginopstelling botst met de keeperafspraken. Zet de eerste keeper op doel en de tweede keeper op de bank."] };
+    }
+    if (available.some((player) => player.lockedSlotId !== undefined && !start.some((entry) => entry.playerKey === player.key && entry.slotId === player.lockedSlotId))) {
+      return { ok: false, errors: ["De beginopstelling botst met een vaste plek van de coach."] };
+    }
+    if (start.some((entry) => (available.find((player) => player.key === entry.playerKey)?.maxMinutes ?? duration) < moments[0])) {
+      return { ok: false, errors: ["Een basisspeler mag minder minuten spelen dan het eerste speelblok. Kies een andere basisspeler of een korter wisselinterval."] };
+    }
+  }
   if (outfieldPlayers.reduce((total, player) => total + (player.maxMinutes ?? duration), 0) < duration * fieldSlots.length) {
     return { ok: false, errors: ["Met deze minutengrenzen zijn er onvoldoende speelminuten om alle veldplekken te bezetten."] };
   }
@@ -84,7 +102,7 @@ export function proposeCoachPlan(input: AssistantInput): AssistantResult {
       duration, useMinutes, useStarts, reference, kickoff, minuteBasis });
     return assignment ? [{ playerKey: activeKeeper.key, slotId: keeperSlots[0].id }, ...assignment] : null;
   };
-  const startingField = choose(input.plan.startingLineup.field, true);
+  const startingField = input.startingField?.map((entry) => ({ ...entry })) ?? choose(input.plan.startingLineup.field, true);
   if (!startingField) return { ok: false, errors: ["Geen volledige opstelling mogelijk met deze voorkeuren en vaste plekken. Controleer de selectie, minutengrenzen en alternatieve posities."] };
   const steps: DemoPlan["steps"] = [];
   let field = startingField;
@@ -144,7 +162,9 @@ export function proposeCoachPlan(input: AssistantInput): AssistantResult {
     const evidence = facts.get(entry.playerKey)!;
     const fit = positionFit(player, slot.position, evidence);
     const labels = { primary: "Eerste positievoorkeur", secondary: "Tweede positievoorkeur", history: "Bevestigde eerdere basispositie", zone: "Andere plek binnen de voorkeurslinie", unknown: "Positievoorkeur onbekend; controleer deze plek", other: "Andere positie om de speeltijd eerlijk te verdelen; controleer deze plek" };
-    const parts = [fit ? labels[fit] : "Controleer deze positie"];
+    const parts = input.startingField
+      ? ["Door de coach gekozen beginpositie; vanaf het eerste wisselmoment verdeelt de assistent de minuten"]
+      : [fit ? labels[fit] : "Controleer deze positie"];
     if (player.lockedSlotId !== undefined) parts.push("vaste plek van de coach");
     if (useMinutes && evidence.fieldMinutes !== null && evidence.eligibleFieldMinutes !== null) parts.push(`${Math.round(evidence.fieldMinutes * 10) / 10} van ${Math.round(evidence.eligibleFieldMinutes * 10) / 10} beschikbare veldminuten in ${evidence.confirmedGames} gecontroleerde wedstrijd(en)`);
     return { ...entry, text: parts.join(" · ") };

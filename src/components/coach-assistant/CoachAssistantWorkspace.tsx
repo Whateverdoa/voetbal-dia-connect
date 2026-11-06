@@ -135,7 +135,7 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
     {!report.structurallyValid || !report.simulationComplete ? <>
       <MatchPreparationSteps active="assistant" planReady={false} />
       <p className="text-sm text-slate-600">Begin bij de selectie hieronder. Na het berekenen zet je het voorstel klaar bij Wisselplan; na je controle wordt Oefenen beschikbaar.</p>
-      <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm">De huidige opstelling of wissellijst is nog niet volledig. Kies een formatie en laat eerst een compleet voorstel berekenen.</p>
+      <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm">De huidige opstelling of wissellijst is nog niet volledig. Kies een formatie. Je kunt zelf de beginopstelling kiezen en de wissels laten berekenen, of een volledig voorstel laten maken.</p>
         <label className="mt-3 grid gap-2 text-sm font-semibold">Formatie voor deze wedstrijd<select className={control} disabled={disabled} value={formationId} onChange={(event) => { setFormationId(event.target.value); setPrepared(null); }}>{!selectedFormation && <option value={formationId}>{snapshot.plan.formation.name}</option>}{Object.entries(FORMATIONS).map(([id, formation]) => <option key={id} value={id}>{formation.name} · {formation.slots.length}-tal</option>)}</select></label>
         {snapshot.warnings.length > 0 && <ul className="mt-3 list-disc pl-5 text-sm text-amber-800">{snapshot.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
       </div>

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { REESHOF_PLAN } from "@/lib/substitutions/reeshofPlan";
 import { SubstitutionWorkspace } from "@/components/substitutions/SubstitutionWorkspace";
 import { CoachAssistantPanel } from "./CoachAssistantPanel";
+import type { DemoPlan } from "@/lib/substitutions/demoPlan";
 
 afterEach(cleanup);
 
@@ -11,6 +12,44 @@ const selectionCheckbox = () => screen.getByRole("checkbox", { name: /Ik heb bes
 const reviewCheckbox = () => screen.getByRole("checkbox", { name: /Ik heb de voorgestelde posities/ });
 
 describe("coach assistant review flow", () => {
+  it("builds a coach kickoff from an empty lineup, preserves it after applying and invalidates review on edits", async () => {
+    const user = userEvent.setup(); const apply = vi.fn();
+    const plan: DemoPlan = { match: { regulationDurationMinutes: 60, fieldPlayerCountIncludingKeeper: 3 },
+      formation: { slots: [{ id: 0, position: "GK", x: 50, y: 90 }, { id: 1, position: "CB", x: 50, y: 60 }, { id: 2, position: "ST", x: 50, y: 20 }] },
+      players: ["Keeper", "A", "B", "C"].map((name, number) => ({ key: name, name, number })),
+      startingLineup: { keeperKey: "Keeper", field: [], bench: ["Keeper", "A", "B", "C"] }, steps: [] };
+    const props = { plan, teamKey: "team", targetDate: "2026-11-07", disabled: false, onApply: apply };
+    const view = render(<CoachAssistantPanel {...props} />);
+    await user.selectOptions(screen.getByRole("combobox", { name: "Beginopstelling bepalen" }), "coach");
+    await user.click(selectionCheckbox());
+    await user.click(screen.getByRole("button", { name: "Voorstel berekenen" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Vul iedere beginpositie");
+    await user.click(screen.getByRole("button", { name: "C 3" }));
+    await user.click(screen.getByRole("button", { name: "Veldplek CB 2: leeg" }));
+    await user.click(screen.getByRole("button", { name: "A 1" }));
+    await user.click(screen.getByRole("button", { name: "Veldplek ST 3: leeg" }));
+    expect(selectionCheckbox()).not.toBeChecked();
+    await user.click(selectionCheckbox());
+    await user.click(screen.getByRole("button", { name: "Voorstel berekenen" }));
+    await user.click(reviewCheckbox());
+    await user.click(screen.getByRole("button", { name: "Gebruik voorstel in oefenwedstrijd" }));
+    const [saved, , settings] = apply.mock.calls[0];
+    expect(saved.startingLineup.field).toEqual([{ playerKey: "C", slotId: 1 }, { playerKey: "A", slotId: 2 }, { playerKey: "Keeper", slotId: 0 }]);
+    expect(saved.startingLineup.bench).toEqual(["B"]);
+    expect(settings.manualStart).toBe(true);
+    view.unmount();
+    render(<CoachAssistantPanel {...props} plan={saved} initialSettings={settings} />);
+    expect(screen.getByRole("combobox", { name: "Beginopstelling bepalen" })).toHaveValue("coach");
+    await user.click(screen.getByText("Beginposities via keuzelijst aanpassen"));
+    expect(screen.getByRole("combobox", { name: "Beginpositie CB, plek 2" })).toHaveValue("C");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Beginpositie CB, plek 2" }), "A");
+    expect(screen.getByRole("combobox", { name: "Beginpositie ST, plek 3" })).toHaveValue("C");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Beschikbaarheid voorstel A 1" }), "absent");
+    await user.click(selectionCheckbox());
+    await user.click(screen.getByRole("button", { name: "Voorstel berekenen" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Vul iedere beginpositie");
+  });
+
   it("defaults to a fixed keeper and requires renewed review when selecting a halftime replacement", async () => {
     const user = userEvent.setup();
     render(<CoachAssistantPanel plan={REESHOF_PLAN} teamKey="team" targetDate="2026-10-10" disabled={false} testOnly onApply={vi.fn()} />);

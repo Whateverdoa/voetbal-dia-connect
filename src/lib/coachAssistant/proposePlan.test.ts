@@ -34,6 +34,55 @@ function history(minutes: [number | null, number | null, number | null] = [20, 4
 }
 
 describe("deterministic coach assistant", () => {
+  it("preserves the coach kickoff exactly, then rotates with minutes first", () => {
+    const input = inputFor(smallPlan);
+    input.history = [history([10, 20, 60])];
+    input.players[1].primaryPosition = "ST";
+    input.players[3].primaryPosition = "CB";
+    input.startingField = structuredClone(smallPlan.startingLineup.field);
+    const before = structuredClone(input);
+    const result = proposal(input);
+    expect(result.plan.startingLineup.field).toEqual(input.startingField);
+    expect(result.plan.startingLineup.bench).toEqual(["b"]);
+    expect(result.reasons.find((row) => row.playerKey === "a")?.text).toContain("Door de coach gekozen beginpositie");
+    const report = validatePortableSubstitutionPlan(result.plan);
+    expect(report.simulationComplete).toBe(true);
+    expect(report.snapshots[1].matchMinute).toBe(10);
+    expect(report.snapshots[1].field.some((entry) => entry.playerKey === "b")).toBe(true);
+    expect(report.minutes.byPlayer.filter((row) => row.playerKey !== "keeper").map((row) => row.playingMinutes)).toEqual([40, 40, 40]);
+    expect(input).toEqual(before);
+  });
+
+  it("rejects incomplete, duplicate, unavailable and conflicting coach kickoff choices", () => {
+    const input = inputFor(smallPlan);
+    input.startingField = smallPlan.startingLineup.field.slice(1);
+    expect(proposeCoachPlan(input)).toMatchObject({ ok: false, errors: [expect.stringMatching(/iedere beginpositie/)] });
+    input.startingField = [{ playerKey: "keeper", slotId: 0 }, { playerKey: "a", slotId: 1 }, { playerKey: "a", slotId: 2 }];
+    expect(proposeCoachPlan(input).ok).toBe(false);
+    input.startingField = structuredClone(smallPlan.startingLineup.field);
+    input.players[3].availability = "injured";
+    expect(proposeCoachPlan(input).ok).toBe(false);
+    input.players[3].availability = "present";
+    input.players[1].lockedSlotId = 2;
+    expect(proposeCoachPlan(input)).toMatchObject({ ok: false, errors: [expect.stringMatching(/vaste plek/)] });
+    delete input.players[1].lockedSlotId;
+    input.players[1].maxMinutes = 5;
+    expect(proposeCoachPlan(input)).toMatchObject({ ok: false, errors: [expect.stringMatching(/eerste speelblok/)] });
+  });
+
+  it("validates the coach kickoff keeper and keeps a halftime replacement on the starting bench", () => {
+    const input = inputFor(smallPlan);
+    input.startingField = [{ playerKey: "a", slotId: 0 }, { playerKey: "keeper", slotId: 1 }, { playerKey: "c", slotId: 2 }];
+    expect(proposeCoachPlan(input)).toMatchObject({ ok: false, errors: [expect.stringMatching(/keeperafspraken/)] });
+    input.startingField = structuredClone(smallPlan.startingLineup.field);
+    input.keepKeeper = false; input.secondKeeperKey = "c";
+    expect(proposeCoachPlan(input).ok).toBe(false);
+    input.secondKeeperKey = "b";
+    const report = validatePortableSubstitutionPlan(proposal(input).plan);
+    expect(report.simulationComplete).toBe(true);
+    expect(report.minutes.byPlayer.find((row) => row.playerKey === "b")?.keeperMinutes).toBe(30);
+  });
+
   it("creates an executable full Reeshof plan with a fixed keeper and balanced minutes, without mutating sources", () => {
     const input = inputFor();
     const before = structuredClone(input);

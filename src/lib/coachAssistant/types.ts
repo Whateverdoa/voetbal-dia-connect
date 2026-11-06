@@ -42,6 +42,8 @@ export interface AssistantInput {
   plan: DemoPlan;
   players: AssistantPlayer[];
   keeperKey: string;
+  /** Exact coach-selected kickoff field; later substitutions remain automatic. */
+  startingField?: DemoPlan["startingLineup"]["field"];
   keepKeeper?: boolean;
   secondKeeperKey?: string;
   intervalMinutes: number;

@@ -44,6 +44,10 @@ export interface DemoEvent {
 
 /** Local demonstration only: no database IDs, persistence, wall clock, or network writes. */
 export interface DemoMatchState extends DemoEventSnapshot {
+  /** Revised future only; the original plan remains the comparison baseline. */
+  readonly futureSteps?: DeepReadonly<PortableSubstitutionPlan["steps"]>;
+  readonly replanRevision?: number;
+  readonly replannedAtSeconds?: number;
   readonly plan: DeepReadonly<PortableSubstitutionPlan>;
   readonly elapsedSeconds: number;
   readonly phase: DemoPhase;
@@ -54,6 +58,10 @@ export interface DemoMatchState extends DemoEventSnapshot {
   readonly events: readonly DemoEvent[];
   readonly plannedSnapshots: readonly DeepReadonly<PortablePlanSnapshot>[];
   readonly plannedSeconds: Readonly<Record<string, number>>;
+}
+
+export function getDemoSteps(state: DemoMatchState) {
+  return state.futureSteps ?? state.plan.steps;
 }
 
 export interface DemoPlayerComparison {
@@ -162,12 +170,13 @@ export function advanceDemoClockFollowingPlan(
   const targetSecond = Math.min(nextStop, state.elapsedSeconds + seconds);
   let match = state;
 
-  for (const step of state.plan.steps) {
+  for (const step of getDemoSteps(state)) {
     if (match.stepStatus[step.id] !== "pending") continue;
-    const scheduledSecond = step.matchMinute * 60;
+    const rawScheduledSecond = step.matchMinute * 60;
+    const scheduledSecond = Math.round(rawScheduledSecond);
     const executionSecond = Math.max(state.elapsedSeconds, scheduledSecond);
     if (executionSecond > targetSecond) break;
-    if (!Number.isSafeInteger(scheduledSecond)) {
+    if (!Number.isSafeInteger(scheduledSecond) || Math.abs(rawScheduledSecond - scheduledSecond) > 1e-6) {
       return {
         match: freeze({ ...match, phase: "paused" }),
         error: `Wisselmoment op minuut ${step.matchMinute} kan niet automatisch worden uitgevoerd: kies een tijdstip op een hele seconde.`,
@@ -199,7 +208,7 @@ function assertActive(state: DemoMatchState): void {
 }
 
 function pendingStep(state: DemoMatchState, stepId: string) {
-  const step = state.plan.steps.find((candidate) => candidate.id === stepId);
+  const step = getDemoSteps(state).find((candidate) => candidate.id === stepId);
   if (!step) throw new Error("Dit wisselmoment bestaat niet.");
   if (state.stepStatus[stepId] !== "pending") throw new Error("Dit wisselmoment is al uitgevoerd of overgeslagen.");
   return step;

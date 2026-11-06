@@ -8,6 +8,8 @@ import type { AssistantHistoryMatch, AssistantInput, AssistantPlayer, AssistantR
 import type { DemoPlan } from "@/lib/substitutions/demoPlan";
 import { HistoryEditor } from "./HistoryEditor";
 import { ProposalView } from "./ProposalView";
+import { CoachStartingField } from "./CoachStartingField";
+import { canonicalPosition } from "@/lib/coachAssistant/history";
 
 const inputClass = "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50";
 const buttonClass = "min-h-11 rounded-xl bg-dia-green px-5 py-3 text-sm font-semibold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-40";
@@ -15,6 +17,7 @@ const noHistory: AssistantHistoryMatch[] = [];
 const noWarnings: string[] = [];
 
 export interface AssistantPreparationSettings {
+  manualStart?: boolean;
   keeper: string;
   keepKeeper: boolean;
   secondKeeper: string;
@@ -40,6 +43,9 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
   const [date, setDate] = useState(initialSettings?.date ?? targetDate);
   const [interval, setInterval] = useState(initialSettings?.interval ?? 10);
   const [includeSubstitutions, setIncludeSubstitutions] = useState(initialSettings?.includeSubstitutions ?? true);
+  const [manualStart, setManualStart] = useState(initialSettings?.manualStart ?? false);
+  const [startingField, setStartingField] = useState(() => plan.startingLineup.field.filter((entry) =>
+    plan.formation.slots.some((slot) => slot.id === entry.slotId && canonicalPosition(slot.position) !== "GK")));
   const [history, setHistory] = useState<AssistantHistoryMatch[]>(initialSettings?.history ?? []);
   const [reviewedRevision, setReviewedRevision] = useState<string | null>(null);
   const [proposalConfirmed, setProposalConfirmed] = useState(false);
@@ -47,7 +53,9 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
   const canChangeKeeper = !connected || testOnly;
   const fixedKeeper = !includeSubstitutions || !canChangeKeeper || keepKeeper;
   const combinedHistory = [...automaticHistory.filter((automatic) => !history.some((manual) => manual.date === automatic.date && manual.opponent.trim().toLowerCase() === automatic.opponent.trim().toLowerCase())), ...history];
-  const input: AssistantInput = { teamKey, targetDate: date, plan, players, keeperKey: keeper, keepKeeper: fixedKeeper, secondKeeperKey: fixedKeeper ? undefined : secondKeeper, intervalMinutes: interval, includeSubstitutions, history: combinedHistory };
+  const keeperSlot = plan.formation.slots.find((slot) => canonicalPosition(slot.position) === "GK");
+  const input: AssistantInput = { teamKey, targetDate: date, plan, players, keeperKey: keeper, keepKeeper: fixedKeeper, secondKeeperKey: fixedKeeper ? undefined : secondKeeper, intervalMinutes: interval, includeSubstitutions, history: combinedHistory,
+    startingField: manualStart ? [...startingField, ...(keeperSlot && keeper ? [{ playerKey: keeper, slotId: keeperSlot.id }] : [])] : undefined };
   const revision = JSON.stringify(input);
   const selectionConfirmed = reviewedRevision === revision;
   const currentResult = result?.revision === revision ? result.value : null;
@@ -71,7 +79,7 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
   }
 
   return <section aria-label="Coachassistent" className="space-y-5">
-    <header className="rounded-2xl border border-green-200 bg-green-50 p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-wider text-dia-green">{connected ? "Coachassistent · gekozen wedstrijd" : "Coachassistent · lokale proef"}</p><h2 className="mt-2 text-2xl font-bold tracking-tight">Een voorstel dat je kunt uitleggen</h2><p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">Kies de beschikbare spelers, hun voorkeursplekken en de keeper. De assistent berekent een beginopstelling en eventueel een wisselplan. Je kunt het voorstel daarna op het veld afspelen.</p><p className="mt-2 text-xs leading-relaxed text-slate-500">{connected ? "Beschikbaarheid en positievoorkeuren zijn geladen uit de wedstrijdselectie. Eerdere beginopstellingen worden alleen gebruikt wanneer ze zijn bevestigd. Wijzigingen in voorkeuren gelden voor dit voorstel." : "Deze bron bevat geen geverifieerde eerdere beginopstellingen of spelervoorkeuren. Plekken uit het voorbeeld zijn alleen een startpunt bij gelijke keuzes. Historie wordt uitsluitend gebruikt na jouw controle."}</p></header>
+    <header className="rounded-2xl border border-green-200 bg-green-50 p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-wider text-dia-green">{connected ? "Coachassistent · gekozen wedstrijd" : "Coachassistent · lokale proef"}</p><h2 className="mt-2 text-2xl font-bold tracking-tight">Een voorstel dat je kunt uitleggen</h2><p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">Kies de beschikbare spelers, hun voorkeursplekken en de keeper. Kies zelf de beginopstelling of laat de assistent die voorstellen. De assistent berekent daarna de wissels met minuten voorop en posities licht meegewogen. Je kunt het voorstel daarna op het veld afspelen.</p><p className="mt-2 text-xs leading-relaxed text-slate-500">{connected ? "Beschikbaarheid en positievoorkeuren zijn geladen uit de wedstrijdselectie. Eerdere beginopstellingen worden alleen gebruikt wanneer ze zijn bevestigd. Wijzigingen in voorkeuren gelden voor dit voorstel." : "Deze bron bevat geen geverifieerde eerdere beginopstellingen of spelervoorkeuren. Plekken uit het voorbeeld zijn alleen een startpunt bij gelijke keuzes. Historie wordt uitsluitend gebruikt na jouw controle."}</p></header>
     {preferenceScope && <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Posities, afwezigheid en blessures worden voor dit team onthouden in deze browser. Zet een speler zelf weer op Beschikbaar wanneer die terug is. Controleer deze bewaarde keuzes vóór iedere wedstrijd.</p>}
     {storageError && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm">Je browser kon deze keuze niet bewaren. Houd dit scherm open; na sluiten moet je de keuze opnieuw invoeren.</p>}
     {disabled && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De oefenwedstrijd is al begonnen. Kies Opnieuw voordat je een nieuw plan voorbereidt.</p>}
@@ -102,6 +110,10 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
           </td>
         </tr>;
       })}</tbody></table></div>
+      <div className="space-y-3 border-t border-slate-200 pt-4">
+        <label className="grid gap-1.5 text-sm font-semibold">Beginopstelling bepalen<select className={inputClass} value={manualStart ? "coach" : "assistant"} onChange={(event) => { setManualStart(event.target.value === "coach"); changed(); }}><option value="assistant">Laat de assistent de beginopstelling kiezen</option><option value="coach">Ik kies zelf de beginopstelling</option></select></label>
+        {manualStart && <CoachStartingField onKeeperChange={(key) => { setKeeper(key); changed(); }} plan={plan} players={players} field={startingField} keeperKey={keeper} secondKeeperKey={fixedKeeper ? undefined : secondKeeper} onChange={(next) => { setStartingField(next); changed(); }} />}
+      </div>
     </fieldset>
     {connected && <section aria-label="Wedstrijdhistorie uit DIA Live" className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
       <h3 className="font-semibold">Wedstrijdhistorie uit DIA Live</h3>
@@ -111,7 +123,7 @@ export function CoachAssistantPanel({ plan, teamKey, targetDate, disabled, onApp
     <HistoryEditor players={plan.players} teamKey={teamKey} targetDate={date} history={history} automaticCount={connected ? automaticHistory.length : undefined} disabled={disabled || historyLoading} onChange={(matches) => { setHistory(matches); changed(); }} />
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6"><label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 size-5" type="checkbox" disabled={disabled} checked={selectionConfirmed} onChange={(event) => { setReviewedRevision(event.target.checked ? revision : null); setProposalConfirmed(false); if (!event.target.checked) setResult(null); }} /><span>Ik heb beschikbaarheid, keeper, datum en positievoorkeuren voor dit voorstel gecontroleerd. Open voorkeuren blijven herkenbaar als onbekend.</span></label><button type="button" className={`${buttonClass} mt-3`} disabled={disabled || historyLoading || !selectionConfirmed} onClick={generate}>Voorstel berekenen</button></div>
     {currentResult && !currentResult.ok && <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800"><ul className="list-disc space-y-2 pl-5">{currentResult.errors.map((error) => <li key={error}>{error}</li>)}</ul></div>}
-    {currentResult?.ok && <><ProposalView proposal={currentResult.proposal} /><div className="rounded-2xl border border-green-200 bg-green-50 p-4 sm:p-6"><label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 size-5" type="checkbox" disabled={disabled} checked={proposalConfirmed} onChange={(event) => setProposalConfirmed(event.target.checked)} /><span>Ik heb de voorgestelde posities, wissels en minutenverdeling beoordeeld.</span></label><button type="button" className={`${buttonClass} mt-3`} disabled={disabled || !proposalConfirmed} onClick={() => { if (currentResult.ok && proposalConfirmed && !disabled) onApply(currentResult.proposal.plan, players.map((player) => ({ ...player })), { keeper, keepKeeper, secondKeeper, date, interval, includeSubstitutions, history }); }}>{preparationFlow ? "Verder naar wisselplan" : connected ? "Voorstel klaarzetten" : "Gebruik voorstel in oefenwedstrijd"}</button><p className="mt-3 text-xs text-slate-500">{preparationFlow ? "Je gaat met dit concept naar stap 2: Wisselplan. Controleer het plan en ga daarna op deze pagina oefenen met de klok." : connected && !testOnly ? "Het voorstel wordt eerst een concept. Controleer het bij Bron controleren en sla het daarna op in de gekozen wedstrijd." : "Het voorstel vervangt het lokale conceptplan. Daarna controleer en start je de oefenwedstrijd via Bron controleren. Er wordt niets naar DIA Live geschreven; herladen wist deze proef."}</p></div></>}
+    {currentResult?.ok && <><ProposalView proposal={currentResult.proposal} /><div className="rounded-2xl border border-green-200 bg-green-50 p-4 sm:p-6"><label className="flex min-h-11 items-start gap-3 text-sm"><input className="mt-1 size-5" type="checkbox" disabled={disabled} checked={proposalConfirmed} onChange={(event) => setProposalConfirmed(event.target.checked)} /><span>Ik heb de voorgestelde posities, wissels en minutenverdeling beoordeeld.</span></label><button type="button" className={`${buttonClass} mt-3`} disabled={disabled || !proposalConfirmed} onClick={() => { if (currentResult.ok && proposalConfirmed && !disabled) onApply(currentResult.proposal.plan, players.map((player) => ({ ...player })), { keeper, keepKeeper, secondKeeper, date, interval, includeSubstitutions, history, manualStart }); }}>{preparationFlow ? "Verder naar wisselplan" : connected ? "Voorstel klaarzetten" : "Gebruik voorstel in oefenwedstrijd"}</button><p className="mt-3 text-xs text-slate-500">{preparationFlow ? "Je gaat met dit concept naar stap 2: Wisselplan. Controleer het plan en ga daarna op deze pagina oefenen met de klok." : connected && !testOnly ? "Het voorstel wordt eerst een concept. Controleer het bij Bron controleren en sla het daarna op in de gekozen wedstrijd." : "Het voorstel vervangt het lokale conceptplan. Daarna controleer en start je de oefenwedstrijd via Bron controleren. Er wordt niets naar DIA Live geschreven; herladen wist deze proef."}</p></div></>}
     {result && result.revision !== revision && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm">Het bronplan is gewijzigd. Controleer de selectie en bereken het voorstel opnieuw.</p>}
   </section>;
 }

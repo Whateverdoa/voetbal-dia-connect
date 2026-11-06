@@ -9,6 +9,8 @@ import { StartingLineupEditor } from "./StartingLineupEditor";
 import { RecentPlayingMinutes } from "./RecentPlayingMinutes";
 import { MatchPreparationSteps } from "@/components/coach-assistant/MatchPreparationSteps";
 import { CoachAssistantPanel, type AssistantPreparationSettings } from "@/components/coach-assistant/CoachAssistantPanel";
+import { RemainingPlanPanel } from "@/components/coach-assistant/RemainingPlanPanel";
+import { applyRemainingProposal, type RemainingProposal } from "@/lib/coachAssistant/replanFromCurrent";
 import type { AssistantPlayer, AssistantHistoryMatch } from "@/lib/coachAssistant/types";
 import { FORMATIONS } from "@/lib/formations";
 import { SubstitutionPrint, SubstitutionPrintButton, type SubstitutionPrintMode } from "./SubstitutionPrint";
@@ -18,7 +20,7 @@ import { assignDemoStartingPlayer, createManualDemoPlan, swapDemoStartingPositio
 import {
   advanceDemoClock, advanceDemoClockFollowingPlan, createDemoMatch, executeDemoStep, executeDemoAction, getDemoComparison,
   pauseDemoClock, skipDemoStep, startDemoClock, substituteDemoPlayer, swapDemoPlayerPositions, changeDemoFormation,
-  type DemoFormationState, type DemoMatchState,
+  getDemoSteps, type DemoFormationState, type DemoMatchState,
 } from "@/lib/substitutions/demoMatch";
 import { validatePortableSubstitutionPlan } from "@/lib/substitutions/validatePortableSubstitutionPlan";
 
@@ -50,6 +52,8 @@ const PHOTO_SOURCE: DemoSource = {
 type Tab = "field" | "review" | "comparison" | "assistant";
 type Session = { match: DemoMatchState; approved: boolean; automatic: boolean; error: string | null };
 type Command =
+  | { type: "pause" }
+  | { type: "replan"; proposal: RemainingProposal }
   | { type: "approve"; plan: DemoPlan }
   | { type: "reset"; plan: DemoPlan }
   | { type: "automatic"; enabled: boolean }
@@ -111,6 +115,8 @@ function reducer(session: Session, command: Command): Session {
     const match = session.match;
     let next = match;
     switch (command.type) {
+      case "pause": next = pauseDemoClock(match); break;
+      case "replan": next = applyRemainingProposal(match, command.proposal); break;
       case "clock": next = match.phase === "running" ? pauseDemoClock(match) : startDemoClock(match); break;
       case "tick": return match.phase === "running" ? advanceSession(session, command.seconds) : session;
       case "minuteStep": {
@@ -121,7 +127,7 @@ function reducer(session: Session, command: Command): Session {
       case "executeOne": next = executeDemoAction(match, command.stepId, command.actionId); break;
       case "skip": next = skipDemoStep(match, command.id); break;
       case "manual": {
-        const pendingStep = match.plan.steps.find((step) => match.stepStatus[step.id] === "pending");
+        const pendingStep = getDemoSteps(match).find((step) => match.stepStatus[step.id] === "pending");
         const plannedAction = pendingStep?.actions.find((action) => action.kind === "substitution" &&
           action.playerOutKey === command.out && action.playerInKey === command.incoming &&
           !(match.completedActionIds ?? []).includes(action.id));
@@ -131,7 +137,7 @@ function reducer(session: Session, command: Command): Session {
         break;
       }
       case "positions": {
-        const pendingStep = match.plan.steps.find((step) => match.stepStatus[step.id] === "pending");
+        const pendingStep = getDemoSteps(match).find((step) => match.stepStatus[step.id] === "pending");
         const plannedAction = pendingStep?.actions.find((action) => action.kind === "positionSwap" &&
           ((action.playerOutKey === command.a && action.playerInKey === command.b) ||
             (action.playerOutKey === command.b && action.playerInKey === command.a)) &&
@@ -143,8 +149,8 @@ function reducer(session: Session, command: Command): Session {
       }
       case "formation": next = changeDemoFormation(match, command.formation); break;
       case "jump": {
-        const pending = match.plan.steps.find((step) => match.stepStatus[step.id] === "pending" && step.matchMinute * 60 > match.elapsedSeconds);
-        const target = pending ? pending.matchMinute * 60 : match.plan.match.regulationDurationMinutes * 60;
+        const pending = getDemoSteps(match).find((step) => match.stepStatus[step.id] === "pending" && step.matchMinute * 60 > match.elapsedSeconds);
+        const target = pending ? Math.round(pending.matchMinute * 60) : match.plan.match.regulationDurationMinutes * 60;
         return advanceSession(session, Math.max(0, target - match.elapsedSeconds), true, true);
       }
       case "late": {
@@ -188,6 +194,8 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
   const [saveRequest, setSaveRequest] = useState<{ revision: string; id: string } | null>(null);
   const [saveOutcome, setSaveOutcome] = useState<{ revision: string; error: string | null } | null>(null);
   const [assistantResetKey, setAssistantResetKey] = useState(0);
+  const [assistantSettings, setAssistantSettings] = useState(source.preparationSettings);
+  const [assistantPlayers, setAssistantPlayers] = useState(source.initialPlayers);
   const WorkspaceSurface = connection ? "section" : "main";
   const [printMode, setPrintMode] = useState<SubstitutionPrintMode>("plan");
   const [speed, setSpeed] = useState(60);
@@ -218,7 +226,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
   const previewFormation = !beforeKickoff && match.phase !== "finished" && pendingFormationId ? resolveFormation(pendingFormationId) : null;
   const activeFormation = beforeKickoff ? draft.formation : match.formation ?? draft.formation;
   const displayedFormation = previewFormation ?? activeFormation;
-  const displayedPlan = session.approved ? match.plan : draft;
+  const displayedPlan = useMemo(() => session.approved ? { ...match.plan, steps: getDemoSteps(match) } : draft, [session.approved, match, draft]);
   const field = session.approved ? match.field : draft.startingLineup.field;
   const bench = session.approved ? match.bench : draft.startingLineup.bench;
   const unavailablePlayers = displayedPlan.players.filter((player) => player.absent);
@@ -241,7 +249,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
   const pendingActions = pending?.actions.filter((action) => !(match.completedActionIds ?? []).includes(action.id)) ?? [];
   const plannedBench = pendingActions.filter((action) => action.kind === "substitution");
   const draftLabel = (key: string) => { const p = draft.players.find((player) => player.key === key); return p ? `${p.name} ${p.number ?? "?"}` : key; };
-  const firstPlannedMinute = displayedPlan.steps[0]?.matchMinute ?? source.initialPlan.steps[0]?.matchMinute;
+  const firstPlannedMinute = (session.approved ? match.plan : draft).steps[0]?.matchMinute ?? source.initialPlan.steps[0]?.matchMinute;
   const lateTestMinute = firstPlannedMinute === undefined ? null : firstPlannedMinute + 2;
   const capturedLabel = source.capturedAt ? new Date(source.capturedAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : null;
   const printSourceLabel = source.kind === "app" ? `Lokale kopie uit de app${capturedLabel ? ` · opgehaald ${capturedLabel}` : ""}` : undefined;
@@ -328,8 +336,10 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
     }
   }
 
-  function applyAssistantPlan(plan: DemoPlan) {
+  function applyAssistantPlan(plan: DemoPlan, players?: AssistantPlayer[], settings?: AssistantPreparationSettings) {
     if (!beforeKickoff) return;
+    if (settings) setAssistantSettings(settings);
+    if (players) setAssistantPlayers(players);
     updateStartingPlan(plan);
     setPlanSource("manual");
     setTab("review");
@@ -475,7 +485,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
         {connection && beforeKickoff && formationSelector}
         {connection && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">Selectie en voorkeuren blijven hier bewaard. Na het berekenen ga je met hetzelfde voorstel door naar Wisselplan en Oefenen.</p>}
         {connection && !beforeKickoff && <button type="button" className={`${secondary} mb-4`} onClick={resetPractice}>Oefening stoppen en voorbereiding aanpassen</button>}
-        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={source.initialPlayers} initialSettings={source.preparationSettings} preferenceScope={source.preferenceScope} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
+        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={assistantPlayers} initialSettings={assistantSettings} preferenceScope={source.preferenceScope} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
       </div>}
 
       {tab === "field" && <>
@@ -543,6 +553,8 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
           </aside>
         </div>
 
+        {operational && <RemainingPlanPanel match={match} initialPlayers={assistantPlayers} preferenceScope={source.preferenceScope} history={[...(source.assistantHistory ?? []), ...(assistantSettings?.history ?? [])]} teamKey={source.teamKey ?? source.teamName} targetDate={assistantSettings?.date ?? source.targetDate ?? ""} intervalMinutes={assistantSettings?.interval ?? 10} disabled={Boolean(previewFormation) || Boolean(source.historyLoading)} onPause={() => dispatch({ type: "pause" })} onApply={(proposal) => { dispatch({ type: "replan", proposal }); clearSelection(); }} />}
+
         <section className="mt-7 flex flex-wrap items-center justify-between gap-4 border-y border-slate-200 py-5" aria-label="Demonstratiescenario">
           <div><h2 className="text-sm font-bold">Probeer een afwijking</h2><p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">{lateTestMinute === null || displayedPlan.steps.length === 0 ? "Voer tijdens de oefenwedstrijd zelf wissels uit en bekijk daarna het verschil met de beginopstelling." : `De ${minutes(lateTestMinute)}′-test begint opnieuw: de eerste wissel 2 minuten te laat. Bekijk daarna het verschil per speler.`}</p></div>
           <div className="flex flex-wrap gap-2"><button className={secondary} disabled={!session.approved || match.plan.steps.length === 0 || lateTestMinute === null || lateTestMinute >= match.plan.match.regulationDurationMinutes} onClick={() => { dispatch({ type: "late" }); clearSelection(); setPendingFormationId(null); }}><Clock3 size={16} />Test: {lateTestMinute === null ? "geen geplande wissel" : `wissel op ${minutes(lateTestMinute)}′`}</button><button className={secondary} disabled={!session.approved || match.phase === "finished" || Boolean(previewFormation)} onClick={() => { dispatch({ type: "finish" }); setTab("comparison"); }}><Flag size={16} />Speel resterend plan uit</button><button className={secondary} onClick={() => setTab("comparison")}>Bekijk vergelijking<ChevronRight size={16} /></button></div>
@@ -551,6 +563,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab
       </>}
 
       {tab === "review" && <section>
+        {match.replannedAtSeconds !== undefined && <p className="mb-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Dit is het oorspronkelijke beginplan. Het nieuwe vervolgplan vanaf minuut {minutes(match.replannedAtSeconds / 60)} is actief bij Oefenen. De uitgevoerde wissels en minuten blijven bewaard.</p>}
         <div className="mb-5 flex items-start gap-3"><ShieldCheck size={24} className="mt-1 text-dia-green" /><div><h2 className="text-xl font-bold">{connection ? "Controleer je wisselplan" : "Controleer de overname"}</h2><p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{connection ? "Controleer de beginopstelling, alle wisselmomenten en de speelminuten. Na bevestiging oefen je hier met hetzelfde plan." : planSource === "photo" ? "Dit voorbeeld is handmatig uit jouw foto overgenomen. De rugnummers komen uit de JO13-2-teamlijst van 27 september. Automatische fotoherkenning is nog niet aangesloten." : planSource === "app" ? "Dit is een alleen-lezen momentopname uit de wedstrijdapp. Controleer namen, rugnummers, aanwezigheid, beginopstelling en alle geplande wissels. Je bevestiging en aanpassingen worden alleen in deze module gebruikt." : "Dit plan begint met jouw handmatige opstelling. Controleer de namen, nummers, posities en bank. De historische minuten zijn alleen een hulpmiddel bij je keuze."}</p></div></div>
         {testOnly && <p className="mb-4 text-sm text-slate-600">Ontbrekende rugnummers kun je hieronder aanvullen. Deze correcties blijven alleen in je lokale oefenplan.</p>}
         {session.approved && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">{connection ? "Dit wisselplan is bevestigd. Ga naar Oefenen om het op het veld uit te proberen. Opnieuw begint een nieuwe oefening met dit concept." : "Het voorbeeld is bevestigd. Kies ‘Opnieuw’ om een nieuwe overname te controleren."}</p>}

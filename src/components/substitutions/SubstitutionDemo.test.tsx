@@ -40,6 +40,30 @@ function eventRows() {
 }
 
 describe("interactive substitution demo", () => {
+  it("reviews a replacement future after a manual change without resetting clock or events", async () => {
+    vi.spyOn(performance, "now").mockReturnValue(0);
+    const user = userEvent.setup();
+    render(<SubstitutionDemo />);
+    await approveExample(user);
+    await user.click(screen.getByRole("button", { name: "+1 minuut" }));
+    await user.click(screen.getByRole("button", { name: "Revi 5 op RW" }));
+    await user.click(screen.getByRole("button", { name: "Macéo 16" }));
+    const events = eventRows().map((row) => row.textContent);
+    await user.click(screen.getByRole("button", { name: "Bereken vanaf nu opnieuw" }));
+    expect(screen.getByRole("heading", { name: "Voorstel vanaf minuut 1" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "+1 minuut" }));
+    expect(screen.getByRole("button", { name: "Gebruik dit vervolgplan" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Bereken vanaf nu opnieuw" }));
+    await user.click(screen.getByRole("button", { name: "Gebruik dit vervolgplan" }));
+    expect(screen.getByTestId("demo-clock")).toHaveTextContent("02:00");
+    expect(eventRows().map((row) => row.textContent)).toEqual(events);
+    expect(screen.getByText(/Vervolgplan actief vanaf minuut 2/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Speel resterend plan uit" }));
+    await user.click(screen.getByRole("button", { name: "Veld & wissels" }));
+    expect(screen.getByTestId("demo-clock")).toHaveTextContent("60:00");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("advances approved play by exact paused minutes, supports slower demo speeds and respects halftime and full time", async () => {
     vi.spyOn(performance, "now").mockReturnValue(0);
     const user = userEvent.setup();

@@ -13,6 +13,7 @@ export function liveRevision(source: WorkspaceSource): string {
 
 export function liveProposal(source: WorkspaceSource, intervalMinutes: number, calculatedAt: number) {
   const { match } = source;
+  if ("refereePolicy" in match && match.refereePolicy) throw new Error("Deze wedstrijd gebruikt de afzonderlijke scheidsrechterklok. Pas het wisselplan hier handmatig aan.");
   if (match.cancelledAt || !["live", "halftime"].includes(match.status)) {
     throw new Error("Bereken vanaf nu is beschikbaar tijdens de wedstrijd en in de rust.");
   }

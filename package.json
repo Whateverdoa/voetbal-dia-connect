@@ -17,8 +17,7 @@
     "check:clerk-jwt": "node scripts/check-clerk-convex-jwt.mjs",
     "fix:clerk-jwt": "node scripts/ensure-clerk-convex-jwt.mjs",
     "results:update": "npx convex run import/weeklyUpdate:runNow",
-    "predev": "convex dev --until-success",
-    "postinstall": "npx convex codegen || true"
+    "predev": "convex dev --until-success"
   },
   "dependencies": {
     "@clerk/nextjs": "7.2.4",
@@ -39,6 +38,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.3",
     "convex-test": "^0.0.61",
+    "esbuild": "0.27.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "jsdom": "^28.0.0",

@@ -26,6 +26,30 @@ slagen. Gerichte regressies dekken preview/bevestiging, rollen, verlopen/gewijzi
 voorstellen, idempotentie, behoud van bestaande wedstrijddata en rusttijd.
 Bestaande ESLint-waarschuwingen in SubstitutionPlanPanel blijven ongewijzigd.
 
+### Productiebron verschilt van main — gerichte assistentuitrol
+
+De eerste volledige release van PR77 werd veilig geweigerd: productie heeft
+`matchPlayers.dismissed` en een onafhankelijk uitgerolde, afgeschermde
+scheidsrechter/iPhone-koppeling (287 modules, 25 tabellen). Niet verwijderen of
+overschrijven met de oudere main-backend. Een alleen-lezen bron- en schemacontrole
+bevestigde dit; er zijn geen wedstrijdrecords aangepast.
+
+Voor deze release: `node scripts/build.mjs --assistant-only` in Vercel Production.
+Dit bouwt de frontend, bundelt alleen `coachAssistant.js` en voegt die toe aan de
+actuele production source. Alle andere modules, auth, crons, Node-runtime en het
+exact actieve schema worden gecontroleerd en behouden; concurrerende source- of
+schemaveranderingen blokkeren de uitrol. Het is een expliciete deployment-override,
+geen algemene vervanging voor de standaard build. Een volgende volledige
+backendrelease vereist eerst reconciliatie met de daadwerkelijk actieve source.
+Gebruik geen standaard volledige Convex-deploy als workaround.
+
+Automatische postinstall-codegen is verwijderd: die kan ook bij een preview een
+productieschema voorbereiden. Er zijn zeven release-regressietests via
+`node --test scripts/coach-assistant-release.test.mjs`. De live assistent sluit
+weggestuurde spelers uit en weigert herberekening op wedstrijden met de afzonderlijke
+refereePolicy-klok; het bestaande handmatige planscherm blijft daar beschikbaar.
+24 gerichte backend/UI-tests en TypeScript slagen na deze compatibiliteitsaanpassing.
+
 ## Webtestbaseline voor native integratie (15 oktober 2026)
 
 Afzonderlijke herstelbranch vanaf productiecommit `745598b`. De 21 bestaande

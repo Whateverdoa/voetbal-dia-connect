@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { buildEventGameTimeStamp, getEffectiveEventTime } from "./lib/matchEventGameTime";
@@ -99,7 +100,7 @@ export const confirmSubstitution = mutation({
     stagedEventId: v.id("matchEvents"),
     correlationId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Wissel bevestigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match || !(await verifyCoachTeamMembership(ctx, match))) {
       throw new Error("Geen toegang tot deze wedstrijd");
@@ -224,7 +225,7 @@ export const confirmSubstitution = mutation({
     });
 
     return { deduped: false };
-  },
+  }),
 });
 
 export const cancelStagedSubstitution = mutation({

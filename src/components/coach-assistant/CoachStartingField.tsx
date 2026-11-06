@@ -19,6 +19,7 @@ export function CoachStartingField({ plan, players, field, keeperKey, secondKeep
   onKeeperChange: (key: string) => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const cfg = FIELDS[plan.formation.slots.length <= 8 ? "8tal" : "11tal"];
   const eligible = players.filter((player) => player.availability === "present" && player.key !== keeperKey && player.key !== secondKeeperKey);
   const label = (key: string) => {
@@ -57,6 +58,11 @@ export function CoachStartingField({ plan, players, field, keeperKey, secondKeep
   if (secondKeeperKey) bank.push(label(secondKeeperKey));
   return <section aria-label="Eigen beginopstelling" className="space-y-3 rounded-xl bg-green-50 p-4">
     <h3 className="font-semibold">Zet je beginopstelling neer</h3>
+    <button type="button" className="min-h-11 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-800 disabled:opacity-40" disabled={!field.length && !keeperKey} onClick={() => setConfirmReset(true)}>Beginopstelling leegmaken</button>
+    {confirmReset && <div role="alertdialog" aria-label="Beginopstelling leegmaken bevestigen" className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
+      <p>Wil je deze beginopstelling echt leegmaken? Alle spelers, inclusief de keeper, gaan naar de bank in dit concept. Het opgeslagen wedstrijdplan, beschikbaarheid, posities en gespeelde minuten blijven behouden.</p>
+      <div className="flex flex-wrap gap-2"><button type="button" className="min-h-11 rounded-lg border bg-white px-4" onClick={() => setConfirmReset(false)}>Annuleren</button><button type="button" className="min-h-11 rounded-lg bg-red-700 px-4 font-semibold text-white" onClick={() => { onChange([]); onKeeperChange(""); setSelected(null); setConfirmReset(false); }}>Ja, beginopstelling leegmaken</button></div>
+    </div>}
     <p className="text-sm">Tik op een bankspeler en daarna op een veldplek. Tik op twee veldspelers om hun posities te ruilen. De assistent houdt deze beginopstelling aan en berekent daarna de wissels.</p>
     <p role="status" className="text-sm font-semibold">{selected ? `${label(selected)} geselecteerd — kies een plek of een bankspeler.` : "Kies een speler op het veld of de bank."}</p>
     <div className="mx-auto w-full max-w-lg">

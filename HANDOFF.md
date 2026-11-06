@@ -1,5 +1,67 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Beginopstelling rechtstreeks aanpassen en resetten (6 november 2026)
+
+Het planscherm heeft voor de aftrap twee standen: Beginopstelling aanpassen en
+Wisselplan maken. De eerste gebruikt het bestaande PitchView met echte
+opstellingsmutations en keeperkeuze; de tweede plant toekomstige wissels.
+ResetStartingLineup staat zowel hier als bij Opstelling in de coachwedstrijd.
+Reset vereist een extra bevestiging en leegt alleen veld/keeper/veldplekken.
+Formatie, beschikbaarheid, positievoorkeuren, minuten en wisselplan blijven staan.
+Het bestaande plan moet na opnieuw opstellen worden gecontroleerd.
+De server weigert resets na aftrap, bij opgeslagen speeltijd, zonder bevestiging
+of nadat een andere coach de getoonde opstelling heeft veranderd. Reset en audit
+committeren atomair. CoachStartingField heeft daarnaast dezelfde bevestigingsstap
+voor het lokale voorbereidingsconcept.
+
+Eenmalig herstel Dongen: de coach gebruikte H1 minuut 1 als noodoplossing om de
+beginopstelling in te voeren. Op expliciet gebruikersverzoek is op 6 november
+19:42 het gecontroleerde plan in de echte wedstrijd opgeslagen: drie H1-acties
+naar de beginopstelling, Jody/Krijn op 31, Max/Miloud op 40 na Max' invalbeurt.
+Het hele plan is lokaal uitgespeeld zonder afwijkingen; geen oefenminuten naar
+de echte wedstrijd geschreven. Audit toont Mike als bewerker. De tijdelijke
+minuut-1-importfunctie is op gebruikersverzoek uit de normale app verwijderd.
+
+Na de eerste audituitrol gebruikt deze vervolgwijziging `--assistant-only`:
+de audit-tabel/query en omwikkelde coachmutations staan al op productie. De eerste
+auditbuilds hadden een onterechte eindcontrolefout na succesvolle backendpush
+(modulevolgorde en toegevoegde `sourceMap: null` in de API-response). De gerichte
+readback bevestigde de nieuwe tabel/query en behoud van bestaande modules;
+de eindcontrole vergelijkt nu per modulepad en de nieuwe module bevat sourceMap.
+Verificatie vervolg: 41 gerichte tests, TypeScript, ESLint en 13 releasetests.
+
+## Maker en wijzigingen van opstelling/wisselplan (6 november 2026)
+
+`MatchPlanAttribution` toont per wedstrijd de maker en laatste bewerker van de
+opstelling en het wisselplan, met datum/tijd en de laatste twintig wijzigingen.
+Dit staat op de wedstrijdpagina, in het planscherm en bij voorbereiden/oefenen.
+De naam komt van de ingelogde gebruiker, nooit van de toegewezen wedstrijdcoach.
+Eerdere makers zijn onbekend; er wordt geen maker achteraf ingevuld.
+
+`matchPlanAudit` is een aparte tabel met geindexeerde, afgeschermde coachqueries.
+De audit-wrapper vergelijkt de relevante veld- en planinhoud voor/na bestaande
+mutations en schrijft in dezelfde transactie. Fouten en no-ops worden niet gelogd.
+Ook de coachassistent, legacy coach-facades en uitgevoerde wissels zijn aangesloten.
+Lokale oefenacties schrijven niets. Beschikbaarheid invullen voordat een eerste
+opstelling bestaat verhindert niet dat de latere maker wordt geregistreerd.
+Dit registreert handelingen via de coachapp, geen externe database-onderhoudsacties.
+Er is geen backfill en er worden bij de uitrol geen wedstrijdrecords gewijzigd.
+
+**Uitrol: `node scripts/build.mjs --plan-audit` in Vercel Production.** Deze
+override bouwt eerst de frontend, omwikkelt alleen geselecteerde handlers in de
+actuele productiebron en voegt alleen de nieuwe tabel en query toe. De bestaande
+handlerlogica, exports, andere modules en bestaande tabellen worden gecontroleerd
+en behouden. De oudere checkout-backend mag nog steeds niet volledig uitgerold
+worden. Gebruik voor deze eerste audituitrol niet de oudere `--assistant-only`.
+`releasePlanAudit({checkOnly:true,...})` controleert de samenstelling zonder writes.
+De marker `DIA_PLAN_AUDIT_V1` voorkomt dubbel omwikkelen; toekomstige wijzigingen
+aan de wrapper vereisen een expliciete migratie van de actieve bundles/marker.
+De tests in `scripts/match-plan-audit-release.test.mjs` bewaken de instrumentatie.
+Backendtests controleren auteurschap, beschikbaarheid voor creatie, onbekende
+historische makers, toegang, no-ops en behoud van historie na verwijderen.
+Verificatie: 1094 tests in 136 bestanden, 6 release-regressietests, TypeScript,
+gerichte ESLint en een alleen-lezen preflight tegen de actieve productiebron.
+
 ## Bestaand wisselplan bekijken en oefenen (6 november 2026)
 
 Een opgeslagen plan met wisselregels opent direct op Wisselplan, zonder de

@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 /**
  * Match lineup substitution mutations.
  */
@@ -18,7 +19,7 @@ export const substituteFromField = mutation({
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Wissel uitgevoerd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -40,5 +41,5 @@ export const substituteFromField = mutation({
       correlationId: args.correlationId,
       commandType: "SUBSTITUTE_FROM_FIELD",
     });
-  },
+  }),
 });

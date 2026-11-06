@@ -29,7 +29,12 @@ try {
   process.exit(1);
 }
 
-if (process.argv.includes("--assistant-only")) {
+if (process.argv.includes("--plan-audit")) {
+  if (!deployKey || !isProduction) throw new Error("Plan audit release requires the production deployment environment.");
+  execSync("npx next build", { stdio: "inherit" });
+  const { releasePlanAudit } = await import("./match-plan-audit-release.mjs");
+  await releasePlanAudit({ adminKey: deployKey, deploymentUrl: process.env.NEXT_PUBLIC_CONVEX_URL });
+} else if (process.argv.includes("--assistant-only")) {
   if (!deployKey || !isProduction) throw new Error("Assistant-only release requires the production deployment environment.");
   execSync("npx next build", { stdio: "inherit" });
   const { releaseCoachAssistant } = await import("./coach-assistant-release.mjs");

@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { useMutation } from "convex/react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getFormation } from "@/lib/formations";
@@ -82,5 +82,12 @@ describe("SubstitutionPlannerStudio", () => {
     );
     const box = container.querySelector<HTMLElement>("[style*='aspect-ratio']");
     expect(box?.style.aspectRatio).toBe("640 / 425");
+    fireEvent.click(screen.getByRole("button", { name: "Beginopstelling aanpassen" }));
+    expect(screen.getByRole("button", { name: "Beginopstelling aanpassen" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Je past nu de echte beginopstelling aan/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Beginopstelling leegmaken" })).toBeEnabled();
+    expect(screen.getByRole("combobox", { name: "Keeper beginopstelling" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Wisselplan maken" }));
+    expect(screen.queryByRole("button", { name: "Beginopstelling leegmaken" })).not.toBeInTheDocument();
   });
 });

@@ -1,3 +1,5 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
+import { startingLineupRevision } from "../src/lib/startingLineupRevision";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
@@ -7,6 +9,24 @@ import { assistantPlanValidator } from "./lib/coachAssistantValidators";
 import { workspacePlan, workspaceRevision, validateWorkspaceSave, type WorkspaceSource } from "./lib/coachAssistantWorkspace";
 import { liveProposal, validateLivePreview } from "./lib/coachAssistantLive";
 import { verifyIsMatchLead } from "./pinHelpers";
+
+export const resetStartingLineup = mutation({
+  args: { matchId: v.id("matches"), expectedRevision: v.string(), confirmed: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Beginopstelling leeggemaakt", async () => {
+    if (!args.confirmed) throw new Error("Bevestig eerst dat je de beginopstelling wilt leegmaken.");
+    const match = await ctx.db.get(args.matchId);
+    if (!match || !["scheduled", "lineup"].includes(match.status) || match.startedAt || match.cancelledAt) throw new Error("De beginopstelling kan alleen vóór de aftrap worden leeggemaakt.");
+    const players = await ctx.db.query("matchPlayers").withIndex("by_match", (q) => q.eq("matchId", args.matchId)).take(101);
+    if (players.length > 100) throw new Error("Deze selectie is te groot om veilig te resetten.");
+    if (players.some((player) => (player.minutesPlayed ?? 0) > 0 || player.lastSubbedInAt)) throw new Error("Deze wedstrijd bevat al speeltijd. De beginopstelling kan niet worden gereset.");
+    if (startingLineupRevision(players) !== args.expectedRevision) throw new Error("Een andere coach heeft de opstelling gewijzigd. Controleer de nieuwe opstelling en bevestig opnieuw.");
+    for (const player of players) {
+      if (player.onField || player.isKeeper || player.fieldSlotIndex !== undefined) await ctx.db.patch(player._id, { onField: false, isKeeper: false, fieldSlotIndex: undefined });
+    }
+    return null;
+  }),
+});
 
 async function readSource(ctx: QueryCtx | MutationCtx, match: Doc<"matches">): Promise<WorkspaceSource> {
   const { coach } = await requireCoachAccess(ctx);
@@ -69,7 +89,7 @@ export const previewRemaining = query({
 export const saveRemaining = mutation({
   args: { matchId: v.id("matches"), expectedRevision: v.string(), calculatedAt: v.number(), intervalMinutes: v.number(), reviewed: v.boolean(), requestId: v.string() },
   returns: v.object({ savedItems: v.number(), alreadySaved: v.boolean() }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "plan", "Wisselplan vanaf nu herberekend", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden.");
     const source = await readSource(ctx, match);
@@ -102,14 +122,14 @@ export const saveRemaining = mutation({
     }
     await ctx.db.insert("matchCommandDedupes", { matchId: match._id, commandType, correlationId: args.requestId, createdAt: now });
     return { savedItems: itemCount, alreadySaved: false };
-  },
+  }, true),
 });
 
 /** One transaction: either the complete reviewed plan is saved or nothing changes. */
 export const save = mutation({
   args: { matchId: v.id("matches"), expectedRevision: v.string(), reviewed: v.boolean(), requestId: v.string(), plan: assistantPlanValidator },
   returns: v.object({ savedItems: v.number(), alreadySaved: v.boolean(), revision: v.optional(v.string()) }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Voorbereid plan opgeslagen", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) throw new Error("Wedstrijd niet gevonden.");
     const source = await readSource(ctx, match);
@@ -147,5 +167,5 @@ export const save = mutation({
     if (!savedMatch) throw new Error("Wedstrijd niet gevonden.");
     const revision = workspaceRevision(await readSource(ctx, savedMatch));
     return { savedItems: sequence, alreadySaved: false, revision };
-  },
+  }, true),
 });

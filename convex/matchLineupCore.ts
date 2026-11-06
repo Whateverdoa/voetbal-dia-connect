@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 /**
  * Match lineup core mutations - field, keeper and formation controls
  */
@@ -17,7 +18,7 @@ export const togglePlayerOnField = mutation({
     matchId: v.id("matches"),
     playerId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Veldbezetting gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -65,7 +66,7 @@ export const togglePlayerOnField = mutation({
       return;
     }
     await ctx.db.patch(mp._id, { onField: true });
-  },
+  }),
 });
 
 // Toggle keeper status
@@ -74,7 +75,7 @@ export const toggleKeeper = mutation({
     matchId: v.id("matches"),
     playerId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Keeper gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -113,7 +114,7 @@ export const toggleKeeper = mutation({
     }
 
     await ctx.db.patch(mp._id, { isKeeper: !mp.isKeeper });
-  },
+  }),
 });
 
 // Assign player to a field slot (field view). Clears slot from previous occupant.
@@ -123,7 +124,7 @@ export const assignPlayerToSlot = mutation({
     playerId: v.id("players"),
     fieldSlotIndex: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Speler op veld geplaatst", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -167,7 +168,7 @@ export const assignPlayerToSlot = mutation({
       await startPlayingTime(ctx, mp._id, now);
     }
     await ctx.db.patch(mp._id, updates);
-  },
+  }),
 });
 
 // Swap field positions of two on-field players (exchange their fieldSlotIndex)
@@ -177,7 +178,7 @@ export const swapFieldPositions = mutation({
     playerAId: v.id("players"),
     playerBId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Posities geruild", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -212,7 +213,7 @@ export const swapFieldPositions = mutation({
     const slotB = mpB.fieldSlotIndex;
     await ctx.db.patch(mpA._id, { fieldSlotIndex: slotB });
     await ctx.db.patch(mpB._id, { fieldSlotIndex: slotA });
-  },
+  }),
 });
 
 // Set match formation preset and/or custom team template (field view)
@@ -224,7 +225,7 @@ export const setMatchFormation = mutation({
     customFormationTemplateId: v.optional(v.id("formationTemplates")),
     pitchType: v.optional(v.union(v.literal("full"), v.literal("half"))),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "lineup", "Formatie gewijzigd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -271,5 +272,5 @@ export const setMatchFormation = mutation({
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(args.matchId, patch);
     }
-  },
+  }),
 });

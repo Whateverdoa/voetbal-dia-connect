@@ -1,3 +1,4 @@
+import { auditPlanChange } from "./lib/matchPlanAudit";
 /**
  * Match event mutations - goals, cards, substitutions
  */
@@ -100,7 +101,7 @@ export const substitute = mutation({
     playerOutId: v.id("players"),
     playerInId: v.id("players"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => auditPlanChange(ctx, args, "both", "Wissel uitgevoerd", async () => {
     const match = await ctx.db.get(args.matchId);
     if (!match) {
       throw new Error("Wedstrijd niet gevonden");
@@ -116,7 +117,7 @@ export const substitute = mutation({
       correlationId: args.correlationId,
       commandType: "SUBSTITUTE",
     });
-  },
+  }),
 });
 
 // Remove the most recent goal for a match (undo)

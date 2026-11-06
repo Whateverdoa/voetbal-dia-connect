@@ -7,6 +7,7 @@ import {
   type FormationSlot,
 } from "../formations";
 import { DEMO_PLAN, type DemoPlan } from "./demoPlan";
+import type { DemoFormationState } from "./demoMatch";
 
 export interface DemoFormation {
   readonly id: string;
@@ -83,6 +84,20 @@ export const DEMO_FORMATIONS: readonly DemoFormation[] = [
 
 export function getDemoFormation(id: string | undefined): DemoFormation {
   return DEMO_FORMATIONS.find((formation) => formation.id === id) ?? DEMO_FORMATIONS[0];
+}
+
+/** Fit the app's diamond to the shield pitch without changing its slot identities. */
+export function getDemoPitchSlots(formation: DemoFormationState): DemoFormationState["slots"] {
+  if (formation.id !== "11v11_1-3-4-3") return formation.slots;
+
+  const diamond = getDemoFormation("3-4-3");
+  return formation.slots.map((slot) => {
+    const candidates = diamond.slots.filter((candidate) => candidate.position === slot.position);
+    const displaySlot = candidates.reduce<Readonly<FormationSlot> | undefined>((closest, candidate) =>
+      !closest || Math.abs(candidate.x - (slot.x ?? 50)) < Math.abs(closest.x - (slot.x ?? 50)) ? candidate : closest,
+    undefined);
+    return displaySlot ? { ...slot, x: displaySlot.x, y: displaySlot.y } : slot;
+  });
 }
 
 /** Changing roles requires another review; player identities and substitutions stay intact. */

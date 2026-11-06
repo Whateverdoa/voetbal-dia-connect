@@ -6,9 +6,13 @@ import { ArrowDownUp, Check, CheckCircle2, ChevronRight, Clock3, Flag, ImagePlus
 import { PlayerShield } from "./PlayerShield";
 import { StartingLineupEditor } from "./StartingLineupEditor";
 import { RecentPlayingMinutes } from "./RecentPlayingMinutes";
+import { MatchPreparationSteps } from "@/components/coach-assistant/MatchPreparationSteps";
+import { CoachAssistantPanel, type AssistantPreparationSettings } from "@/components/coach-assistant/CoachAssistantPanel";
+import type { AssistantPlayer, AssistantHistoryMatch } from "@/lib/coachAssistant/types";
+import { FORMATIONS } from "@/lib/formations";
 import { SubstitutionPrint, SubstitutionPrintButton, type SubstitutionPrintMode } from "./SubstitutionPrint";
 import { DEMO_PLAN, type DemoPlan } from "@/lib/substitutions/demoPlan";
-import { DEFAULT_DEMO_FORMATION_ID, DEMO_FORMATIONS, getDemoFormation, type DemoFormation } from "@/lib/substitutions/demoFormations";
+import { DEFAULT_DEMO_FORMATION_ID, DEMO_FORMATIONS, getDemoFormation, getDemoPitchSlots, type DemoFormation } from "@/lib/substitutions/demoFormations";
 import { assignDemoStartingPlayer, createManualDemoPlan, swapDemoStartingPositions } from "@/lib/substitutions/demoLineup";
 import { getPositionNameDutch } from "@/lib/positions";
 import {
@@ -22,11 +26,19 @@ export interface DemoSource {
   id: string;
   kind: "photo" | "app";
   initialPlan: DemoPlan;
+  initialPlanIsProposal?: boolean;
   teamName: string;
   matchLabel: string;
   capturedAt?: string;
   sourceUrl?: string;
   notes?: string[];
+  targetDate?: string;
+  initialPlayers?: AssistantPlayer[];
+  preparationSettings?: AssistantPreparationSettings;
+  teamKey?: string;
+  assistantHistory?: AssistantHistoryMatch[];
+  historyLoading?: boolean;
+  historyWarnings?: string[];
 }
 
 const PHOTO_SOURCE: DemoSource = {
@@ -34,7 +46,7 @@ const PHOTO_SOURCE: DemoSource = {
   teamName: "JO13-2", matchLabel: "Fotovoorbeeld",
 };
 
-type Tab = "field" | "review" | "comparison";
+type Tab = "field" | "review" | "comparison" | "assistant";
 type Session = { match: DemoMatchState; approved: boolean; automatic: boolean; error: string | null };
 type Command =
   | { type: "approve"; plan: DemoPlan }
@@ -164,13 +176,22 @@ function PitchLines() {
 }
 
 /** Mount with key={source.id} when switching sources so draft and execution state cannot mix. */
-export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSource }) {
+export function SubstitutionDemo({ source = PHOTO_SOURCE, connection, initialTab = "field", testOnly = false }: {
+  source?: DemoSource; initialTab?: Tab; testOnly?: boolean;
+  connection?: { label: string; disabled: boolean; onSave: (plan: DemoPlan, requestId: string) => Promise<void> };
+}) {
   const [session, dispatch] = useReducer(reducer, source.initialPlan, (plan) => ({ match: createDemoMatch(plan), approved: false, automatic: true, error: null }));
-  const [tab, setTab] = useState<Tab>("field");
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [assistantOpened, setAssistantOpened] = useState(initialTab === "assistant");
+  const [saving, setSaving] = useState(false);
+  const [saveRequest, setSaveRequest] = useState<{ revision: string; id: string } | null>(null);
+  const [saveOutcome, setSaveOutcome] = useState<{ revision: string; error: string | null } | null>(null);
+  const [assistantResetKey, setAssistantResetKey] = useState(0);
+  const WorkspaceSurface = connection ? "section" : "main";
   const [printMode, setPrintMode] = useState<SubstitutionPrintMode>("plan");
   const [speed, setSpeed] = useState(60);
   const [draft, setDraft] = useState<DemoPlan>(() => structuredClone(source.initialPlan));
-  const [planSource, setPlanSource] = useState<"photo" | "app" | "manual">(source.kind);
+  const [planSource, setPlanSource] = useState<"photo" | "app" | "manual">(source.initialPlanIsProposal ? "manual" : source.kind);
   const [sourceConfirmed, setSourceConfirmed] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [playerOut, setPlayerOut] = useState("");
@@ -186,8 +207,9 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
   }), [source]);
   const formationChoices = useMemo(() => [
     initialFormation,
-    ...DEMO_FORMATIONS.filter((formation) => formation.id !== initialFormation.id && formation.slots.length === source.initialPlan.match.fieldPlayerCountIncludingKeeper),
-  ], [initialFormation, source.initialPlan.match.fieldPlayerCountIncludingKeeper]);
+    ...(connection ? Object.entries(FORMATIONS).map(([id, formation]) => ({ id, name: formation.name, slots: formation.slots })) : DEMO_FORMATIONS)
+      .filter((formation) => formation.id !== initialFormation.id && formation.slots.length === source.initialPlan.match.fieldPlayerCountIncludingKeeper),
+  ], [initialFormation, source.initialPlan.match.fieldPlayerCountIncludingKeeper, connection]);
   const resolveFormation = (id: string) => formationChoices.find((formation) => formation.id === id) ?? initialFormation;
   const match = session.match;
   const automatic = session.automatic !== false;
@@ -201,7 +223,8 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
   const unavailablePlayers = displayedPlan.players.filter((player) => player.absent);
   const formationId = displayedFormation.id ?? initialFormation.id;
   const isPhotoFormation = formationId === DEFAULT_DEMO_FORMATION_ID;
-  const isDiamondFormation = formationId === "3-4-3";
+  const isDiamondFormation = formationId === "3-4-3" || formationId === "11v11_1-3-4-3";
+  const pitchSlots = getDemoPitchSlots(displayedFormation);
   const players = useMemo(() => new Map(displayedPlan.players.map((player) => [player.key, player])), [displayedPlan]);
   const label = (key: string) => { const p = players.get(key); return p ? `${p.name} ${p.number ?? "?"}` : key; };
   const pending = displayedPlan.steps.find((step) => !session.approved || match.stepStatus[step.id] === "pending");
@@ -251,6 +274,23 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
     setDraft((current) => ({ ...current, players: current.players.map((player) => player.key === key ? { ...player, [field]: field === "number" ? (value === "" ? null : Number(value)) : value } : player) }));
   }
 
+  function selectStep(next: Tab) {
+    if (connection && next !== "field" && match.phase === "running") dispatch({ type: "clock" });
+    setTab(next);
+    if (next === "assistant") setAssistantOpened(true);
+  }
+
+  function resetPractice() {
+    // Rehearse the current concept again, not the original database snapshot.
+    dispatch({ type: "reset", plan: draft });
+    setSourceConfirmed(false);
+    clearSelection();
+    setPendingFormationId(null);
+    setPrintMode("plan");
+    setAssistantOpened(true);
+    setTab("assistant");
+  }
+
   function approve() {
     dispatch({ type: "approve", plan: { ...draft, review: { ...draft.review, sourceConfirmed } } });
     if (report.readyToPublish) setTab("field");
@@ -268,6 +308,30 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
     const manual = createManualDemoPlan(draft);
     updateStartingPlan({ ...manual, formation: { ...manual.formation, name: (manual.formation.name ?? "4-3-3").replace(" (uit foto)", "") } });
     setPlanSource("manual");
+  }
+
+  async function saveToApp() {
+    if (testOnly || !connection || connection.disabled || saving || !session.approved || !sourceConfirmed) return;
+    const plan = { ...draft, review: { ...draft.review, sourceConfirmed: true } };
+    const revision = JSON.stringify(draft);
+    const requestId = saveRequest?.revision === revision ? saveRequest.id : crypto.randomUUID();
+    setSaveRequest({ revision, id: requestId });
+    setSaving(true);
+    try {
+      await connection.onSave(plan, requestId);
+      setSaveOutcome({ revision, error: null });
+    } catch (error) {
+      setSaveOutcome({ revision, error: error instanceof Error ? error.message : "Opslaan is niet gelukt. Probeer opnieuw." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function applyAssistantPlan(plan: DemoPlan) {
+    if (!beforeKickoff) return;
+    updateStartingPlan(plan);
+    setPlanSource("manual");
+    setTab("review");
   }
 
   function changeFormation(id: string) {
@@ -383,31 +447,47 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
     <div className="mt-3 flex gap-2"><button className={`${primary} flex-1`} disabled={!canSelectField || !pairValid} onClick={swapPositions}><ArrowDownUp size={16} />Ruil posities</button><button className={secondary} disabled={!positionA && !positionB} onClick={clearSelection}>Wissen</button></div>
   </section>;
 
-  return <><main className="min-h-screen bg-[#f5f6f4] text-slate-900 print:hidden">
+  return <><WorkspaceSurface className="min-h-screen bg-[#f5f6f4] text-slate-900 print:hidden">
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
         <div className="flex items-center gap-4">
           <span className="border-r border-slate-200 pr-4 text-3xl font-black tracking-tighter text-dia-green">DIA<span className="text-lime-500">.</span></span>
-          <div><h1 className="text-lg font-bold tracking-tight sm:text-xl">Wisselmodule</h1><p className="mt-0.5 text-xs text-slate-500">{source.kind === "app" ? source.matchLabel : source.teamName} · {displayedPlan.match.regulationDurationMinutes} minuten · half veld</p></div>
+          <div><h2 className="text-lg font-bold tracking-tight sm:text-xl">{connection ? "Opstelling, wisselplan & oefenwedstrijd" : "Wisselmodule"}</h2><p className="mt-0.5 text-xs text-slate-500">{source.kind === "app" ? source.matchLabel : source.teamName} · {displayedPlan.match.regulationDurationMinutes} minuten · half veld</p></div>
         </div>
-        <div className="flex items-center gap-3"><span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">Competitie</span>
-          <button className={`${secondary} px-3`} onClick={() => { dispatch({ type: "reset", plan: source.initialPlan }); setDraft(structuredClone(source.initialPlan)); setPlanSource(source.kind); setPhotoUrl(null); setPrintMode("plan"); setSourceConfirmed(false); clearSelection(); setPendingFormationId(null); setFieldAction("substitution"); setTab("field"); }} aria-label="Demo opnieuw beginnen"><RotateCcw size={16} /><span className="hidden sm:inline">Opnieuw</span></button></div>
+        <div className="flex items-center gap-3"><span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">{testOnly ? "Lokale test" : connection ? "Wedstrijdconcept" : "Competitie"}</span>
+          <button className={`${secondary} px-3`} onClick={() => { if (connection) { resetPractice(); return; } dispatch({ type: "reset", plan: source.initialPlan }); setDraft(structuredClone(source.initialPlan)); setPlanSource(source.kind); setPhotoUrl(null); setPrintMode("plan"); setSourceConfirmed(false); clearSelection(); setPendingFormationId(null); setFieldAction("substitution"); setAssistantResetKey((key) => key + 1); setTab("field"); }} aria-label={connection ? "Oefening opnieuw beginnen met dit plan" : "Demo opnieuw beginnen"}><RotateCcw size={16} /><span className="hidden sm:inline">Opnieuw</span></button></div>
       </div>
     </header>
 
     <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6">
-      <nav className="mb-5 flex gap-4 overflow-x-auto border-b border-slate-200" aria-label="Demo-onderdelen">
-        {([{ key: "field", text: "Veld & wissels" }, { key: "review", text: "Bron controleren" }, { key: "comparison", text: "Plan & werkelijk" }] as const).map((item) => <button key={item.key} onClick={() => setTab(item.key)} aria-current={tab === item.key ? "page" : undefined} className={`min-h-14 shrink-0 border-b-2 text-xs font-semibold transition-colors sm:text-sm ${tab === item.key ? "border-dia-green text-dia-green" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{item.text}{item.key === "review" && session.approved && <Check size={13} className="ml-2 inline" />}</button>)}
-      </nav>
+      {connection && <MatchPreparationSteps active={tab} planReady approved={session.approved} onSelect={selectStep} />}
+      {!connection && <nav className="mb-5 flex gap-4 overflow-x-auto border-b border-slate-200" aria-label="Demo-onderdelen">
+        {([{ key: "field", text: "Veld & wissels" }, { key: "assistant", text: "Coachassistent" }, { key: "review", text: "Bron controleren" }, { key: "comparison", text: "Plan & werkelijk" }] as const).map((item) => <button key={item.key} onClick={() => { setTab(item.key); if (item.key === "assistant") setAssistantOpened(true); }} aria-current={tab === item.key ? "page" : undefined} className={`min-h-14 shrink-0 border-b-2 text-xs font-semibold transition-colors sm:text-sm ${tab === item.key ? "border-dia-green text-dia-green" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{item.text}{item.key === "review" && session.approved && <Check size={13} className="ml-2 inline" />}</button>)}
+      </nav>}
 
       {source.kind === "app" && <aside aria-label="Bron van de wedstrijd" className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
-        <p className="font-semibold">{source.matchLabel} · lokale kopie</p>
-        <p className="mt-1 text-xs leading-relaxed">Alleen gelezen uit de app{capturedLabel && <> op <time dateTime={source.capturedAt}>{capturedLabel}</time></>}. Wijzigingen en de oefenwedstrijd blijven op dit scherm; er wordt niets teruggeschreven.</p>
+        <p className="font-semibold">{source.matchLabel} · {connection ? "wedstrijdconcept" : "lokale kopie"}</p>
+        <p className="mt-1 text-xs leading-relaxed">Alleen gelezen uit de app{capturedLabel && <> op <time dateTime={source.capturedAt}>{capturedLabel}</time></>}. {connection && !testOnly ? "Wijzigingen blijven een concept totdat je het beoordeelde plan opslaat in deze wedstrijd. De oefenklok verandert de echte wedstrijd niet." : "Wijzigingen en de oefenwedstrijd blijven op dit scherm; er wordt niets teruggeschreven."}</p>
         {source.notes && source.notes.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed">{source.notes.map((note, index) => <li key={`${index}-${note}`}>{note}</li>)}</ul>}
         {source.sourceUrl && <a href={source.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold underline underline-offset-4">Bekijk de bronwedstrijd in de app</a>}
       </aside>}
 
+      {connection && !testOnly && <section aria-label="Plan opslaan in wedstrijd" className="mb-5 rounded-xl border border-green-200 bg-white p-4">
+        <p className="font-semibold">Opslaan in {connection.label}</p>
+        <p className="mt-1 text-sm text-slate-600">Slaat de beginopstelling, beschikbaarheid, formatie en alle geplande wissels samen op. De bestaande openstaande wisselregels worden vervangen. De echte wedstrijdklok wordt niet gestart.</p>
+        {!session.approved && <p className="mt-2 text-sm text-amber-800">Controleer het volledige concept eerst bij Wisselplan.</p>}
+        <button type="button" className={`${primary} mt-3`} disabled={connection.disabled || saving || !session.approved || !sourceConfirmed || (saveOutcome?.revision === JSON.stringify(draft) && saveOutcome.error === null)} onClick={() => { void saveToApp(); }}>{saving ? "Bezig met opslaan…" : "Opslaan in de wedstrijd"}</button>
+        {saveOutcome?.revision === JSON.stringify(draft) && <p role={saveOutcome.error ? "alert" : "status"} className={`mt-3 text-sm ${saveOutcome.error ? "text-red-800" : "text-green-800"}`}>{saveOutcome.error ?? "Het beoordeelde plan is opgeslagen in de gekozen wedstrijd."}</p>}
+      </section>}
+
       {session.error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{session.error}</div>}
+
+      {assistantOpened && <div hidden={tab !== "assistant"}>
+        {connection && beforeKickoff && formationSelector}
+        {connection && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">Selectie en voorkeuren blijven hier bewaard. Na het berekenen ga je met hetzelfde voorstel door naar Wisselplan en Oefenen.</p>}
+        {connection && !beforeKickoff && <button type="button" className={`${secondary} mb-4`} onClick={resetPractice}>Oefening stoppen en voorbereiding aanpassen</button>}
+        <CoachAssistantPanel key={assistantResetKey} plan={draft} teamKey={source.teamKey ?? source.teamName} initialPlayers={source.initialPlayers} initialSettings={source.preparationSettings} automaticHistory={source.assistantHistory} historyLoading={source.historyLoading} historyWarnings={source.historyWarnings} connected={Boolean(connection)} preparationFlow={Boolean(connection)} testOnly={testOnly} targetDate={source.targetDate ?? source.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? ""} disabled={!beforeKickoff || Boolean(connection?.disabled)} onApply={applyAssistantPlan} />
+      </div>}
 
       {tab === "field" && <>
         {!session.approved && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3"><div><p className="text-sm font-semibold text-green-950">{planSource === "app" ? "Het wedstrijdplan uit de app staat klaar." : planSource === "manual" ? "Je beginopstelling staat klaar." : "Je voorbeeld staat klaar."}</p><p className="mt-0.5 text-xs text-green-800">Controleer de overname voordat je de oefenwedstrijd start.</p></div><button className={primary} onClick={() => setTab("review")}>{source.kind === "app" ? "Plan controleren" : "Voorbeeld controleren"}<ChevronRight size={16} /></button></div>}
@@ -415,7 +495,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
         {beforeKickoff && <section aria-label="Beginopstelling voorbereiden" className="mb-5 space-y-3">
           {source.kind === "photo" && <RecentPlayingMinutes />}
           <StartingLineupEditor plan={draft} onChange={updateStartingPlan} />
-          {planSource === "photo" ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3"><p className="max-w-2xl text-xs leading-relaxed text-slate-600"><strong>Geen foto gebruiken?</strong> Behoud de spelers en stel zelf de beginposities in. ‘Zonder foto starten’ verwijdert de geplande wissels uit het fotovoorbeeld.</p><button className={secondary} onClick={startWithoutPhoto}>Zonder foto starten</button></div> : <p className="rounded-xl border border-green-200 bg-green-50 p-3 text-xs leading-relaxed text-green-900">{planSource === "app" ? "Beginopstelling en geplande wissels zijn overgenomen uit de app. Controleer en bevestig deze lokale kopie voordat je de oefenwedstrijd start." : "Handmatige beginopstelling · er zijn nog geen wissels vooraf gepland. Je kunt tijdens de demo zelf wisselen. Controleer en bevestig eerst je beginopstelling."}</p>}
+          {planSource === "photo" ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3"><p className="max-w-2xl text-xs leading-relaxed text-slate-600"><strong>Geen foto gebruiken?</strong> Behoud de spelers en stel zelf de beginposities in. ‘Zonder foto starten’ verwijdert de geplande wissels uit het fotovoorbeeld.</p><button className={secondary} onClick={startWithoutPhoto}>Zonder foto starten</button></div> : <p className="rounded-xl border border-green-200 bg-green-50 p-3 text-xs leading-relaxed text-green-900">{planSource === "app" ? "Beginopstelling en geplande wissels zijn overgenomen uit de app. Controleer en bevestig deze lokale kopie voordat je de oefenwedstrijd start." : draft.steps.length > 0 ? "Voorstel als concept · de beginopstelling en geplande wissels staan klaar voor controle." : "Handmatige beginopstelling · er zijn nog geen wissels vooraf gepland. Je kunt tijdens de demo zelf wisselen. Controleer en bevestig eerst je beginopstelling."}</p>}
         </section>}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,1fr)]">
@@ -426,9 +506,9 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
               <PitchLines />
               {field.map((entry) => {
                 const p = players.get(entry.playerKey)!;
-                const slot = displayedFormation.slots.find((s) => s.id === entry.slotId)!;
+                const slot = pitchSlots.find((s) => s.id === entry.slotId)!;
                 const selected = selectingPositions ? positionA === p.key || positionB === p.key : playerOut === p.key;
-                return <button key={p.key} title={`${label(p.key)} selecteren voor ${selectingPositions ? "een positieruil" : "een wissel"}`} aria-label={`${label(p.key)} op ${slot.position}`} aria-pressed={selected} disabled={!canSelectField} onClick={() => selectFieldPlayer(p.key)} className={`absolute ${isPhotoFormation ? "w-[16%] sm:w-[13.2%]" : isDiamondFormation ? "w-[9.5%]" : "w-[12%]"} max-w-[90px] -translate-x-1/2 -translate-y-1/2 transition-[left,top,filter] duration-500 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none`} style={{ left: `${slot.x ?? 50}%`, top: `${slot.y ?? 50}%` }}><PlayerShield name={p.name} number={p.number} position={slot.position === "LCB" || slot.position === "RCB" ? "CB" : slot.position} selected={selected} className="w-full" /></button>;
+                return <button key={p.key} title={`${label(p.key)} selecteren voor ${selectingPositions ? "een positieruil" : "een wissel"}`} aria-label={`${label(p.key)} op ${slot.position}`} aria-pressed={selected} disabled={!canSelectField} onClick={() => selectFieldPlayer(p.key)} className={`absolute ${isPhotoFormation ? "w-[16%] sm:w-[13.2%]" : isDiamondFormation ? "w-[9%]" : "w-[12%]"} max-w-[90px] -translate-x-1/2 -translate-y-1/2 transition-[left,top,filter] duration-500 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none`} style={{ left: `${slot.x ?? 50}%`, top: `${slot.y ?? 50}%` }}><PlayerShield name={p.name} number={p.number} position={slot.position === "LCB" || slot.position === "RCB" ? "CB" : slot.position} selected={selected} className="w-full" /></button>;
               })}
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2"><span className="mr-2 text-sm font-bold">Bank</span>{bench.map((key) => <button key={key} disabled={!canSelectField} onClick={() => selectBenchPlayer(key)} aria-pressed={playerIn === key} className={`${button} min-w-24 border px-3 py-2 ${playerIn === key ? "border-dia-green bg-green-50 text-dia-green" : "border-slate-200 bg-white text-slate-700"}`}>{label(key)}</button>)}</div>
@@ -482,8 +562,9 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
       </>}
 
       {tab === "review" && <section>
-        <div className="mb-5 flex items-start gap-3"><ShieldCheck size={24} className="mt-1 text-dia-green" /><div><h2 className="text-xl font-bold">Controleer de overname</h2><p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{planSource === "photo" ? "Dit voorbeeld is handmatig uit jouw foto overgenomen. De rugnummers komen uit de JO13-2-teamlijst van 27 september. Automatische fotoherkenning is nog niet aangesloten." : planSource === "app" ? "Dit is een alleen-lezen momentopname uit de wedstrijdapp. Controleer namen, rugnummers, aanwezigheid, beginopstelling en alle geplande wissels. Je bevestiging en aanpassingen worden alleen in deze module gebruikt." : "Dit plan begint met jouw handmatige opstelling. Controleer de namen, nummers, posities en bank. De historische minuten zijn alleen een hulpmiddel bij je keuze."}</p></div></div>
-        {session.approved && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">Het voorbeeld is bevestigd. Kies ‘Opnieuw’ om een nieuwe overname te controleren.</p>}
+        <div className="mb-5 flex items-start gap-3"><ShieldCheck size={24} className="mt-1 text-dia-green" /><div><h2 className="text-xl font-bold">{connection ? "Controleer je wisselplan" : "Controleer de overname"}</h2><p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{connection ? "Controleer de beginopstelling, alle wisselmomenten en de speelminuten. Na bevestiging oefen je hier met hetzelfde plan." : planSource === "photo" ? "Dit voorbeeld is handmatig uit jouw foto overgenomen. De rugnummers komen uit de JO13-2-teamlijst van 27 september. Automatische fotoherkenning is nog niet aangesloten." : planSource === "app" ? "Dit is een alleen-lezen momentopname uit de wedstrijdapp. Controleer namen, rugnummers, aanwezigheid, beginopstelling en alle geplande wissels. Je bevestiging en aanpassingen worden alleen in deze module gebruikt." : "Dit plan begint met jouw handmatige opstelling. Controleer de namen, nummers, posities en bank. De historische minuten zijn alleen een hulpmiddel bij je keuze."}</p></div></div>
+        {testOnly && <p className="mb-4 text-sm text-slate-600">Ontbrekende rugnummers kun je hieronder aanvullen. Deze correcties blijven alleen in je lokale oefenplan.</p>}
+        {session.approved && <p className="mb-4 rounded-xl bg-green-50 p-4 text-sm text-green-900">{connection ? "Dit wisselplan is bevestigd. Ga naar Oefenen om het op het veld uit te proberen. Opnieuw begint een nieuwe oefening met dit concept." : "Het voorbeeld is bevestigd. Kies ‘Opnieuw’ om een nieuwe overname te controleren."}</p>}
         {beforeKickoff ? formationSelector : <p className="mb-4 text-sm text-slate-600">Beginformatie van het plan: <strong>{draft.formation.name ?? initialFormation.name}</strong></p>}
         <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
           <div>
@@ -506,9 +587,9 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
           </div>
           <div>
             {unavailableNotice}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-3 font-medium">Naam</th><th className="w-28 px-3 py-3 font-medium">Rugnummer</th><th className="px-3 py-3 text-right font-medium">Plan</th></tr></thead><tbody className="divide-y divide-slate-100">{draft.players.map((player) => <tr key={player.key}><td className="px-3 py-1"><input aria-label={`Naam ${player.key}`} disabled={session.approved} value={player.name} onChange={(event) => editPlayer(player.key, "name", event.target.value)} className="min-h-10 w-full rounded-md bg-transparent px-1 font-medium focus:outline-green-600 disabled:text-slate-700" />{player.absent && <span className="block px-1 pb-2 text-xs text-slate-500">{player.unavailableReason === "injured" ? "Geblesseerd" : "Niet beschikbaar"}</span>}</td><td className="px-3 py-1"><input aria-label={`Rugnummer ${player.name}`} type="number" min={0} step={1} disabled={session.approved} value={player.number ?? ""} onChange={(event) => editPlayer(player.key, "number", event.target.value)} className="min-h-10 w-20 rounded-md bg-slate-50 px-3 tabular-nums focus:outline-green-600 disabled:bg-transparent" /></td><td className="px-3 py-1 text-right text-slate-500">{player.absent ? "—" : `${report.minutes.byPlayer.find((row) => row.playerKey === player.key)?.playingMinutes ?? "—"} min`}</td></tr>)}</tbody></table></div>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-3 font-medium">Naam</th><th className="w-28 px-3 py-3 font-medium">Rugnummer</th><th className="px-3 py-3 text-right font-medium">Plan</th></tr></thead><tbody className="divide-y divide-slate-100">{draft.players.map((player) => <tr key={player.key}><td className="px-3 py-1"><input aria-label={`Naam ${player.key}`} disabled={session.approved || Boolean(connection)} value={player.name} onChange={(event) => editPlayer(player.key, "name", event.target.value)} className="min-h-10 w-full rounded-md bg-transparent px-1 font-medium focus:outline-green-600 disabled:text-slate-700" />{player.absent && <span className="block px-1 pb-2 text-xs text-slate-500">{player.unavailableReason === "injured" ? "Geblesseerd" : "Niet beschikbaar"}</span>}</td><td className="px-3 py-1"><input aria-label={`Rugnummer ${player.name}`} type="number" min={0} step={1} disabled={session.approved || (Boolean(connection) && !testOnly)} value={player.number ?? ""} onChange={(event) => editPlayer(player.key, "number", event.target.value)} className="min-h-10 w-20 rounded-md bg-slate-50 px-3 tabular-nums focus:outline-green-600 disabled:bg-transparent" /></td><td className="px-3 py-1 text-right text-slate-500">{player.absent ? "—" : `${report.minutes.byPlayer.find((row) => row.playerKey === player.key)?.playingMinutes ?? "—"} min`}</td></tr>)}</tbody></table></div>
             {relevantIssues.length > 0 && <ul role="alert" className="mt-4 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{relevantIssues.map((issue, index) => <li key={`${issue.code}-${index}`}>{issue.message}</li>)}</ul>}
-            {!session.approved && <><label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-relaxed"><input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-green-700" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} /><span>{source.kind === "app" ? "Ik heb namen, nummers, aanwezigheid, opstelling en wissels van deze appkopie gecontroleerd." : "Ik heb namen, nummers, opstelling en wissels van dit voorbeeld gecontroleerd."}</span></label><button className={`${primary} mt-4 w-full`} disabled={!report.readyToPublish} onClick={approve}><CheckCircle2 size={16} />{source.kind === "app" ? "Plan goedkeuren en proberen" : "Voorbeeld goedkeuren en proberen"}</button></>}
+            {!session.approved && <><label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-relaxed"><input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-green-700" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} /><span>{connection ? "Ik heb namen, nummers, beschikbaarheid, opstelling en wissels van dit wedstrijdconcept gecontroleerd." : source.kind === "app" ? "Ik heb namen, nummers, aanwezigheid, opstelling en wissels van deze appkopie gecontroleerd." : "Ik heb namen, nummers, opstelling en wissels van dit voorbeeld gecontroleerd."}</span></label><button className={`${primary} mt-4 w-full`} disabled={!report.readyToPublish} onClick={approve}><CheckCircle2 size={16} />{connection ? "Bevestigen en naar oefenen" : source.kind === "app" ? "Plan goedkeuren en proberen" : "Voorbeeld goedkeuren en proberen"}</button></>}
           </div>
         </div>
       </section>}
@@ -530,7 +611,7 @@ export function SubstitutionDemo({ source = PHOTO_SOURCE }: { source?: DemoSourc
           </div>
         </details>
       </section>
-      <footer className="mt-8 border-t border-slate-200 pt-4 text-xs leading-relaxed text-slate-400">Deze demo werkt op dit scherm. Er wordt niets opgeslagen in de wedstrijdapp. Herladen wist de oefenwedstrijd.</footer>
+      <footer className="mt-8 border-t border-slate-200 pt-4 text-xs leading-relaxed text-slate-400">{connection && !testOnly ? "De oefenwedstrijd draait lokaal. Alleen Opslaan in de wedstrijd schrijft het beoordeelde beginplan naar DIA Live." : "Deze demo werkt op dit scherm. Er wordt niets opgeslagen in de wedstrijdapp. Herladen wist de oefenwedstrijd."}</footer>
     </div>
-  </main><SubstitutionPrint match={match} plan={draft} approved={session.approved} printMode={printMode} matchLabel={source.kind === "app" ? source.matchLabel : undefined} sourceLabel={printSourceLabel} /></>;
+  </WorkspaceSurface><SubstitutionPrint match={match} plan={draft} approved={session.approved} printMode={printMode} matchLabel={source.kind === "app" ? source.matchLabel : undefined} sourceLabel={printSourceLabel} /></>;
 }

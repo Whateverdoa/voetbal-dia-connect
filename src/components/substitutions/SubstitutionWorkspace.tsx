@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SubstitutionDemo, type DemoSource } from "./SubstitutionDemo";
 import { DEMO_PLAN } from "@/lib/substitutions/demoPlan";
 import { GILZE_PLAN, GILZE_SOURCE_DETAILS } from "@/lib/substitutions/gilzePlan";
@@ -19,6 +20,7 @@ export function SubstitutionWorkspace() {
   return <>
     <div className="border-b border-slate-200 bg-white px-4 py-3 print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2">
+        <Link href="/coach/assistent" className="inline-flex min-h-11 items-center rounded-xl bg-dia-green px-4 text-sm font-semibold text-white">Echte wedstrijd kiezen</Link>
         <label htmlFor="substitution-source" className="text-sm font-semibold text-slate-700">Wedstrijd / voorbeeld</label>
         <select id="substitution-source" value={sourceId} onChange={(event) => setSourceId(event.target.value)} className="min-h-11 max-w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 focus:outline-green-600">
           {sources.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.matchLabel}</option>)}

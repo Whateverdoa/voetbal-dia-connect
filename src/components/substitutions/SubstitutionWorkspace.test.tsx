@@ -55,7 +55,7 @@ function assertReeshofStartingPitch() {
   }
   expect(pitch.getAllByRole("button")).toHaveLength(14);
   expect(pitch.queryByRole("button", { name: "Luuk 4" })).not.toBeInTheDocument();
-  assertLuukUnavailable(false);
+  assertLuukUnavailable();
 }
 
 describe("substitution workspace sources", () => {

@@ -25,6 +25,18 @@ Dit is een gerichte terugplaatsing uit `f89f606`, zonder backendwijzigingen of d
 
 De route opent zonder auth/backend-providers. Navigatie en `SignedInRoleSync` staan daarom in de normale tak van `AppProviders`, niet rechtstreeks in de rootlayout. Houd die onderdelen binnen Clerk en Convex bij verdere integraties.
 
+## Voorbereiden en oefenen op één wedstrijdpagina (6 november 2026)
+
+De lokale `/coach/assistent?wedstrijd=9Q7WH6&test=1` gebruikt nu vier stappen: **Voorbereiden → Wisselplan → Oefenen → Vergelijken**. Dezelfde sessie bewaart het concept, voorkeuren, keeperafspraken, wisselinterval en oefenminuten bij stapwisseling. Zonder compleet plan blijven de vervolgstappen zichtbaar maar uitgeschakeld; na plancontrole wordt de oefenklok beschikbaar. Opnieuw oefenen behoudt het huidige concept in plaats van de oorspronkelijke appkopie terug te zetten. Ontbrekende rugnummers zijn in teststand lokaal aan te vullen. De losse `/demo/wisselmodule` blijft een zelfstandige voorbeeldomgeving. Geen backendwijziging of productie-deploy voor deze flow.
+
+## Coachassistent — eerste wedstrijdkoppeling
+
+**Actualisatie 31 oktober:** gebruik voor de lokale proef van 7 november `/coach/assistent?wedstrijd=9Q7WH6&test=1`. Deze teststand leest alleen de bestaande coachqueries en biedt geen opslagactie naar de app. De hieronder beschreven experimentele backendfuncties zijn inmiddels niet meer aanwezig op productie; activeer ze pas bij een aparte, afgestemde release. Voor deze proef is niets naar productie gedeployd. Zie de testvoorbereiding in het gekoppelde plan hieronder.
+
+`/coach/assistent` laadt na coachlogin een echte wedstrijd via de wedstrijdkeuze of code. De pagina gebruikt `coachAssistant.workspace` en `coachAssistant.save`: actuele selectie/voorkeuren/formatie/openstaande regels lezen, een beoordeeld concept atomair vóór de aftrap opslaan en wijzigingen vanuit de bestaande app opnieuw laden. Geen Reeshof-fallback op deze route. De losse `/demo/wisselmodule` blijft beschikbaar en linkt naar de echte wedstrijdkeuze.
+
+De nieuwe backendfuncties zijn geactiveerd op `nautical-condor-5`; de frontend is nog lokaal op de featurebranch. Wedstrijdkeuze, laden via code en opslaan zijn beperkt tot de eigen coachteams, ook bij accounts met daarnaast een beheerderrol. Bronconflicten blokkeren opslaan, herhaalde aanvragen worden gededupliceerd en de oefenklok schrijft geen echte wedstrijdgebeurtenissen. Automatische historie, bewaarde oorspronkelijke planversies en publicatie van verslagen volgen later. Zie [`docs/plans/coachassistent-appkoppeling.md`](docs/plans/coachassistent-appkoppeling.md).
+
 ## Tech Stack
 - Next.js 16 (App Router, Turbopack)
 - React 19 + TypeScript strict

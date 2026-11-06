@@ -364,7 +364,7 @@ export const REESHOF_IMPORTED_PLAN: DemoPlan = {
 export const REESHOF_PLAN: DemoPlan = {
   ...REESHOF_IMPORTED_PLAN,
   players: REESHOF_IMPORTED_PLAN.players.map((player) => player.key === "reeshof-p07"
-    ? { ...player, absent: true }
+    ? { ...player, absent: true, unavailableReason: "injured" }
     : { ...player }),
   startingLineup: {
     ...REESHOF_IMPORTED_PLAN.startingLineup,
@@ -382,7 +382,7 @@ export const REESHOF_SOURCE_DETAILS = {
   "sourceUrl": "https://voetbal-dia-connect.vercel.app/live/SZNCWD",
   "notes": [
     "Coachopstelling 4-3-3 overgenomen: 9 bankwissels en 6 positieruilen op 5 momenten. Uitwedstrijd op zaterdag 10 oktober om 09:30.",
-    "Voor deze wedstrijd bevestigd: Krijn 10 is beschikbaar, Luuk 4 niet. Luuk is alleen in deze lokale kopie uitgesloten; de app is niet gewijzigd.",
+    "Voor deze wedstrijd bevestigd: Krijn 10 is beschikbaar, Luuk 4 niet wegens een blessure. Luuk is alleen in deze lokale kopie uitgesloten; de app is niet gewijzigd.",
     "Keeper controleren: Luc 1 staat in de app op keeperpositie 0, maar de keepermarkering ontbreekt. Deze kopie gebruikt zijn plek op het veld als keepertoewijzing.",
     "De positieruil Olivier 9 ↔ Jody 2 staat onderaan de bronlijst, na minuut 50, maar is gepland voor minuut 40. Hier staat hij bij minuut 40, na de overige acties op dat moment.",
     "De app staat op 4 × 15 minuten. De totale duur is niet apart ingevuld; volgens de app geldt dan 60 minuten. Deze oefenklok pauzeert alleen bij 30 minuten; alle wisselminuten tellen vanaf de aftrap."

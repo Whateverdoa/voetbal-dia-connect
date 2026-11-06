@@ -1,14 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { DEMO_PLAN } from "./demoPlan";
+import { F11_1343 } from "../formations";
 import {
   DEFAULT_DEMO_FORMATION_ID,
   DEMO_FORMATIONS,
   getDemoFormation,
+  getDemoPitchSlots,
   withDemoFormation,
 } from "./demoFormations";
 import { validatePortableSubstitutionPlan } from "./validatePortableSubstitutionPlan";
 
 describe("demo formations", () => {
+  it("fits app diamond shields without overlap while preserving every original slot and side", () => {
+    const formation = { id: "11v11_1-3-4-3", slots: structuredClone(F11_1343.slots) };
+    const before = structuredClone(formation);
+    const slots = getDemoPitchSlots(formation);
+    expect(formation).toEqual(before);
+    expect(slots.map(({ id, position }) => ({ id, position }))).toEqual(before.slots.map(({ id, position }) => ({ id, position })));
+
+    // Shields use a 100:120 view box on a 680:525 pitch at 9% width.
+    const width = 9;
+    const height = width * 1.2 * 680 / 525;
+    for (const [index, slot] of slots.entries()) {
+      expect(slot.y! - height / 2).toBeGreaterThanOrEqual(0);
+      expect(slot.y! + height / 2).toBeLessThanOrEqual(100);
+      const original = before.slots.find(({ id }) => id === slot.id)!;
+      expect(Math.sign(slot.x! - 50)).toBe(Math.sign(original.x - 50));
+      for (const other of slots.slice(index + 1)) {
+        expect(Math.abs(slot.x! - other.x!) >= width || Math.abs(slot.y! - other.y!) >= height).toBe(true);
+      }
+    }
+  });
+
   it("preserves the transcribed formation exactly and falls back to it for unknown choices", () => {
     expect(getDemoFormation(DEFAULT_DEMO_FORMATION_ID).slots).toEqual(DEMO_PLAN.formation.slots);
     expect(getDemoFormation(undefined).id).toBe(DEFAULT_DEMO_FORMATION_ID);

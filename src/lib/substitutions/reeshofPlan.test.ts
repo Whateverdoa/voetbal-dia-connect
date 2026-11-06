@@ -39,7 +39,7 @@ describe("Reeshof coach-plan snapshot", () => {
       .toEqual([expect.objectContaining({ key: "reeshof-p07", name: "Luuk", number: 4, absent: true })]);
     expect(REESHOF_IMPORTED_PLAN.players.find((player) => player.key === "reeshof-p07"))
       .toMatchObject({ name: "Luuk", absent: false });
-    expect(REESHOF_PLAN.players.find((player) => player.key === "reeshof-p07")?.unavailableReason).toBeUndefined();
+    expect(REESHOF_PLAN.players.find((player) => player.key === "reeshof-p07")?.unavailableReason).toBe("injured");
     expect(REESHOF_PLAN.players.find((player) => player.key === "reeshof-p11"))
       .toMatchObject({ name: "Krijn", number: 10, absent: false });
     expect(REESHOF_PLAN.steps).toEqual(REESHOF_IMPORTED_PLAN.steps);

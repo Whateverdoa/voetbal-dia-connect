@@ -2,6 +2,8 @@
 
 Status op 10 oktober 2026: ontwerpvoorstel, uitgewerkte praktijkvoorbeelden, zelfstandige controlefunctie en een werkende lokale demonstratie op **`/demo/wisselmodule`**. De demo laat broncontrole, handmatige en automatische oefenwissels, positieruilen, formatiekeuze, A4-print en plan versus demowerkelijkheid interactief zien. De volledige module, automatische fotoherkenning en de appkoppeling zijn nog niet gebouwd. De aangeleverde handgeschreven lijst is visueel overgenomen en intern gecontroleerd; een geslaagde berekening geeft geen automatische bronbevestiging door de coach.
 
+Aanvulling: de eerste echte wedstrijdkoppeling is beschikbaar via **`/coach/assistent`**. De coach kiest daar een wedstrijd, laadt de actuele selectie en slaat een beoordeeld beginplan met wissels op. De zelfstandige demo blijft een oefenvoorbeeld. Status en vervolg: [Coachassistent-appkoppeling](coachassistent-appkoppeling.md).
+
 ## Wat de coach ermee kan
 
 1. Een foto maken van een handgeschreven wissellijst of een bestaande foto kiezen.

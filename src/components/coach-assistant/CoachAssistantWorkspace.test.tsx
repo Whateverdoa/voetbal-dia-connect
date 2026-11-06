@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assistantSourceFixture } from "@/test/fixtures/coachAssistant";
+import { assistantSourceFixture, reviewedFixturePlan } from "@/test/fixtures/coachAssistant";
 import { workspacePlan, workspaceRevision } from "../../../convex/lib/coachAssistantWorkspace";
 import { CoachAssistantWorkspace, ConnectedEditor } from "./CoachAssistantWorkspace";
 
@@ -46,6 +46,45 @@ beforeEach(() => {
 });
 
 describe("connected coach workspace", () => {
+  it("opens and rehearses the existing saved plan without calculating or saving a replacement", async () => {
+    const user = userEvent.setup();
+    const current = data();
+    current.plan = reviewedFixturePlan(assistantSourceFixture());
+    const original = structuredClone(current.plan);
+    render(<ConnectedEditor current={current} onReload={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "2. Wisselplan" })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText(/Opgeslagen wisselplan geladen/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Voorstel berekenen" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: /Ik heb namen, nummers, beschikbaarheid, opstelling en wissels/ }));
+    await user.click(screen.getByRole("button", { name: "Bevestigen en naar oefenen" }));
+    await user.click(screen.getByRole("button", { name: "Speel resterend plan uit" }));
+    expect(screen.getByRole("heading", { name: "Het plan naast de uitvoering" })).toBeVisible();
+    expect(current.plan).toEqual(original);
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+  it("shows an incompatible saved plan and its errors without replacing it", async () => {
+    const user = userEvent.setup();
+    const current = data();
+    current.plan = reviewedFixturePlan(assistantSourceFixture());
+    const action = current.plan.steps[0].actions[0];
+    action.playerInKey = action.playerOutKey;
+    const original = structuredClone(current.plan);
+    const reload = vi.fn();
+    render(<ConnectedEditor current={current} onReload={reload} />);
+    expect(screen.getByRole("region", { name: "Opgeslagen wisselplan" })).toBeVisible();
+    expect(screen.getByText("Bekijken kan al; oefenen is nog niet beschikbaar.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "2. Wisselplan" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "3. Oefenen" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Voorstel berekenen" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: /^Minuut / })).toHaveLength(current.plan.steps.length);
+    await user.click(screen.getByRole("button", { name: "1. Voorbereiden" }));
+    await user.click(screen.getByRole("button", { name: "2. Wisselplan" }));
+    expect(screen.getByRole("region", { name: "Opgeslagen wisselplan" })).toBeVisible();
+    expect(current.plan).toEqual(original);
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it("automatically loads only earlier team history through existing read queries", async () => {
     const defaultQuery = mocks.query.getMockImplementation()!;
     const detail = { ...defaultQuery("matches:getForCoach", {}), status: "finished", scheduledAt: Date.parse("2026-10-03T10:00:00+02:00"), frozenClockMs: 3600000, events: [] };

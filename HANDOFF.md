@@ -29,7 +29,7 @@ aan de wrapper vereisen een expliciete migratie van de actieve bundles/marker.
 De tests in `scripts/match-plan-audit-release.test.mjs` bewaken de instrumentatie.
 Backendtests controleren auteurschap, beschikbaarheid voor creatie, onbekende
 historische makers, toegang, no-ops en behoud van historie na verwijderen.
-Verificatie: 1094 tests in 136 bestanden, 5 release-regressietests, TypeScript,
+Verificatie: 1094 tests in 136 bestanden, 6 release-regressietests, TypeScript,
 gerichte ESLint en een alleen-lezen preflight tegen de actieve productiebron.
 
 ## Bestaand wisselplan bekijken en oefenen (6 november 2026)

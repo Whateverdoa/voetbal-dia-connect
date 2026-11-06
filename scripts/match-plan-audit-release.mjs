@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {isDeepStrictEqual} from 'node:util';
 import ts from 'typescript';
 import {build} from 'esbuild';
 import {ConvexClient} from 'convex/browser';
@@ -44,6 +45,20 @@ const bundle=async (contents)=>{
  return {source:result.outputFiles[0].text,exports:Object.values(result.metafile.outputs)[0].exports.sort()};
 };
 async function schemaValue(source){const module=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));return JSON.parse(module.default.export());}
+export function assertReleaseSource(actual, expected) {
+ const {modules:actualModules,...actualConfig}=actual;
+ const {modules:expectedModules,...expectedConfig}=expected;
+ assert.deepEqual(actualConfig,expectedConfig,'Deployment configuration changed');
+ assert.equal(actualModules.length,expectedModules.length,'Module count differs');
+ const byPath=new Map(actualModules.map(item=>[item.path,item]));
+ assert.equal(byPath.size,actualModules.length,'Duplicate module path');
+ for(const item of expectedModules) {
+  // Convex returns modules sorted by path, including newly added modules.
+  const found=byPath.get(item.path);
+  assert(found,`Missing deployed module: ${item.path}`);
+  assert(isDeepStrictEqual(found,item),`Deployed module differs: ${item.path}`);
+ }
+}
 export async function composePlanAuditRelease(original){
  const modules=[...original.modules];const changed=[];
  for(const [name,entries]of Object.entries(auditTargets)){
@@ -83,7 +98,7 @@ export async function releasePlanAudit({adminKey,deploymentUrl,checkOnly=false})
  assert(prepared.schemaId&&(prepared.disabled?.length??0)===0,'Schema/index preservation failed');
  assert.deepEqual(await post('/api/get_config'),original,'Concurrent source change before commit');
  await post('/api/push_config',{config:original.config,modules:next.modules,udfServerVersion:original.udfServerVersion,schemaId:prepared.schemaId,nodeDependencies:[],nodeVersion:null});
- const deployed=await post('/api/get_config');assert.deepEqual(deployed,{...original,modules:next.modules});
+ const deployed=await post('/api/get_config');assertReleaseSource(deployed,{...original,modules:next.modules});
  const after=await readSchemas();const active=JSON.parse(after.active);const previous=JSON.parse(schemas.active);
  assert.deepEqual(active.tables.filter(t=>t.tableName!=='matchPlanAudit'),previous.tables.filter(t=>t.tableName!=='matchPlanAudit'));
  assert(active.tables.some(t=>t.tableName==='matchPlanAudit'));

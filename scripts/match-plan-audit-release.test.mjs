@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {instrumentAuditSource,addAuditTableSource} from './match-plan-audit-release.mjs';
+import {instrumentAuditSource,addAuditTableSource,assertReleaseSource} from './match-plan-audit-release.mjs';
+
+test('verifies module content regardless of the order returned by Convex',()=>{
+ const first={path:'a.js',source:'original',environment:'isolate'};
+ const added={path:'audit.js',source:'new',environment:'isolate'};
+ const config={config:{functions:'convex/'},udfServerVersion:'1'};
+ assertReleaseSource({...config,modules:[added,first]},{...config,modules:[first,added]});
+ assert.throws(()=>assertReleaseSource({...config,modules:[{...first,source:'changed'},added]},{...config,modules:[first,added]}),/Deployed module differs: a.js/);
+});
 const source=`const mutation = x => x;
 var change = mutation({args:{matchId:"id"},returns:"ok",handler:async(ctx,args)=>{if(!ctx.authorized)throw Error("denied");ctx.changed=args.value;return "result";}});
 export { change };`;

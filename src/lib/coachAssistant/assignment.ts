@@ -6,6 +6,10 @@ type Slot = { id: number; position: string };
 type Assignment = { playerKey: string; slotId: number };
 interface Candidate { score: number[]; field: Assignment[] }
 const zones = new Map(POSITIONS.map((position) => [position.code, position.zone]));
+// Soft costs apply only after both minute criteria. A small preference improvement
+// should not move a player who is already in a suitable place.
+const positionCost = { primary: 0, secondary: 1, history: 1, zone: 3, unknown: 3, other: 6 };
+const relocationCost = 2;
 
 export function positionFit(player: AssistantPlayer, position: string, evidence: PlayerEvidence):
   "primary" | "secondary" | "history" | "zone" | "unknown" | "other" | null {
@@ -37,7 +41,7 @@ export function assignField({ players, slots, evidence, plannedMinutes, duration
   const orderedSlots = [...slots].sort((a, b) => a.id - b.id);
   const locks = new Map(players.filter((player) => player.lockedSlotId !== undefined)
     .map((player) => [player.lockedSlotId, player.key]));
-  let states = new Map<number, Candidate>([[0, { score: Array<number>(10).fill(0), field: [] }]]);
+  let states = new Map<number, Candidate>([[0, { score: Array<number>(6).fill(0), field: [] }]]);
   for (const player of [...players].sort((a, b) => a.key.localeCompare(b.key))) {
     const next = new Map(states);
     const facts = evidence.get(player.key);
@@ -59,16 +63,11 @@ export function assignField({ players, slots, evidence, plannedMinutes, duration
           : minutes / duration;
         const role = canonicalPosition(slot.position);
         const previousPosition = role === null ? -1 : facts.previousPositions.indexOf(role);
+        const moving = !kickoff && reference.some((entry) => entry.playerKey === player.key && entry.slotId !== slot.id);
         const delta = [
           minutes / duration,
           fairness,
-          fit === "other" ? 1 : 0,
-          fit === "unknown" ? 1 : 0,
-          // After fairness and avoiding unsuitable positions, retain players in place.
-          // An incoming player has no previous field position to preserve.
-          !kickoff && reference.some((entry) => entry.playerKey === player.key && entry.slotId !== slot.id) ? 1 : 0,
-          fit === "zone" ? 1 : 0,
-          fit === "secondary" ? 1 : 0,
+          positionCost[fit] + (moving ? relocationCost : 0),
           kickoff && useStarts ? facts.starts ?? 0 : 0,
           previousPosition < 0 ? 0 : -1 / (previousPosition + 1),
           reference.some((entry) => entry.playerKey === player.key && entry.slotId === slot.id) ? 0 : 1,

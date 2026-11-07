@@ -13,6 +13,8 @@ type PrintProps = { match: DemoMatchState; plan: DemoPlan; approved: boolean; pr
 type PrintFrame = { id: string; snapshot: DemoEventSnapshot; elapsedSeconds: number; title: string; actions: readonly DemoAction[]; plannedMinute?: number; instructions?: string[] };
 type PrintPlayers = DemoMatchState["plan"]["players"];
 
+const FRAMES_PER_PAGE: Record<SubstitutionPrintMode, number> = { plan: 3, actual: 6 };
+
 const PRINT_CSS = `
 @page { size: A4 portrait; margin: 8mm; }
 @media print {
@@ -35,6 +37,12 @@ const PRINT_CSS = `
   .substitution-print-pitch { display: block; width: 100%; height: 100%; min-height: 0; max-height: 50mm; align-self: center; }
   .substitution-print-bench { font-size: 7.5pt; line-height: 1.2; padding-top: 1mm; overflow-wrap: anywhere; }
   .substitution-print-footer { display: flex; align-items: end; justify-content: space-between; border-top: .2mm solid #cbd5e1; }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-grid { grid-template-columns: minmax(0, 1fr); }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-frame { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 3mm; padding: 2mm; }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-title { grid-column: 1 / -1; font-size: 11pt; }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-actions { grid-column: 1; grid-row: 2; font-size: 9pt; line-height: 1.25; align-self: center; }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-pitch { grid-column: 2; grid-row: 2; max-height: none; }
+  .substitution-print-page[data-print-mode="plan"] .substitution-print-bench { grid-column: 1 / -1; font-size: 9pt; }
 `;
 
 function clock(seconds: number): string {
@@ -138,7 +146,7 @@ function HalfPitch({ players, snapshot }: { players: PrintPlayers; snapshot: Dem
 /** A screen control; keep the companion print pages outside any print:hidden ancestor. */
 export function SubstitutionPrintButton(props: PrintProps & { onModeChange: (mode: SubstitutionPrintMode) => void }) {
   const { frames, error } = printData(props);
-  const pages = Math.max(1, Math.ceil(frames.length / 6));
+  const pages = Math.max(1, Math.ceil(frames.length / FRAMES_PER_PAGE[props.printMode]));
   return (
     <div className="print:hidden">
       <div className="flex flex-wrap items-end gap-3">
@@ -148,7 +156,7 @@ export function SubstitutionPrintButton(props: PrintProps & { onModeChange: (mod
         </button>
       </div>
       {error ? <p className="mt-2 max-w-xl text-xs text-amber-800">{error}</p>
-        : <p className="mt-2 text-xs text-slate-500">{props.printMode === "plan" ? `${props.approved ? "Gecontroleerd plan" : "Conceptplan, nog niet bevestigd"}. ` : "Werkelijk uitgevoerde wijzigingen. "}Zes veldplaatjes per A4.</p>}
+        : <p className="mt-2 text-xs text-slate-500">{props.printMode === "plan" ? `${props.approved ? "Gecontroleerd plan" : "Conceptplan, nog niet bevestigd"}. Drie veldplaatjes per A4, met grotere tekst en veldbeelden.` : "Werkelijk uitgevoerde wijzigingen. Zes veldplaatjes per A4."}</p>}
     </div>
   );
 }
@@ -158,7 +166,8 @@ export function SubstitutionPrint(props: PrintProps) {
   const { match, plan, approved, printMode, screenPreview = false } = props;
   const { frames, error } = printData(props);
   if (error) return null;
-  const pageCount = Math.ceil(frames.length / 6);
+  const framesPerPage = FRAMES_PER_PAGE[printMode];
+  const pageCount = Math.ceil(frames.length / framesPerPage);
   const skipped = match.events.filter((event) => event.type === "skipped");
   const players = printMode === "plan" ? plan.players : match.plan.players;
   const unavailable = players.filter((player) => player.absent);
@@ -168,13 +177,13 @@ export function SubstitutionPrint(props: PrintProps) {
     <div className={`substitution-print ${screenPreview ? "space-y-4 print:hidden" : "hidden print:block"}`}>
       <style>{PRINT_CSS}</style>
       {Array.from({ length: pageCount }, (_, pageIndex) => (
-        <section key={pageIndex} className="substitution-print-page" data-match-label={props.matchLabel || undefined}>
+        <section key={pageIndex} className="substitution-print-page" data-print-mode={printMode} data-match-label={props.matchLabel || undefined}>
           <header className="substitution-print-header">
             <div><h1>DIA · {printMode === "plan" ? "Wisselplan" : "Uitvoering demo"}</h1>{props.matchLabel && <p>{props.matchLabel}</p>}<p className={concept ? "substitution-print-concept" : undefined}>{concept ? "CONCEPT · Nog niet bevestigd" : printMode === "plan" ? "Gecontroleerd wisselplan" : "Veldbeelden na de uitgevoerde wissels"} · {formationName(printMode === "plan" ? plan.formation : match.plan.formation)}</p></div>
             <div className="max-w-56 text-right"><p>{printMode === "actual" ? `${match.phase === "finished" ? "Eindstand" : "Tussenstand"} bij ` : ""}{timeLabel}</p>{unavailable.length > 0 && <p>Niet beschikbaar: {unavailable.map((player) => `${playerLabel(players, player.key)}${player.unavailableReason === "injured" ? " (geblesseerd)" : ""}`).join(" · ")}</p>}</div>
           </header>
           <div className="substitution-print-grid">
-            {frames.slice(pageIndex * 6, (pageIndex + 1) * 6).map(({ id, snapshot, actions, instructions, elapsedSeconds, title, plannedMinute }) => {
+            {frames.slice(pageIndex * framesPerPage, (pageIndex + 1) * framesPerPage).map(({ id, snapshot, actions, instructions, elapsedSeconds, title, plannedMinute }) => {
               const lateOrEarly = plannedMinute !== undefined && plannedMinute * 60 !== elapsedSeconds;
               return (
                 <figure key={id} className="substitution-print-frame">

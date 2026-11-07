@@ -1,5 +1,12 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Wisselplan afdrukken (7 november 2026)
+
+Het wisselplan gebruikt standaard drie veldbeelden per A4: het gebruikelijke
+plan met beginopstelling en vijf wisselmomenten beslaat twee pagina's. Tekst en
+veld staan naast elkaar, met grotere letters. Extra momenten lopen door op
+vervolgpagina's. De uitvoeringshistorie houdt zes veldbeelden per A4.
+
 ## Beginopstelling rechtstreeks aanpassen en resetten (6 november 2026)
 
 Het planscherm heeft voor de aftrap twee standen: Beginopstelling aanpassen en

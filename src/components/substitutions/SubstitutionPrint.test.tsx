@@ -16,10 +16,13 @@ import { SubstitutionPrint } from "./SubstitutionPrint";
 afterEach(cleanup);
 
 describe("substitution print output", () => {
-  it("prints six planned field states on one concept A4 before the demo starts", () => {
+  it("prints six planned field states across two concept A4 pages before the demo starts", () => {
     const match = createDemoMatch(DEMO_PLAN);
     const { container } = render(<SubstitutionPrint match={match} plan={DEMO_PLAN} approved={false} printMode="plan" />);
-    expect(container.querySelectorAll(".substitution-print-page")).toHaveLength(1);
+    const pages = [...container.querySelectorAll(".substitution-print-page")];
+    expect(pages).toHaveLength(2);
+    for (const page of pages) expect(page.querySelectorAll(".substitution-print-frame")).toHaveLength(3);
+    expect(pages[1]).toHaveTextContent("Blad 2 / 2");
     const frames = [...container.querySelectorAll(".substitution-print-frame")];
     expect(frames).toHaveLength(6);
     expect(container).toHaveTextContent("CONCEPT · Nog niet bevestigd");

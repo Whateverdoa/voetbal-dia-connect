@@ -135,7 +135,10 @@ export function ConnectedEditor({ current, onReload, testMode = false, accountId
   } };
   return <section aria-label="Gekozen wedstrijd" className="space-y-4">
     <div className="rounded-xl border border-green-200 bg-green-50 p-4"><h2 className="font-bold">{label}</h2><div className="mt-2 flex flex-wrap gap-4 text-sm"><Link className="font-semibold text-dia-green underline" href={`/coach/match/${snapshot.matchId}`}>Open wedstrijd in de app</Link><Link className="font-semibold text-dia-green underline" href={`/live/${snapshot.code}`}>Open publieke weergave</Link><button type="button" className="min-h-11 font-semibold text-dia-green underline" onClick={onReload}>Actuele selectie en plan opnieuw laden</button></div></div>
-    <MatchPlanAttribution matchId={snapshot.matchId} />
+    {current.canSave && <details className="rounded-xl border border-slate-200 bg-white text-sm">
+      <summary className="min-h-11 cursor-pointer p-3 font-medium text-slate-600">Wijzigingshistorie bekijken</summary>
+      <MatchPlanAttribution matchId={snapshot.matchId} />
+    </details>}
     {snapshot.scheduledAt === null && <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">Deze wedstrijd heeft nog geen datum in de app. Vul bij de Coachassistent een datum voor het voorstel in; de geplande wedstrijddatum wijzig je via de wedstrijdinstellingen.</p>}
     {stale && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">De gegevens in de app zijn gewijzigd, bijvoorbeeld door opslaan. Je kunt je concept en beginopstelling hier verder aanpassen. Laad de actuele selectie en het plan opnieuw voordat je nogmaals opslaat.</p>}
     {!current.canSave && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">Deze wedstrijd kan niet meer als beginplan worden opgeslagen. Kies een niet-afgelaste wedstrijd die nog niet is begonnen.</p>}

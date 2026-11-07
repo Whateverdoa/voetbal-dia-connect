@@ -182,7 +182,10 @@ export function SubstitutionPlannerStudio({
         </section>
 
         <aside className="flex max-h-[42vh] min-h-0 flex-col overflow-y-auto rounded-xl bg-white p-3 text-gray-900 lg:max-h-none lg:w-[22rem]">
-          <MatchPlanAttribution matchId={matchId} />
+          {isPregame && <details className="mb-3 rounded-xl border border-slate-200 text-sm">
+            <summary className="min-h-11 cursor-pointer p-3 font-medium text-slate-600">Wijzigingshistorie bekijken</summary>
+            <MatchPlanAttribution matchId={matchId} />
+          </details>}
           <LiveReplanPanel matchId={matchId} status={status} canEdit={canEditPlan} publicCode={publicCode} />
           <PlanBenchSummary
             startingBench={board.projection.startingBench}

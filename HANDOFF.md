@@ -34,7 +34,9 @@ Verificatie vervolg: 41 gerichte tests, TypeScript, ESLint en 13 releasetests.
 
 `MatchPlanAttribution` toont per wedstrijd de maker en laatste bewerker van de
 opstelling en het wisselplan, met datum/tijd en de laatste twintig wijzigingen.
-Dit staat op de wedstrijdpagina, in het planscherm en bij voorbereiden/oefenen.
+Sinds 7 november staat dit alleen voor de aftrap in het planscherm en bij
+voorbereiden/oefenen, ingeklapt onder 'Wijzigingshistorie bekijken'. Het gewone
+coachwedstrijdscherm toont geen auditblok. Registratie blijft ongewijzigd.
 De naam komt van de ingelogde gebruiker, nooit van de toegewezen wedstrijdcoach.
 Eerdere makers zijn onbekend; er wordt geen maker achteraf ingevuld.
 

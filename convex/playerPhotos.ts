@@ -1,6 +1,7 @@
 /**
  * Admin player photo upload via Convex storage.
  */
+import { readPublicPlayer } from "./lib/publicPlayer";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdminAccess } from "./adminAuth";
@@ -74,6 +75,6 @@ export const getPlayerPhotoUrl = query({
   handler: async (ctx, args) => {
     const player = await ctx.db.get(args.playerId);
     if (!player) return null;
-    return player.photoUrl ?? null;
+    return (await readPublicPlayer(ctx, player))?.photoUrl ?? null;
   },
 });

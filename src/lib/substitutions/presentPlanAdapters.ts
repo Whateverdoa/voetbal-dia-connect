@@ -13,7 +13,7 @@ export type PresentPlanPlayer = {
   onField: boolean;
   fieldSlotIndex: number | null;
   isKeeper: boolean;
-  absent: boolean;
+  absent?: boolean;
   injured?: boolean;
   photoUrl?: string | null;
   positionPrimary?: string | null;

@@ -88,7 +88,7 @@ export const updatePlayer = mutation({
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     );
-    await ctx.db.patch(playerId, filtered);
+    await ctx.db.patch(playerId, { ...filtered, ...(args.teamId ? { sportlinkPersonId: undefined, sportlinkPublic: undefined } : {}) });
   },
 });
 

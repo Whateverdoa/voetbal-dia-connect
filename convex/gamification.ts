@@ -1,3 +1,4 @@
+import { readPublicPlayer } from "./lib/publicPlayer";
 /**
  * Server-side XP / badge engine for selection teams (post-match).
  */
@@ -204,40 +205,11 @@ export const getTeamDeck = query({
 
     const result = [];
     for (const player of players.filter((p) => p.active)) {
-      const gameConsents = await ctx.db
-        .query("playerConsents")
-        .withIndex("by_player_type", (q) =>
-          q.eq("playerId", player._id).eq("consentType", "gamification")
-        )
-        .collect();
-      const photoConsents = await ctx.db
-        .query("playerConsents")
-        .withIndex("by_player_type", (q) =>
-          q.eq("playerId", player._id).eq("consentType", "photo")
-        )
-        .collect();
-      const publicConsents = await ctx.db
-        .query("playerConsents")
-        .withIndex("by_player_type", (q) =>
-          q.eq("playerId", player._id).eq("consentType", "public_display")
-        )
-        .collect();
-
-      const publicOk = publicConsents.some((c) => c.status === "granted");
-      const gameOk =
-        publicOk && gameConsents.some((c) => c.status === "granted");
-      const photoOk =
-        publicOk && photoConsents.some((c) => c.status === "granted");
-
-      result.push({
-        playerId: player._id,
-        name: player.name,
-        number: player.number ?? null,
-        positionPrimary: player.positionPrimary ?? null,
-        photoUrl: photoOk ? player.photoUrl ?? null : null,
-        cardProfile: gameOk ? player.cardProfile ?? null : null,
-        showGamification: gameOk,
-      });
+      const visible = await readPublicPlayer(ctx, player, team._id);
+      if (!visible) continue;
+      result.push({ playerId: player._id, name: visible.displayName, number: visible.number,
+        positionPrimary: visible.positionPrimary, photoUrl: visible.photoUrl, cardProfile: visible.cardProfile,
+        showGamification: visible.cardProfile !== null });
     }
 
     return result.sort((a, b) => {

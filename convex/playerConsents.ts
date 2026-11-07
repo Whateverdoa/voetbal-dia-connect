@@ -32,9 +32,6 @@ export const startConsentRound = mutation({
     await requireAdminAccess(ctx);
     const team = await ctx.db.get(args.teamId);
     if (!team) throw new Error("Team niet gevonden");
-    if (!team.isSelectionTeam) {
-      throw new Error("Alleen selectieteams kunnen een toestemmingsronde starten");
-    }
 
     const players = await ctx.db
       .query("players")

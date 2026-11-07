@@ -1,3 +1,4 @@
+import { readPublicPlayer } from "./lib/publicPlayer";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
@@ -46,11 +47,11 @@ export const getMatchHistory = query({
         );
 
         const scorers = await Promise.all(
-          Array.from(scorerIds).map((id) => ctx.db.get(id))
+          Array.from(scorerIds).map(async id => readPublicPlayer(ctx, await ctx.db.get(id), args.teamId))
         );
 
         const scorerMap = Object.fromEntries(
-          scorers.filter(Boolean).map((p) => [p!._id, p!.name])
+          scorers.filter(Boolean).map((p) => [p!.playerId, p!.displayName])
         );
 
         // Count goals per scorer
@@ -58,7 +59,8 @@ export const getMatchHistory = query({
         goalEvents
           .filter((e) => e.playerId && !e.isOpponentGoal)
           .forEach((e) => {
-            const name = scorerMap[e.playerId!] ?? "Onbekend";
+            const name = scorerMap[e.playerId!];
+            if (!name) return;
             if (!goalCounts[e.playerId!]) {
               goalCounts[e.playerId!] = { name, count: 0 };
             }
@@ -155,15 +157,15 @@ export const getSeasonStats = query({
       .map(([id]) => id);
 
     const scorerPlayers = await Promise.all(
-      topScorerIds.map((id) => ctx.db.get(id as Id<"players">))
+      topScorerIds.map(async id => readPublicPlayer(ctx, await ctx.db.get(id as Id<"players">), args.teamId))
     );
 
-    const topScorers = topScorerIds.map((id, i) => ({
+    const topScorers = topScorerIds.flatMap((id, i) => scorerPlayers[i] ? [{
       playerId: id,
-      name: scorerPlayers[i]?.name ?? "Onbekend",
+      name: scorerPlayers[i]!.displayName,
       goals: playerGoals[id],
       assists: playerAssists[id] ?? 0,
-    }));
+    }] : []);
 
     return {
       matchesPlayed: finishedMatches.length,
@@ -188,6 +190,8 @@ export const getPlayerStats = query({
   handler: async (ctx, args) => {
     const player = await ctx.db.get(args.playerId);
     if (!player) return null;
+    const visible = await readPublicPlayer(ctx, player);
+    if (!visible) return null;
 
     // Use the by_player index for efficient lookup
     const playerMatchRecords = await ctx.db
@@ -242,7 +246,7 @@ export const getPlayerStats = query({
 
     return {
       playerId: args.playerId,
-      name: player.name,
+      name: visible.displayName,
       number: player.number,
       matchesPlayed: finishedMatchRecords.length,
       totalMinutes: Math.round(totalMinutes),

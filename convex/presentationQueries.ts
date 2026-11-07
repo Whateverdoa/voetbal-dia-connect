@@ -1,7 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { redactPlayerForPublic } from "./lib/privacyFilter";
-import type { ConsentRow } from "./lib/privacyFilter";
+import { readPublicPlayer } from "./lib/publicPlayer";
 import {
   listStaffPresentationSubstitutionPlans,
   presentationPlanValidator,
@@ -135,8 +134,8 @@ export const getMatchPresentation = query({
           onField: v.boolean(),
           fieldSlotIndex: v.union(v.number(), v.null()),
           isKeeper: v.boolean(),
-          absent: v.boolean(),
-          injured: v.boolean(),
+          absent: v.optional(v.boolean()),
+          injured: v.optional(v.boolean()),
         })
       ),
       substitutionPlans: v.array(presentationPlanValidator),
@@ -163,31 +162,17 @@ export const getMatchPresentation = query({
       const player = await ctx.db.get(mp.playerId);
       if (!player) continue;
 
-      const consents = await ctx.db
-        .query("playerConsents")
-        .withIndex("by_player", (q) => q.eq("playerId", player._id))
-        .collect();
-
-      const redacted = redactPlayerForPublic(
-        {
-          _id: String(player._id),
-          name: player.name,
-          number: player.number,
-          positionPrimary: player.positionPrimary,
-          positionSecondary: player.positionSecondary,
-          photoUrl: player.photoUrl,
-          cardProfile: player.cardProfile,
-        },
-        consents as ConsentRow[]
-      );
+      const redacted = await readPublicPlayer(ctx, player, team._id);
+      if (!match.showLineup || !redacted) continue;
 
       players.push({
         ...redacted,
         onField: mp.onField,
         fieldSlotIndex: mp.fieldSlotIndex ?? null,
         isKeeper: mp.isKeeper,
-        absent: mp.absent ?? false,
-        injured: mp.injured ?? false,
+        // Health and attendance reasons are never part of a public player projection.
+        absent: undefined,
+        injured: undefined,
       });
     }
 
@@ -271,24 +256,8 @@ export const getTeamDeckPublic = query({
 
     const out = [];
     for (const player of players.filter((p) => p.active)) {
-      const consents = await ctx.db
-        .query("playerConsents")
-        .withIndex("by_player", (q) => q.eq("playerId", player._id))
-        .collect();
-      out.push(
-        redactPlayerForPublic(
-          {
-            _id: String(player._id),
-            name: player.name,
-            number: player.number,
-            positionPrimary: player.positionPrimary,
-            positionSecondary: player.positionSecondary,
-            photoUrl: player.photoUrl,
-            cardProfile: player.cardProfile,
-          },
-          consents as ConsentRow[]
-        )
-      );
+      const redacted = await readPublicPlayer(ctx, player, team._id);
+      if (redacted) out.push(redacted);
     }
 
     return out.sort((a, b) => {

@@ -115,10 +115,10 @@ describe("substitution workspace sources", () => {
     const user = userEvent.setup();
     render(<SubstitutionWorkspace />);
     const printing = within(screen.getByRole("region", { name: "Wisselblad afdrukken" }));
-    expect(printing.getByRole("button", { name: /Wisselplan afdrukken · 1 A4/ })).toBeEnabled();
+    expect(printing.getByRole("button", { name: /Wisselplan afdrukken · 2 A4/ })).toBeEnabled();
     await user.click(printing.getByText("Afdrukvoorbeeld", { exact: true }));
-    expect(printing.getByText(/SV Reeshof O13-1.*10 oktober 2026/)).toBeVisible();
-    expect(printing.getByText(/CONCEPT · Nog niet bevestigd/)).toBeVisible();
+    for (const label of printing.getAllByText(/SV Reeshof O13-1.*10 oktober 2026/)) expect(label).toBeVisible();
+    for (const label of printing.getAllByText(/CONCEPT · Nog niet bevestigd/)) expect(label).toBeVisible();
     const frames = printing.getAllByRole("figure");
     expect(frames).toHaveLength(6);
     for (const [index, minute] of ["00:00", "10:00", "20:00", "30:00", "40:00", "50:00"].entries()) {
@@ -130,8 +130,9 @@ describe("substitution workspace sources", () => {
     expect(frames[4]).toHaveTextContent("Jody 2, CB");
     expect(frames[4]).toHaveTextContent("Olivier 9, RB");
     expect(frames[5]).toHaveTextContent("Max 18, CM");
-    expect(printing.getByText(/Niet beschikbaar.*Luuk 4/i)).toBeVisible();
-    expect(printing.getByText("Blad 1 / 1 · 60 minuten")).toBeVisible();
+    for (const label of printing.getAllByText(/Niet beschikbaar.*Luuk 4/i)) expect(label).toBeVisible();
+    expect(printing.getByText("Blad 1 / 2 · 60 minuten")).toBeVisible();
+    expect(printing.getByText("Blad 2 / 2 · 60 minuten")).toBeVisible();
   });
 
   it("opens the actual Gilze starting selection and requires explicit review of the local app copy", async () => {
@@ -240,16 +241,16 @@ describe("substitution workspace sources", () => {
     assertLuukUnavailable();
   });
 
-  it("prepares six planned field frames on one labelled Gilze print sheet", async () => {
+  it("prepares six planned field frames on two labelled Gilze print sheets", async () => {
     const user = userEvent.setup();
     render(<SubstitutionWorkspace />);
     await selectGilze(user);
     const printing = within(screen.getByRole("region", { name: "Wisselblad afdrukken" }));
-    expect(printing.getByRole("button", { name: /Wisselplan afdrukken · 1 A4/ })).toBeEnabled();
+    expect(printing.getByRole("button", { name: /Wisselplan afdrukken · 2 A4/ })).toBeEnabled();
     await user.click(printing.getByText("Afdrukvoorbeeld", { exact: true }));
-    expect(printing.getByRole("heading", { name: "DIA · Wisselplan" })).toBeVisible();
-    expect(printing.getByText("DIA JO13-2 – Gilze O13-1 · 3 oktober 2026")).toBeVisible();
-    expect(printing.getByText(/CONCEPT · Nog niet bevestigd/)).toBeVisible();
+    expect(printing.getAllByRole("heading", { name: "DIA · Wisselplan" })).toHaveLength(2);
+    for (const label of printing.getAllByText("DIA JO13-2 – Gilze O13-1 · 3 oktober 2026")) expect(label).toBeVisible();
+    for (const label of printing.getAllByText(/CONCEPT · Nog niet bevestigd/)) expect(label).toBeVisible();
     const frames = printing.getAllByRole("figure");
     expect(frames).toHaveLength(6);
     for (const [index, minute] of ["00:00", "10:00", "20:00", "30:00", "40:00", "50:00"].entries()) {
@@ -257,7 +258,8 @@ describe("substitution workspace sources", () => {
       expect(within(frames[index]).getByRole("img", { name: "Half veld met spelers, namen en rugnummers" })).toBeVisible();
       expect(frames[index]).not.toHaveTextContent("Luuk");
     }
-    expect(printing.getByText(/Niet beschikbaar.*Luuk 4.*geblesseerd/i)).toBeVisible();
-    expect(printing.getByText("Blad 1 / 1 · 60 minuten")).toBeVisible();
+    for (const label of printing.getAllByText(/Niet beschikbaar.*Luuk 4.*geblesseerd/i)) expect(label).toBeVisible();
+    expect(printing.getByText("Blad 1 / 2 · 60 minuten")).toBeVisible();
+    expect(printing.getByText("Blad 2 / 2 · 60 minuten")).toBeVisible();
   });
 });

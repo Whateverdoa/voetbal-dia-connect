@@ -2,6 +2,17 @@
  * Sportlink Club.Dataservice roster helpers (pure; Convex + tests).
  */
 
+export function sportlinkPersonId(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  if (typeof value === "number" && (!Number.isSafeInteger(value) || value <= 0))
+    return null;
+  const id = String(value).trim();
+  return /^[A-Za-z0-9-]{1,64}$/.test(id) &&
+    !["afgeschermd", "0", "-1"].includes(id.toLowerCase())
+    ? id
+    : null;
+}
+
 export type SportlinkTeamRow = {
   teamcode: number;
   lokaleteamcode: number;
@@ -12,6 +23,8 @@ export type SportlinkTeamRow = {
 
 export type SportlinkIndelingRow = {
   naam: string;
+  lidcode?: string | number | null;
+  foto?: string | null;
   voornaam?: string | null;
   achternaam?: string | null;
   tussenvoegsel?: string | null;
@@ -22,6 +35,7 @@ export type SportlinkIndelingRow = {
 
 export type ParsedRosterPerson = {
   displayName: string;
+  sportlinkPersonId?: string;
   email: string | null;
   kind: "player" | "coach";
   functie: string | null;
@@ -33,7 +47,10 @@ export function isShieldedName(name: string | null | undefined): boolean {
   return !name || name.trim().toLowerCase() === SHIELDED;
 }
 
-export function sportlinkTeamKey(teamcode: number, lokaleteamcode: number): string {
+export function sportlinkTeamKey(
+  teamcode: number,
+  lokaleteamcode: number,
+): string {
   if (teamcode > 0) return `bond:${teamcode}`;
   return `local:${lokaleteamcode}`;
 }
@@ -58,8 +75,11 @@ export function slugFromSportlinkTeamName(teamnaam: string): string | null {
   return `${prefix}${m[2]}-${teamNum}`;
 }
 
-export function displayNameFromIndeling(row: SportlinkIndelingRow): string | null {
-  if (isShieldedName(row.naam) && isShieldedName(row.voornaam)) return null;
+export function displayNameFromIndeling(
+  row: SportlinkIndelingRow,
+): string | null {
+  // Never reconstruct a shielded primary name from ancillary fields.
+  if (isShieldedName(row.naam)) return null;
 
   const voornaam = row.voornaam?.trim();
   const achternaam = row.achternaam?.trim();
@@ -80,7 +100,9 @@ export function displayNameFromIndeling(row: SportlinkIndelingRow): string | nul
   return row.naam.trim();
 }
 
-export function parseIndelingRows(rows: SportlinkIndelingRow[]): ParsedRosterPerson[] {
+export function parseIndelingRows(
+  rows: SportlinkIndelingRow[],
+): ParsedRosterPerson[] {
   const out: ParsedRosterPerson[] = [];
   for (const row of rows) {
     const displayName = displayNameFromIndeling(row);
@@ -92,6 +114,7 @@ export function parseIndelingRows(rows: SportlinkIndelingRow[]): ParsedRosterPer
         : "player";
     out.push({
       displayName,
+      sportlinkPersonId: sportlinkPersonId(row.lidcode) ?? undefined,
       email: row.email?.trim().toLowerCase() || null,
       kind,
       functie: row.functie?.trim() || null,
@@ -104,7 +127,7 @@ export async function fetchSportlinkJson<T>(
   baseUrl: string,
   path: string,
   clientId: string,
-  params: Record<string, string | number> = {}
+  params: Record<string, string | number> = {},
 ): Promise<T> {
   const url = new URL(path, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
   url.searchParams.set("client_id", clientId);
@@ -115,6 +138,7 @@ export async function fetchSportlinkJson<T>(
     method: "GET",
     headers: { Accept: "application/json" },
     cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
     throw new Error(`Sportlink ${path} failed: ${response.status}`);

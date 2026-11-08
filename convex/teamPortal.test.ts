@@ -480,6 +480,14 @@ describe("real team portal authorization", () => {
       teamProfile: true,
       publicProfile: true,
     });
+    // Local portal consent alone must not bypass missing Sportlink visibility.
+    const shielded = await t.query(api.teamPortal.overview, { slug });
+    expect(shielded.players.every(p => p.id === null)).toBe(true);
+    await t.run(async ctx => {
+      await ctx.db.patch(ids.teamId, { sportlinkTeamCode: "local:171", sportlinkPrivacyGeneration: 1, sportlinkPrivacyValidUntil: Date.now() + 60_000 });
+      await ctx.db.patch(ids.player, { sportlinkPersonId: "SYNTHETIC", sportlinkPublic: { teamId: ids.teamId, personId: "SYNTHETIC", teamCode: "local:171", generation: 1, name: "Testspeler Een" } });
+      await ctx.db.insert("playerConsents", { playerId: ids.player, teamId: ids.teamId, consentType: "public_display", status: "granted", documentVersion: "synthetic", token: "synthetic-token", createdAt: 1, updatedAt: 1 });
+    });
     const publicData = await t.query(api.teamPortal.overview, { slug });
     expect(publicData.players.find((p) => p.id === ids.player)?.name).toBe(
       "Testspeler",

@@ -22,3 +22,12 @@ Deze variabelen zijn voorbereid, maar worden pas actief gebruikt zodra het bestu
 
 - Geen secrets committen naar Git.
 - Zonder `SPORTLINK_CLIENT_ID` blijft de app op de interne dataflow werken.
+
+## Serverzijdige spelersprivacy
+
+`SPORTLINK_PRIVACY_SYNC_ENABLED=true` schakelt de periodieke controle van
+publieke Sportlink-spelersvelden in op de bestaande importer-deployment.
+Standaard staat deze uit; zonder bewezen broninformatie blijven spelers
+openbaar afgeschermd. `DISABLE_EXTERNAL_IMPORTS=true` blokkeert de controle.
+Zie [Sportlink spelersprivacy](sportlink-player-privacy.md) voor koppeling,
+15-minutenverversing, 30-minutenverval en de vereiste releasenacontrole.

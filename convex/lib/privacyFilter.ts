@@ -32,6 +32,8 @@ export type PlayerPrivacyInput = {
   positionSecondary?: string;
   photoUrl?: string;
   cardProfile?: CardProfile;
+  sourceName?: string;
+  sourcePhotoUrl?: string;
 };
 
 export type RedactedPlayer = {
@@ -46,56 +48,37 @@ export type RedactedPlayer = {
 };
 
 function hasGranted(consents: ConsentRow[], type: ConsentType): boolean {
-  return consents.some((c) => c.consentType === type && c.status === "granted");
+  const rows = consents.filter((c) => c.consentType === type);
+  return rows.length > 0 && rows.every((c) => c.status === "granted");
 }
 
-function isRevoked(consents: ConsentRow[], type: ConsentType): boolean {
-  return consents.some((c) => c.consentType === type && c.status === "revoked");
-}
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
-}
-
-function firstNameFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return parts[0]!;
-}
-
-/**
- * Redact a player for public/TV presentation based on consent rows.
- * Public screens show first names only (no last names) unless public_display
- * was revoked — then initials. Photo/XP follow their own granted flags.
- */
+/** Public identity requires current source permission and local consent. */
 export function redactPlayerForPublic(
   player: PlayerPrivacyInput,
-  consents: ConsentRow[]
+  consents: ConsentRow[],
 ): RedactedPlayer {
-  const photoOk = hasGranted(consents, "photo");
-  const gameOk = hasGranted(consents, "gamification");
-  const hideName = isRevoked(consents, "public_display");
+  const publicOk =
+    Boolean(player.sourceName) && hasGranted(consents, "public_display");
+  const photoOk = publicOk && hasGranted(consents, "photo");
+  const gameOk = publicOk && hasGranted(consents, "gamification");
 
   return {
     playerId: player._id,
-    displayName: hideName
-      ? initialsFromName(player.name)
-      : firstNameFromName(player.name),
-    number: player.number ?? null,
-    positionPrimary: player.positionPrimary ?? null,
-    positionSecondary: player.positionSecondary ?? null,
-    photoUrl: photoOk ? player.photoUrl ?? null : null,
-    cardProfile: gameOk ? player.cardProfile ?? null : null,
-    showFullIdentity: false,
+    displayName: publicOk
+      ? player.sourceName!.trim().split(/\s+/)[0]!
+      : "Afgeschermd",
+    number: publicOk ? (player.number ?? null) : null,
+    positionPrimary: publicOk ? (player.positionPrimary ?? null) : null,
+    positionSecondary: publicOk ? (player.positionSecondary ?? null) : null,
+    photoUrl: photoOk ? (player.sourcePhotoUrl ?? null) : null,
+    cardProfile: gameOk ? (player.cardProfile ?? null) : null,
+    showFullIdentity: publicOk,
   };
 }
 
 export function assertConsentGranted(
   consents: ConsentRow[],
-  type: ConsentType
+  type: ConsentType,
 ): boolean {
   return hasGranted(consents, type);
 }

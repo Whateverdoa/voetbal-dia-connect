@@ -4,8 +4,7 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { redactPlayerForPublic, type ConsentRow } from "./privacyFilter";
-import { getCurrentUserAccess } from "./userAccess";
+import { getCurrentUserAccess, requireCoachForMatch } from "./userAccess";
 
 export const presentationPlanValidator = v.object({
   _id: v.id("substitutionPlans"),
@@ -19,7 +18,7 @@ export const presentationPlanValidator = v.object({
   status: v.union(
     v.literal("pending"),
     v.literal("skipped"),
-    v.literal("executed")
+    v.literal("executed"),
   ),
   note: v.union(v.string(), v.null()),
   outDisplayName: v.string(),
@@ -43,33 +42,17 @@ export type PresentationSubstitutionPlan = {
 
 async function displayNameForPlayer(
   ctx: QueryCtx,
-  playerId: Id<"players">
+  playerId: Id<"players">,
 ): Promise<string> {
   const player = await ctx.db.get(playerId);
   if (!player) return "?";
 
-  const consents = await ctx.db
-    .query("playerConsents")
-    .withIndex("by_player", (q) => q.eq("playerId", player._id))
-    .collect();
-
-  return redactPlayerForPublic(
-    {
-      _id: String(player._id),
-      name: player.name,
-      number: player.number,
-      positionPrimary: player.positionPrimary,
-      positionSecondary: player.positionSecondary,
-      photoUrl: player.photoUrl,
-      cardProfile: player.cardProfile,
-    },
-    consents as ConsentRow[]
-  ).displayName;
+  return player.name.trim().split(/\s+/)[0] ?? "?";
 }
 
 export async function listPresentationSubstitutionPlans(
   ctx: QueryCtx,
-  matchId: Id<"matches">
+  matchId: Id<"matches">,
 ): Promise<PresentationSubstitutionPlan[]> {
   const rows = await ctx.db
     .query("substitutionPlans")
@@ -78,7 +61,7 @@ export async function listPresentationSubstitutionPlans(
 
   rows.sort(
     (a, b) =>
-      a.sequence - b.sequence || String(a._id).localeCompare(String(b._id))
+      a.sequence - b.sequence || String(a._id).localeCompare(String(b._id)),
   );
 
   const out: PresentationSubstitutionPlan[] = [];
@@ -108,12 +91,21 @@ export async function listPresentationSubstitutionPlans(
 /** Wisselplan is staff-only; public presentation queries get an empty list. */
 export async function listStaffPresentationSubstitutionPlans(
   ctx: QueryCtx,
-  matchId: Id<"matches">
+  matchId: Id<"matches">,
 ): Promise<PresentationSubstitutionPlan[]> {
   const access = await getCurrentUserAccess(ctx);
   const roles = access?.roles ?? [];
   if (!roles.includes("admin") && !roles.includes("coach")) {
     return [];
+  }
+  const match = await ctx.db.get(matchId);
+  if (!match) return [];
+  if (!roles.includes("admin")) {
+    try {
+      await requireCoachForMatch(ctx, match);
+    } catch {
+      return [];
+    }
   }
   return listPresentationSubstitutionPlans(ctx, matchId);
 }

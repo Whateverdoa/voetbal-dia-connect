@@ -13,7 +13,7 @@ type PresentPlayer = {
   fieldSlotIndex: number | null;
   photoUrl?: string | null;
   isKeeper: boolean;
-  absent: boolean;
+  absent?: boolean;
   injured?: boolean;
 };
 

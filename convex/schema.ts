@@ -27,6 +27,9 @@ export default defineSchema({
     name: v.string(), // "JO12-1"
     slug: v.string(), // "jo12-1"
     logoUrl: v.optional(v.string()),
+    sportlinkPrivacyObservedAt: v.optional(v.number()),
+    sportlinkPrivacyGeneration: v.optional(v.number()),
+    sportlinkPrivacyValidUntil: v.optional(v.number()),
     /** Selection team (e.g. JO13-1/2) — enables consent + gamification pilot features. */
     isSelectionTeam: v.optional(v.boolean()),
     /** Sportlink team code for bond import (optional). */
@@ -137,6 +140,15 @@ export default defineSchema({
     name: v.string(),
     number: v.optional(v.number()), // Shirt number
     active: v.boolean(),
+    sportlinkPersonId: v.optional(v.string()),
+    sportlinkPublic: v.optional(v.object({
+      teamId: v.id("teams"),
+      personId: v.string(),
+      teamCode: v.string(),
+      generation: v.number(),
+      name: v.optional(v.string()),
+      photoUrl: v.optional(v.string()),
+    })),
     // EN position codes: GK, RB, CB, LB, RWB, LWB, CDM, CM, RM, LM, CAM, RW, LW, CF, ST
     positionPrimary: v.optional(v.string()),
     positionSecondary: v.optional(v.string()),

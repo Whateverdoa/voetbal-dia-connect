@@ -57,4 +57,7 @@ crons.cron(
   internal.refereeNotifications.createWindowClosingReminders,
 );
 
+// Opt-in only on the deployment that owns the club's existing Sportlink importer.
+crons.interval("sportlink-player-privacy", { minutes: 15 }, internal.import.sportlinkRosterSync.refreshPrivacy, {});
+
 export default crons;

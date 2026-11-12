@@ -213,6 +213,7 @@ describe('MatchControls', () => {
     it('roept nextQuarter pas aan na Ja, beëindigen', async () => {
       render(<MatchControls {...defaultProps} currentQuarter={4} quarterCount={4} />);
       fireEvent.click(screen.getByText('Einde wedstrijd'));
+      await waitFor(() => expect(screen.getByText('Ja, beëindigen')).toBeEnabled());
       fireEvent.click(screen.getByText('Ja, beëindigen'));
       await waitFor(() => {
         expect(mockNextQuarter).toHaveBeenCalledTimes(1);
@@ -220,13 +221,45 @@ describe('MatchControls', () => {
       expect(mockNextQuarter.mock.calls[0][0].matchId).toBe(defaultMatchId);
     });
 
-    it('Einde kwart blijft één tik (geen bevestiging)', async () => {
-      render(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={4} />);
-      fireEvent.click(screen.getByText('Einde kwart 1'));
+    it.each([
+      { currentQuarter: 1, quarterCount: 2, label: 'helft 1' },
+      { currentQuarter: 1, quarterCount: 4, label: 'kwart 1' },
+      { currentQuarter: 2, quarterCount: 4, label: 'kwart 2' },
+      { currentQuarter: 3, quarterCount: 4, label: 'kwart 3' },
+    ])('beëindigt $label alleen na een bewuste bevestiging', async ({ currentQuarter, quarterCount, label }) => {
+      render(<MatchControls {...defaultProps} currentQuarter={currentQuarter} quarterCount={quarterCount} />);
+      fireEvent.click(screen.getByRole('button', { name: `Einde ${label}` }));
+      expect(screen.getByRole('alert')).toHaveTextContent(`Wil je ${label} beëindigen?`);
+      expect(mockNextQuarter).not.toHaveBeenCalled();
+
+      const confirm = screen.getByRole('button', { name: 'Ja, beëindigen' });
+      expect(confirm).toBeDisabled();
+      fireEvent.click(confirm);
+      expect(mockNextQuarter).not.toHaveBeenCalled();
+
+      await waitFor(() => expect(confirm).toBeEnabled());
+      fireEvent.click(confirm);
       await waitFor(() => {
         expect(mockNextQuarter).toHaveBeenCalledTimes(1);
       });
-      expect(screen.queryByText('Is de wedstrijd echt afgelopen?')).not.toBeInTheDocument();
+    });
+
+    it('annuleert zonder de helft te stoppen', () => {
+      render(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={2} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Einde helft 1' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Annuleren' }));
+      expect(screen.getByRole('button', { name: 'Einde helft 1' })).toBeEnabled();
+      expect(mockNextQuarter).not.toHaveBeenCalled();
+    });
+
+    it('vergeet de bevestiging als de coach de klokbediening verliest', () => {
+      const { rerender } = render(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={2} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Einde helft 1' }));
+      rerender(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={2} canControlClock={false} />);
+      expect(screen.queryByRole('button', { name: 'Ja, beëindigen' })).not.toBeInTheDocument();
+      rerender(<MatchControls {...defaultProps} currentQuarter={1} quarterCount={2} />);
+      expect(screen.getByRole('button', { name: 'Einde helft 1' })).toBeEnabled();
+      expect(mockNextQuarter).not.toHaveBeenCalled();
     });
   });
 

@@ -9,6 +9,7 @@ import { createCorrelationId } from "@/lib/correlationId";
 import { StoppageControls } from "./StoppageControls";
 import { BreakClock } from "./BreakClock";
 import { UndoGoalButton } from "./UndoGoalButton";
+import { ConfirmPeriodEnd } from "./ConfirmPeriodEnd";
 
 interface MatchControlsProps {
   matchId: Id<"matches">;
@@ -59,13 +60,13 @@ export function MatchControls({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [undoConfirm, setUndoConfirm] = useState(false);
-  const [endMatchConfirm, setEndMatchConfirm] = useState(false);
+  const [endPeriodConfirm, setEndPeriodConfirm] = useState(false);
 
   const isFinalSegment = currentQuarter >= quarterCount;
 
   useEffect(() => {
-    setEndMatchConfirm(false);
-  }, [currentQuarter, status]);
+    setEndPeriodConfirm(false);
+  }, [matchId, currentQuarter, quarterCount, status, canControlClock]);
 
   useEffect(() => {
     if (!undoConfirm) return;
@@ -74,10 +75,10 @@ export function MatchControls({
   }, [undoConfirm]);
 
   useEffect(() => {
-    if (!endMatchConfirm) return;
-    const timer = setTimeout(() => setEndMatchConfirm(false), 5000);
+    if (!endPeriodConfirm) return;
+    const timer = setTimeout(() => setEndPeriodConfirm(false), 5000);
     return () => clearTimeout(timer);
-  }, [endMatchConfirm]);
+  }, [endPeriodConfirm]);
 
   const totalGoals = homeScore + awayScore;
 
@@ -192,64 +193,29 @@ export function MatchControls({
           )}
 
           {canControlClock &&
-            (isFinalSegment ? (
-              endMatchConfirm ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-center text-gray-800 font-medium px-1">
-                    Is de wedstrijd echt afgelopen?
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEndMatchConfirm(false)}
-                      disabled={isLoading}
-                      className="flex-1 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Annuleren
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEndMatchConfirm(false);
-                        handleMutation(
-                          () =>
-                            nextQuarter({
-                              matchId,
-                              correlationId: createCorrelationId("next-quarter"),
-                            }),
-                          "Wedstrijd beëindigen"
-                        );
-                      }}
-                      disabled={isLoading}
-                      className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? "Bezig..." : "Ja, beëindigen"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEndMatchConfirm(true)}
-                  disabled={isLoading}
-                  className="w-full py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Einde wedstrijd
-                </button>
-              )
+            (endPeriodConfirm ? (
+              <ConfirmPeriodEnd
+                key={`${matchId}:${currentQuarter}:${quarterCount}`}
+                isFinalSegment={isFinalSegment}
+                periodLabel={quarterCount === 2 ? "helft" : "kwart"}
+                currentQuarter={currentQuarter}
+                isLoading={isLoading}
+                onCancel={() => setEndPeriodConfirm(false)}
+                onConfirm={() => {
+                  setEndPeriodConfirm(false);
+                  handleMutation(
+                    () => nextQuarter({
+                      matchId,
+                      correlationId: createCorrelationId("next-quarter"),
+                    }),
+                    isFinalSegment ? "Wedstrijd beëindigen" : "Speelperiode beëindigen"
+                  );
+                }}
+              />
             ) : (
               <button
                 type="button"
-                onClick={() =>
-                  handleMutation(
-                    () =>
-                      nextQuarter({
-                        matchId,
-                        correlationId: createCorrelationId("next-quarter"),
-                      }),
-                    "Volgende kwart"
-                  )
-                }
+                onClick={() => setEndPeriodConfirm(true)}
                 disabled={isLoading}
                 className="w-full py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl min-h-[48px] active:scale-[0.98] transition-transform hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >

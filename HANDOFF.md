@@ -1,5 +1,19 @@
 # HANDOFF.md — DIA Live (voetbal-dia-connect)
 
+## Bevestiging bij einde helft/kwart (12 november 2026)
+
+Coach en scheidsrechter vragen nu bij elke helft en elk kwart om bevestiging,
+ook bij het wedstrijdeinde. De klok loopt door totdat 'Ja, beëindigen' bewust
+wordt gekozen. Annuleren krijgt focus en bevestigen is de eerste 600 ms geblokkeerd
+tegen dubbel tikken. De vraag vervalt na vijf seconden en bij gewijzigde
+wedstrijdgegevens of klokrechten. De schermen delen `ConfirmPeriodEnd`.
+
+Dit is alleen een frontendwijziging. Publiceer met de tijdelijke buildoverride
+`env -u CONVEX_DEPLOY_KEY npm run build`; die behoudt de strikte Clerk-controle
+en laat de actieve Convex-backend intact. Annuleer de automatisch gestarte
+standaardproductiebuild na de merge voordat deze de oudere checkout-backend
+uitrolt, en publiceer dezelfde mergecommit met die override.
+
 ## Wisselplan afdrukken (7 november 2026)
 
 Het wisselplan gebruikt standaard drie veldbeelden per A4: het gebruikelijke

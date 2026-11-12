@@ -83,7 +83,7 @@ export function RefereeMatchConsole({
   const [isLoading, setIsLoading] = useState(false);
   const [clockError, setClockError] = useState<string | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
-  const [endMatchConfirm, setEndMatchConfirm] = useState(false);
+  const [endPeriodConfirm, setEndPeriodConfirm] = useState(false);
 
   const isLive = status === "live";
   const clockSnapshot = useMemo(
@@ -125,14 +125,14 @@ export function RefereeMatchConsole({
   });
 
   useEffect(() => {
-    setEndMatchConfirm(false);
-  }, [currentQuarter, status]);
+    setEndPeriodConfirm(false);
+  }, [matchId, currentQuarter, quarterCount, status]);
 
   useEffect(() => {
-    if (!endMatchConfirm) return;
-    const timer = setTimeout(() => setEndMatchConfirm(false), 5000);
+    if (!endPeriodConfirm) return;
+    const timer = setTimeout(() => setEndPeriodConfirm(false), 5000);
     return () => clearTimeout(timer);
-  }, [endMatchConfirm]);
+  }, [endPeriodConfirm]);
 
   const withLoading = async (
     action: () => Promise<unknown>,
@@ -203,8 +203,8 @@ export function RefereeMatchConsole({
                 scheduledBreakEndAt={scheduledBreakEndAt}
                 isLoading={isLoading}
                 clockError={clockError}
-                endMatchConfirm={endMatchConfirm}
-                onSetEndMatchConfirm={setEndMatchConfirm}
+                endPeriodConfirm={endPeriodConfirm}
+                onSetEndPeriodConfirm={setEndPeriodConfirm}
                 onStartMatch={() => startMatch({ matchId })}
                 onNextQuarter={() =>
                   nextQuarter({

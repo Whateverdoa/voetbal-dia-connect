@@ -5,6 +5,7 @@ import type { MatchStatus } from "@/components/match/types";
 import { BreakClock } from "@/components/match/BreakClock";
 import { QuarterEndReminderBanner } from "@/components/match/QuarterEndReminderBanner";
 import { StoppageControls } from "@/components/match/StoppageControls";
+import { ConfirmPeriodEnd } from "@/components/match/ConfirmPeriodEnd";
 
 type RefereeClockPanelProps = {
   matchId: Id<"matches">;
@@ -21,8 +22,8 @@ type RefereeClockPanelProps = {
   scheduledBreakEndAt?: number;
   isLoading: boolean;
   clockError: string | null;
-  endMatchConfirm: boolean;
-  onSetEndMatchConfirm: (confirming: boolean) => void;
+  endPeriodConfirm: boolean;
+  onSetEndPeriodConfirm: (confirming: boolean) => void;
   onStartMatch: () => Promise<unknown>;
   onNextQuarter: () => Promise<unknown>;
   onResumeHalftime: () => Promise<unknown>;
@@ -48,8 +49,8 @@ export function RefereeClockPanel({
   scheduledBreakEndAt,
   isLoading,
   clockError,
-  endMatchConfirm,
-  onSetEndMatchConfirm,
+  endPeriodConfirm,
+  onSetEndPeriodConfirm,
   onStartMatch,
   onNextQuarter,
   onResumeHalftime,
@@ -93,12 +94,16 @@ export function RefereeClockPanel({
       )}
 
       {isLive &&
-        (endMatchConfirm ? (
-          <ConfirmEndMatch
+        (endPeriodConfirm ? (
+          <ConfirmPeriodEnd
+            key={`${matchId}:${currentQuarter}:${quarterCount}`}
+            isFinalSegment={isFinalSegment}
+            periodLabel={quarterLabel}
+            currentQuarter={currentQuarter}
             isLoading={isLoading}
-            onCancel={() => onSetEndMatchConfirm(false)}
+            onCancel={() => onSetEndPeriodConfirm(false)}
             onConfirm={() => {
-              onSetEndMatchConfirm(false);
+              onSetEndPeriodConfirm(false);
               onClockAction(onNextQuarter, onClockError);
             }}
           />
@@ -111,25 +116,18 @@ export function RefereeClockPanel({
               isLoading={isLoading}
               onAction={(action) => onClockAction(action, onClockError)}
             />
-            {isFinalSegment ? (
-              <button
-                type="button"
-                onClick={() => onSetEndMatchConfirm(true)}
-                disabled={isLoading}
-                className="min-h-[52px] w-full rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-              >
-                Einde match
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onClockAction(onNextQuarter, onClockError)}
-                disabled={isLoading}
-                className="min-h-[52px] w-full rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
-              >
-                {isLoading ? "Bezig..." : `Einde ${quarterLabel} ${currentQuarter}`}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onSetEndPeriodConfirm(true)}
+              disabled={isLoading}
+              className="min-h-[52px] w-full rounded-xl border-2 border-gray-300 px-2 py-2.5 text-sm font-semibold text-gray-700 transition-transform hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[64px] sm:py-4 sm:text-base"
+            >
+              {isLoading
+                ? "Bezig..."
+                : isFinalSegment
+                  ? "Einde match"
+                  : `Einde ${quarterLabel} ${currentQuarter}`}
+            </button>
           </div>
         ))}
 
@@ -156,42 +154,6 @@ export function RefereeClockPanel({
           <p className="font-medium text-gray-500">Wedstrijd is afgelopen</p>
         </div>
       )}
-    </div>
-  );
-}
-
-function ConfirmEndMatch({
-  isLoading,
-  onCancel,
-  onConfirm,
-}: {
-  isLoading: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="px-1 text-center text-sm font-medium text-gray-800">
-        Is de wedstrijd echt afgelopen?
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="min-h-[48px] rounded-xl border-2 border-gray-300 py-2.5 font-semibold text-gray-700 transition-transform hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
-        >
-          Annuleren
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={isLoading}
-          className="min-h-[48px] rounded-xl bg-red-600 py-2.5 font-semibold text-white transition-transform hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] sm:min-h-[56px] sm:py-4"
-        >
-          {isLoading ? "Bezig..." : "Ja, beëindigen"}
-        </button>
-      </div>
     </div>
   );
 }

@@ -68,3 +68,4 @@ Bootstrap-admins slaan deze stap over: zij krijgen bij het eerste bezoek aan /on
 ## Zie ook
 
 - [`docs/actors-and-access.md`](actors-and-access.md) — actoren, Clerk vs Convex-merge (`resolveRuntimeUserAccess`), publieke privacy (geen officiersnamen op publieke queries tenzij expliciet).
+- [`docs/specs/wedstrijdregistratie/rollen-en-rechten.md`](specs/wedstrijdregistratie/rollen-en-rechten.md) — concept (2026-11-08, **niet geïmplementeerd**): vrijwillige wedstrijdregistratie, team-scoped rechten; schaft bestaande globale admin/coach/referee-rollen niet af.

@@ -50,3 +50,4 @@ The club does not “assign roles inside the login UI”; they maintain **correc
 - [`HANDOFF.md`](../HANDOFF.md) — product architecture and import behaviour.
 - [`docs/plans/open-roadmap.md`](plans/open-roadmap.md) — open inventaris (tactiek, portaal, heatmaps).
 - [`docs/plans/selectie-teamportaal.plan.md`](plans/selectie-teamportaal.plan.md) — parent/member portal plan.
+- [`docs/specs/wedstrijdregistratie/rollen-en-rechten.md`](specs/wedstrijdregistratie/rollen-en-rechten.md) — draft volunteer match-registration roles (2026-11-08, **not implemented**). Distinct from the selection-team portal parent; does not remove existing global admin roles.
